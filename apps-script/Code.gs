@@ -210,7 +210,7 @@ function jsonpOutput_(prefix, data) {
 function messageOutput_(data) {
   const safeJson = JSON.stringify(data).replace(/</g, "\\u003c");
   const html = "<!doctype html><meta charset=\"utf-8\"><script>" +
-    "parent.postMessage(" + safeJson + ", '*');" +
+    "window.top.postMessage(" + safeJson + ", '*');" +
     "<\/script>";
   return HtmlService.createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);

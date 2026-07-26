@@ -56,7 +56,7 @@ function post(action, payload = {}) {
     }
 
     function handleMessage(event) {
-      if (event.source !== iframe.contentWindow || event.data?.channel !== channel) return;
+      if (event.data?.channel !== channel) return;
       if (!event.data?.ok) {
         cleanup(new Error(event.data?.error || "عملیات انجام نشد"));
         return;
