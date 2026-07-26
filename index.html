@@ -4,17 +4,109 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0b0c10" />
-    <meta
-      name="description"
-      content="دفتر فارسی ثبت و مرور مچ‌های دوتا ۲"
-    />
+    <meta name="description" content="دفتر فارسی ثبت و مرور مچ‌های دوتا ۲" />
     <title>دفتر مچ‌های دوتا ۲</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="app-shell">
+    <section class="loading-screen" id="loadingScreen">
+      <span class="loading-mark" aria-hidden="true">D2</span>
+      <span class="loading-line"></span>
+    </section>
+
+    <section class="access-screen" id="accessScreen" hidden>
+      <header class="access-brand">
+        <span class="brand-mark" aria-hidden="true">D2</span>
+        <div>
+          <p class="eyebrow">MATCH JOURNAL</p>
+          <h1>دفتر مچ‌های دوتا ۲</h1>
+        </div>
+      </header>
+
+      <main class="access-panel">
+        <div class="access-heading">
+          <p class="week-kicker" id="accessKicker">دسترسی</p>
+          <h2 id="accessTitle">نوع ورود را انتخاب کنید</h2>
+        </div>
+
+        <div class="role-grid" id="roleChooser">
+          <button class="role-card role-player" type="button" data-role="player">
+            <span class="role-icon" aria-hidden="true">✦</span>
+            <span class="role-name">بازیکن</span>
+            <span class="role-description">ثبت و مدیریت بازی‌ها</span>
+          </button>
+          <button class="role-card role-coach" type="button" data-role="coach">
+            <span class="role-icon" aria-hidden="true">◎</span>
+            <span class="role-name">مربی</span>
+            <span class="role-description">مشاهده گزارش بازیکن</span>
+          </button>
+        </div>
+
+        <form class="access-form" id="playerAccessForm" hidden>
+          <label class="field">
+            <span>آیدی استیم</span>
+            <input
+              id="playerSteamId"
+              name="steamId"
+              type="text"
+              inputmode="numeric"
+              autocomplete="username"
+              placeholder="آیدی استیم را وارد کنید"
+              maxlength="17"
+              required
+            />
+          </label>
+          <label class="field">
+            <span>رمز</span>
+            <input
+              id="playerPassword"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              minlength="4"
+              required
+            />
+          </label>
+          <p class="form-error" id="playerAccessError" role="alert"></p>
+          <div class="access-actions">
+            <button class="secondary-button access-back-button" type="button">بازگشت</button>
+            <button class="primary-button access-submit-button" type="submit">
+              ورود / ساخت حساب
+            </button>
+          </div>
+        </form>
+
+        <form class="access-form" id="coachAccessForm" hidden>
+          <label class="field">
+            <span>آیدی استیم بازیکن</span>
+            <input
+              id="coachSteamId"
+              name="steamId"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              placeholder="آیدی استیم را وارد کنید"
+              maxlength="17"
+              required
+            />
+          </label>
+          <p class="form-error" id="coachAccessError" role="alert"></p>
+          <div class="access-actions">
+            <button class="secondary-button access-back-button" type="button">بازگشت</button>
+            <button class="primary-button access-submit-button" type="submit">مشاهده</button>
+          </div>
+        </form>
+
+        <div class="setup-state" id="setupState" hidden>
+          <span class="setup-state-icon" aria-hidden="true">⚙</span>
+          <strong>راه‌اندازی در حال تکمیل است</strong>
+        </div>
+      </main>
+    </section>
+
+    <div class="app-shell" id="appShell" hidden>
       <header class="topbar">
         <div class="brand">
           <span class="brand-mark" aria-hidden="true">D2</span>
@@ -24,20 +116,18 @@
           </div>
         </div>
 
-        <div class="topbar-actions">
-          <span class="save-status" id="saveStatus">
-            <span class="status-dot"></span>
-            ذخیره خودکار
-          </span>
-          <button class="icon-button" id="dataMenuButton" type="button" aria-haspopup="menu">
-            <span aria-hidden="true">•••</span>
-            <span class="sr-only">مدیریت داده‌ها</span>
-          </button>
-          <div class="data-menu" id="dataMenu" role="menu" hidden>
-            <button type="button" id="exportDataButton" role="menuitem">دریافت پشتیبان</button>
-            <button type="button" id="importDataButton" role="menuitem">بازیابی پشتیبان</button>
-            <input id="importDataInput" type="file" accept="application/json,.json" hidden />
+        <div class="account-summary">
+          <div class="account-copy">
+            <span class="mode-badge" id="modeBadge">بازیکن</span>
+            <strong id="activeSteamId"></strong>
           </div>
+          <span class="sync-status" id="syncStatus">
+            <span class="status-dot"></span>
+            همگام
+          </span>
+          <button class="secondary-button account-exit-button" id="leaveButton" type="button">
+            خروج
+          </button>
         </div>
       </header>
 
@@ -109,17 +199,17 @@
 
           <label class="field">
             <span>هیرو</span>
-            <input id="hero" name="hero" type="text" autocomplete="off" required />
+            <input id="hero" name="hero" type="text" maxlength="100" autocomplete="off" required />
           </label>
 
           <label class="field field-full">
             <span>بن‌ها</span>
-            <input id="bans" name="bans" type="text" autocomplete="off" />
+            <input id="bans" name="bans" type="text" maxlength="500" autocomplete="off" />
           </label>
 
           <label class="field field-full">
             <span>یادداشت بازی</span>
-            <textarea id="notes" name="notes" rows="5"></textarea>
+            <textarea id="notes" name="notes" maxlength="5000" rows="5"></textarea>
           </label>
 
           <fieldset class="result-field field-full">
@@ -186,6 +276,6 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="./core.js"></script>
-    <script src="./app.js"></script>
+    <script type="module" src="./app.js"></script>
   </body>
 </html>
