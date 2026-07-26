@@ -26,11 +26,20 @@
   const PERSIAN_WEEKDAY = new Intl.DateTimeFormat("fa-IR", {
     weekday: "long",
   });
+  const STEAM_ID_PATTERN = /^7656119\d{10}$/;
 
   function toEnglishDigits(value) {
     return String(value)
       .replace(/[۰-۹]/g, (digit) => "۰۱۲۳۴۵۶۷۸۹".indexOf(digit))
       .replace(/[٠-٩]/g, (digit) => "٠١٢٣٤٥٦٧٨٩".indexOf(digit));
+  }
+
+  function normalizeSteamId(value) {
+    return toEnglishDigits(value).replace(/\s+/g, "").trim();
+  }
+
+  function isValidSteamId(value) {
+    return STEAM_ID_PATTERN.test(normalizeSteamId(value));
   }
 
   function parseDateKey(dateKey) {
@@ -183,9 +192,12 @@
           return;
         }
 
-        const matches = Array.isArray(day.matches)
-          ? day.matches.map((match, index) => sanitizeMatch(match, index + 1))
-          : [];
+        const rawMatches = Array.isArray(day.matches)
+          ? day.matches
+          : day.matches && typeof day.matches === "object"
+            ? Object.values(day.matches)
+            : [];
+        const matches = rawMatches.map((match, index) => sanitizeMatch(match, index + 1));
 
         state.days[dateKey] = {
           completed: Boolean(day.completed),
@@ -195,6 +207,26 @@
     }
 
     return state;
+  }
+
+  function serializeDay(day) {
+    const matches = Object.fromEntries(
+      (day.matches || []).map((match, index) => {
+        const safeMatch = sanitizeMatch(match, index + 1);
+        return [
+          safeMatch.id,
+          {
+            ...safeMatch,
+            updatedAt: Date.now(),
+          },
+        ];
+      }),
+    );
+
+    return {
+      completed: Boolean(day.completed),
+      matches,
+    };
   }
 
   function buildWeekReport(state, weekIndex) {
@@ -251,9 +283,12 @@
     getWeekDates,
     getWeekIndex,
     getWeekLabel,
+    isValidSteamId,
+    normalizeSteamId,
     normalizeState,
     parseDateKey,
     sanitizeMatch,
+    serializeDay,
     summarizeMatches,
     summarizeWeek,
     toDateKey,
