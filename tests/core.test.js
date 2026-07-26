@@ -18,6 +18,12 @@ test("next weeks advance by seven days", () => {
   assert.equal(Core.getWeekLabel(1), "هفته دوم");
 });
 
+test("Steam ID accepts Persian digits and normalizes to SteamID64", () => {
+  assert.equal(Core.normalizeSteamId(" ۷۶۵۶۱۱۹۸۰۰۰۰۰۰۰۰۰ "), "76561198000000000");
+  assert.equal(Core.isValidSteamId("۷۶۵۶۱۱۹۸۰۰۰۰۰۰۰۰۰"), true);
+  assert.equal(Core.isValidSteamId("12345"), false);
+});
+
 test("match summary counts wins, losses and win rate", () => {
   const summary = Core.summarizeMatches([
     { result: "win" },
@@ -88,4 +94,28 @@ test("report includes daily and weekly totals", () => {
   assert.match(report, /۱ بازی/);
   assert.match(report, /هیرو: Axe/);
   assert.match(report, /کنترل بهتر لین/);
+});
+
+test("remote match maps normalize to arrays and serialize back to maps", () => {
+  const state = Core.normalizeState(
+    {
+      days: {
+        "2026-07-25": {
+          completed: false,
+          matches: {
+            alpha: {
+              id: "alpha",
+              number: 1,
+              hero: "Axe",
+              result: "win",
+            },
+          },
+        },
+      },
+    },
+    "2026-07-25",
+  );
+
+  assert.equal(state.days["2026-07-25"].matches.length, 1);
+  assert.equal(Core.serializeDay(state.days["2026-07-25"]).matches.alpha.hero, "Axe");
 });
