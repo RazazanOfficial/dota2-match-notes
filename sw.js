@@ -1,10 +1,12 @@
-const CACHE_NAME = "dota2-match-notes-v1";
+const CACHE_NAME = "dota2-match-notes-v3";
 const ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./core.js",
   "./app.js",
+  "./api-config.js",
+  "./api-client.js",
   "./manifest.webmanifest",
   "./favicon.svg",
 ];
