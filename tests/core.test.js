@@ -18,10 +18,12 @@ test("next weeks advance by seven days", () => {
   assert.equal(Core.getWeekLabel(1), "هفته دوم");
 });
 
-test("Steam ID accepts Persian digits and normalizes to SteamID64", () => {
-  assert.equal(Core.normalizeSteamId(" ۷۶۵۶۱۱۹۸۰۰۰۰۰۰۰۰۰ "), "76561198000000000");
-  assert.equal(Core.isValidSteamId("۷۶۵۶۱۱۹۸۰۰۰۰۰۰۰۰۰"), true);
-  assert.equal(Core.isValidSteamId("12345"), false);
+test("username is normalized and validated without external lookup", () => {
+  assert.equal(Core.normalizeUsername("  MeriJ.Dota  "), "merij.dota");
+  assert.equal(Core.isValidUsername("merij_dota-2"), true);
+  assert.equal(Core.isValidUsername("76561198000000000"), true);
+  assert.equal(Core.isValidUsername("ab"), false);
+  assert.equal(Core.isValidUsername("__proto__"), false);
 });
 
 test("match summary counts wins, losses and win rate", () => {

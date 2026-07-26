@@ -1,22 +1,5 @@
 import { apiConfig, isApiConfigured } from "./api-config.js";
 
-const GOOGLE_MESSAGE_ORIGINS = [
-  "https://script.google.com",
-  "https://script.googleusercontent.com",
-];
-
-function isGoogleMessageOrigin(origin) {
-  try {
-    const { hostname, protocol } = new URL(origin);
-    return (
-      protocol === "https:" &&
-      (hostname === "script.google.com" || hostname.endsWith(".googleusercontent.com"))
-    );
-  } catch {
-    return GOOGLE_MESSAGE_ORIGINS.includes(origin);
-  }
-}
-
 function createChannel() {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
@@ -73,7 +56,7 @@ function post(action, payload = {}) {
     }
 
     function handleMessage(event) {
-      if (!isGoogleMessageOrigin(event.origin) || event.data?.channel !== channel) return;
+      if (event.source !== iframe.contentWindow || event.data?.channel !== channel) return;
       if (!event.data?.ok) {
         cleanup(new Error(event.data?.error || "عملیات انجام نشد"));
         return;
@@ -106,36 +89,36 @@ export function createDriveApiService() {
     return { configured: false };
   }
 
-  async function readProfile(steamId) {
-    const response = await jsonp("view", { steamId });
+  async function readProfile(username) {
+    const response = await jsonp("view", { username });
     cachedProfile = response.profile;
     return response.profile;
   }
 
-  async function enterAsPlayer(steamId, password) {
-    const response = await post("auth", { steamId, password });
-    credentials = { steamId, password };
+  async function enterAsPlayer(username, password) {
+    const response = await post("auth", { username, password });
+    credentials = { username, password };
     cachedProfile = response.profile;
     return {
       mode: "player",
-      steamId,
+      username,
       isNew: Boolean(response.isNew),
     };
   }
 
-  async function enterAsCoach(steamId) {
+  async function enterAsCoach(username) {
     credentials = null;
-    await readProfile(steamId);
-    return { mode: "coach", steamId, isNew: false };
+    await readProfile(username);
+    return { mode: "coach", username, isNew: false };
   }
 
-  function watchProfile(steamId, onData, onError) {
+  function watchProfile(username, onData, onError) {
     let stopped = false;
     if (cachedProfile) queueMicrotask(() => onData(cachedProfile));
 
     async function refresh() {
       try {
-        const profile = await readProfile(steamId);
+        const profile = await readProfile(username);
         if (!stopped) onData(profile);
       } catch (error) {
         if (!stopped) onError?.(error);
@@ -150,13 +133,13 @@ export function createDriveApiService() {
     };
   }
 
-  async function saveDay(steamId, dateKey, day) {
-    if (!credentials || credentials.steamId !== steamId) {
+  async function saveDay(username, dateKey, day) {
+    if (!credentials || credentials.username !== username) {
       throw new Error("دسترسی ثبت اطلاعات وجود ندارد");
     }
 
     const response = await post("saveDay", {
-      steamId,
+      username,
       password: credentials.password,
       dateKey,
       day: window.DotaNotesCore.serializeDay(day),

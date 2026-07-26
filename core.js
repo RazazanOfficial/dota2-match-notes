@@ -26,7 +26,8 @@
   const PERSIAN_WEEKDAY = new Intl.DateTimeFormat("fa-IR", {
     weekday: "long",
   });
-  const STEAM_ID_PATTERN = /^7656119\d{10}$/;
+  const USERNAME_PATTERN = /^[a-z0-9._-]{3,32}$/;
+  const RESERVED_USERNAMES = new Set(["__proto__", "prototype", "constructor"]);
 
   function toEnglishDigits(value) {
     return String(value)
@@ -34,12 +35,13 @@
       .replace(/[٠-٩]/g, (digit) => "٠١٢٣٤٥٦٧٨٩".indexOf(digit));
   }
 
-  function normalizeSteamId(value) {
-    return toEnglishDigits(value).replace(/\s+/g, "").trim();
+  function normalizeUsername(value) {
+    return String(value || "").normalize("NFKC").trim().toLowerCase();
   }
 
-  function isValidSteamId(value) {
-    return STEAM_ID_PATTERN.test(normalizeSteamId(value));
+  function isValidUsername(value) {
+    const username = normalizeUsername(value);
+    return USERNAME_PATTERN.test(username) && !RESERVED_USERNAMES.has(username);
   }
 
   function parseDateKey(dateKey) {
@@ -283,8 +285,8 @@
     getWeekDates,
     getWeekIndex,
     getWeekLabel,
-    isValidSteamId,
-    normalizeSteamId,
+    isValidUsername,
+    normalizeUsername,
     normalizeState,
     parseDateKey,
     sanitizeMatch,

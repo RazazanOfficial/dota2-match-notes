@@ -12,15 +12,15 @@
   </head>
   <body>
     <section class="loading-screen" id="loadingScreen">
-      <span class="loading-mark" aria-hidden="true">D2</span>
+      <span class="loading-mark" lang="en" dir="ltr" aria-hidden="true">D2</span>
       <span class="loading-line"></span>
     </section>
 
     <section class="access-screen" id="accessScreen" hidden>
       <header class="access-brand">
-        <span class="brand-mark" aria-hidden="true">D2</span>
+        <span class="brand-mark" lang="en" dir="ltr" aria-hidden="true">D2</span>
         <div>
-          <p class="eyebrow">MATCH JOURNAL</p>
+          <p class="eyebrow" lang="en" dir="ltr">MATCH JOURNAL</p>
           <h1>دفتر مچ‌های دوتا ۲</h1>
         </div>
       </header>
@@ -46,15 +46,16 @@
 
         <form class="access-form" id="playerAccessForm" hidden>
           <label class="field">
-            <span>آیدی استیم</span>
+            <span>نام کاربری</span>
             <input
-              id="playerSteamId"
-              name="steamId"
+              id="playerUsername"
+              name="username"
               type="text"
-              inputmode="numeric"
+              lang="en"
+              dir="ltr"
               autocomplete="username"
-              placeholder="آیدی استیم را وارد کنید"
-              maxlength="17"
+              placeholder="نام کاربری"
+              maxlength="32"
               required
             />
           </label>
@@ -80,15 +81,16 @@
 
         <form class="access-form" id="coachAccessForm" hidden>
           <label class="field">
-            <span>آیدی استیم بازیکن</span>
+            <span>نام کاربری بازیکن</span>
             <input
-              id="coachSteamId"
-              name="steamId"
+              id="coachUsername"
+              name="username"
               type="text"
-              inputmode="numeric"
+              lang="en"
+              dir="ltr"
               autocomplete="off"
-              placeholder="آیدی استیم را وارد کنید"
-              maxlength="17"
+              placeholder="نام کاربری بازیکن"
+              maxlength="32"
               required
             />
           </label>
@@ -109,9 +111,9 @@
     <div class="app-shell" id="appShell" hidden>
       <header class="topbar">
         <div class="brand">
-          <span class="brand-mark" aria-hidden="true">D2</span>
+          <span class="brand-mark" lang="en" dir="ltr" aria-hidden="true">D2</span>
           <div>
-            <p class="eyebrow">MATCH JOURNAL</p>
+            <p class="eyebrow" lang="en" dir="ltr">MATCH JOURNAL</p>
             <h1>دفتر مچ‌های دوتا ۲</h1>
           </div>
         </div>
@@ -119,7 +121,7 @@
         <div class="account-summary">
           <div class="account-copy">
             <span class="mode-badge" id="modeBadge">بازیکن</span>
-            <strong id="activeSteamId"></strong>
+            <strong id="activeUsername" lang="en" dir="ltr"></strong>
           </div>
           <span class="sync-status" id="syncStatus">
             <span class="status-dot"></span>

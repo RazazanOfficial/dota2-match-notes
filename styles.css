@@ -1,3 +1,6 @@
+@import url("https://cdn.jsdelivr.net/npm/@fontsource-variable/vazirmatn@5.3.0/index.css");
+@import url("https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5.3.0/index.css");
+
 :root {
   color-scheme: dark;
   --bg: #090a0d;
@@ -22,7 +25,7 @@
   --radius-md: 13px;
   --radius-sm: 9px;
   font-family:
-    Vazirmatn, IRANSansX, "Segoe UI", Tahoma, Arial, sans-serif;
+    "Vazirmatn Variable", Vazirmatn, Tahoma, Arial, sans-serif;
 }
 
 * {
@@ -47,6 +50,18 @@ body {
     radial-gradient(circle at 92% 0%, rgba(208, 71, 63, 0.09), transparent 29rem),
     radial-gradient(circle at 4% 90%, rgba(74, 92, 120, 0.08), transparent 32rem),
     var(--bg);
+}
+
+:lang(en),
+input[name="username"],
+#activeUsername {
+  font-family: "Inter Variable", "Segoe UI", Arial, sans-serif;
+}
+
+input[name="username"],
+#activeUsername {
+  direction: ltr;
+  text-align: left;
 }
 
 .loading-screen,

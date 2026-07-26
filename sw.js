@@ -1,4 +1,4 @@
-const CACHE_NAME = "dota2-match-notes-v3";
+const CACHE_NAME = "dota2-match-notes-v5";
 const ASSETS = [
   "./",
   "./index.html",

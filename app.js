@@ -19,16 +19,16 @@ import { createDriveApiService } from "./api-client.js";
     accessTitle: document.querySelector("#accessTitle"),
     roleChooser: document.querySelector("#roleChooser"),
     playerAccessForm: document.querySelector("#playerAccessForm"),
-    playerSteamId: document.querySelector("#playerSteamId"),
+    playerUsername: document.querySelector("#playerUsername"),
     playerPassword: document.querySelector("#playerPassword"),
     playerAccessError: document.querySelector("#playerAccessError"),
     coachAccessForm: document.querySelector("#coachAccessForm"),
-    coachSteamId: document.querySelector("#coachSteamId"),
+    coachUsername: document.querySelector("#coachUsername"),
     coachAccessError: document.querySelector("#coachAccessError"),
     setupState: document.querySelector("#setupState"),
     appShell: document.querySelector("#appShell"),
     modeBadge: document.querySelector("#modeBadge"),
-    activeSteamId: document.querySelector("#activeSteamId"),
+    activeUsername: document.querySelector("#activeUsername"),
     syncStatus: document.querySelector("#syncStatus"),
     leaveButton: document.querySelector("#leaveButton"),
     calendar: document.querySelector("#calendar"),
@@ -107,18 +107,19 @@ import { createDriveApiService } from "./api-client.js";
       role === "player" ? "ورود یا ساخت حساب" : "مشاهده گزارش بازیکن";
 
     window.setTimeout(() => {
-      (role === "player" ? elements.playerSteamId : elements.coachSteamId).focus();
+      (role === "player" ? elements.playerUsername : elements.coachUsername).focus();
     }, 0);
   }
 
-  function validateSteamId(rawValue, errorElement) {
-    const steamId = Core.normalizeSteamId(rawValue);
-    if (!Core.isValidSteamId(steamId)) {
-      errorElement.textContent = "SteamID64 معتبر وارد کنید";
+  function validateUsername(rawValue, errorElement) {
+    const username = Core.normalizeUsername(rawValue);
+    if (!Core.isValidUsername(username)) {
+      errorElement.textContent =
+        "نام کاربری باید ۳ تا ۳۲ نویسه و شامل حروف انگلیسی، عدد، نقطه، خط تیره یا زیرخط باشد";
       return null;
     }
     errorElement.textContent = "";
-    return steamId;
+    return username;
   }
 
   function setFormBusy(form, busy) {
@@ -129,8 +130,8 @@ import { createDriveApiService } from "./api-client.js";
 
   async function handlePlayerAccess(event) {
     event.preventDefault();
-    const steamId = validateSteamId(elements.playerSteamId.value, elements.playerAccessError);
-    if (!steamId) return;
+    const username = validateUsername(elements.playerUsername.value, elements.playerAccessError);
+    if (!username) return;
 
     const password = elements.playerPassword.value;
     if (password.length < 4) {
@@ -142,7 +143,7 @@ import { createDriveApiService } from "./api-client.js";
     elements.playerAccessError.textContent = "";
 
     try {
-      const nextSession = await service.enterAsPlayer(steamId, password);
+      const nextSession = await service.enterAsPlayer(username, password);
       await openSession(nextSession);
       if (nextSession.isNew) showToast("حساب بازیکن ساخته شد");
     } catch (error) {
@@ -154,14 +155,14 @@ import { createDriveApiService } from "./api-client.js";
 
   async function handleCoachAccess(event) {
     event.preventDefault();
-    const steamId = validateSteamId(elements.coachSteamId.value, elements.coachAccessError);
-    if (!steamId) return;
+    const username = validateUsername(elements.coachUsername.value, elements.coachAccessError);
+    if (!username) return;
 
     setFormBusy(elements.coachAccessForm, true);
     elements.coachAccessError.textContent = "";
 
     try {
-      const nextSession = await service.enterAsCoach(steamId);
+      const nextSession = await service.enterAsCoach(username);
       await openSession(nextSession);
     } catch (error) {
       elements.coachAccessError.textContent = error.message;
@@ -179,13 +180,13 @@ import { createDriveApiService } from "./api-client.js";
     elements.appShell.hidden = false;
     elements.modeBadge.textContent = session.mode === "player" ? "بازیکن" : "مربی";
     elements.modeBadge.classList.toggle("is-coach", session.mode === "coach");
-    elements.activeSteamId.textContent = session.steamId;
+    elements.activeUsername.textContent = session.username;
     setSyncState("syncing");
     render();
 
     if (stopProfileWatch) stopProfileWatch();
     stopProfileWatch = service.watchProfile(
-      session.steamId,
+      session.username,
       (profile) => {
         const activeWeek = state.activeWeek;
         state = Core.normalizeState(profile, ANCHOR_DATE);
@@ -243,7 +244,7 @@ import { createDriveApiService } from "./api-client.js";
     setSyncState("syncing");
 
     try {
-      await service.saveDay(session.steamId, dateKey, day);
+      await service.saveDay(session.username, dateKey, day);
       setSyncState("synced");
       return true;
     } catch (error) {
