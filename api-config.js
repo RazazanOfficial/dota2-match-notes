@@ -1,6 +1,6 @@
 export const apiConfig = {
   webAppUrl:
-    "https://script.google.com/macros/s/AKfycbxiAeEj194pF_9SVbdheBAe1dcuUYFQ7WHsPbWmwnjZ1U5AGITT8vJ4eKBhMH_F-0Fw/exec",
+    "https://script.google.com/macros/s/AKfycbx-cUlVFfImRM1XY7ynocmuf8OOkmysgsZSO68rVaxl2bVPBQQ4aOtITmMpYe8WtbW9/exec",
 };
 
 export const isApiConfigured =
