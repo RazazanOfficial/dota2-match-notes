@@ -1,16 +1,36 @@
+import { createDriveApiService } from "./api-client.js";
+
 (function initializeApp() {
   "use strict";
 
   const Core = window.DotaNotesCore;
-  const STORAGE_KEY = "dota2-match-notes:v1";
   const ANCHOR_DATE = "2026-07-25";
   const FA_NUMBER = new Intl.NumberFormat("fa-IR");
   const FA_PERCENT = new Intl.NumberFormat("fa-IR", {
     style: "percent",
     maximumFractionDigits: 0,
   });
+  const service = createDriveApiService();
 
   const elements = {
+    loadingScreen: document.querySelector("#loadingScreen"),
+    accessScreen: document.querySelector("#accessScreen"),
+    accessKicker: document.querySelector("#accessKicker"),
+    accessTitle: document.querySelector("#accessTitle"),
+    roleChooser: document.querySelector("#roleChooser"),
+    playerAccessForm: document.querySelector("#playerAccessForm"),
+    playerSteamId: document.querySelector("#playerSteamId"),
+    playerPassword: document.querySelector("#playerPassword"),
+    playerAccessError: document.querySelector("#playerAccessError"),
+    coachAccessForm: document.querySelector("#coachAccessForm"),
+    coachSteamId: document.querySelector("#coachSteamId"),
+    coachAccessError: document.querySelector("#coachAccessError"),
+    setupState: document.querySelector("#setupState"),
+    appShell: document.querySelector("#appShell"),
+    modeBadge: document.querySelector("#modeBadge"),
+    activeSteamId: document.querySelector("#activeSteamId"),
+    syncStatus: document.querySelector("#syncStatus"),
+    leaveButton: document.querySelector("#leaveButton"),
     calendar: document.querySelector("#calendar"),
     weekLabel: document.querySelector("#weekLabel"),
     weekTitle: document.querySelector("#weekTitle"),
@@ -36,12 +56,6 @@
     reportOutput: document.querySelector("#reportOutput"),
     copyReportButton: document.querySelector("#copyReportButton"),
     downloadReportButton: document.querySelector("#downloadReportButton"),
-    dataMenuButton: document.querySelector("#dataMenuButton"),
-    dataMenu: document.querySelector("#dataMenu"),
-    exportDataButton: document.querySelector("#exportDataButton"),
-    importDataButton: document.querySelector("#importDataButton"),
-    importDataInput: document.querySelector("#importDataInput"),
-    saveStatus: document.querySelector("#saveStatus"),
     confirmDialog: document.querySelector("#confirmDialog"),
     confirmTitle: document.querySelector("#confirmTitle"),
     confirmMessage: document.querySelector("#confirmMessage"),
@@ -50,28 +64,162 @@
     toast: document.querySelector("#toast"),
   };
 
-  let state = loadState();
+  let state = Core.normalizeState(null, ANCHOR_DATE);
+  state.activeWeek = Core.getWeekIndex(ANCHOR_DATE);
+  let session = null;
+  let stopProfileWatch = null;
   let editing = { dateKey: null, matchId: null };
   let confirmCallback = null;
   let toastTimer = null;
 
-  if (!localStorage.getItem(STORAGE_KEY)) {
-    state.activeWeek = Core.getWeekIndex(ANCHOR_DATE);
-  }
+  function showAccessScreen() {
+    elements.loadingScreen.hidden = true;
+    elements.appShell.hidden = true;
+    elements.accessScreen.hidden = false;
+    resetAccessView();
 
-  function loadState() {
-    try {
-      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      return Core.normalizeState(stored, ANCHOR_DATE);
-    } catch {
-      return Core.normalizeState(null, ANCHOR_DATE);
+    if (!service.configured) {
+      elements.roleChooser.hidden = true;
+      elements.accessTitle.textContent = "راه‌اندازی";
+      elements.accessKicker.textContent = "پیکربندی";
+      elements.setupState.hidden = false;
     }
   }
 
-  function saveState() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    elements.saveStatus.classList.add("is-saved");
-    window.setTimeout(() => elements.saveStatus.classList.remove("is-saved"), 450);
+  function resetAccessView() {
+    elements.accessKicker.textContent = "دسترسی";
+    elements.accessTitle.textContent = "نوع ورود را انتخاب کنید";
+    elements.roleChooser.hidden = false;
+    elements.playerAccessForm.hidden = true;
+    elements.coachAccessForm.hidden = true;
+    elements.setupState.hidden = true;
+    elements.playerAccessError.textContent = "";
+    elements.coachAccessError.textContent = "";
+    elements.playerPassword.value = "";
+  }
+
+  function showRoleForm(role) {
+    elements.roleChooser.hidden = true;
+    elements.playerAccessForm.hidden = role !== "player";
+    elements.coachAccessForm.hidden = role !== "coach";
+    elements.accessKicker.textContent = role === "player" ? "بازیکن" : "مربی";
+    elements.accessTitle.textContent =
+      role === "player" ? "ورود یا ساخت حساب" : "مشاهده گزارش بازیکن";
+
+    window.setTimeout(() => {
+      (role === "player" ? elements.playerSteamId : elements.coachSteamId).focus();
+    }, 0);
+  }
+
+  function validateSteamId(rawValue, errorElement) {
+    const steamId = Core.normalizeSteamId(rawValue);
+    if (!Core.isValidSteamId(steamId)) {
+      errorElement.textContent = "SteamID64 معتبر وارد کنید";
+      return null;
+    }
+    errorElement.textContent = "";
+    return steamId;
+  }
+
+  function setFormBusy(form, busy) {
+    form.querySelectorAll("input, button").forEach((element) => {
+      element.disabled = busy;
+    });
+  }
+
+  async function handlePlayerAccess(event) {
+    event.preventDefault();
+    const steamId = validateSteamId(elements.playerSteamId.value, elements.playerAccessError);
+    if (!steamId) return;
+
+    const password = elements.playerPassword.value;
+    if (password.length < 4) {
+      elements.playerAccessError.textContent = "رمز باید حداقل ۴ نویسه داشته باشد";
+      return;
+    }
+
+    setFormBusy(elements.playerAccessForm, true);
+    elements.playerAccessError.textContent = "";
+
+    try {
+      const nextSession = await service.enterAsPlayer(steamId, password);
+      await openSession(nextSession);
+      if (nextSession.isNew) showToast("حساب بازیکن ساخته شد");
+    } catch (error) {
+      elements.playerAccessError.textContent = error.message;
+    } finally {
+      setFormBusy(elements.playerAccessForm, false);
+    }
+  }
+
+  async function handleCoachAccess(event) {
+    event.preventDefault();
+    const steamId = validateSteamId(elements.coachSteamId.value, elements.coachAccessError);
+    if (!steamId) return;
+
+    setFormBusy(elements.coachAccessForm, true);
+    elements.coachAccessError.textContent = "";
+
+    try {
+      const nextSession = await service.enterAsCoach(steamId);
+      await openSession(nextSession);
+    } catch (error) {
+      elements.coachAccessError.textContent = error.message;
+    } finally {
+      setFormBusy(elements.coachAccessForm, false);
+    }
+  }
+
+  async function openSession(nextSession) {
+    session = nextSession;
+    state = Core.normalizeState(null, ANCHOR_DATE);
+    state.activeWeek = Core.getWeekIndex(ANCHOR_DATE);
+
+    elements.accessScreen.hidden = true;
+    elements.appShell.hidden = false;
+    elements.modeBadge.textContent = session.mode === "player" ? "بازیکن" : "مربی";
+    elements.modeBadge.classList.toggle("is-coach", session.mode === "coach");
+    elements.activeSteamId.textContent = session.steamId;
+    setSyncState("syncing");
+    render();
+
+    if (stopProfileWatch) stopProfileWatch();
+    stopProfileWatch = service.watchProfile(
+      session.steamId,
+      (profile) => {
+        const activeWeek = state.activeWeek;
+        state = Core.normalizeState(profile, ANCHOR_DATE);
+        state.activeWeek = activeWeek;
+        render();
+        setSyncState("synced");
+      },
+      (error) => {
+        setSyncState("error");
+        showToast(error.message);
+      },
+    );
+  }
+
+  async function leaveSession() {
+    if (stopProfileWatch) {
+      stopProfileWatch();
+      stopProfileWatch = null;
+    }
+    await service.leave();
+    session = null;
+    state = Core.normalizeState(null, ANCHOR_DATE);
+    showAccessScreen();
+  }
+
+  function setSyncState(status) {
+    elements.syncStatus.classList.toggle("is-syncing", status === "syncing");
+    elements.syncStatus.classList.toggle("is-error", status === "error");
+    elements.syncStatus.lastChild.textContent =
+      status === "syncing" ? "در حال ثبت" : status === "error" ? "خطا" : "همگام";
+  }
+
+  function isPlayer() {
+    return session?.mode === "player";
   }
 
   function getDay(dateKey) {
@@ -79,6 +227,33 @@
       state.days[dateKey] = { completed: false, matches: [] };
     }
     return state.days[dateKey];
+  }
+
+  function cloneDay(day) {
+    return JSON.parse(JSON.stringify(day || { completed: false, matches: [] }));
+  }
+
+  async function mutateDay(dateKey, mutation) {
+    if (!isPlayer()) return false;
+    const existed = Boolean(state.days[dateKey]);
+    const previous = cloneDay(state.days[dateKey]);
+    const day = getDay(dateKey);
+    mutation(day);
+    render();
+    setSyncState("syncing");
+
+    try {
+      await service.saveDay(session.steamId, dateKey, day);
+      setSyncState("synced");
+      return true;
+    } catch (error) {
+      if (existed) state.days[dateKey] = previous;
+      else delete state.days[dateKey];
+      render();
+      setSyncState("error");
+      showToast(error.message);
+      return false;
+    }
   }
 
   function render() {
@@ -102,6 +277,11 @@
     const todayKey = Core.toDateKey(new Date());
     const isToday = dateKey === todayKey;
     const sortedMatches = day.matches.slice().sort((a, b) => a.number - b.number);
+    const completeControl = isPlayer()
+      ? `<button class="day-complete-button" type="button" data-action="toggle-complete">
+          ${day.completed ? "روز تکمیل شد" : "اتمام روز"}
+        </button>`
+      : `<span class="day-complete-readonly">${day.completed ? "روز تکمیل شد" : "روز باز"}</span>`;
 
     return `
       <article class="day-card${isToday ? " is-today" : ""}${day.completed ? " is-complete" : ""}" data-date="${dateKey}">
@@ -113,7 +293,11 @@
             </p>
             <h3 class="day-date">${escapeHtml(Core.formatDayDate(date))}</h3>
           </div>
-          <button class="add-match-button" type="button" data-action="add" aria-label="افزودن بازی">+</button>
+          ${
+            isPlayer()
+              ? '<button class="add-match-button" type="button" data-action="add" aria-label="افزودن بازی">+</button>'
+              : ""
+          }
         </header>
 
         <div class="matches">
@@ -127,9 +311,7 @@
         <footer class="day-summary">
           <div class="day-stat"><span>برد</span><strong>${FA_NUMBER.format(summary.wins)}</strong></div>
           <div class="day-stat"><span>باخت</span><strong>${FA_NUMBER.format(summary.losses)}</strong></div>
-          <button class="day-complete-button" type="button" data-action="toggle-complete">
-            ${day.completed ? "روز تکمیل شد" : "اتمام روز"}
-          </button>
+          ${completeControl}
         </footer>
       </article>
     `;
@@ -138,16 +320,12 @@
   function renderMatch(match) {
     const resultLabel = match.result === "win" ? "برد" : "باخت";
     const resultClass = match.result === "win" ? "is-win" : "is-loss";
+    const editAttributes = isPlayer()
+      ? `data-action="edit" tabindex="0" role="button" aria-label="ویرایش بازی ${FA_NUMBER.format(match.number)}"`
+      : "";
 
     return `
-      <article
-        class="match-card ${resultClass}"
-        data-action="edit"
-        data-match-id="${escapeAttribute(match.id)}"
-        tabindex="0"
-        role="button"
-        aria-label="ویرایش بازی ${FA_NUMBER.format(match.number)}"
-      >
+      <article class="match-card ${resultClass}" ${editAttributes} data-match-id="${escapeAttribute(match.id)}">
         <div class="match-topline">
           <span class="match-number">بازی ${FA_NUMBER.format(match.number)}</span>
           <span class="result-badge ${resultClass}">${resultLabel}</span>
@@ -160,6 +338,7 @@
   }
 
   function openMatchDialog(dateKey, matchId = null) {
+    if (!isPlayer()) return;
     const day = getDay(dateKey);
     const match = day.matches.find((item) => item.id === matchId);
     const date = Core.parseDateKey(dateKey);
@@ -189,10 +368,10 @@
     window.setTimeout(() => elements.hero.focus(), 0);
   }
 
-  function handleMatchSubmit(event) {
+  async function handleMatchSubmit(event) {
     event.preventDefault();
-    const day = getDay(editing.dateKey);
     const formData = new FormData(elements.matchForm);
+    const day = getDay(editing.dateKey);
     const existingIndex = day.matches.findIndex((match) => match.id === editing.matchId);
     const existing = existingIndex >= 0 ? day.matches[existingIndex] : null;
     const match = Core.sanitizeMatch(
@@ -208,47 +387,50 @@
       day.matches.length + 1,
     );
 
-    if (existingIndex >= 0) {
-      day.matches[existingIndex] = match;
-    } else {
-      day.matches.push(match);
-    }
+    setFormBusy(elements.matchForm, true);
+    const saved = await mutateDay(editing.dateKey, (nextDay) => {
+      const index = nextDay.matches.findIndex((item) => item.id === editing.matchId);
+      if (index >= 0) nextDay.matches[index] = match;
+      else nextDay.matches.push(match);
+      nextDay.completed = false;
+    });
+    setFormBusy(elements.matchForm, false);
 
-    day.completed = false;
-    saveState();
-    render();
-    elements.matchDialog.close();
-    showToast(existing ? "بازی ویرایش شد" : "بازی ثبت شد");
+    if (saved) {
+      elements.matchDialog.close();
+      showToast(existing ? "بازی ویرایش شد" : "بازی ثبت شد");
+    }
   }
 
   function requestDeleteMatch() {
     if (!editing.matchId || !editing.dateKey) return;
 
-    openConfirm("حذف بازی", "این بازی حذف شود؟", () => {
-      const day = getDay(editing.dateKey);
-      day.matches = day.matches.filter((match) => match.id !== editing.matchId);
-      day.completed = false;
-      saveState();
-      render();
-      elements.matchDialog.close();
-      showToast("بازی حذف شد");
+    openConfirm("حذف بازی", "این بازی حذف شود؟", async () => {
+      const saved = await mutateDay(editing.dateKey, (day) => {
+        day.matches = day.matches.filter((match) => match.id !== editing.matchId);
+        day.completed = false;
+      });
+      if (saved) {
+        elements.matchDialog.close();
+        showToast("بازی حذف شد");
+      }
     });
   }
 
-  function toggleComplete(dateKey) {
+  async function toggleComplete(dateKey) {
     const day = getDay(dateKey);
-
     if (!day.matches.length && !day.completed) {
       showToast("بازی‌ای برای این روز ثبت نشده");
       return;
     }
 
-    day.completed = !day.completed;
-    saveState();
-    render();
+    const nextCompleted = !day.completed;
+    const saved = await mutateDay(dateKey, (nextDay) => {
+      nextDay.completed = nextCompleted;
+    });
 
-    if (day.completed) {
-      const summary = Core.summarizeMatches(day.matches);
+    if (saved && nextCompleted) {
+      const summary = Core.summarizeMatches(getDay(dateKey).matches);
       showToast(
         `${FA_NUMBER.format(summary.wins)} برد و ${FA_NUMBER.format(summary.losses)} باخت`,
       );
@@ -257,22 +439,19 @@
 
   function changeWeek(amount) {
     state.activeWeek = Math.max(0, state.activeWeek + amount);
-    saveState();
     render();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function openWeekReport() {
-    const report = Core.buildWeekReport(state, state.activeWeek);
     elements.reportWeekLabel.textContent = Core.getWeekLabel(state.activeWeek);
-    elements.reportOutput.value = report;
+    elements.reportOutput.value = Core.buildWeekReport(state, state.activeWeek);
     elements.reportDialog.showModal();
   }
 
   async function copyReport() {
-    const value = elements.reportOutput.value;
     try {
-      await navigator.clipboard.writeText(value);
+      await navigator.clipboard.writeText(elements.reportOutput.value);
     } catch {
       elements.reportOutput.select();
       document.execCommand("copy");
@@ -282,51 +461,7 @@
 
   function downloadReport() {
     const filename = `dota2-${Core.getWeekLabel(state.activeWeek).replace(" ", "-")}.txt`;
-    downloadFile(filename, elements.reportOutput.value, "text/plain;charset=utf-8");
-    showToast("گزارش آماده شد");
-  }
-
-  function exportData() {
-    const exportState = {
-      ...state,
-      exportedAt: new Date().toISOString(),
-    };
-    const content = JSON.stringify(exportState, null, 2);
-    downloadFile(
-      `dota2-match-notes-${Core.toDateKey(new Date())}.json`,
-      content,
-      "application/json",
-    );
-    closeDataMenu();
-    showToast("فایل پشتیبان آماده شد");
-  }
-
-  function importData(file) {
-    if (!file) return;
-    const reader = new FileReader();
-
-    reader.addEventListener("load", () => {
-      try {
-        const parsed = JSON.parse(reader.result);
-        const normalized = Core.normalizeState(parsed, ANCHOR_DATE);
-        openConfirm("بازیابی پشتیبان", "داده‌های فعلی جایگزین شوند؟", () => {
-          state = normalized;
-          saveState();
-          render();
-          showToast("پشتیبان بازیابی شد");
-        });
-      } catch {
-        showToast("فایل پشتیبان معتبر نیست");
-      } finally {
-        elements.importDataInput.value = "";
-      }
-    });
-
-    reader.readAsText(file);
-  }
-
-  function downloadFile(filename, content, type) {
-    const blob = new Blob([content], { type });
+    const blob = new Blob([elements.reportOutput.value], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -335,6 +470,7 @@
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
+    showToast("گزارش آماده شد");
   }
 
   function openConfirm(title, message, callback) {
@@ -353,13 +489,7 @@
     window.clearTimeout(toastTimer);
     elements.toast.textContent = message;
     elements.toast.classList.add("is-visible");
-    toastTimer = window.setTimeout(() => {
-      elements.toast.classList.remove("is-visible");
-    }, 2300);
-  }
-
-  function closeDataMenu() {
-    elements.dataMenu.hidden = true;
+    toastTimer = window.setTimeout(() => elements.toast.classList.remove("is-visible"), 2300);
   }
 
   function escapeHtml(value) {
@@ -372,17 +502,27 @@
     return escapeHtml(value).replace(/"/g, "&quot;");
   }
 
+  elements.roleChooser.addEventListener("click", (event) => {
+    const roleButton = event.target.closest("[data-role]");
+    if (roleButton) showRoleForm(roleButton.dataset.role);
+  });
+  document
+    .querySelectorAll(".access-back-button")
+    .forEach((button) => button.addEventListener("click", resetAccessView));
+  elements.playerAccessForm.addEventListener("submit", handlePlayerAccess);
+  elements.coachAccessForm.addEventListener("submit", handleCoachAccess);
+  elements.leaveButton.addEventListener("click", leaveSession);
+
   elements.calendar.addEventListener("click", (event) => {
     const card = event.target.closest(".day-card");
-    if (!card) return;
-
     const actionTarget = event.target.closest("[data-action]");
-    if (!actionTarget) return;
+    if (!card || !actionTarget) return;
 
-    const action = actionTarget.dataset.action;
-    if (action === "add") openMatchDialog(card.dataset.date);
-    if (action === "edit") openMatchDialog(card.dataset.date, actionTarget.dataset.matchId);
-    if (action === "toggle-complete") toggleComplete(card.dataset.date);
+    if (actionTarget.dataset.action === "add") openMatchDialog(card.dataset.date);
+    if (actionTarget.dataset.action === "edit") {
+      openMatchDialog(card.dataset.date, actionTarget.dataset.matchId);
+    }
+    if (actionTarget.dataset.action === "toggle-complete") toggleComplete(card.dataset.date);
   });
 
   elements.calendar.addEventListener("keydown", (event) => {
@@ -400,27 +540,11 @@
   elements.nextWeekButton.addEventListener("click", () => changeWeek(1));
   elements.currentWeekButton.addEventListener("click", () => {
     state.activeWeek = Core.getWeekIndex(state.anchorDate);
-    saveState();
     render();
   });
   elements.weekReportButton.addEventListener("click", openWeekReport);
   elements.copyReportButton.addEventListener("click", copyReport);
   elements.downloadReportButton.addEventListener("click", downloadReport);
-
-  elements.dataMenuButton.addEventListener("click", (event) => {
-    event.stopPropagation();
-    elements.dataMenu.hidden = !elements.dataMenu.hidden;
-  });
-  elements.dataMenu.addEventListener("click", (event) => event.stopPropagation());
-  elements.exportDataButton.addEventListener("click", exportData);
-  elements.importDataButton.addEventListener("click", () => {
-    closeDataMenu();
-    elements.importDataInput.click();
-  });
-  elements.importDataInput.addEventListener("change", () => {
-    importData(elements.importDataInput.files[0]);
-  });
-  document.addEventListener("click", closeDataMenu);
 
   document.querySelectorAll("[data-close-dialog]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -447,5 +571,5 @@
     });
   }
 
-  render();
+  showAccessScreen();
 })();
