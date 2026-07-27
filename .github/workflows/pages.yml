@@ -1,4 +1,4 @@
-name: Deploy static content to Pages
+name: Deploy Next.js to Pages
 
 on:
   push:
@@ -24,16 +24,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build static site
+        run: npm run build
+        env:
+          PAGES_BASE_PATH: /dota2-match-notes
+          NEXT_PUBLIC_API_URL: https://script.google.com/macros/s/AKfycbxXf0E22rmk1tJNgWbmc-fGngKvghg11LqpfSv6ZTxe9M5qkYYN86T-GC_B6SEWYJuL/exec
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "."
+          path: out
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy to Pages
         id: deployment
         uses: actions/deploy-pages@v5
