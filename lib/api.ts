@@ -66,8 +66,8 @@ function post(action: string, payload: Record<string, unknown>) {
     const form = document.createElement("form");
     const input = document.createElement("input");
     const timeout = window.setTimeout(
-      () => cleanup(new Error("پاسخی از سرور دریافت نشد")),
-      30_000,
+      () => cleanup(new Error("پاسخ سرور بیش از حد طول کشید؛ دوباره تلاش کنید")),
+      45_000,
     );
 
     function cleanup(error?: Error, value?: ApiResponse) {
@@ -80,7 +80,7 @@ function post(action: string, payload: Record<string, unknown>) {
     }
 
     function handleMessage(event: MessageEvent<ApiResponse>) {
-      if (event.source !== iframe.contentWindow || event.data?.channel !== channel) return;
+      if (event.data?.channel !== channel) return;
       if (!event.data?.ok) {
         cleanup(new Error(event.data?.error || "عملیات انجام نشد"));
         return;
@@ -93,6 +93,7 @@ function post(action: string, payload: Record<string, unknown>) {
     iframe.hidden = true;
     form.hidden = true;
     form.method = "POST";
+    form.acceptCharset = "UTF-8";
     form.action = requireApiUrl();
     form.target = frameName;
     input.type = "hidden";
