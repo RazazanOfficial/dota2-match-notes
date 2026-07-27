@@ -40,7 +40,7 @@ jobs:
         run: npm run build
         env:
           PAGES_BASE_PATH: /dota2-match-notes
-          NEXT_PUBLIC_API_URL: ${{ secrets.DOTA_NOTES_API_URL }}
+          NEXT_PUBLIC_API_URL: https://script.google.com/macros/s/AKfycbxXf0E22rmk1tJNgWbmc-fGngKvghg11LqpfSv6ZTxe9M5qkYYN86T-GC_B6SEWYJuL/exec
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
