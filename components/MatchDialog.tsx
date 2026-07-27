@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { heroById, heroImage } from "@/data/heroes";
 import { QUEUE_OPTIONS, ROLE_OPTIONS, queueLabel, roleLabel } from "@/lib/constants";
 import { newMatchId } from "@/lib/date";
@@ -46,10 +46,17 @@ export default function MatchDialog({
 }: MatchDialogProps) {
   const [draft, setDraft] = useState<Match>(EMPTY_MATCH);
   const [formError, setFormError] = useState("");
+  const initializedSource = useRef("");
   const hero = draft.heroId ? heroById(draft.heroId) || null : null;
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      initializedSource.current = "";
+      return;
+    }
+    const source = match?.id || `new:${dateLabel}`;
+    if (initializedSource.current === source) return;
+    initializedSource.current = source;
     setFormError("");
     setDraft(
       match
@@ -59,9 +66,9 @@ export default function MatchDialog({
             id: newMatchId(),
             number: nextNumber,
             createdAt: new Date().toISOString(),
-          },
+        },
     );
-  }, [match, nextNumber, open]);
+  }, [dateLabel, match, nextNumber, open]);
 
   if (!open) return null;
 
