@@ -36,8 +36,8 @@ npm run build
 
 کد Google Apps Script به‌دلیل داشتن شناسه فایل خصوصی Drive و منطق احراز هویت عمداً
 داخل ریپوی عمومی نگهداری نمی‌شود. پس از ساخت Deployment جدید از نوع Web App با
-`Execute as: Me` و `Who has access: Anyone`، URL نهایی `/exec` باید در
-GitHub Actions Secret با نام `DOTA_NOTES_API_URL` قرار بگیرد.
+`Execute as: Me` و `Who has access: Anyone`، URL عمومی نهایی `/exec` در متغیر
+`NEXT_PUBLIC_API_URL` هنگام ساخت سایت قرار می‌گیرد.
 
 داده‌ها در فایل خصوصی `dota2-match-notes.json` ذخیره می‌شوند. رمز خام ذخیره نمی‌شود و
 پس از ورود، فقط هش توکن نشست در JSON قرار می‌گیرد. مرورگر فقط توکن تصادفی را در Cookie
