@@ -1,40 +1,48 @@
 # Dota 2 Match Notes
 
-دفتر فارسی و واکنش‌گرا برای ثبت، مرور و گزارش مچ‌های Dota 2 با ذخیره JSON در Google Drive.
+دفتر فارسی و واکنش‌گرا برای ثبت، مرور و گزارش مچ‌های Dota 2 با Next.js و ذخیره JSON در Google Drive.
 
 ## امکانات
 
 - تقویم شمسی هفتگی از شنبه ۳ مرداد ۱۴۰۵
-- ثبت و ویرایش بازی، هیرو، بن‌ها، یادداشت و نتیجه
-- محاسبه برد، باخت و نرخ برد روزانه و هفتگی
-- گزارش متنی مناسب مرور با کوچ
-- ثبت‌نام و ورود بازیکن با نام کاربری و رمز
-- جست‌وجو و مشاهده فقط‌خواندنی گزارش بازیکن توسط مربی با نام کاربری
-- بدون ارتباط با Steam API یا هر سرویس احراز هویت خارجی
-- ذخیره JSON خصوصی در Google Drive
+- جست‌وجو و انتخاب همه هیروها همراه تصویر
+- انتخاب چندگانه هیروهای بن‌شده
+- ثبت Role و Queue Type هر بازی
+- ثبت، ویرایش و حذف بازی با به‌روزرسانی فوری رابط
+- نشست ورود ۳۰روزه با توکن تصادفی و بدون JWT
+- مشاهده فقط‌خواندنی مچ‌ها توسط مربی با Username بازیکن
+- گزارش هفتگی با باکس مستقل برای هر روز
+- خروجی استاتیک Next.js برای GitHub Pages
+- ذخیره اطلاعات در JSON خصوصی Google Drive از طریق Google Apps Script
 
 ## اجرا
 
-پروژه بدون مرحله build اجرا می‌شود:
-
 ```bash
-python3 -m http.server 8080
+npm install
+npm run dev
 ```
 
-سپس `http://localhost:8080` را باز کنید.
+سایت محلی روی `http://localhost:3000` اجرا می‌شود.
 
-## تست
+## بررسی
 
 ```bash
-node --test tests/core.test.js
+npm test
+npm run typecheck
+npm run build
 ```
 
-## Google Drive API
+## Google Apps Script
 
-1. محتوای `apps-script/Code.gs` را در یک Google Apps Script قرار دهید.
-2. Script را به شکل Web App و با دسترسی عمومی deploy کنید.
-3. URL نهایی `/exec` را در `api-config.js` قرار دهید.
+کد Google Apps Script به‌دلیل داشتن شناسه فایل خصوصی Drive و منطق احراز هویت عمداً
+داخل ریپوی عمومی نگهداری نمی‌شود. پس از ساخت Deployment جدید از نوع Web App با
+`Execute as: Me` و `Who has access: Anyone`، URL نهایی `/exec` باید در
+GitHub Actions Secret با نام `DOTA_NOTES_API_URL` قرار بگیرد.
 
-اطلاعات بازی‌ها در فایل خصوصی `dota2-match-notes.json` ذخیره می‌شوند. برای هر بازیکن
-فقط salt تصادفی و هش SHA-256 رمز نگهداری می‌شود؛ رمز خام و داده‌ای در `localStorage`
-ذخیره نمی‌شود.
+داده‌ها در فایل خصوصی `dota2-match-notes.json` ذخیره می‌شوند. رمز خام ذخیره نمی‌شود و
+پس از ورود، فقط هش توکن نشست در JSON قرار می‌گیرد. مرورگر فقط توکن تصادفی را در Cookie
+نگه می‌دارد و از `localStorage`، `sessionStorage` و `IndexedDB` استفاده نمی‌شود.
+
+اطلاعات ثابت هیروها از پروژه MIT
+[`odota/dotaconstants`](https://github.com/odota/dotaconstants) تهیه شده و تصاویر هیروها
+از CDN رسمی Steam دریافت می‌شوند. این پروژه وابستگی زمان اجرا به Steam API ندارد.

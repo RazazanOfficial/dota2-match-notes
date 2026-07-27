@@ -1,6 +1,3 @@
-@import url("https://cdn.jsdelivr.net/npm/@fontsource-variable/vazirmatn@5.3.0/index.css");
-@import url("https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5.3.0/index.css");
-
 :root {
   color-scheme: dark;
   --bg: #090a0d;
@@ -269,7 +266,8 @@ input[name="username"],
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 
@@ -284,7 +282,8 @@ button,
 
 button:focus-visible,
 input:focus-visible,
-textarea:focus-visible {
+textarea:focus-visible,
+select:focus-visible {
   outline: 2px solid var(--accent-strong);
   outline-offset: 2px;
 }
@@ -736,15 +735,47 @@ textarea:focus-visible {
 }
 
 .match-card {
+  display: block;
+  width: 100%;
   position: relative;
   padding: 11px;
   border: 1px solid var(--border);
   border-radius: 11px;
   background: var(--surface-2);
+  text-align: right;
   cursor: pointer;
   transition:
     border-color 160ms ease,
     transform 160ms ease;
+}
+
+.match-hero-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.match-hero-row > img {
+  width: 52px;
+  height: 30px;
+  flex: 0 0 auto;
+  border-radius: 7px;
+  object-fit: cover;
+}
+
+.match-hero-row > div {
+  min-width: 0;
+}
+
+.match-meta {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--muted-2);
+  font-size: 0.58rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .match-card:hover {
@@ -903,12 +934,18 @@ textarea:focus-visible {
   box-shadow: var(--shadow);
 }
 
-.modal::backdrop {
+.modal-backdrop {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
   background: rgba(0, 0, 0, 0.72);
   backdrop-filter: blur(5px);
 }
 
-.modal form,
+.match-modal,
 .report-modal,
 .confirm-modal {
   padding: 24px;
@@ -951,6 +988,7 @@ textarea:focus-visible {
 }
 
 .field > span,
+.field > label,
 .result-field legend {
   color: var(--muted);
   font-size: 0.73rem;
@@ -958,7 +996,8 @@ textarea:focus-visible {
 }
 
 .field input,
-.field textarea {
+.field textarea,
+.field select {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 11px;
@@ -971,6 +1010,11 @@ textarea:focus-visible {
   padding: 0 13px;
 }
 
+.field select {
+  height: 46px;
+  padding: 0 13px;
+}
+
 .field textarea {
   min-height: 122px;
   padding: 12px 13px;
@@ -979,8 +1023,147 @@ textarea:focus-visible {
 }
 
 .field input:hover,
-.field textarea:hover {
+.field textarea:hover,
+.field select:hover {
   border-color: var(--border-strong);
+}
+
+.hero-picker {
+  position: relative;
+  min-width: 0;
+}
+
+.hero-picker-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.hero-picker-control > img {
+  position: absolute;
+  z-index: 1;
+  left: 7px;
+  width: 52px;
+  height: 32px;
+  border-radius: 7px;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.hero-picker-control.has-value input {
+  padding-left: 66px;
+}
+
+.hero-picker-control input {
+  font-family: "Inter Variable", "Segoe UI", Arial, sans-serif;
+  text-align: left;
+}
+
+.hero-clear {
+  position: absolute;
+  z-index: 2;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.hero-options {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 7px);
+  right: 0;
+  left: 0;
+  max-height: 286px;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: #111319;
+  box-shadow: var(--shadow);
+}
+
+.hero-options button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+  padding: 7px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.hero-options button:hover,
+.hero-options button[aria-selected="true"] {
+  background: var(--surface-3);
+}
+
+.hero-options img {
+  width: 58px;
+  height: 34px;
+  border-radius: 7px;
+  object-fit: cover;
+}
+
+.hero-empty {
+  display: block;
+  padding: 16px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.72rem;
+}
+
+.ban-field > .hero-picker {
+  width: 100%;
+}
+
+.hero-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 4px 5px 4px 7px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-2);
+  font-size: 0.67rem;
+}
+
+.hero-chip img {
+  width: 37px;
+  height: 23px;
+  border-radius: 5px;
+  object-fit: cover;
+}
+
+.hero-chip button {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.legacy-ban {
+  padding: 7px 9px;
+  border-radius: 8px;
+  color: var(--muted);
+  background: var(--surface-2);
+  font-size: 0.7rem;
 }
 
 .field-full {
@@ -1071,19 +1254,205 @@ textarea:focus-visible {
 }
 
 .report-modal {
-  width: min(760px, calc(100% - 32px));
+  width: min(980px, calc(100% - 32px));
+  overflow: hidden;
 }
 
-.report-output {
-  width: 100%;
-  min-height: min(510px, 58vh);
-  padding: 17px;
+.report-scroll {
+  max-height: min(650px, 67vh);
+  padding-left: 4px;
+  overflow-y: auto;
+}
+
+.report-summary {
+  display: grid;
+  grid-template-columns: 2fr repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.report-summary > div,
+.detail-grid > div {
+  display: flex;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface-2);
+  flex-direction: column;
+  gap: 5px;
+}
+
+.report-summary span,
+.detail-grid span,
+.detail-section > span,
+.match-detail-hero > div > span {
+  color: var(--muted);
+  font-size: 0.65rem;
+}
+
+.report-summary strong {
+  font-size: 0.79rem;
+}
+
+.report-days {
+  display: grid;
+  gap: 10px;
+}
+
+.report-day {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(9, 10, 13, 0.35);
+}
+
+.report-day > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 15px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.report-day h3 {
+  margin: 0 0 3px;
+  font-size: 0.86rem;
+}
+
+.report-day header span,
+.report-day header > strong {
+  color: var(--muted);
+  font-size: 0.65rem;
+}
+
+.report-matches {
+  display: grid;
+  gap: 7px;
+  padding: 9px;
+}
+
+.report-match {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.report-match > img {
+  width: 64px;
+  height: 38px;
+  border-radius: 7px;
+  object-fit: cover;
+}
+
+.report-match > div {
+  min-width: 0;
+}
+
+.report-match strong,
+.report-match span {
+  display: block;
+  font-size: 0.7rem;
+}
+
+.report-match > div > span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.6rem;
+}
+
+.report-match p {
+  margin: 5px 0 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.66rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.report-empty {
+  margin: 0;
+  padding: 18px;
+  color: var(--muted-2);
+  font-size: 0.72rem;
+}
+
+.match-detail-hero {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+  padding: 12px;
   border: 1px solid var(--border);
   border-radius: 13px;
-  color: #e0e3e8;
-  background: #0b0d10;
-  resize: vertical;
-  line-height: 2;
+  background: var(--surface-2);
+}
+
+.match-detail-hero > img {
+  width: 112px;
+  height: 64px;
+  border-radius: 9px;
+  object-fit: cover;
+}
+
+.match-detail-hero > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.detail-section {
+  margin-top: 10px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+}
+
+.detail-section p {
+  margin: 8px 0 0;
+  color: #dfe2e7;
+  line-height: 1.9;
+  white-space: pre-wrap;
+}
+
+.readonly-bans {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 8px;
+  color: var(--muted);
+}
+
+.readonly-bans > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 8px 5px 5px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 0.66rem;
+}
+
+.readonly-bans img {
+  width: 38px;
+  height: 23px;
+  border-radius: 5px;
+  object-fit: cover;
 }
 
 .confirm-modal {
@@ -1277,7 +1646,7 @@ textarea:focus-visible {
     border-radius: 18px;
   }
 
-  .modal form,
+  .match-modal,
   .report-modal,
   .confirm-modal {
     padding: 18px;
@@ -1300,8 +1669,45 @@ textarea:focus-visible {
     width: 100%;
   }
 
-  .report-output {
-    min-height: 55vh;
+  .report-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .report-summary > div:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .report-day > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .report-match {
+    grid-template-columns: 54px minmax(0, 1fr);
+  }
+
+  .report-match > img {
+    width: 54px;
+    height: 32px;
+  }
+
+  .report-match > .result-badge {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .match-detail-hero {
+    grid-template-columns: 84px minmax(0, 1fr);
+  }
+
+  .match-detail-hero > img {
+    width: 84px;
+    height: 50px;
+  }
+
+  .match-detail-hero > .result-badge {
+    grid-column: 1 / -1;
+    justify-self: start;
   }
 }
 
