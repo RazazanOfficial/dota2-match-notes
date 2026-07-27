@@ -70,7 +70,7 @@ export default function MatchJournal() {
   }, []);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session || editing) return;
     const timer = window.setInterval(async () => {
       try {
         const latest = await viewCoach(session.username);
@@ -81,7 +81,7 @@ export default function MatchJournal() {
       }
     }, 15_000);
     return () => window.clearInterval(timer);
-  }, [session]);
+  }, [editing, session]);
 
   function showToast(message: string) {
     setToast(message);
