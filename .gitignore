@@ -4,3 +4,7 @@ out/
 coverage/
 *.log
 apps-script/Code.gs
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
