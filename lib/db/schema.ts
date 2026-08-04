@@ -159,6 +159,7 @@ export const journalMatches = pgTable(
     queueType: queueTypeEnum("queue_type"),
     result: matchResultEnum("result").notNull(),
     notes: text("notes").default("").notNull(),
+    legacyBans: varchar("legacy_bans", { length: 500 }).default("").notNull(),
     startedAt: timestamp("started_at", { withTimezone: true }),
     durationSeconds: integer("duration_seconds"),
     kills: smallint("kills"),

@@ -1,0 +1,1 @@
+ALTER TABLE "journal_matches" ADD COLUMN "legacy_bans" varchar(500) DEFAULT '' NOT NULL;

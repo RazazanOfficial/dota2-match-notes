@@ -8,6 +8,13 @@
       "when": 1785742938553,
       "tag": "0000_lucky_red_shift",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785780879389,
+      "tag": "0001_add_legacy_bans",
+      "breakpoints": true
     }
   ]
 }
