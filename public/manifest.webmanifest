@@ -4,14 +4,14 @@
   "description": "دفتر فارسی ثبت و مرور مچ‌های دوتا ۲",
   "lang": "fa",
   "dir": "rtl",
-  "start_url": "/dota2-match-notes/",
-  "scope": "/dota2-match-notes/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#090a0d",
   "theme_color": "#0b0c10",
   "icons": [
     {
-      "src": "/dota2-match-notes/favicon.svg",
+      "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
