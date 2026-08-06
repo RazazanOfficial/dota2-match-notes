@@ -1,143 +1,55 @@
 "use client";
 
-import { API_URL, SESSION_COOKIE, SESSION_DAYS } from "./constants";
 import { normalizeProfile } from "./date";
 import type { Day, Profile, Session } from "./types";
 
-interface ApiResponse {
+interface ErrorPayload {
+  error?: string | { code?: string; message?: string };
+  message?: string;
+}
+
+interface SessionResponse {
+  authenticated: boolean;
+  user?: {
+    handle: string;
+  };
+}
+
+interface ProfileResponse {
   ok: boolean;
-  error?: string;
-  channel?: string;
   profile?: unknown;
-  token?: string;
-  isNew?: boolean;
 }
 
-function createChannel() {
-  const bytes = crypto.getRandomValues(new Uint8Array(24));
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-function requireApiUrl() {
-  if (!API_URL) throw new Error("اتصال سرور پیکربندی نشده است");
-  return API_URL;
-}
-
-function jsonp(action: string, params: Record<string, string>) {
-  return new Promise<ApiResponse>((resolve, reject) => {
-    const callbackName = `dotaNotes_${createChannel()}`;
-    const script = document.createElement("script");
-    const timeout = window.setTimeout(
-      () => cleanup(new Error("پاسخی از سرور دریافت نشد")),
-      25_000,
-    );
-
-    function cleanup(error?: Error, value?: ApiResponse) {
-      window.clearTimeout(timeout);
-      script.remove();
-      delete (window as unknown as Record<string, unknown>)[callbackName];
-      if (error) reject(error);
-      else resolve(value as ApiResponse);
-    }
-
-    (window as unknown as Record<string, unknown>)[callbackName] = (response: ApiResponse) => {
-      if (!response?.ok) {
-        cleanup(new Error(response?.error || "دریافت اطلاعات انجام نشد"));
-        return;
-      }
-      cleanup(undefined, response);
-    };
-
-    const url = new URL(requireApiUrl());
-    url.searchParams.set("action", action);
-    url.searchParams.set("prefix", callbackName);
-    Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
-    script.src = url.toString();
-    script.onerror = () => cleanup(new Error("ارتباط با سرور برقرار نشد"));
-    document.head.appendChild(script);
+async function requestJson<T>(input: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(input, {
+    credentials: "same-origin",
+    cache: "no-store",
+    ...init,
   });
-}
 
-function post(action: string, payload: Record<string, unknown>) {
-  return new Promise<ApiResponse>((resolve, reject) => {
-    const channel = createChannel();
-    const frameName = `dotaNotesFrame_${channel}`;
-    const iframe = document.createElement("iframe");
-    const form = document.createElement("form");
-    const input = document.createElement("input");
-    const timeout = window.setTimeout(
-      () => cleanup(new Error("پاسخ سرور بیش از حد طول کشید؛ دوباره تلاش کنید")),
-      45_000,
-    );
-
-    function cleanup(error?: Error, value?: ApiResponse) {
-      window.clearTimeout(timeout);
-      window.removeEventListener("message", handleMessage);
-      form.remove();
-      iframe.remove();
-      if (error) reject(error);
-      else resolve(value as ApiResponse);
-    }
-
-    function handleMessage(event: MessageEvent<ApiResponse>) {
-      if (event.data?.channel !== channel) return;
-      if (!event.data?.ok) {
-        cleanup(new Error(event.data?.error || "عملیات انجام نشد"));
-        return;
-      }
-      cleanup(undefined, event.data);
-    }
-
-    window.addEventListener("message", handleMessage);
-    iframe.name = frameName;
-    iframe.hidden = true;
-    form.hidden = true;
-    form.method = "POST";
-    form.acceptCharset = "UTF-8";
-    form.action = requireApiUrl();
-    form.target = frameName;
-    input.type = "hidden";
-    input.name = "payload";
-    input.value = JSON.stringify({
-      action,
-      channel,
-      origin: window.location.origin,
-      ...payload,
-    });
-    form.appendChild(input);
-    document.body.append(iframe, form);
-    form.submit();
-  });
-}
-
-function readCookie() {
-  const prefix = `${SESSION_COOKIE}=`;
-  const raw = document.cookie
-    .split(";")
-    .map((part) => part.trim())
-    .find((part) => part.startsWith(prefix))
-    ?.slice(prefix.length);
-  if (!raw) return null;
+  let body: unknown;
   try {
-    const value = JSON.parse(decodeURIComponent(raw)) as { username?: string; token?: string };
-    return value.username && value.token ? { username: value.username, token: value.token } : null;
+    body = await response.json();
   } catch {
-    return null;
+    body = null;
   }
+
+  if (!response.ok) {
+    const payload = body && typeof body === "object" ? (body as ErrorPayload) : {};
+    const nestedError =
+      payload.error && typeof payload.error === "object" ? payload.error.message : undefined;
+    const plainError = typeof payload.error === "string" ? payload.error : undefined;
+    throw new Error(
+      nestedError || plainError || payload.message || "ارتباط با سرور انجام نشد",
+    );
+  }
+
+  return body as T;
 }
 
-function writeCookie(username: string, token: string) {
-  const value = encodeURIComponent(JSON.stringify({ username, token }));
-  const maxAge = SESSION_DAYS * 24 * 60 * 60;
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
-  const path = basePath ? `${basePath}/` : "/";
-  document.cookie = `${SESSION_COOKIE}=${value}; Max-Age=${maxAge}; Path=${path}; Secure; SameSite=Strict`;
-}
-
-function clearCookie() {
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
-  const path = basePath ? `${basePath}/` : "/";
-  document.cookie = `${SESSION_COOKIE}=; Max-Age=0; Path=${path}; Secure; SameSite=Strict`;
+function journalUrl(path: string, from: string, to: string) {
+  const params = new URLSearchParams({ from, to });
+  return `${path}?${params.toString()}`;
 }
 
 function serializeDay(day: Day) {
@@ -164,36 +76,39 @@ function serializeDay(day: Day) {
   };
 }
 
-export async function loginPlayer(username: string, password: string): Promise<Session> {
-  const response = await post("auth", { username, password });
-  if (!response.token) throw new Error("توکن ورود دریافت نشد");
-  writeCookie(username, response.token);
+function normalizeProfileResponse(response: ProfileResponse, username: string) {
+  if (!response.ok || !response.profile) {
+    throw new Error("اطلاعات دفتر مچ از سرور دریافت نشد");
+  }
+  return normalizeProfile(response.profile, username);
+}
+
+export function loginPlayer() {
+  window.location.assign("/api/auth/steam");
+}
+
+export async function restorePlayer(): Promise<Session | null> {
+  const response = await requestJson<SessionResponse>("/api/auth/session");
+  if (!response.authenticated || !response.user?.handle) return null;
+
   return {
     mode: "player",
-    username,
-    token: response.token,
-    isNew: Boolean(response.isNew),
+    username: response.user.handle,
   };
 }
 
-export async function restorePlayer(): Promise<{ session: Session; profile: Profile } | null> {
-  const saved = readCookie();
-  if (!saved) return null;
-  try {
-    const response = await post("session", saved);
-    return {
-      session: { mode: "player", username: saved.username, token: saved.token },
-      profile: normalizeProfile(response.profile, saved.username),
-    };
-  } catch {
-    clearCookie();
-    return null;
-  }
+export async function viewPlayer(username: string, from: string, to: string) {
+  const response = await requestJson<ProfileResponse>(
+    journalUrl("/api/journal/me", from, to),
+  );
+  return normalizeProfileResponse(response, username);
 }
 
-export async function viewCoach(username: string) {
-  const response = await jsonp("view", { username });
-  return normalizeProfile(response.profile, username);
+export async function viewCoach(username: string, from: string, to: string) {
+  const response = await requestJson<ProfileResponse>(
+    journalUrl(`/api/journal/users/${encodeURIComponent(username)}`, from, to),
+  );
+  return normalizeProfileResponse(response, username);
 }
 
 export async function saveDay(
@@ -201,24 +116,22 @@ export async function saveDay(
   dateKey: string,
   day: Day,
 ): Promise<Profile> {
-  if (!session.token) throw new Error("نشست ورود معتبر نیست");
-  const response = await post("saveDay", {
-    username: session.username,
-    token: session.token,
-    dateKey,
-    day: serializeDay(day),
-  });
-  return normalizeProfile(response.profile, session.username);
+  if (session.mode !== "player") throw new Error("این حساب اجازه ثبت اطلاعات ندارد");
+
+  const response = await requestJson<ProfileResponse>(
+    `/api/journal/days/${encodeURIComponent(dateKey)}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(serializeDay(day)),
+    },
+  );
+  return normalizeProfileResponse(response, session.username);
 }
 
 export async function logout(session: Session | null) {
-  try {
-    if (session?.mode === "player" && session.token) {
-      await post("logout", { username: session.username, token: session.token });
-    }
-  } finally {
-    clearCookie();
-  }
+  if (session?.mode !== "player") return;
+  await requestJson<{ ok: boolean }>("/api/auth/logout", { method: "POST" });
 }
 
 export async function purgeLegacyBrowserCache() {

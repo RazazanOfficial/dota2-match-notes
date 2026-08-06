@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     const profile = await fetchSteamProfile(steamId);
     const user = await upsertSteamUser(profile);
     const session = await createSession(user.id);
-    const response = NextResponse.redirect(new URL("/api/auth/session", getAppUrl()));
+    const response = NextResponse.redirect(new URL("/", getAppUrl()));
 
     response.cookies.set(SESSION_COOKIE, session.token, {
       httpOnly: true,

@@ -1,6 +1,6 @@
 # Dota 2 Match Notes
 
-دفتر فارسی و واکنش‌گرا برای ثبت، مرور و گزارش مچ‌های Dota 2 با Next.js و ذخیره JSON در Google Drive.
+دفتر فارسی و واکنش‌گرا برای ثبت، مرور و گزارش مچ‌های Dota 2 با Next.js و PostgreSQL.
 
 ## امکانات
 
@@ -9,16 +9,27 @@
 - انتخاب چندگانه هیروهای بن‌شده
 - ثبت Role و Queue Type هر بازی
 - ثبت، ویرایش و حذف بازی با به‌روزرسانی فوری رابط
-- نشست ورود ۳۰روزه با توکن تصادفی و بدون JWT
-- مشاهده فقط‌خواندنی مچ‌ها توسط مربی با Username بازیکن
+- ورود بازیکن با Steam OpenID و نشست امن ۳۰روزه
+- مشاهده عمومی و فقط‌خواندنی مچ‌ها با Handle بازیکن
 - گزارش هفتگی با باکس مستقل برای هر روز
-- خروجی استاتیک Next.js برای GitHub Pages
-- ذخیره اطلاعات در JSON خصوصی Google Drive از طریق Google Apps Script
+- ذخیره اطلاعات در PostgreSQL از طریق API داخلی Next.js
 
-## اجرا
+## آماده‌سازی محلی
+
+ابتدا `.env.example` را با نام `.env.local` کپی و مقادیر واقعی را فقط در فایل محلی وارد
+کنید:
+
+```dotenv
+APP_URL=http://localhost:3000
+STEAM_WEB_API_KEY=YOUR_STEAM_WEB_API_KEY
+DATABASE_URL=postgresql://dota_notes_app:YOUR_PASSWORD@127.0.0.1:5432/dota_notes
+```
+
+سپس وابستگی‌ها و migrationهای دیتابیس را آماده کنید:
 
 ```bash
-npm install
+npm ci
+npm run db:migrate
 npm run dev
 ```
 
@@ -32,17 +43,18 @@ npm run typecheck
 npm run build
 ```
 
-## Google Apps Script
+برای مشاهده دیتابیس در رابط Drizzle Studio:
 
-کد Google Apps Script به‌دلیل داشتن شناسه فایل خصوصی Drive و منطق احراز هویت عمداً
-داخل ریپوی عمومی نگهداری نمی‌شود. پس از ساخت Deployment جدید از نوع Web App با
-`Execute as: Me` و `Who has access: Anyone`، URL عمومی نهایی `/exec` در متغیر
-`NEXT_PUBLIC_API_URL` هنگام ساخت سایت قرار می‌گیرد.
+```bash
+npm run db:studio
+```
 
-داده‌ها در فایل خصوصی `dota2-match-notes.json` ذخیره می‌شوند. رمز خام ذخیره نمی‌شود و
-پس از ورود، فقط هش توکن نشست در JSON قرار می‌گیرد. مرورگر فقط توکن تصادفی را در Cookie
-نگه می‌دارد و از `localStorage`، `sessionStorage` و `IndexedDB` استفاده نمی‌شود.
+## API ژورنال
+
+- `GET /api/journal/me?from=YYYY-MM-DD&to=YYYY-MM-DD`
+- `PUT /api/journal/days/YYYY-MM-DD`
+- `GET /api/journal/users/HANDLE?from=YYYY-MM-DD&to=YYYY-MM-DD`
 
 اطلاعات ثابت هیروها از پروژه MIT
 [`odota/dotaconstants`](https://github.com/odota/dotaconstants) تهیه شده و تصاویر هیروها
-از CDN رسمی Steam دریافت می‌شوند. این پروژه وابستگی زمان اجرا به Steam API ندارد.
+از CDN رسمی Steam دریافت می‌شوند.

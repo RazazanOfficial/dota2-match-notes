@@ -173,3 +173,15 @@ export function normalizeProfile(raw: unknown, username = ""): Profile {
     days,
   };
 }
+
+export function mergeProfiles(current: Profile, incoming: Profile): Profile {
+  return {
+    username: incoming.username || current.username,
+    createdAt: incoming.createdAt || current.createdAt,
+    updatedAt: incoming.updatedAt || current.updatedAt,
+    days: {
+      ...current.days,
+      ...incoming.days,
+    },
+  };
+}
