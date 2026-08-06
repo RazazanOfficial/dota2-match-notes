@@ -9,6 +9,7 @@ import {
   restorePlayer,
   saveDay,
   viewCoach,
+  viewPlayer,
 } from "@/lib/api";
 import { ANCHOR_DATE, queueLabel, roleLabel } from "@/lib/constants";
 import {
@@ -22,17 +23,17 @@ import {
   getWeekDates,
   getWeekLabel,
   isValidUsername,
-  normalizeProfile,
+  mergeProfiles,
   normalizeUsername,
   summarizeMatches,
   summarizeWeek,
   toDateKey,
 } from "@/lib/date";
-import type { AccessMode, Day, Match, Profile, Session } from "@/lib/types";
+import type { Day, Match, Profile, Session } from "@/lib/types";
 import MatchDialog from "./MatchDialog";
 import ReportDialog from "./ReportDialog";
 
-type AccessView = "roles" | AccessMode;
+type AccessView = "roles" | "coach";
 
 const EMPTY_PROFILE: Profile = { username: "", days: {} };
 
@@ -50,18 +51,22 @@ export default function MatchJournal() {
     null,
   );
   const toastTimer = useRef<number | null>(null);
+  const dates = useMemo(() => getWeekDates(ANCHOR_DATE, activeWeek), [activeWeek]);
+  const rangeFrom = toDateKey(dates[0]);
+  const rangeTo = toDateKey(dates[dates.length - 1]);
 
   useEffect(() => {
     let cancelled = false;
     async function start() {
-      await purgeLegacyBrowserCache();
-      const restored = await restorePlayer();
-      if (cancelled) return;
-      if (restored) {
-        setSession(restored.session);
-        setProfile(restored.profile);
+      try {
+        await purgeLegacyBrowserCache();
+        const restored = await restorePlayer();
+        if (!cancelled && restored) setSession(restored);
+      } catch {
+        if (!cancelled) setSyncState("error");
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setLoading(false);
     }
     void start();
     return () => {
@@ -71,17 +76,34 @@ export default function MatchJournal() {
 
   useEffect(() => {
     if (!session || editing) return;
-    const timer = window.setInterval(async () => {
+
+    const activeSession = session;
+    let cancelled = false;
+    async function refresh() {
       try {
-        const latest = await viewCoach(session.username);
-        setProfile(latest);
+        const latest =
+          activeSession.mode === "player"
+            ? await viewPlayer(activeSession.username, rangeFrom, rangeTo)
+            : await viewCoach(activeSession.username, rangeFrom, rangeTo);
+        if (cancelled) return;
+        setProfile((current) =>
+          current.username && current.username !== latest.username
+            ? latest
+            : mergeProfiles(current, latest),
+        );
         setSyncState("synced");
       } catch {
-        setSyncState("error");
+        if (!cancelled) setSyncState("error");
       }
-    }, 15_000);
-    return () => window.clearInterval(timer);
-  }, [editing, session]);
+    }
+
+    void refresh();
+    const timer = window.setInterval(refresh, 15_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [editing, rangeFrom, rangeTo, session]);
 
   function showToast(message: string) {
     setToast(message);
@@ -89,24 +111,9 @@ export default function MatchJournal() {
     toastTimer.current = window.setTimeout(() => setToast(""), 3200);
   }
 
-  async function handlePlayerLogin(usernameValue: string, password: string) {
-    const username = normalizeUsername(usernameValue);
-    if (!isValidUsername(username)) {
-      throw new Error(
-        "نام کاربری باید ۳ تا ۳۲ نویسه و شامل حروف انگلیسی، عدد، نقطه، خط تیره یا زیرخط باشد",
-      );
-    }
-    if (password.length < 4) throw new Error("رمز باید حداقل ۴ نویسه داشته باشد");
+  function handlePlayerLogin() {
     setBusy(true);
-    try {
-      const nextSession = await loginPlayer(username, password);
-      const nextProfile = await viewCoach(username);
-      setSession(nextSession);
-      setProfile(nextProfile);
-      if (nextSession.isNew) showToast("حساب بازیکن ساخته شد");
-    } finally {
-      setBusy(false);
-    }
+    loginPlayer();
   }
 
   async function handleCoachLogin(usernameValue: string) {
@@ -118,7 +125,7 @@ export default function MatchJournal() {
     }
     setBusy(true);
     try {
-      const nextProfile = await viewCoach(username);
+      const nextProfile = await viewCoach(username, rangeFrom, rangeTo);
       setSession({ mode: "coach", username });
       setProfile(nextProfile);
     } finally {
@@ -139,7 +146,6 @@ export default function MatchJournal() {
     }
   }
 
-  const dates = useMemo(() => getWeekDates(ANCHOR_DATE, activeWeek), [activeWeek]);
   const weekSummary = useMemo(
     () => summarizeWeek(profile.days, dates),
     [dates, profile.days],
@@ -165,7 +171,7 @@ export default function MatchJournal() {
     setSyncState("syncing");
     try {
       const saved = await saveDay(session, dateKey, nextDay);
-      setProfile(saved);
+      setProfile((current) => mergeProfiles(current, saved));
       setSyncState("synced");
       return true;
     } catch (error) {
@@ -424,19 +430,17 @@ function AccessScreen({
   view: AccessView;
   busy: boolean;
   onViewChange: (view: AccessView) => void;
-  onPlayerLogin: (username: string, password: string) => Promise<void>;
+  onPlayerLogin: () => void;
   onCoachLogin: (username: string) => Promise<void>;
 }) {
   const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
     try {
-      if (view === "player") await onPlayerLogin(username, password);
-      else if (view === "coach") await onCoachLogin(username);
+      if (view === "coach") await onCoachLogin(username);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "ورود انجام نشد");
     }
@@ -447,18 +451,12 @@ function AccessScreen({
       <header className="access-brand"><Brand /></header>
       <section className="access-panel">
         <div className="access-heading">
-          <p className="week-kicker">{view === "roles" ? "دسترسی" : view === "player" ? "بازیکن" : "مربی"}</p>
-          <h2>
-            {view === "roles"
-              ? "نوع ورود را انتخاب کنید"
-              : view === "player"
-                ? "ورود یا ساخت حساب"
-                : "مشاهده گزارش بازیکن"}
-          </h2>
+          <p className="week-kicker">{view === "roles" ? "دسترسی" : "مربی"}</p>
+          <h2>{view === "roles" ? "نوع ورود را انتخاب کنید" : "مشاهده گزارش بازیکن"}</h2>
         </div>
         {view === "roles" ? (
           <div className="role-grid">
-            <button className="role-card role-player" type="button" onClick={() => onViewChange("player")}>
+            <button className="role-card role-player" type="button" onClick={onPlayerLogin}>
               <span className="role-icon">✦</span><span className="role-name">بازیکن</span>
               <span className="role-description">ثبت و مدیریت بازی‌ها</span>
             </button>
@@ -470,38 +468,24 @@ function AccessScreen({
         ) : (
           <form className="access-form" onSubmit={submit}>
             <label className="field">
-              <span>{view === "player" ? "نام کاربری" : "نام کاربری بازیکن"}</span>
+              <span>نام کاربری بازیکن</span>
               <input
                 lang="en"
                 dir="ltr"
-                autoComplete={view === "player" ? "username" : "off"}
+                autoComplete="off"
                 value={username}
                 maxLength={32}
                 required
                 onChange={(event) => setUsername(event.target.value)}
               />
             </label>
-            {view === "player" && (
-              <label className="field">
-                <span>رمز</span>
-                <input
-                  type="password"
-                  autoComplete="current-password"
-                  minLength={4}
-                  maxLength={128}
-                  value={password}
-                  required
-                  onChange={(event) => setPassword(event.target.value)}
-                />
-              </label>
-            )}
             <p className="form-error" role="alert">{error}</p>
             <div className="access-actions">
               <button className="secondary-button" type="button" onClick={() => onViewChange("roles")}>
                 بازگشت
               </button>
               <button className="primary-button" type="submit" disabled={busy}>
-                {busy ? "در حال اتصال" : view === "player" ? "ورود / ساخت حساب" : "مشاهده"}
+                {busy ? "در حال اتصال" : "مشاهده"}
               </button>
             </div>
           </form>

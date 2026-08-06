@@ -1,9 +1,6 @@
 import type { MatchRole, QueueType } from "./types";
 
 export const ANCHOR_DATE = "2026-07-25";
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-export const SESSION_COOKIE = "dota_notes_session";
-export const SESSION_DAYS = 30;
 
 export const ROLE_OPTIONS: Array<{ value: MatchRole; label: string }> = [
   { value: "safe_lane", label: "Safe Lane" },

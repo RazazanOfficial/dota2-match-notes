@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getWeekDates,
   isValidUsername,
+  mergeProfiles,
   normalizeProfile,
   sanitizeMatch,
   summarizeMatches,
@@ -60,6 +61,22 @@ describe("profile migration", () => {
       result: "loss",
     });
     expect(match.bans.map((hero) => hero.name)).toEqual(["Axe", "Bane"]);
+  });
+
+  it("merges partial week responses without losing loaded days", () => {
+    const first = normalizeProfile({
+      username: "steam_123",
+      days: { "2026-08-01": { completed: false, matches: {} } },
+    });
+    const second = normalizeProfile({
+      username: "steam_123",
+      days: { "2026-08-08": { completed: true, matches: {} } },
+    });
+
+    expect(Object.keys(mergeProfiles(first, second).days)).toEqual([
+      "2026-08-01",
+      "2026-08-08",
+    ]);
   });
 });
 

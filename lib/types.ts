@@ -43,8 +43,6 @@ export interface Profile {
 export interface Session {
   mode: AccessMode;
   username: string;
-  token?: string;
-  isNew?: boolean;
 }
 
 export interface Summary {
