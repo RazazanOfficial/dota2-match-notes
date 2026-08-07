@@ -89,6 +89,11 @@ export function normalizeUsername(value: string) {
   return value.normalize("NFKC").trim().toLowerCase();
 }
 
+export function normalizePublicHandle(value: string) {
+  const normalized = normalizeUsername(value);
+  return /^\d{1,10}$/.test(normalized) ? `steam_${normalized}` : normalized;
+}
+
 export function isValidUsername(value: string) {
   return /^[a-z0-9._-]{3,32}$/.test(value) &&
     !["__proto__", "prototype", "constructor"].includes(value);

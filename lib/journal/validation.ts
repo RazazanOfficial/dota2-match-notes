@@ -125,6 +125,9 @@ export function parseDateRange(searchParams: URLSearchParams) {
 }
 
 export function parseHandle(value: string) {
-  const handle = value.normalize("NFKC").trim().toLowerCase();
+  const normalized = value.normalize("NFKC").trim().toLowerCase();
+  const handle = /^\d{1,10}$/.test(normalized)
+    ? `steam_${normalized}`
+    : normalized;
   return /^[a-z0-9._-]{3,32}$/.test(handle) ? handle : null;
 }

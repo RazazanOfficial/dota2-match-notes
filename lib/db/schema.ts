@@ -242,6 +242,33 @@ export const matchImages = pgTable(
   ],
 );
 
+export const matchImageUploads = pgTable(
+  "match_image_uploads",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    matchId: uuid("match_id")
+      .notNull()
+      .references(() => journalMatches.id, { onDelete: "cascade" }),
+    objectKey: text("object_key").notNull(),
+    originalName: varchar("original_name", { length: 255 }).notNull(),
+    mimeType: varchar("mime_type", { length: 64 }).notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("match_image_uploads_object_key_uidx").on(table.objectKey),
+    index("match_image_uploads_user_match_idx").on(table.userId, table.matchId),
+    index("match_image_uploads_expires_at_idx").on(table.expiresAt),
+    check("match_image_uploads_size_check", sql`${table.sizeBytes} > 0`),
+  ],
+);
+
 export const syncJobs = pgTable(
   "sync_jobs",
   {
@@ -276,6 +303,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   days: many(journalDays),
   matches: many(journalMatches),
+  imageUploads: many(matchImageUploads),
   syncJobs: many(syncJobs),
 }));
 
@@ -315,6 +343,7 @@ export const journalMatchesRelations = relations(
     }),
     bans: many(matchBans),
     images: many(matchImages),
+    imageUploads: many(matchImageUploads),
   }),
 );
 
@@ -331,6 +360,20 @@ export const matchImagesRelations = relations(matchImages, ({ one }) => ({
     references: [journalMatches.id],
   }),
 }));
+
+export const matchImageUploadsRelations = relations(
+  matchImageUploads,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [matchImageUploads.userId],
+      references: [users.id],
+    }),
+    match: one(journalMatches, {
+      fields: [matchImageUploads.matchId],
+      references: [journalMatches.id],
+    }),
+  }),
+);
 
 export const syncJobsRelations = relations(syncJobs, ({ one }) => ({
   user: one(users, {

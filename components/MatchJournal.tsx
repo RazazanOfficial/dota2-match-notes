@@ -24,7 +24,7 @@ import {
   getWeekLabel,
   isValidUsername,
   mergeProfiles,
-  normalizeUsername,
+  normalizePublicHandle,
   summarizeMatches,
   summarizeWeek,
   toDateKey,
@@ -117,7 +117,7 @@ export default function MatchJournal() {
   }
 
   async function handleCoachLogin(usernameValue: string) {
-    const username = normalizeUsername(usernameValue);
+    const username = normalizePublicHandle(usernameValue);
     if (!isValidUsername(username)) {
       throw new Error(
         "نام کاربری باید ۳ تا ۳۲ نویسه و شامل حروف انگلیسی، عدد، نقطه، خط تیره یا زیرخط باشد",
