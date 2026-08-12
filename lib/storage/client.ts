@@ -1,10 +1,8 @@
 import {
   DeleteObjectCommand,
-  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getStorageConfig } from "./config";
 
 let cachedClient: S3Client | null = null;
@@ -37,28 +35,21 @@ function getClient() {
   return { client: cachedClient, config };
 }
 
-export async function createPresignedUpload(objectKey: string, mimeType: string) {
+export async function uploadStoredObject(
+  objectKey: string,
+  mimeType: string,
+  body: Uint8Array,
+) {
   const { client, config } = getClient();
-  const command = new PutObjectCommand({
-    Bucket: config.bucket,
-    Key: objectKey,
-    ContentType: mimeType,
-  });
-  const uploadUrl = await getSignedUrl(client, command, {
-    expiresIn: config.presignTtlSeconds,
-  });
-
-  return {
-    uploadUrl,
-    expiresIn: config.presignTtlSeconds,
-    headers: { "Content-Type": mimeType },
-  };
-}
-
-export async function headStoredObject(objectKey: string) {
-  const { client, config } = getClient();
-  return client.send(
-    new HeadObjectCommand({ Bucket: config.bucket, Key: objectKey }),
+  await client.send(
+    new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: objectKey,
+      Body: body,
+      ContentLength: body.byteLength,
+      ContentType: mimeType,
+      CacheControl: "public, max-age=31536000, immutable",
+    }),
   );
 }
 

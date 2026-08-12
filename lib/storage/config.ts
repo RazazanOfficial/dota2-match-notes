@@ -6,12 +6,10 @@ export interface StorageConfig {
   secretKey: string;
   region: string;
   forcePathStyle: boolean;
-  presignTtlSeconds: number;
-  maxImageBytes: number;
+  maxGeneratedImageBytes: number;
 }
 
-const DEFAULT_PRESIGN_TTL_SECONDS = 300;
-const DEFAULT_MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const DEFAULT_MAX_GENERATED_IMAGE_BYTES = 12 * 1024 * 1024;
 
 function required(name: string) {
   const value = process.env[name]?.trim();
@@ -58,15 +56,9 @@ export function getStorageConfig(): StorageConfig {
     secretKey: required("CLOUD_SPACE_SECRET_KEY"),
     region: process.env.CLOUD_SPACE_REGION?.trim() || "us-east-1",
     forcePathStyle: process.env.CLOUD_SPACE_FORCE_PATH_STYLE !== "false",
-    presignTtlSeconds: parseInteger(
-      "MEDIA_PRESIGN_TTL_SECONDS",
-      DEFAULT_PRESIGN_TTL_SECONDS,
-      60,
-      900,
-    ),
-    maxImageBytes: parseInteger(
-      "MATCH_IMAGE_MAX_BYTES",
-      DEFAULT_MAX_IMAGE_BYTES,
+    maxGeneratedImageBytes: parseInteger(
+      "GENERATED_IMAGE_MAX_BYTES",
+      DEFAULT_MAX_GENERATED_IMAGE_BYTES,
       1,
       25 * 1024 * 1024,
     ),

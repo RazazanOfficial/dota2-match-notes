@@ -13,7 +13,7 @@
 - مشاهده عمومی و فقط‌خواندنی مچ‌ها با Handle بازیکن
 - گزارش هفتگی با باکس مستقل برای هر روز
 - ذخیره اطلاعات در PostgreSQL از طریق API داخلی Next.js
-- نگهداری تصاویر مچ در Object Storage سازگار با S3 پارس‌پک
+- انتشار تصاویر تولیدشده مچ توسط بک‌اند در Object Storage سازگار با S3 پارس‌پک
 
 ## آماده‌سازی محلی
 
@@ -32,6 +32,7 @@ CLOUD_SPACE_ACCESS_KEY=YOUR_ACCESS_KEY
 CLOUD_SPACE_SECRET_KEY=YOUR_SECRET_KEY
 CLOUD_SPACE_REGION=us-east-1
 CLOUD_SPACE_FORCE_PATH_STYLE=true
+GENERATED_IMAGE_MAX_BYTES=12582912
 ```
 
 سپس وابستگی‌ها و migrationهای دیتابیس را آماده کنید:
@@ -69,15 +70,15 @@ Handle عمومی را می‌توان به شکل کامل مانند `steam_12
 
 ## API تصاویر مچ
 
-- `POST /api/matches/MATCH_ID/images/presign`
-- آپلود مستقیم فایل با `PUT` به `uploadUrl` برگشتی
-- `POST /api/matches/MATCH_ID/images/confirm`
 - `GET /api/matches/MATCH_ID/images`
-- `DELETE /api/matches/MATCH_ID/images/IMAGE_ID`
 
-حداکثر سه تصویر برای هر مچ ثبت می‌شود. فایل از سرور Next.js عبور نمی‌کند و فقط کلید پایدار
-و metadata آن در PostgreSQL ذخیره می‌شود. URL امضاشده موقت و کلیدهای دسترسی پارس‌پک
-هرگز در دیتابیس یا مرورگر به‌صورت دائمی نگهداری نمی‌شوند.
+کاربر API آپلود فایل ندارد. بک‌اند می‌تواند برای هر مچ یک تا سه تصویر تولیدشده را از حافظه
+مستقیماً به پارس‌پک منتشر کند؛ فایل موقت دائمی روی VPS ساخته نمی‌شود. هنگام تولید دوباره،
+رکوردها و فایل‌های نسخه قبلی جایگزین و پاک می‌شوند. فقط کلید پایدار و metadata در PostgreSQL
+نگهداری می‌شود و API عمومی بالا تصاویر نهایی را به‌ترتیب برمی‌گرداند.
+
+تابع داخلی `publishGeneratedMatchImages` قرارداد اتصال مولد تصویر آینده به فضای ذخیره‌سازی
+است. مولد گرافیکی پس از دریافت داده کامل مچ از OpenDota به این تابع متصل خواهد شد.
 
 اطلاعات ثابت هیروها از پروژه MIT
 [`odota/dotaconstants`](https://github.com/odota/dotaconstants) تهیه شده و تصاویر هیروها

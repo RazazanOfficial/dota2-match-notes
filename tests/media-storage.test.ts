@@ -1,14 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { MediaError } from "../lib/media/errors";
+import { validateGeneratedMatchImages } from "../lib/media/validation";
 import { getStorageConfig } from "../lib/storage/config";
 import {
-  createMatchImageKey,
+  createGeneratedMatchImageKey,
   isMatchImageKey,
   makePublicImageUrl,
 } from "../lib/storage/media";
-import {
-  confirmImageSchema,
-  parsePresignInput,
-} from "../lib/media/validation";
 
 const STORAGE_ENV = [
   "CLOUD_SPACE_END_POINT_URL",
@@ -18,8 +16,7 @@ const STORAGE_ENV = [
   "CLOUD_SPACE_SECRET_KEY",
   "CLOUD_SPACE_REGION",
   "CLOUD_SPACE_FORCE_PATH_STYLE",
-  "MEDIA_PRESIGN_TTL_SECONDS",
-  "MATCH_IMAGE_MAX_BYTES",
+  "GENERATED_IMAGE_MAX_BYTES",
 ] as const;
 const originalEnv = Object.fromEntries(
   STORAGE_ENV.map((name) => [name, process.env[name]]),
@@ -33,8 +30,7 @@ beforeEach(() => {
   process.env.CLOUD_SPACE_SECRET_KEY = "test-secret";
   process.env.CLOUD_SPACE_REGION = "test-region";
   process.env.CLOUD_SPACE_FORCE_PATH_STYLE = "true";
-  process.env.MEDIA_PRESIGN_TTL_SECONDS = "300";
-  process.env.MATCH_IMAGE_MAX_BYTES = "8388608";
+  process.env.GENERATED_IMAGE_MAX_BYTES = "12582912";
 });
 
 afterEach(() => {
@@ -53,8 +49,7 @@ describe("ParsPack storage configuration", () => {
       publicBaseUrl: "https://cdn.example.test/bucket",
       region: "test-region",
       forcePathStyle: true,
-      presignTtlSeconds: 300,
-      maxImageBytes: 8_388_608,
+      maxGeneratedImageBytes: 12_582_912,
     });
   });
 
@@ -64,59 +59,71 @@ describe("ParsPack storage configuration", () => {
   });
 });
 
-describe("match image object keys", () => {
+describe("generated match image object keys", () => {
   const matchId = "11111111-1111-4111-8111-111111111111";
 
-  it("creates a UUID key inside the match folder", () => {
-    const key = createMatchImageKey(matchId, "score.WEBP", "image/webp");
+  it("creates a versioned key inside the match folder", () => {
+    const key = createGeneratedMatchImageKey(matchId, 2, "image/webp");
     expect(key).toMatch(
-      /^matches\/11111111-1111-4111-8111-111111111111\/[0-9a-f-]{36}\.webp$/,
+      /^matches\/11111111-1111-4111-8111-111111111111\/generated-2-[0-9a-f-]{36}\.webp$/,
     );
     expect(isMatchImageKey(key, matchId)).toBe(true);
     expect(makePublicImageUrl(key)).toBe(`https://cdn.example.test/bucket/${key}`);
   });
 
-  it("rejects an extension that disagrees with the MIME type", () => {
-    expect(() => createMatchImageKey(matchId, "fake.png", "image/jpeg")).toThrow(
-      "پسوند فایل",
-    );
+  it("rejects image slots outside one to three", () => {
+    expect(() =>
+      createGeneratedMatchImageKey(matchId, 4, "image/png"),
+    ).toThrow("جایگاه تصویر");
   });
 });
 
-describe("match image validation", () => {
-  it("allows JPEG, PNG and WebP inside the configured size limit", () => {
-    expect(
-      parsePresignInput(
-        { fileName: "match.jpg", contentType: "image/jpeg", size: 2048 },
-        4096,
-      ),
-    ).toMatchObject({ contentType: "image/jpeg", size: 2048 });
+describe("server-generated match image validation", () => {
+  const validImage = {
+    fileName: "match-summary.png",
+    mimeType: "image/png" as const,
+    bytes: new Uint8Array([137, 80, 78, 71]),
+    width: 1280,
+    height: 720,
+    altText: "Match summary",
+  };
+
+  it("accepts one to three generated images", () => {
+    const result = validateGeneratedMatchImages(
+      [validImage, { ...validImage, fileName: "scoreboard.png" }],
+      4096,
+    );
+    expect(result).toHaveLength(2);
+    expect(result[0]).toMatchObject({ width: 1280, height: 720 });
   });
 
-  it("rejects oversized or unsupported uploads before presigning", () => {
+  it("rejects more than three generated images", () => {
     expect(() =>
-      parsePresignInput(
-        { fileName: "match.gif", contentType: "image/gif", size: 2048 },
+      validateGeneratedMatchImages(
+        [validImage, validImage, validImage, validImage],
         4096,
       ),
-    ).toThrow();
-    expect(() =>
-      parsePresignInput(
-        { fileName: "match.png", contentType: "image/png", size: 4097 },
-        4096,
-      ),
-    ).toThrow();
+    ).toThrowError(MediaError);
   });
 
-  it("accepts optional dimensions and alt text during confirmation", () => {
-    expect(
-      confirmImageSchema.parse({
-        uploadId: "22222222-2222-4222-8222-222222222222",
-        objectKey: "matches/example/image.webp",
-        width: 1280,
-        height: 720,
-        altText: "Match summary",
-      }),
-    ).toMatchObject({ width: 1280, height: 720, altText: "Match summary" });
+  it("rejects invalid size, dimensions or MIME extension", () => {
+    expect(() =>
+      validateGeneratedMatchImages(
+        [{ ...validImage, bytes: new Uint8Array(0) }],
+        4096,
+      ),
+    ).toThrow("حجم تصویر");
+    expect(() =>
+      validateGeneratedMatchImages(
+        [{ ...validImage, width: 0 }],
+        4096,
+      ),
+    ).toThrow("ابعاد تصویر");
+    expect(() =>
+      validateGeneratedMatchImages(
+        [{ ...validImage, fileName: "fake.jpg" }],
+        4096,
+      ),
+    ).toThrow("پسوند تصویر");
   });
 });
