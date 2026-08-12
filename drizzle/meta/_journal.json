@@ -29,6 +29,13 @@
       "when": 1786133179007,
       "tag": "0003_server_generated_images",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786537414735,
+      "tag": "0004_add_external_api_rate_limits",
+      "breakpoints": true
     }
   ]
 }

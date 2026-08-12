@@ -14,6 +14,7 @@
 - گزارش هفتگی با باکس مستقل برای هر روز
 - ذخیره اطلاعات در PostgreSQL از طریق API داخلی Next.js
 - انتشار تصاویر تولیدشده مچ توسط بک‌اند در Object Storage سازگار با S3 پارس‌پک
+- دریافت و ذخیره آمار واقعی مچ از OpenDota با محدودیت همگام‌سازی دستی
 
 ## آماده‌سازی محلی
 
@@ -24,6 +25,14 @@
 APP_URL=http://localhost:3000
 STEAM_WEB_API_KEY=YOUR_STEAM_WEB_API_KEY
 DATABASE_URL=postgresql://dota_notes_app:YOUR_PASSWORD@127.0.0.1:5432/dota_notes
+
+OPENDOTA_API_BASE_URL=https://api.opendota.com/api
+OPENDOTA_API_KEY=
+OPENDOTA_TIMEOUT_MS=10000
+OPENDOTA_MAX_RESPONSE_BYTES=8388608
+OPENDOTA_MANUAL_SYNC_COOLDOWN_SECONDS=300
+OPENDOTA_MINUTE_REQUEST_LIMIT=50
+OPENDOTA_DAILY_REQUEST_LIMIT=2900
 
 CLOUD_SPACE_END_POINT_URL=https://YOUR_ENDPOINT
 CLOUD_SPACE_BUCKET=YOUR_BUCKET
@@ -79,6 +88,22 @@ Handle عمومی را می‌توان به شکل کامل مانند `steam_12
 
 تابع داخلی `publishGeneratedMatchImages` قرارداد اتصال مولد تصویر آینده به فضای ذخیره‌سازی
 است. مولد گرافیکی پس از دریافت داده کامل مچ از OpenDota به این تابع متصل خواهد شد.
+
+## API همگام‌سازی OpenDota
+
+- `POST /api/matches/JOURNAL_MATCH_UUID/opendota`
+- بدنه: `{ "dotaMatchId": "8981928176" }`
+
+این مسیر فقط برای صاحب مچ و با نشست Steam قابل استفاده است و درخواست مرورگر باید از Origin
+خود سایت ارسال شود. هر کاربر به‌صورت پیش‌فرض هر ۵ دقیقه یک همگام‌سازی دستی دارد. پاسخ کامل
+OpenDota در `dota_matches.raw_data` ذخیره می‌شود و آمار همان بازیکن شامل نتیجه، هیرو، K/D/A،
+GPM، XPM، Net Worth و Damageها در `journal_matches` ثبت می‌شود. Match ID به‌شکل رشته ارسال
+می‌شود تا تبدیل عددی ناخواسته در کلاینت‌های مختلف رخ ندهد.
+
+کلید `OPENDOTA_API_KEY` اختیاری است و نباید با پیشوند `NEXT_PUBLIC_` تعریف یا Commit شود.
+علاوه بر Cooldown هر کاربر، شمارنده‌های سراسری دقیقه و روز در PostgreSQL نگهداری می‌شوند تا
+مجموع درخواست کاربران از سقف پلن OpenDota عبور نکند. مقادیر پیش‌فرض کمی پایین‌تر از سقف
+عمومی ۶۰ درخواست در دقیقه و ۳۰۰۰ درخواست در روز انتخاب شده‌اند.
 
 اطلاعات ثابت هیروها از پروژه MIT
 [`odota/dotaconstants`](https://github.com/odota/dotaconstants) تهیه شده و تصاویر هیروها
