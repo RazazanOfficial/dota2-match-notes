@@ -3,6 +3,7 @@ import {
   getWeekDates,
   isValidUsername,
   mergeProfiles,
+  normalizePublicHandle,
   normalizeProfile,
   sanitizeMatch,
   summarizeMatches,
@@ -98,5 +99,10 @@ describe("summary and username", () => {
     expect(isValidUsername("meri_j.1")).toBe(true);
     expect(isValidUsername("bad name")).toBe(false);
     expect(isValidUsername("__proto__")).toBe(false);
+  });
+
+  it("accepts a Steam account id without the public handle prefix", () => {
+    expect(normalizePublicHandle("988195076")).toBe("steam_988195076");
+    expect(normalizePublicHandle("STEAM_988195076")).toBe("steam_988195076");
   });
 });

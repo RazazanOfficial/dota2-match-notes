@@ -3,6 +3,7 @@ import {
   dayInputSchema,
   parseDateKey,
   parseDateRange,
+  parseHandle,
 } from "../lib/journal/validation";
 
 function match(id = "11111111-1111-4111-8111-111111111111") {
@@ -57,5 +58,10 @@ describe("journal validation", () => {
 
     expect(parseDateRange(valid).success).toBe(true);
     expect(parseDateRange(invalid).success).toBe(false);
+  });
+
+  it("normalizes a bare Steam account id for public journal reads", () => {
+    expect(parseHandle("988195076")).toBe("steam_988195076");
+    expect(parseHandle("steam_988195076")).toBe("steam_988195076");
   });
 });

@@ -13,8 +13,13 @@ import {
   journalDays,
   journalMatches,
   matchBans,
+  matchImages,
   users,
 } from "@/lib/db/schema";
+import {
+  deleteStoredObject,
+  isStorageNotFound,
+} from "@/lib/storage/client";
 import type { DayInput } from "./validation";
 
 interface JournalOwner {
@@ -27,6 +32,18 @@ interface JournalOwner {
 interface DateRange {
   from: string;
   to: string;
+}
+
+async function deleteRemovedMatchImage(objectKey: string) {
+  try {
+    await deleteStoredObject(objectKey);
+  } catch (error) {
+    if (!isStorageNotFound(error)) {
+      console.warn("Unable to delete image for removed journal match", {
+        objectKey,
+      });
+    }
+  }
 }
 
 export async function findJournalOwnerById(id: string) {
@@ -139,6 +156,7 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
 export async function saveJournalDay(userId: string, dateKey: string, input: DayInput) {
   const db = getDb();
   const now = new Date();
+  const removedImageKeys: string[] = [];
 
   await db.transaction(async (tx) => {
     await tx.execute(
@@ -177,6 +195,12 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
       .filter((id) => !incomingIds.has(id));
 
     if (removedIds.length) {
+      const removedImages = await tx
+        .select({ objectKey: matchImages.objectKey })
+        .from(matchImages)
+        .where(inArray(matchImages.matchId, removedIds));
+      removedImageKeys.push(...removedImages.map((image) => image.objectKey));
+
       await tx
         .delete(journalMatches)
         .where(
@@ -239,6 +263,8 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
 
     await tx.update(users).set({ updatedAt: now }).where(eq(users.id, userId));
   });
+
+  await Promise.allSettled(removedImageKeys.map(deleteRemovedMatchImage));
 
   const owner = await findJournalOwnerById(userId);
   if (!owner) throw new Error("Journal owner disappeared after saving");

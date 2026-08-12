@@ -242,6 +242,26 @@ export const matchImages = pgTable(
   ],
 );
 
+export const externalApiRateLimits = pgTable(
+  "external_api_rate_limits",
+  {
+    key: varchar("key", { length: 64 }).primaryKey(),
+    windowStartedAt: timestamp("window_started_at", {
+      withTimezone: true,
+    }).notNull(),
+    requestCount: integer("request_count").default(0).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    check(
+      "external_api_rate_limits_count_check",
+      sql`${table.requestCount} >= 0`,
+    ),
+  ],
+);
+
 export const syncJobs = pgTable(
   "sync_jobs",
   {

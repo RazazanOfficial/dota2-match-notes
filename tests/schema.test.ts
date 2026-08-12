@@ -1,6 +1,7 @@
 import { getTableConfig } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 import {
+  externalApiRateLimits,
   journalMatches,
   matchImages,
   sessions,
@@ -14,10 +15,19 @@ describe("database schema", () => {
     expect(getTableConfig(sessions).name).toBe("sessions");
     expect(getTableConfig(journalMatches).name).toBe("journal_matches");
     expect(getTableConfig(matchImages).name).toBe("match_images");
+    expect(getTableConfig(externalApiRateLimits).name).toBe(
+      "external_api_rate_limits",
+    );
     expect(getTableConfig(syncJobs).name).toBe("sync_jobs");
   });
 
-  it("enforces three image slots at the database level", () => {
+  it("stores persistent external API rate-limit windows", () => {
+    const config = getTableConfig(externalApiRateLimits);
+    const checkNames = config.checks.map((constraint) => constraint.name);
+    expect(checkNames).toContain("external_api_rate_limits_count_check");
+  });
+
+  it("enforces three generated image slots at the database level", () => {
     const config = getTableConfig(matchImages);
     const checkNames = config.checks.map((constraint) => constraint.name);
     const indexNames = config.indexes.map((constraint) => constraint.config.name);
