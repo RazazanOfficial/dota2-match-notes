@@ -21,6 +21,31 @@ const openDotaPlayerSchema = z
   })
   .passthrough();
 
+const openDotaRecentMatchSchema = z
+  .object({
+    match_id: z.number().int().positive().max(MAX_DOTA_ID),
+    player_slot: z.number().int().min(0).max(255),
+    radiant_win: z.boolean(),
+    duration: z.number().int().min(0).max(24 * 60 * 60),
+    game_mode: z.number().int().min(0).nullable().optional(),
+    lobby_type: z.number().int().min(0).nullable().optional(),
+    hero_id: z.number().int().positive(),
+    start_time: z.number().int().min(0),
+    kills: nullableStat(32_767),
+    deaths: nullableStat(32_767),
+    assists: nullableStat(32_767),
+    gold_per_min: nullableStat(32_767),
+    xp_per_min: nullableStat(32_767),
+    net_worth: nullableStat(2_147_483_647),
+    hero_damage: nullableStat(2_147_483_647),
+    tower_damage: nullableStat(2_147_483_647),
+  })
+  .passthrough();
+
+const openDotaRecentMatchesSchema = z
+  .array(openDotaRecentMatchSchema)
+  .max(100);
+
 export const openDotaMatchSchema = z
   .object({
     match_id: z.number().int().positive().max(MAX_DOTA_ID),
@@ -69,5 +94,21 @@ export function parseOpenDotaMatch(input: unknown, expectedMatchId: number) {
   return result.data;
 }
 
+export function parseOpenDotaRecentMatches(input: unknown) {
+  const result = openDotaRecentMatchesSchema.safeParse(input);
+  if (!result.success) {
+    throw new OpenDotaError(
+      502,
+      "invalid_opendota_response",
+      "فهرست مچ‌های OpenDota ساختار معتبر ندارد",
+    );
+  }
+
+  const unique = new Map<number, z.infer<typeof openDotaRecentMatchSchema>>();
+  for (const match of result.data) unique.set(match.match_id, match);
+  return [...unique.values()].sort((left, right) => right.start_time - left.start_time);
+}
+
 export type OpenDotaMatch = z.infer<typeof openDotaMatchSchema>;
 export type OpenDotaPlayer = z.infer<typeof openDotaPlayerSchema>;
+export type OpenDotaRecentMatch = z.infer<typeof openDotaRecentMatchSchema>;

@@ -1,15 +1,21 @@
 import { getOpenDotaConfig } from "./config";
 import { OpenDotaError } from "./errors";
-import { parseOpenDotaMatch } from "./validation";
+import {
+  parseOpenDotaMatch,
+  parseOpenDotaRecentMatches,
+} from "./validation";
 
 function parseRetryAfter(value: string | null) {
   const seconds = Number(value);
   return Number.isInteger(seconds) && seconds > 0 ? seconds : undefined;
 }
 
-export async function fetchOpenDotaMatch(dotaMatchId: number) {
+async function fetchOpenDotaJson(
+  path: string,
+  notFound: { code: string; message: string },
+) {
   const config = getOpenDotaConfig();
-  const url = new URL(`${config.baseUrl}/matches/${dotaMatchId}`);
+  const url = new URL(`${config.baseUrl}/${path.replace(/^\/+/, "")}`);
   if (config.apiKey) url.searchParams.set("api_key", config.apiKey);
 
   const controller = new AbortController();
@@ -42,8 +48,8 @@ export async function fetchOpenDotaMatch(dotaMatchId: number) {
   if (response.status === 404) {
     throw new OpenDotaError(
       404,
-      "opendota_match_not_found",
-      "این Match ID در OpenDota پیدا نشد",
+      notFound.code,
+      notFound.message,
     );
   }
   if (response.status === 429) {
@@ -91,5 +97,24 @@ export async function fetchOpenDotaMatch(dotaMatchId: number) {
     );
   }
 
+  return raw;
+}
+
+export async function fetchOpenDotaMatch(dotaMatchId: number) {
+  const raw = await fetchOpenDotaJson(`matches/${dotaMatchId}`, {
+    code: "opendota_match_not_found",
+    message: "این Match ID در OpenDota پیدا نشد",
+  });
   return parseOpenDotaMatch(raw, dotaMatchId);
+}
+
+export async function fetchOpenDotaRecentMatches(steamAccountId: number) {
+  const raw = await fetchOpenDotaJson(
+    `players/${steamAccountId}/recentMatches`,
+    {
+      code: "opendota_player_not_found",
+      message: "پروفایل بازیکن در OpenDota پیدا نشد",
+    },
+  );
+  return parseOpenDotaRecentMatches(raw);
 }

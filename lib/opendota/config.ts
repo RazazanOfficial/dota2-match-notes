@@ -6,6 +6,7 @@ export interface OpenDotaConfig {
   manualSyncCooldownSeconds: number;
   minuteRequestLimit: number;
   dailyRequestLimit: number;
+  maxNewMatchesPerSync: number;
 }
 
 const DEFAULT_BASE_URL = "https://api.opendota.com/api";
@@ -14,6 +15,7 @@ const DEFAULT_MAX_RESPONSE_BYTES = 8 * 1024 * 1024;
 const DEFAULT_MANUAL_SYNC_COOLDOWN_SECONDS = 300;
 const DEFAULT_MINUTE_REQUEST_LIMIT = 50;
 const DEFAULT_DAILY_REQUEST_LIMIT = 2_900;
+const DEFAULT_MAX_NEW_MATCHES_PER_SYNC = 3;
 
 function parseInteger(name: string, fallback: number, min: number, max: number) {
   const raw = process.env[name]?.trim();
@@ -67,6 +69,12 @@ export function getOpenDotaConfig(): OpenDotaConfig {
       DEFAULT_DAILY_REQUEST_LIMIT,
       1,
       1_000_000,
+    ),
+    maxNewMatchesPerSync: parseInteger(
+      "OPENDOTA_MAX_NEW_MATCHES_PER_SYNC",
+      DEFAULT_MAX_NEW_MATCHES_PER_SYNC,
+      1,
+      20,
     ),
   };
 }

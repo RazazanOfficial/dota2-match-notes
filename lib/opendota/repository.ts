@@ -1,9 +1,11 @@
-import { and, eq, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 import { heroById } from "@/data/heroes";
 import { getDb } from "@/lib/db";
+import { toJournalDateKey } from "@/lib/journal/timezone";
 import {
   dotaMatches,
   externalApiRateLimits,
+  journalDays,
   journalMatches,
   users,
 } from "@/lib/db/schema";
@@ -160,6 +162,153 @@ export async function claimOpenDotaRequestQuota(params: {
         })
         .where(eq(externalApiRateLimits.key, window.key));
     }
+  });
+}
+
+export async function findImportedOpenDotaMatchIds(
+  userId: string,
+  dotaMatchIds: number[],
+) {
+  if (!dotaMatchIds.length) return new Set<number>();
+
+  const rows = await getDb()
+    .select({ dotaMatchId: journalMatches.dotaMatchId })
+    .from(journalMatches)
+    .where(
+      and(
+        eq(journalMatches.userId, userId),
+        inArray(journalMatches.dotaMatchId, dotaMatchIds),
+      ),
+    );
+
+  return new Set(
+    rows
+      .map((row) => row.dotaMatchId)
+      .filter((matchId): matchId is number => matchId !== null),
+  );
+}
+
+export async function saveDiscoveredOpenDotaMatch(params: {
+  userId: string;
+  match: OpenDotaMatch;
+  player: OpenDotaPlayer;
+}) {
+  const { userId, match, player } = params;
+  const now = new Date();
+  const startedAt = new Date(match.start_time * 1_000);
+  const dayKey = toJournalDateKey(startedAt);
+  const isRadiant = player.player_slot < 128;
+  const result = match.radiant_win === isRadiant ? "win" : "loss";
+  const heroName = heroById(player.hero_id)?.name || `Hero ${player.hero_id}`;
+
+  return getDb().transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${`opendota-discovery:${userId}:${dayKey}`}, 0))`,
+    );
+
+    const [duplicate] = await tx
+      .select({ id: journalMatches.id, day: journalDays.day })
+      .from(journalMatches)
+      .innerJoin(journalDays, eq(journalMatches.dayId, journalDays.id))
+      .where(
+        and(
+          eq(journalMatches.userId, userId),
+          eq(journalMatches.dotaMatchId, match.match_id),
+        ),
+      )
+      .limit(1);
+    if (duplicate) {
+      return {
+        created: false as const,
+        journalMatchId: duplicate.id,
+        dotaMatchId: match.match_id,
+        day: duplicate.day,
+      };
+    }
+
+    const [day] = await tx
+      .insert(journalDays)
+      .values({ userId, day: dayKey })
+      .onConflictDoUpdate({
+        target: [journalDays.userId, journalDays.day],
+        set: { updatedAt: now },
+      })
+      .returning({ id: journalDays.id });
+    const [numberRow] = await tx
+      .select({
+        maximum: sql<number>`coalesce(max(${journalMatches.number}), 0)::int`,
+      })
+      .from(journalMatches)
+      .where(eq(journalMatches.dayId, day.id));
+    const number = (numberRow?.maximum || 0) + 1;
+    if (number > 32_767) {
+      throw new OpenDotaError(
+        409,
+        "journal_day_full",
+        "ظرفیت ثبت مچ برای این روز تکمیل شده است",
+      );
+    }
+
+    await tx
+      .insert(dotaMatches)
+      .values({
+        matchId: match.match_id,
+        startedAt,
+        durationSeconds: match.duration,
+        radiantWin: match.radiant_win,
+        gameMode: match.game_mode ?? null,
+        lobbyType: match.lobby_type ?? null,
+        rawData: match,
+        fetchedAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: dotaMatches.matchId,
+        set: {
+          startedAt,
+          durationSeconds: match.duration,
+          radiantWin: match.radiant_win,
+          gameMode: match.game_mode ?? null,
+          lobbyType: match.lobby_type ?? null,
+          rawData: match,
+          fetchedAt: now,
+          updatedAt: now,
+        },
+      });
+
+    const [saved] = await tx
+      .insert(journalMatches)
+      .values({
+        userId,
+        dayId: day.id,
+        dotaMatchId: match.match_id,
+        source: "opendota",
+        number,
+        heroId: player.hero_id,
+        heroName,
+        result,
+        startedAt,
+        durationSeconds: match.duration,
+        kills: player.kills ?? null,
+        deaths: player.deaths ?? null,
+        assists: player.assists ?? null,
+        goldPerMinute: player.gold_per_min ?? null,
+        xpPerMinute: player.xp_per_min ?? null,
+        netWorth: player.net_worth ?? null,
+        heroDamage: player.hero_damage ?? null,
+        towerDamage: player.tower_damage ?? null,
+        createdAt: startedAt,
+        updatedAt: now,
+      })
+      .returning({ id: journalMatches.id });
+
+    await tx.update(users).set({ updatedAt: now }).where(eq(users.id, userId));
+    return {
+      created: true as const,
+      journalMatchId: saved.id,
+      dotaMatchId: match.match_id,
+      day: dayKey,
+    };
   });
 }
 
