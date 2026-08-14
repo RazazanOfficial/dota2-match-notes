@@ -37,6 +37,16 @@ OPENDOTA_MINUTE_REQUEST_LIMIT=50
 OPENDOTA_DAILY_REQUEST_LIMIT=2900
 OPENDOTA_MAX_NEW_MATCHES_PER_SYNC=3
 
+SYNC_WORKER_SECRET=GENERATE_A_RANDOM_32_PLUS_CHARACTER_SECRET
+SCHEDULED_SYNC_INTERVAL_SECONDS=3600
+SCHEDULED_SYNC_ENQUEUE_BATCH_SIZE=25
+SCHEDULED_SYNC_PROCESS_BATCH_SIZE=1
+SCHEDULED_SYNC_STALE_LOCK_SECONDS=900
+SCHEDULED_SYNC_MAX_ATTEMPTS=3
+SCHEDULED_SYNC_RETRY_BASE_SECONDS=60
+SCHEDULED_SYNC_LOOKBACK_SECONDS=21600
+SCHEDULED_SYNC_INITIAL_MATCHES=1
+
 CLOUD_SPACE_END_POINT_URL=https://YOUR_ENDPOINT
 CLOUD_SPACE_BUCKET=YOUR_BUCKET
 CLOUD_SPACE_PUBLIC_BASE_URL=https://YOUR_PUBLIC_BUCKET_ROOT
@@ -122,6 +132,34 @@ Cooldown پنج‌دقیقه‌ای و سهمیه‌های سراسری OpenDota
 زمانی `JOURNAL_TIME_ZONE` محاسبه می‌شود که مقدار پیش‌فرض آن `Asia/Tehran` است؛ بنابراین ساعت
 UTC سرور VPS تاریخ دفتر را جابه‌جا نمی‌کند. این سرویس پایه مشترک دکمه Sync و Scheduler ساعتی
 VPS خواهد بود.
+
+## Worker همگام‌سازی زمان‌بندی‌شده
+
+- `POST /api/internal/sync/tick`
+- Header اجباری: `Authorization: Bearer SYNC_WORKER_SECRET`
+
+هر Tick ابتدا Jobهای گیرکرده را بازیابی می‌کند، کاربران موعدرسیده را با رعایت Job فعال یکتا
+در صف می‌گذارد و سپس تعداد محدودی Job را پردازش می‌کند. Claim هر Job با قفل ردیفی
+`FOR UPDATE SKIP LOCKED` انجام می‌شود؛ بنابراین اجرای هم‌زمان دو Tick باعث پردازش دوباره یک
+کاربر نمی‌شود. خطاهای موقت OpenDota با تأخیر نمایی Retry می‌شوند و بعد از سقف تلاش، Job به
+`failed` می‌رود. زمان آخرین بررسی کاربر نیز پس از موفقیت یا شکست نهایی ثبت می‌شود تا Worker
+در هر Tick همان کاربر را دوباره صف نکند.
+
+اگر کاربر قبلاً Sync دستی یا زمان‌بندی‌شده داشته باشد، Worker فقط مچ‌های جدیدتر از آن زمان را
+با هم‌پوشانی `SCHEDULED_SYNC_LOOKBACK_SECONDS` بررسی می‌کند. برای حسابی که هیچ Sync قبلی
+ندارد، فقط `SCHEDULED_SYNC_INITIAL_MATCHES` مچ اول وارد می‌شود تا تاریخچه قدیمی ناخواسته
+Backfill نشود. همه درخواست‌های Worker از همان سهمیه سراسری OpenDota عبور می‌کنند و در صورت
+پرشدن سهمیه، پردازش Batch زودتر متوقف می‌شود.
+
+برای ساخت Secret محلی:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+```
+
+این Secret فقط در `.env.local` یا تنظیمات سرویس VPS قرار می‌گیرد و نباید به Git، مرورگر یا
+متغیرهای `NEXT_PUBLIC_` وارد شود. این پچ خود Timer سیستم‌عامل را فعال نمی‌کند؛ endpoint و صف
+را آماده می‌کند تا در مرحله استقرار با systemd timer فراخوانی شود.
 
 اطلاعات ثابت هیروها از پروژه MIT
 [`odota/dotaconstants`](https://github.com/odota/dotaconstants) تهیه شده و تصاویر هیروها
