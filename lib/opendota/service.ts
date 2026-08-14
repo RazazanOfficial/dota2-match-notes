@@ -5,6 +5,7 @@ import {
 } from "./client";
 import { getOpenDotaConfig } from "./config";
 import { OpenDotaError } from "./errors";
+import { selectRecentSyncMatches } from "./recent";
 import {
   claimManualOpenDotaSync,
   claimOpenDotaRequestQuota,
@@ -41,6 +42,91 @@ function failedMatch(dotaMatchId: number, error: unknown) {
     dotaMatchId,
     code: "match_import_failed",
     message: "ثبت این مچ انجام نشد",
+  };
+}
+
+interface RecentSyncUser {
+  id: string;
+  steamAccountId: number;
+}
+
+interface RecentSyncOptions {
+  maxNewMatches: number;
+  since?: Date | null;
+  lookbackSeconds?: number;
+  initialMatches?: number;
+  throwOnRetryableError?: boolean;
+  onExternalRequestClaimed?: () => void;
+}
+
+async function discoverRecentMatches(
+  user: RecentSyncUser,
+  options: RecentSyncOptions,
+) {
+  const config = getOpenDotaConfig();
+  await claimOpenDotaRequestQuota(quotaConfig(config));
+  options.onExternalRequestClaimed?.();
+  const recentMatches = await fetchOpenDotaRecentMatches(user.steamAccountId);
+  const importedIds = await findImportedOpenDotaMatchIds(
+    user.id,
+    recentMatches.map((match) => match.match_id),
+  );
+  const newMatches = recentMatches.filter(
+    (match) => !importedIds.has(match.match_id),
+  );
+  const selection = selectRecentSyncMatches(newMatches, options);
+  const imported: Array<{
+    journalMatchId: string;
+    dotaMatchId: number;
+    day: string;
+  }> = [];
+  const failed: ReturnType<typeof failedMatch>[] = [];
+  let attempted = 0;
+
+  for (const candidate of selection.candidates) {
+    attempted += 1;
+    try {
+      await claimOpenDotaRequestQuota(quotaConfig(config));
+      options.onExternalRequestClaimed?.();
+      const match = await fetchOpenDotaMatch(candidate.match_id);
+      const player =
+        match.players.find(
+          (item) => item.account_id === user.steamAccountId,
+        ) ||
+        match.players.find(
+          (item) => item.player_slot === candidate.player_slot,
+        );
+      if (!player) {
+        throw new OpenDotaError(
+          422,
+          "player_not_found_in_match",
+          "بازیکن داخل اطلاعات کامل مچ پیدا نشد",
+        );
+      }
+
+      const saved = await saveDiscoveredOpenDotaMatch({
+        userId: user.id,
+        match,
+        player,
+      });
+      if (saved.created) imported.push(saved);
+      else importedIds.add(saved.dotaMatchId);
+    } catch (error) {
+      if (!(error instanceof OpenDotaError)) throw error;
+      const retryable = error.status === 429 || error.status >= 500;
+      if (retryable && options.throwOnRetryableError) throw error;
+      failed.push(failedMatch(candidate.match_id, error));
+      if (error.status === 429) break;
+    }
+  }
+
+  return {
+    checked: recentMatches.length,
+    alreadyImported: importedIds.size,
+    imported,
+    failed,
+    deferred: Math.max(0, selection.eligible.length - attempted),
+    ignoredOlder: selection.ignoredOlder,
   };
 }
 
@@ -116,67 +202,14 @@ export async function syncRecentMatchesFromOpenDota(user: SessionUser) {
   let externalRequestClaimed = false;
 
   try {
-    await claimOpenDotaRequestQuota(quotaConfig(config));
-    externalRequestClaimed = true;
-    const recentMatches = await fetchOpenDotaRecentMatches(user.steamAccountId);
-    const importedIds = await findImportedOpenDotaMatchIds(
-      user.id,
-      recentMatches.map((match) => match.match_id),
-    );
-    const newMatches = recentMatches.filter(
-      (match) => !importedIds.has(match.match_id),
-    );
-    const candidates = newMatches
-      .slice(0, config.maxNewMatchesPerSync)
-      .sort((left, right) => left.start_time - right.start_time);
-    const imported: Array<{
-      journalMatchId: string;
-      dotaMatchId: number;
-      day: string;
-    }> = [];
-    const failed: ReturnType<typeof failedMatch>[] = [];
-    let attempted = 0;
-
-    for (const candidate of candidates) {
-      attempted += 1;
-      try {
-        await claimOpenDotaRequestQuota(quotaConfig(config));
+    const sync = await discoverRecentMatches(user, {
+      maxNewMatches: config.maxNewMatchesPerSync,
+      onExternalRequestClaimed: () => {
         externalRequestClaimed = true;
-        const match = await fetchOpenDotaMatch(candidate.match_id);
-        const player =
-          match.players.find(
-            (item) => item.account_id === user.steamAccountId,
-          ) ||
-          match.players.find(
-            (item) => item.player_slot === candidate.player_slot,
-          );
-        if (!player) {
-          throw new OpenDotaError(
-            422,
-            "player_not_found_in_match",
-            "بازیکن داخل اطلاعات کامل مچ پیدا نشد",
-          );
-        }
-
-        const saved = await saveDiscoveredOpenDotaMatch({
-          userId: user.id,
-          match,
-          player,
-        });
-        if (saved.created) imported.push(saved);
-        else importedIds.add(saved.dotaMatchId);
-      } catch (error) {
-        failed.push(failedMatch(candidate.match_id, error));
-        if (error instanceof OpenDotaError && error.status === 429) break;
-      }
-    }
-
+      },
+    });
     return {
-      checked: recentMatches.length,
-      alreadyImported: importedIds.size,
-      imported,
-      failed,
-      deferred: Math.max(0, newMatches.length - attempted),
+      ...sync,
       nextAllowedAt: new Date(
         claimedAt.getTime() + config.manualSyncCooldownSeconds * 1_000,
       ).toISOString(),
@@ -187,4 +220,21 @@ export async function syncRecentMatchesFromOpenDota(user: SessionUser) {
     }
     throw error;
   }
+}
+
+export async function syncScheduledMatchesFromOpenDota(
+  user: RecentSyncUser & {
+    lastManualSyncAt: Date | null;
+    lastScheduledSyncAt: Date | null;
+  },
+  options: { lookbackSeconds: number; initialMatches: number },
+) {
+  const config = getOpenDotaConfig();
+  return discoverRecentMatches(user, {
+    maxNewMatches: config.maxNewMatchesPerSync,
+    since: user.lastScheduledSyncAt || user.lastManualSyncAt,
+    lookbackSeconds: options.lookbackSeconds,
+    initialMatches: options.initialMatches,
+    throwOnRetryableError: true,
+  });
 }
