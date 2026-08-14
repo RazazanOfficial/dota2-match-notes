@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { and, eq, gt } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { sessions, users } from "@/lib/db/schema";
+import { isSuperAdminSteamId } from "@/lib/admin/config";
 import { SESSION_DURATION_SECONDS } from "./config";
 
 export interface SessionUser {
@@ -13,6 +14,7 @@ export interface SessionUser {
   avatarUrl: string | null;
   profileUrl: string | null;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
 }
 
 function hashSessionToken(token: string) {
@@ -56,7 +58,14 @@ export async function getSessionUser(token: string | undefined) {
     )
     .limit(1);
 
-  return (row || null) satisfies SessionUser | null;
+  if (!row) return null;
+
+  const isSuperAdmin = isSuperAdminSteamId(row.steamId);
+  return {
+    ...row,
+    isAdmin: row.isAdmin || isSuperAdmin,
+    isSuperAdmin,
+  } satisfies SessionUser;
 }
 
 export async function deleteSession(token: string | undefined) {

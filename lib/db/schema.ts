@@ -262,6 +262,45 @@ export const externalApiRateLimits = pgTable(
   ],
 );
 
+export const adminAuditLogs = pgTable(
+  "admin_audit_logs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    actorUserId: uuid("actor_user_id")
+      .notNull()
+      .references(() => users.id),
+    targetUserId: uuid("target_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    action: varchar("action", { length: 64 }).notNull(),
+    metadata: jsonb("metadata")
+      .$type<Record<string, string | number | boolean | null>>()
+      .default({})
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("admin_audit_logs_actor_created_idx").on(
+      table.actorUserId,
+      table.createdAt,
+    ),
+    index("admin_audit_logs_target_created_idx").on(
+      table.targetUserId,
+      table.createdAt,
+    ),
+    index("admin_audit_logs_action_created_idx").on(
+      table.action,
+      table.createdAt,
+    ),
+    check(
+      "admin_audit_logs_action_length_check",
+      sql`char_length(${table.action}) between 3 and 64`,
+    ),
+  ],
+);
+
 export const syncJobs = pgTable(
   "sync_jobs",
   {

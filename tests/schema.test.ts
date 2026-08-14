@@ -1,6 +1,7 @@
 import { getTableConfig } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 import {
+  adminAuditLogs,
   externalApiRateLimits,
   journalMatches,
   matchImages,
@@ -19,6 +20,7 @@ describe("database schema", () => {
       "external_api_rate_limits",
     );
     expect(getTableConfig(syncJobs).name).toBe("sync_jobs");
+    expect(getTableConfig(adminAuditLogs).name).toBe("admin_audit_logs");
   });
 
   it("stores persistent external API rate-limit windows", () => {
@@ -41,5 +43,15 @@ describe("database schema", () => {
     const indexNames = config.indexes.map((constraint) => constraint.config.name);
 
     expect(indexNames).toContain("sync_jobs_one_active_per_user_uidx");
+  });
+
+  it("indexes immutable Super Admin audit records", () => {
+    const config = getTableConfig(adminAuditLogs);
+    const indexNames = config.indexes.map((constraint) => constraint.config.name);
+    const checkNames = config.checks.map((constraint) => constraint.name);
+
+    expect(indexNames).toContain("admin_audit_logs_actor_created_idx");
+    expect(indexNames).toContain("admin_audit_logs_action_created_idx");
+    expect(checkNames).toContain("admin_audit_logs_action_length_check");
   });
 });

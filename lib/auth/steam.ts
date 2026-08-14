@@ -40,6 +40,20 @@ export function steamIdToAccountId(steamId: string) {
   return Number(accountId);
 }
 
+export function steamAccountIdToSteamId(accountId: string | number) {
+  const normalized = String(accountId).trim();
+  if (!/^\d{1,10}$/.test(normalized)) {
+    throw new Error("Steam Account ID is invalid");
+  }
+
+  const value = BigInt(normalized);
+  if (value < 0n || value > MAX_ACCOUNT_ID) {
+    throw new Error("Steam Account ID is outside the supported range");
+  }
+
+  return String(STEAM_ID_BASE + value);
+}
+
 export function buildSteamReturnUrl(state: string) {
   const returnUrl = new URL("/api/auth/steam/callback", getAppUrl());
   returnUrl.searchParams.set("state", state);
@@ -128,53 +142,69 @@ export async function verifySteamOpenId(params: URLSearchParams, state: string) 
   return extractSteamId(params);
 }
 
-export async function fetchSteamProfile(steamId: string): Promise<SteamProfile> {
+function fallbackSteamProfile(steamId: string): SteamProfile {
   const accountId = steamIdToAccountId(steamId);
-  const fallback: SteamProfile = {
+  return {
     steamId,
     accountId,
     displayName: `Steam ${accountId}`,
     avatarUrl: null,
     profileUrl: `https://steamcommunity.com/profiles/${steamId}/`,
   };
+}
+
+async function requestSteamProfile(steamId: string) {
+  const fallback = fallbackSteamProfile(steamId);
   const apiKey = process.env.STEAM_WEB_API_KEY?.trim();
 
-  if (!apiKey) {
-    return fallback;
+  if (!apiKey) return null;
+
+  const url = new URL(
+    "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/",
+  );
+  url.searchParams.set("key", apiKey);
+  url.searchParams.set("steamids", steamId);
+
+  const response = await fetch(url, {
+    cache: "no-store",
+    signal: AbortSignal.timeout(10_000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Steam profile request failed with status ${response.status}`);
   }
 
+  const data = (await response.json()) as SteamPlayerSummaryResponse;
+  const player = data.response?.players?.[0];
+
+  if (!player || player.steamid !== steamId) return null;
+
+  return {
+    steamId,
+    accountId: fallback.accountId,
+    displayName: player.personaname?.trim() || fallback.displayName,
+    avatarUrl: player.avatarfull?.trim() || null,
+    profileUrl: player.profileurl?.trim() || fallback.profileUrl,
+  } satisfies SteamProfile;
+}
+
+export async function fetchSteamProfile(steamId: string): Promise<SteamProfile> {
+  const fallback = fallbackSteamProfile(steamId);
+
   try {
-    const url = new URL(
-      "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/",
-    );
-    url.searchParams.set("key", apiKey);
-    url.searchParams.set("steamids", steamId);
-
-    const response = await fetch(url, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(10_000),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Steam profile request failed with status ${response.status}`);
-    }
-
-    const data = (await response.json()) as SteamPlayerSummaryResponse;
-    const player = data.response?.players?.[0];
-
-    if (!player || player.steamid !== steamId) {
-      return fallback;
-    }
-
-    return {
-      steamId,
-      accountId,
-      displayName: player.personaname?.trim() || fallback.displayName,
-      avatarUrl: player.avatarfull?.trim() || null,
-      profileUrl: player.profileurl?.trim() || fallback.profileUrl,
-    };
+    return (await requestSteamProfile(steamId)) || fallback;
   } catch (error) {
     console.error("Steam profile lookup failed", error);
     return fallback;
   }
+}
+
+export async function fetchSteamProfileRequired(steamId: string) {
+  if (!process.env.STEAM_WEB_API_KEY?.trim()) {
+    throw new Error("STEAM_WEB_API_KEY is required for admin user provisioning");
+  }
+
+  const profile = await requestSteamProfile(steamId);
+  if (!profile) throw new Error("Steam profile was not found");
+  return profile;
 }

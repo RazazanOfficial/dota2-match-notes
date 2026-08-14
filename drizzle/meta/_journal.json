@@ -36,6 +36,13 @@
       "when": 1786537414735,
       "tag": "0004_add_external_api_rate_limits",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786726246955,
+      "tag": "0005_add_admin_audit_logs",
+      "breakpoints": true
     }
   ]
 }

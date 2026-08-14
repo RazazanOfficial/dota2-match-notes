@@ -24,6 +24,7 @@
 ```dotenv
 APP_URL=http://localhost:3000
 STEAM_WEB_API_KEY=YOUR_STEAM_WEB_API_KEY
+SUPER_ADMIN_STEAM_IDS=YOUR_STEAM_ID_64
 DATABASE_URL=postgresql://dota_notes_app:YOUR_PASSWORD@127.0.0.1:5432/dota_notes
 
 OPENDOTA_API_BASE_URL=https://api.opendota.com/api
@@ -108,3 +109,21 @@ GPM، XPM، Net Worth و Damageها در `journal_matches` ثبت می‌شود.
 اطلاعات ثابت هیروها از پروژه MIT
 [`odota/dotaconstants`](https://github.com/odota/dotaconstants) تهیه شده و تصاویر هیروها
 از CDN رسمی Steam دریافت می‌شوند.
+
+## API مدیریت
+
+دسترسی Super Admin از طریق allowlist متغیر `SUPER_ADMIN_STEAM_IDS` تعیین می‌شود. مقدار آن
+یک یا چند SteamID64 با جداکننده ویرگول است و به رمز، Session یا API Token شخصی کاربر دیگری
+نیاز ندارد. بعد از تغییر این متغیر، سرور را دوباره اجرا کنید و با همان حساب Steam وارد شوید.
+
+- `GET /api/admin/overview`
+- `GET /api/admin/users?query=&limit=25&offset=0`
+- `POST /api/admin/users`
+- بدنه ساخت/به‌روزرسانی کاربر: `{ "steamIdentifier": "988195076" }`
+
+شناسه ورودی می‌تواند Steam Account ID کوتاه یا SteamID64 باشد. بک‌اند با کلید سروری Steam
+پروفایل عمومی را دریافت می‌کند، حساب را بدون ساخت Session ثبت می‌کند و ورود واقعی کاربر فقط
+بعد از تأیید OpenID توسط خود Steam اتفاق می‌افتد. ساخت و تازه‌سازی کاربر در جدول
+`admin_audit_logs` ثبت می‌شود. API نمای کلی نیز تعداد کاربران، Sessionهای فعال، مچ‌ها، تصاویر،
+Jobهای همگام‌سازی و مصرف پنجره‌های OpenDota را برمی‌گرداند. هیچ‌کدام از این مسیرها اطلاعات
+نشست یا کلیدهای محرمانه را نمایش نمی‌دهند.
