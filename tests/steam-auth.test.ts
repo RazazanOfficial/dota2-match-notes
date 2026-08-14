@@ -3,6 +3,7 @@ import {
   buildSteamLoginUrl,
   buildSteamReturnUrl,
   extractSteamId,
+  steamAccountIdToSteamId,
   steamIdToAccountId,
   STEAM_OPENID_ENDPOINT,
 } from "../lib/auth/steam";
@@ -47,5 +48,6 @@ describe("Steam OpenID", () => {
 
   it("converts a SteamID64 to the OpenDota account id", () => {
     expect(steamIdToAccountId(EXAMPLE_STEAM_ID)).toBe(1);
+    expect(steamAccountIdToSteamId(1)).toBe(EXAMPLE_STEAM_ID);
   });
 });
