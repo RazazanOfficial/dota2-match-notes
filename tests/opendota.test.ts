@@ -1,10 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fetchOpenDotaMatch } from "../lib/opendota/client";
+import {
+  fetchOpenDotaMatch,
+  fetchOpenDotaRecentMatches,
+} from "../lib/opendota/client";
 import { getOpenDotaConfig } from "../lib/opendota/config";
 import { OpenDotaError } from "../lib/opendota/errors";
 import {
   openDotaSyncInputSchema,
   parseOpenDotaMatch,
+  parseOpenDotaRecentMatches,
 } from "../lib/opendota/validation";
 
 const OPENDOTA_ENV = [
@@ -15,6 +19,7 @@ const OPENDOTA_ENV = [
   "OPENDOTA_MANUAL_SYNC_COOLDOWN_SECONDS",
   "OPENDOTA_MINUTE_REQUEST_LIMIT",
   "OPENDOTA_DAILY_REQUEST_LIMIT",
+  "OPENDOTA_MAX_NEW_MATCHES_PER_SYNC",
 ] as const;
 const originalEnv = Object.fromEntries(
   OPENDOTA_ENV.map((name) => [name, process.env[name]]),
@@ -52,6 +57,7 @@ beforeEach(() => {
   process.env.OPENDOTA_MANUAL_SYNC_COOLDOWN_SECONDS = "300";
   process.env.OPENDOTA_MINUTE_REQUEST_LIMIT = "50";
   process.env.OPENDOTA_DAILY_REQUEST_LIMIT = "2900";
+  process.env.OPENDOTA_MAX_NEW_MATCHES_PER_SYNC = "3";
 });
 
 afterEach(() => {
@@ -73,6 +79,7 @@ describe("OpenDota configuration", () => {
       manualSyncCooldownSeconds: 300,
       minuteRequestLimit: 50,
       dailyRequestLimit: 2_900,
+      maxNewMatchesPerSync: 3,
     });
   });
 
@@ -101,6 +108,32 @@ describe("OpenDota input and response validation", () => {
     expect(() => parseOpenDotaMatch(matchPayload, 1)).toThrowError(
       OpenDotaError,
     );
+  });
+
+  it("deduplicates and sorts recent matches from newest to oldest", () => {
+    const older = {
+      match_id: 8_981_928_175,
+      player_slot: 128,
+      radiant_win: true,
+      duration: 2_000,
+      game_mode: 23,
+      lobby_type: 0,
+      hero_id: 11,
+      start_time: 1_785_000_000,
+      kills: 4,
+      deaths: 6,
+      assists: 10,
+    };
+    const recent = parseOpenDotaRecentMatches([
+      older,
+      { ...older, match_id: matchPayload.match_id, start_time: 1_786_000_000 },
+      older,
+    ]);
+
+    expect(recent.map((match) => match.match_id)).toEqual([
+      matchPayload.match_id,
+      older.match_id,
+    ]);
   });
 });
 
@@ -137,6 +170,33 @@ describe("OpenDota HTTP client", () => {
       code: "opendota_rate_limited",
       retryAfterSeconds: 45,
     });
+  });
+
+  it("fetches recent matches for one Steam account id", async () => {
+    const recentPayload = [
+      {
+        match_id: matchPayload.match_id,
+        player_slot: 0,
+        radiant_win: true,
+        duration: 2_400,
+        game_mode: 22,
+        lobby_type: 7,
+        hero_id: 1,
+        start_time: 1_786_000_000,
+        kills: 8,
+        deaths: 2,
+        assists: 16,
+      },
+    ];
+    const fetchMock = vi.fn().mockResolvedValue(Response.json(recentPayload));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(fetchOpenDotaRecentMatches(988_195_076)).resolves.toHaveLength(1);
+    const [url] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(url.origin + url.pathname).toBe(
+      "https://api.example.test/api/players/988195076/recentMatches",
+    );
+    expect(url.searchParams.get("api_key")).toBe("server-secret");
   });
 
   it("rejects a response larger than the configured limit", async () => {

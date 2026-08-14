@@ -26,6 +26,7 @@ APP_URL=http://localhost:3000
 STEAM_WEB_API_KEY=YOUR_STEAM_WEB_API_KEY
 SUPER_ADMIN_STEAM_IDS=YOUR_STEAM_ID_64
 DATABASE_URL=postgresql://dota_notes_app:YOUR_PASSWORD@127.0.0.1:5432/dota_notes
+JOURNAL_TIME_ZONE=Asia/Tehran
 
 OPENDOTA_API_BASE_URL=https://api.opendota.com/api
 OPENDOTA_API_KEY=
@@ -34,6 +35,7 @@ OPENDOTA_MAX_RESPONSE_BYTES=8388608
 OPENDOTA_MANUAL_SYNC_COOLDOWN_SECONDS=300
 OPENDOTA_MINUTE_REQUEST_LIMIT=50
 OPENDOTA_DAILY_REQUEST_LIMIT=2900
+OPENDOTA_MAX_NEW_MATCHES_PER_SYNC=3
 
 CLOUD_SPACE_END_POINT_URL=https://YOUR_ENDPOINT
 CLOUD_SPACE_BUCKET=YOUR_BUCKET
@@ -105,6 +107,21 @@ GPM، XPM، Net Worth و Damageها در `journal_matches` ثبت می‌شود.
 علاوه بر Cooldown هر کاربر، شمارنده‌های سراسری دقیقه و روز در PostgreSQL نگهداری می‌شوند تا
 مجموع درخواست کاربران از سقف پلن OpenDota عبور نکند. مقادیر پیش‌فرض کمی پایین‌تر از سقف
 عمومی ۶۰ درخواست در دقیقه و ۳۰۰۰ درخواست در روز انتخاب شده‌اند.
+
+### کشف خودکار مچ‌های اخیر
+
+- `POST /api/sync/me`
+
+این مسیر بدون دریافت Match ID، فهرست مچ‌های اخیر حساب Steam واردشده را از OpenDota بررسی
+می‌کند. مچ‌های تکراری نادیده گرفته می‌شوند و در هر اجرا حداکثر تعداد مشخص‌شده در
+`OPENDOTA_MAX_NEW_MATCHES_PER_SYNC` با اطلاعات کامل دریافت و در تاریخ واقعی مچ ثبت می‌شوند.
+مقدار پیش‌فرض سه مچ است تا اولین اجرا ناگهان تعداد زیادی درخواست خارجی مصرف نکند. همان
+Cooldown پنج‌دقیقه‌ای و سهمیه‌های سراسری OpenDota روی این مسیر نیز اعمال می‌شوند.
+
+پاسخ شامل تعداد مچ‌های بررسی‌شده، تکراری، ثبت‌شده، ناموفق و عقب‌افتاده است. روز مچ با منطقه
+زمانی `JOURNAL_TIME_ZONE` محاسبه می‌شود که مقدار پیش‌فرض آن `Asia/Tehran` است؛ بنابراین ساعت
+UTC سرور VPS تاریخ دفتر را جابه‌جا نمی‌کند. این سرویس پایه مشترک دکمه Sync و Scheduler ساعتی
+VPS خواهد بود.
 
 اطلاعات ثابت هیروها از پروژه MIT
 [`odota/dotaconstants`](https://github.com/odota/dotaconstants) تهیه شده و تصاویر هیروها
