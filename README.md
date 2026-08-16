@@ -104,8 +104,8 @@ Lobby Type را نیز برمی‌گرداند. Match ID در JSON به‌شکل
 رکوردها و فایل‌های نسخه قبلی جایگزین و پاک می‌شوند. فقط کلید پایدار و metadata در PostgreSQL
 نگهداری می‌شود و API عمومی بالا تصاویر نهایی را به‌ترتیب برمی‌گرداند.
 
-تابع داخلی `publishGeneratedMatchImages` قرارداد اتصال مولد تصویر آینده به فضای ذخیره‌سازی
-است. مولد گرافیکی پس از دریافت داده کامل مچ از OpenDota به این تابع متصل خواهد شد.
+تابع داخلی `publishGeneratedMatchImages` قرارداد اتصال مولد تصویر به فضای ذخیره‌سازی است.
+Image Worker بعد از دریافت داده کامل مچ از OpenDota این تابع را فراخوانی می‌کند.
 
 موتور `renderGeneratedMatchImages` از داده معتبر OpenDota سه تصویر WebP با ابعاد
 `1280x720` می‌سازد: نمای کلی مچ، Scoreboard دو تیم و کارت عملکرد بازیکن. تمام SVG و WebPها
@@ -121,9 +121,27 @@ MATCH_IMAGE_ASSET_MAX_BYTES=1572864
 MATCH_IMAGE_WEBP_QUALITY=88
 ```
 
-این مرحله فقط موتور قابل تست را اضافه می‌کند. اتصال خودکار موتور به Job مستقل و انتشار در
-پارس‌پک در مرحله بعد انجام می‌شود تا خطای رندر یا Storage باعث شکست Worker همگام‌سازی مچ
-نشود.
+هر مچ OpenDota یک Job پایدار و یکتا در `match_image_jobs` دارد. ثبت مچ و ایجاد Job در یک
+Transaction انجام می‌شود، اما رندر و انتشار جدا از Sync اجرا می‌شوند؛ بنابراین خطای Sharp،
+Steam CDN یا پارس‌پک ثبت مچ و Worker همگام‌سازی را Rollback نمی‌کند. Migration مچ‌های
+OpenDota موجود را نیز به‌صورت `pending` وارد این صف می‌کند.
+
+### Worker تصاویر مچ
+
+- `POST /api/internal/images/tick`
+- Header اجباری: `Authorization: Bearer SYNC_WORKER_SECRET`
+
+هر Tick تعداد محدودی Job را با `FOR UPDATE SKIP LOCKED` دریافت می‌کند، سه تصویر را در RAM
+می‌سازد و مستقیم در پارس‌پک منتشر می‌کند. نسخه قبلی فقط پس از موفقیت نسخه جدید پاک می‌شود.
+خطاهای موقت با تأخیر نمایی Retry می‌شوند و Jobهای دارای قفل قدیمی در Tick بعدی بازیابی
+می‌شوند. خطاهای دائمی داده بدون Retry بی‌فایده به `failed` می‌روند.
+
+```dotenv
+MATCH_IMAGE_PROCESS_BATCH_SIZE=1
+MATCH_IMAGE_STALE_LOCK_SECONDS=900
+MATCH_IMAGE_MAX_ATTEMPTS=3
+MATCH_IMAGE_RETRY_BASE_SECONDS=60
+```
 
 ## API همگام‌سازی OpenDota
 
@@ -208,5 +226,5 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
 پروفایل عمومی را دریافت می‌کند، حساب را بدون ساخت Session ثبت می‌کند و ورود واقعی کاربر فقط
 بعد از تأیید OpenID توسط خود Steam اتفاق می‌افتد. ساخت و تازه‌سازی کاربر در جدول
 `admin_audit_logs` ثبت می‌شود. API نمای کلی نیز تعداد کاربران، Sessionهای فعال، مچ‌ها، تصاویر،
-Jobهای همگام‌سازی و مصرف پنجره‌های OpenDota را برمی‌گرداند. هیچ‌کدام از این مسیرها اطلاعات
-نشست یا کلیدهای محرمانه را نمایش نمی‌دهند.
+Jobهای همگام‌سازی، Jobهای تصویر و مصرف پنجره‌های OpenDota را برمی‌گرداند. هیچ‌کدام از این
+مسیرها اطلاعات نشست یا کلیدهای محرمانه را نمایش نمی‌دهند.

@@ -8,6 +8,7 @@ import {
   externalApiRateLimits,
   journalDays,
   journalMatches,
+  matchImageJobs,
   users,
 } from "@/lib/db/schema";
 import { OpenDotaError } from "./errors";
@@ -344,6 +345,24 @@ export async function saveDiscoveredOpenDotaMatch(params: {
       })
       .returning({ id: journalMatches.id });
 
+    await tx
+      .insert(matchImageJobs)
+      .values({ matchId: saved.id, runAfter: now, updatedAt: now })
+      .onConflictDoUpdate({
+        target: matchImageJobs.matchId,
+        set: {
+          status: "pending",
+          attempts: 0,
+          runAfter: now,
+          lockedAt: null,
+          finishedAt: null,
+          errorCode: null,
+          errorMessage: null,
+          updatedAt: now,
+        },
+        setWhere: ne(matchImageJobs.status, "processing"),
+      });
+
     await tx.update(users).set({ updatedAt: now }).where(eq(users.id, userId));
     return {
       created: true as const,
@@ -460,6 +479,24 @@ export async function saveOpenDotaMatch(params: {
         ),
       )
       .returning();
+
+    await tx
+      .insert(matchImageJobs)
+      .values({ matchId: saved.id, runAfter: now, updatedAt: now })
+      .onConflictDoUpdate({
+        target: matchImageJobs.matchId,
+        set: {
+          status: "pending",
+          attempts: 0,
+          runAfter: now,
+          lockedAt: null,
+          finishedAt: null,
+          errorCode: null,
+          errorMessage: null,
+          updatedAt: now,
+        },
+        setWhere: ne(matchImageJobs.status, "processing"),
+      });
 
     await tx
       .delete(dismissedDotaMatches)
