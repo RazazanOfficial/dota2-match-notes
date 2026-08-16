@@ -1,5 +1,17 @@
 import type { OpenDotaRecentMatch } from "./validation";
 
+export function excludeKnownRecentMatches(
+  matches: OpenDotaRecentMatch[],
+  importedIds: ReadonlySet<number>,
+  dismissedIds: ReadonlySet<number>,
+) {
+  return matches.filter(
+    (match) =>
+      !importedIds.has(match.match_id) &&
+      !dismissedIds.has(match.match_id),
+  );
+}
+
 export function selectRecentSyncMatches(
   matches: OpenDotaRecentMatch[],
   options: {

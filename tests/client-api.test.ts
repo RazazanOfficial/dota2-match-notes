@@ -72,6 +72,9 @@ describe("journal client API", () => {
           notes: "client test",
           result: "win",
           createdAt: "2026-08-04T12:00:00.000Z",
+          source: "opendota",
+          dotaMatchId: "8981928176",
+          kills: 8,
         },
       ],
     };
@@ -94,6 +97,11 @@ describe("journal client API", () => {
         },
       },
     });
+    const serializedMatch = JSON.parse(String(init.body)).matches[
+      "9eb718f9-8eee-40ec-bc62-b7f43329dce7"
+    ];
+    expect(serializedMatch).not.toHaveProperty("dotaMatchId");
+    expect(serializedMatch).not.toHaveProperty("kills");
   });
 
   it("surfaces the Persian API error message", async () => {

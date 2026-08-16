@@ -1,5 +1,6 @@
 export type AccessMode = "player" | "coach";
 export type MatchResult = "win" | "loss";
+export type MatchSource = "manual" | "steam" | "opendota";
 export type MatchRole =
   | "safe_lane"
   | "mid_lane"
@@ -26,6 +27,23 @@ export interface Match {
   notes: string;
   result: MatchResult;
   createdAt: string;
+  updatedAt?: string;
+  source?: MatchSource;
+  dotaMatchId?: string | null;
+  startedAt?: string | null;
+  durationSeconds?: number | null;
+  kills?: number | null;
+  deaths?: number | null;
+  assists?: number | null;
+  goldPerMinute?: number | null;
+  xpPerMinute?: number | null;
+  netWorth?: number | null;
+  heroDamage?: number | null;
+  towerDamage?: number | null;
+  gameModeId?: number | null;
+  gameModeName?: string | null;
+  lobbyTypeId?: number | null;
+  lobbyTypeName?: string | null;
 }
 
 export interface Day {

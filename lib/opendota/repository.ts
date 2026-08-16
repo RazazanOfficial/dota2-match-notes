@@ -3,6 +3,7 @@ import { heroById } from "@/data/heroes";
 import { getDb } from "@/lib/db";
 import { toJournalDateKey } from "@/lib/journal/timezone";
 import {
+  dismissedDotaMatches,
   dotaMatches,
   externalApiRateLimits,
   journalDays,
@@ -165,27 +166,47 @@ export async function claimOpenDotaRequestQuota(params: {
   });
 }
 
-export async function findImportedOpenDotaMatchIds(
+export async function findKnownOpenDotaMatchIds(
   userId: string,
   dotaMatchIds: number[],
 ) {
-  if (!dotaMatchIds.length) return new Set<number>();
+  if (!dotaMatchIds.length) {
+    return {
+      importedIds: new Set<number>(),
+      dismissedIds: new Set<number>(),
+    };
+  }
 
-  const rows = await getDb()
-    .select({ dotaMatchId: journalMatches.dotaMatchId })
-    .from(journalMatches)
-    .where(
-      and(
-        eq(journalMatches.userId, userId),
-        inArray(journalMatches.dotaMatchId, dotaMatchIds),
+  const db = getDb();
+  const [importedRows, dismissedRows] = await Promise.all([
+    db
+      .select({ dotaMatchId: journalMatches.dotaMatchId })
+      .from(journalMatches)
+      .where(
+        and(
+          eq(journalMatches.userId, userId),
+          inArray(journalMatches.dotaMatchId, dotaMatchIds),
+        ),
       ),
-    );
+    db
+      .select({ dotaMatchId: dismissedDotaMatches.dotaMatchId })
+      .from(dismissedDotaMatches)
+      .where(
+        and(
+          eq(dismissedDotaMatches.userId, userId),
+          inArray(dismissedDotaMatches.dotaMatchId, dotaMatchIds),
+        ),
+      ),
+  ]);
 
-  return new Set(
-    rows
-      .map((row) => row.dotaMatchId)
-      .filter((matchId): matchId is number => matchId !== null),
-  );
+  return {
+    importedIds: new Set(
+      importedRows
+        .map((row) => row.dotaMatchId)
+        .filter((matchId): matchId is number => matchId !== null),
+    ),
+    dismissedIds: new Set(dismissedRows.map((row) => row.dotaMatchId)),
+  };
 }
 
 export async function saveDiscoveredOpenDotaMatch(params: {
@@ -220,9 +241,30 @@ export async function saveDiscoveredOpenDotaMatch(params: {
     if (duplicate) {
       return {
         created: false as const,
+        dismissed: false as const,
         journalMatchId: duplicate.id,
         dotaMatchId: match.match_id,
         day: duplicate.day,
+      };
+    }
+
+    const [dismissed] = await tx
+      .select({ dotaMatchId: dismissedDotaMatches.dotaMatchId })
+      .from(dismissedDotaMatches)
+      .where(
+        and(
+          eq(dismissedDotaMatches.userId, userId),
+          eq(dismissedDotaMatches.dotaMatchId, match.match_id),
+        ),
+      )
+      .limit(1);
+    if (dismissed) {
+      return {
+        created: false as const,
+        dismissed: true as const,
+        journalMatchId: null,
+        dotaMatchId: match.match_id,
+        day: null,
       };
     }
 
@@ -305,6 +347,7 @@ export async function saveDiscoveredOpenDotaMatch(params: {
     await tx.update(users).set({ updatedAt: now }).where(eq(users.id, userId));
     return {
       created: true as const,
+      dismissed: false as const,
       journalMatchId: saved.id,
       dotaMatchId: match.match_id,
       day: dayKey,
@@ -417,6 +460,15 @@ export async function saveOpenDotaMatch(params: {
         ),
       )
       .returning();
+
+    await tx
+      .delete(dismissedDotaMatches)
+      .where(
+        and(
+          eq(dismissedDotaMatches.userId, userId),
+          eq(dismissedDotaMatches.dotaMatchId, match.match_id),
+        ),
+      );
 
     await tx.update(users).set({ updatedAt: now }).where(eq(users.id, userId));
     return saved;

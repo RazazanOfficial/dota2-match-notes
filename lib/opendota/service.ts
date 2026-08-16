@@ -5,11 +5,14 @@ import {
 } from "./client";
 import { getOpenDotaConfig } from "./config";
 import { OpenDotaError } from "./errors";
-import { selectRecentSyncMatches } from "./recent";
+import {
+  excludeKnownRecentMatches,
+  selectRecentSyncMatches,
+} from "./recent";
 import {
   claimManualOpenDotaSync,
   claimOpenDotaRequestQuota,
-  findImportedOpenDotaMatchIds,
+  findKnownOpenDotaMatchIds,
   findOpenDotaSyncTarget,
   releaseManualOpenDotaSyncClaim,
   saveDiscoveredOpenDotaMatch,
@@ -67,12 +70,14 @@ async function discoverRecentMatches(
   await claimOpenDotaRequestQuota(quotaConfig(config));
   options.onExternalRequestClaimed?.();
   const recentMatches = await fetchOpenDotaRecentMatches(user.steamAccountId);
-  const importedIds = await findImportedOpenDotaMatchIds(
+  const { importedIds, dismissedIds } = await findKnownOpenDotaMatchIds(
     user.id,
     recentMatches.map((match) => match.match_id),
   );
-  const newMatches = recentMatches.filter(
-    (match) => !importedIds.has(match.match_id),
+  const newMatches = excludeKnownRecentMatches(
+    recentMatches,
+    importedIds,
+    dismissedIds,
   );
   const selection = selectRecentSyncMatches(newMatches, options);
   const imported: Array<{
@@ -109,7 +114,13 @@ async function discoverRecentMatches(
         match,
         player,
       });
-      if (saved.created) imported.push(saved);
+      if (saved.created) {
+        imported.push({
+          journalMatchId: saved.journalMatchId,
+          dotaMatchId: saved.dotaMatchId,
+          day: saved.day,
+        });
+      } else if (saved.dismissed) dismissedIds.add(saved.dotaMatchId);
       else importedIds.add(saved.dotaMatchId);
     } catch (error) {
       if (!(error instanceof OpenDotaError)) throw error;
@@ -123,6 +134,7 @@ async function discoverRecentMatches(
   return {
     checked: recentMatches.length,
     alreadyImported: importedIds.size,
+    dismissedByUser: dismissedIds.size,
     imported,
     failed,
     deferred: Math.max(0, selection.eligible.length - attempted),

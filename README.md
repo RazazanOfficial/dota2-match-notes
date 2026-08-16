@@ -30,7 +30,7 @@ JOURNAL_TIME_ZONE=Asia/Tehran
 
 OPENDOTA_API_BASE_URL=https://api.opendota.com/api
 OPENDOTA_API_KEY=
-OPENDOTA_TIMEOUT_MS=10000
+OPENDOTA_TIMEOUT_MS=30000
 OPENDOTA_MAX_RESPONSE_BYTES=8388608
 OPENDOTA_MANUAL_SYNC_COOLDOWN_SECONDS=300
 OPENDOTA_MINUTE_REQUEST_LIMIT=50
@@ -90,6 +90,11 @@ npm run db:studio
 Handle عمومی را می‌توان به شکل کامل مانند `steam_123456789` یا فقط Steam Account ID
 مانند `123456789` وارد کرد.
 
+هر مچ در پاسخ خواندن ژورنال علاوه بر یادداشت‌های قابل ویرایش، فیلدهای فقط‌خواندنی منبع،
+Match ID، زمان و مدت، K/D/A، GPM، XPM، Net Worth، Damageها و شناسه و نام Game Mode و
+Lobby Type را نیز برمی‌گرداند. Match ID در JSON به‌شکل رشته ارسال می‌شود تا دقت عددی در
+مرورگر از بین نرود. مچ دستی برای این فیلدها مقدار `null` دارد.
+
 ## API تصاویر مچ
 
 - `GET /api/matches/MATCH_ID/images`
@@ -132,6 +137,11 @@ Cooldown پنج‌دقیقه‌ای و سهمیه‌های سراسری OpenDota
 زمانی `JOURNAL_TIME_ZONE` محاسبه می‌شود که مقدار پیش‌فرض آن `Asia/Tehran` است؛ بنابراین ساعت
 UTC سرور VPS تاریخ دفتر را جابه‌جا نمی‌کند. این سرویس پایه مشترک دکمه Sync و Scheduler ساعتی
 VPS خواهد بود.
+
+اگر کاربر یک مچ متصل به OpenDota را از دفتر حذف کند، شناسه آن در جدول
+`dismissed_dota_matches` ثبت می‌شود و Syncهای بعدی آن را دوباره وارد نمی‌کنند. داده این جدول
+فقط تصمیم حذف کاربر را نگه می‌دارد و شامل آمار یا اطلاعات خصوصی نیست. اتصال صریح همان Match
+ID از مسیر همگام‌سازی تکی، این علامت حذف را برمی‌دارد و مچ را دوباره فعال می‌کند.
 
 ## Worker همگام‌سازی زمان‌بندی‌شده
 
