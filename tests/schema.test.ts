@@ -5,6 +5,7 @@ import {
   dismissedDotaMatches,
   externalApiRateLimits,
   journalMatches,
+  matchImageJobs,
   matchImages,
   sessions,
   syncJobs,
@@ -17,6 +18,7 @@ describe("database schema", () => {
     expect(getTableConfig(sessions).name).toBe("sessions");
     expect(getTableConfig(journalMatches).name).toBe("journal_matches");
     expect(getTableConfig(matchImages).name).toBe("match_images");
+    expect(getTableConfig(matchImageJobs).name).toBe("match_image_jobs");
     expect(getTableConfig(externalApiRateLimits).name).toBe(
       "external_api_rate_limits",
     );
@@ -47,6 +49,16 @@ describe("database schema", () => {
     const indexNames = config.indexes.map((constraint) => constraint.config.name);
 
     expect(indexNames).toContain("sync_jobs_one_active_per_user_uidx");
+  });
+
+  it("keeps one durable image job per journal match", () => {
+    const config = getTableConfig(matchImageJobs);
+    const indexNames = config.indexes.map((constraint) => constraint.config.name);
+    const checkNames = config.checks.map((constraint) => constraint.name);
+
+    expect(indexNames).toContain("match_image_jobs_match_id_uidx");
+    expect(indexNames).toContain("match_image_jobs_status_run_after_idx");
+    expect(checkNames).toContain("match_image_jobs_attempts_check");
   });
 
   it("keeps one dismissal per user and Dota match", () => {

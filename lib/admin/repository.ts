@@ -13,6 +13,7 @@ import {
   dotaMatches,
   externalApiRateLimits,
   journalMatches,
+  matchImageJobs,
   matchImages,
   sessions,
   syncJobs,
@@ -143,6 +144,7 @@ export async function getAdminOverviewData() {
     [cachedMatchCount],
     [imageTotals],
     syncJobCounts,
+    imageJobCounts,
     rateLimits,
     [auditCount],
     recentAuditLogs,
@@ -174,6 +176,13 @@ export async function getAdminOverviewData() {
       .from(syncJobs)
       .groupBy(syncJobs.status),
     db
+      .select({
+        status: matchImageJobs.status,
+        total: sql<number>`count(*)::int`,
+      })
+      .from(matchImageJobs)
+      .groupBy(matchImageJobs.status),
+    db
       .select()
       .from(externalApiRateLimits)
       .orderBy(externalApiRateLimits.key),
@@ -199,6 +208,13 @@ export async function getAdminOverviewData() {
     failed: 0,
   };
   for (const row of syncJobCounts) syncJobSummary[row.status] = row.total;
+  const imageJobSummary = {
+    pending: 0,
+    processing: 0,
+    completed: 0,
+    failed: 0,
+  };
+  for (const row of imageJobCounts) imageJobSummary[row.status] = row.total;
 
   return {
     counts: {
@@ -213,6 +229,7 @@ export async function getAdminOverviewData() {
       adminAuditLogs: auditCount?.total || 0,
     },
     syncJobs: syncJobSummary,
+    imageJobs: imageJobSummary,
     rateLimits,
     recentAuditLogs,
   };

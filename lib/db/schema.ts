@@ -54,6 +54,12 @@ export const syncJobStatusEnum = pgEnum("sync_job_status", [
   "completed",
   "failed",
 ]);
+export const matchImageJobStatusEnum = pgEnum("match_image_job_status", [
+  "pending",
+  "processing",
+  "completed",
+  "failed",
+]);
 
 export const users = pgTable(
   "users",
@@ -356,6 +362,34 @@ export const syncJobs = pgTable(
   ],
 );
 
+export const matchImageJobs = pgTable(
+  "match_image_jobs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    matchId: uuid("match_id")
+      .notNull()
+      .references(() => journalMatches.id, { onDelete: "cascade" }),
+    status: matchImageJobStatusEnum("status").default("pending").notNull(),
+    attempts: smallint("attempts").default(0).notNull(),
+    runAfter: timestamp("run_after", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    errorCode: varchar("error_code", { length: 64 }),
+    errorMessage: text("error_message"),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("match_image_jobs_match_id_uidx").on(table.matchId),
+    index("match_image_jobs_status_run_after_idx").on(
+      table.status,
+      table.runAfter,
+    ),
+    check("match_image_jobs_attempts_check", sql`${table.attempts} >= 0`),
+  ],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   days: many(journalDays),
@@ -400,6 +434,7 @@ export const journalMatchesRelations = relations(
     }),
     bans: many(matchBans),
     images: many(matchImages),
+    imageJobs: many(matchImageJobs),
   }),
 );
 
@@ -433,3 +468,13 @@ export const syncJobsRelations = relations(syncJobs, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+export const matchImageJobsRelations = relations(
+  matchImageJobs,
+  ({ one }) => ({
+    match: one(journalMatches, {
+      fields: [matchImageJobs.matchId],
+      references: [journalMatches.id],
+    }),
+  }),
+);
