@@ -64,6 +64,36 @@ describe("profile migration", () => {
     expect(match.bans.map((hero) => hero.name)).toEqual(["Axe", "Bane"]);
   });
 
+  it("preserves read-only OpenDota fields for future UI rendering", () => {
+    const match = sanitizeMatch({
+      id: "11111111-1111-4111-8111-111111111111",
+      number: 1,
+      heroId: 11,
+      heroName: "Shadow Fiend",
+      result: "loss",
+      source: "opendota",
+      dotaMatchId: "8940973270",
+      startedAt: "2026-08-11T18:56:07.000Z",
+      durationSeconds: 2547,
+      kills: 6,
+      deaths: 9,
+      assists: 11,
+      gameModeId: 23,
+      lobbyTypeId: 0,
+    });
+
+    expect(match).toMatchObject({
+      source: "opendota",
+      dotaMatchId: "8940973270",
+      durationSeconds: 2547,
+      kills: 6,
+      deaths: 9,
+      assists: 11,
+      gameModeName: "Turbo",
+      lobbyTypeName: "Normal",
+    });
+  });
+
   it("merges partial week responses without losing loaded days", () => {
     const first = normalizeProfile({
       username: "steam_123",

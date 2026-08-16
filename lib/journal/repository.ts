@@ -2,6 +2,7 @@ import {
   and,
   asc,
   eq,
+  getTableColumns,
   gte,
   inArray,
   lte,
@@ -9,7 +10,10 @@ import {
 } from "drizzle-orm";
 import { heroById } from "@/data/heroes";
 import { getDb } from "@/lib/db";
+import { gameModeName, lobbyTypeName } from "@/lib/dota/modes";
 import {
+  dismissedDotaMatches,
+  dotaMatches,
   journalDays,
   journalMatches,
   matchBans,
@@ -20,6 +24,7 @@ import {
   deleteStoredObject,
   isStorageNotFound,
 } from "@/lib/storage/client";
+import { collectDismissedDotaMatchIds } from "./dismissed";
 import type { DayInput } from "./validation";
 
 interface JournalOwner {
@@ -92,8 +97,16 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
   const dayIds = dayRows.map((day) => day.id);
   const matchRows = dayIds.length
     ? await db
-        .select()
+        .select({
+          ...getTableColumns(journalMatches),
+          gameModeId: dotaMatches.gameMode,
+          lobbyTypeId: dotaMatches.lobbyType,
+        })
         .from(journalMatches)
+        .leftJoin(
+          dotaMatches,
+          eq(journalMatches.dotaMatchId, dotaMatches.matchId),
+        )
         .where(inArray(journalMatches.dayId, dayIds))
         .orderBy(asc(journalMatches.number))
     : [];
@@ -143,7 +156,27 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
                 queueType: match.queueType || "",
                 notes: match.notes,
                 result: match.result,
+                source: match.source,
+                dotaMatchId:
+                  match.dotaMatchId === null
+                    ? null
+                    : String(match.dotaMatchId),
+                startedAt: match.startedAt?.toISOString() || null,
+                durationSeconds: match.durationSeconds,
+                kills: match.kills,
+                deaths: match.deaths,
+                assists: match.assists,
+                goldPerMinute: match.goldPerMinute,
+                xpPerMinute: match.xpPerMinute,
+                netWorth: match.netWorth,
+                heroDamage: match.heroDamage,
+                towerDamage: match.towerDamage,
+                gameModeId: match.gameModeId,
+                gameModeName: gameModeName(match.gameModeId),
+                lobbyTypeId: match.lobbyTypeId,
+                lobbyTypeName: lobbyTypeName(match.lobbyTypeId),
                 createdAt: match.createdAt.toISOString(),
+                updatedAt: match.updatedAt.toISOString(),
               },
             ]),
           ),
@@ -179,7 +212,10 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
       })
       .returning({ id: journalDays.id });
     const existingMatches = await tx
-      .select({ id: journalMatches.id })
+      .select({
+        id: journalMatches.id,
+        dotaMatchId: journalMatches.dotaMatchId,
+      })
       .from(journalMatches)
       .where(
         and(
@@ -195,6 +231,23 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
       .filter((id) => !incomingIds.has(id));
 
     if (removedIds.length) {
+      const dismissedMatchIds = collectDismissedDotaMatchIds(
+        existingMatches,
+        incomingIds,
+      );
+      if (dismissedMatchIds.length) {
+        await tx
+          .insert(dismissedDotaMatches)
+          .values(
+            dismissedMatchIds.map((dotaMatchId) => ({
+              userId,
+              dotaMatchId,
+              dismissedAt: now,
+            })),
+          )
+          .onConflictDoNothing();
+      }
+
       const removedImages = await tx
         .select({ objectKey: matchImages.objectKey })
         .from(matchImages)

@@ -9,6 +9,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   smallint,
   text,
   timestamp,
@@ -190,6 +191,30 @@ export const journalMatches = pgTable(
   ],
 );
 
+export const dismissedDotaMatches = pgTable(
+  "dismissed_dota_matches",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    dotaMatchId: bigint("dota_match_id", { mode: "number" }).notNull(),
+    dismissedAt: timestamp("dismissed_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "dismissed_dota_matches_pkey",
+      columns: [table.userId, table.dotaMatchId],
+    }),
+    index("dismissed_dota_matches_dismissed_at_idx").on(table.dismissedAt),
+    check(
+      "dismissed_dota_matches_match_id_check",
+      sql`${table.dotaMatchId} > 0`,
+    ),
+  ],
+);
+
 export const matchBans = pgTable(
   "match_bans",
   {
@@ -335,6 +360,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   days: many(journalDays),
   matches: many(journalMatches),
+  dismissedDotaMatches: many(dismissedDotaMatches),
   syncJobs: many(syncJobs),
 }));
 
@@ -390,6 +416,16 @@ export const matchImagesRelations = relations(matchImages, ({ one }) => ({
     references: [journalMatches.id],
   }),
 }));
+
+export const dismissedDotaMatchesRelations = relations(
+  dismissedDotaMatches,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [dismissedDotaMatches.userId],
+      references: [users.id],
+    }),
+  }),
+);
 
 export const syncJobsRelations = relations(syncJobs, ({ one }) => ({
   user: one(users, {

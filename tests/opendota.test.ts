@@ -89,6 +89,11 @@ describe("OpenDota configuration", () => {
       "Invalid env: OPENDOTA_API_BASE_URL",
     );
   });
+
+  it("allows a slower production response by default", () => {
+    delete process.env.OPENDOTA_TIMEOUT_MS;
+    expect(getOpenDotaConfig().timeoutMs).toBe(30_000);
+  });
 });
 
 describe("OpenDota input and response validation", () => {

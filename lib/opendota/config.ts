@@ -10,7 +10,7 @@ export interface OpenDotaConfig {
 }
 
 const DEFAULT_BASE_URL = "https://api.opendota.com/api";
-const DEFAULT_TIMEOUT_MS = 10_000;
+const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_MAX_RESPONSE_BYTES = 8 * 1024 * 1024;
 const DEFAULT_MANUAL_SYNC_COOLDOWN_SECONDS = 300;
 const DEFAULT_MINUTE_REQUEST_LIMIT = 50;

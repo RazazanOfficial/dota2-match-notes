@@ -2,6 +2,7 @@ import { getTableConfig } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 import {
   adminAuditLogs,
+  dismissedDotaMatches,
   externalApiRateLimits,
   journalMatches,
   matchImages,
@@ -21,6 +22,9 @@ describe("database schema", () => {
     );
     expect(getTableConfig(syncJobs).name).toBe("sync_jobs");
     expect(getTableConfig(adminAuditLogs).name).toBe("admin_audit_logs");
+    expect(getTableConfig(dismissedDotaMatches).name).toBe(
+      "dismissed_dota_matches",
+    );
   });
 
   it("stores persistent external API rate-limit windows", () => {
@@ -43,6 +47,17 @@ describe("database schema", () => {
     const indexNames = config.indexes.map((constraint) => constraint.config.name);
 
     expect(indexNames).toContain("sync_jobs_one_active_per_user_uidx");
+  });
+
+  it("keeps one dismissal per user and Dota match", () => {
+    const config = getTableConfig(dismissedDotaMatches);
+    const primaryKeyColumns = config.primaryKeys[0]?.columns.map(
+      (column) => column.name,
+    );
+    const checkNames = config.checks.map((constraint) => constraint.name);
+
+    expect(primaryKeyColumns).toEqual(["user_id", "dota_match_id"]);
+    expect(checkNames).toContain("dismissed_dota_matches_match_id_check");
   });
 
   it("indexes immutable Super Admin audit records", () => {

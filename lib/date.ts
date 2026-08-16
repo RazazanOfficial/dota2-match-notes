@@ -1,5 +1,6 @@
 import type { Day, Match, Profile, Summary } from "./types";
 import { HEROES, heroById, heroByName } from "../data/heroes";
+import { gameModeName, lobbyTypeName } from "./dota/modes";
 
 const PERSIAN_NUMBER = new Intl.NumberFormat("fa-IR");
 const PERSIAN_PERCENT = new Intl.NumberFormat("fa-IR", {
@@ -104,6 +105,24 @@ export function newMatchId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function nullableNumber(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function nullableDate(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  const date = String(value);
+  return Number.isNaN(Date.parse(date)) ? null : date;
+}
+
+function nullableMatchId(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  const matchId = String(value);
+  return /^\d{1,16}$/.test(matchId) ? matchId : null;
+}
+
 export function sanitizeMatch(raw: Record<string, unknown>, fallback = 1): Match {
   const legacyHero = String(raw.heroName || raw.hero || "").trim();
   const selectedHero =
@@ -125,6 +144,11 @@ export function sanitizeMatch(raw: Record<string, unknown>, fallback = 1): Match
     })
     .filter((hero): hero is (typeof HEROES)[number] => Boolean(hero));
   const number = Number(raw.number);
+  const gameModeId = nullableNumber(raw.gameModeId);
+  const lobbyTypeId = nullableNumber(raw.lobbyTypeId);
+  const source = ["manual", "steam", "opendota"].includes(String(raw.source))
+    ? (raw.source as Match["source"])
+    : "manual";
 
   return {
     id: String(raw.id || newMatchId()),
@@ -144,6 +168,29 @@ export function sanitizeMatch(raw: Record<string, unknown>, fallback = 1): Match
     notes: String(raw.notes || "").trim(),
     result: raw.result === "win" ? "win" : "loss",
     createdAt: String(raw.createdAt || new Date().toISOString()),
+    updatedAt: nullableDate(raw.updatedAt) || undefined,
+    source,
+    dotaMatchId: nullableMatchId(raw.dotaMatchId),
+    startedAt: nullableDate(raw.startedAt),
+    durationSeconds: nullableNumber(raw.durationSeconds),
+    kills: nullableNumber(raw.kills),
+    deaths: nullableNumber(raw.deaths),
+    assists: nullableNumber(raw.assists),
+    goldPerMinute: nullableNumber(raw.goldPerMinute),
+    xpPerMinute: nullableNumber(raw.xpPerMinute),
+    netWorth: nullableNumber(raw.netWorth),
+    heroDamage: nullableNumber(raw.heroDamage),
+    towerDamage: nullableNumber(raw.towerDamage),
+    gameModeId,
+    gameModeName:
+      typeof raw.gameModeName === "string"
+        ? raw.gameModeName
+        : gameModeName(gameModeId),
+    lobbyTypeId,
+    lobbyTypeName:
+      typeof raw.lobbyTypeName === "string"
+        ? raw.lobbyTypeName
+        : lobbyTypeName(lobbyTypeId),
   };
 }
 
