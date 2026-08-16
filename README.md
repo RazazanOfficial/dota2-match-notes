@@ -81,6 +81,10 @@ npm run build
 npm run db:studio
 ```
 
+راهنمای استقرار بدون Docker روی Ubuntu، شامل PostgreSQL، systemd، Timerهای Worker، Nginx و
+TLS در [`docs/deployment-ubuntu.md`](docs/deployment-ubuntu.md) قرار دارد. فایل‌های آماده‌ی
+سرور داخل پوشه `deploy` هستند و برای دامنه `dota2notes.ir` تنظیم شده‌اند.
+
 ## API ژورنال
 
 - `GET /api/journal/me?from=YYYY-MM-DD&to=YYYY-MM-DD`

@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Dota2 Notes image worker every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+RandomizedDelaySec=10s
+Persistent=true
+Unit=dota2notes-images.service
+
+[Install]
+WantedBy=timers.target
