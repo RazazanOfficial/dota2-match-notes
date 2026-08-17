@@ -6,6 +6,7 @@ import {
 import {
   listUsersQuerySchema,
   normalizeSteamIdentifier,
+  overviewQuerySchema,
   provisionUserInputSchema,
 } from "../lib/admin/validation";
 
@@ -75,5 +76,11 @@ describe("admin user validation", () => {
     expect(
       listUsersQuerySchema.safeParse({ limit: "101", offset: "0" }).success,
     ).toBe(false);
+  });
+
+  it("accepts only supported dashboard ranges", () => {
+    expect(overviewQuerySchema.parse({})).toEqual({ range: 30 });
+    expect(overviewQuerySchema.parse({ range: "7" })).toEqual({ range: 7 });
+    expect(overviewQuerySchema.safeParse({ range: "14" }).success).toBe(false);
   });
 });

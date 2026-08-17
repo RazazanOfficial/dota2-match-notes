@@ -118,3 +118,20 @@ export async function fetchOpenDotaRecentMatches(steamAccountId: number) {
   );
   return parseOpenDotaRecentMatches(raw);
 }
+
+export async function fetchOpenDotaPlayerMatchesSince(
+  steamAccountId: number,
+  since: Date,
+) {
+  const ageMs = Math.max(0, Date.now() - since.getTime());
+  const days = Math.max(1, Math.ceil(ageMs / 86_400_000) + 1);
+  const params = new URLSearchParams({ date: String(days) });
+  const raw = await fetchOpenDotaJson(
+    `players/${steamAccountId}/matches?${params.toString()}`,
+    {
+      code: "opendota_player_not_found",
+      message: "پروفایل بازیکن در OpenDota پیدا نشد",
+    },
+  );
+  return parseOpenDotaRecentMatches(raw);
+}

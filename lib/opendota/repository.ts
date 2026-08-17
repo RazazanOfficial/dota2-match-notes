@@ -5,6 +5,7 @@ import { toJournalDateKey } from "@/lib/journal/timezone";
 import {
   dismissedDotaMatches,
   dotaMatches,
+  externalApiDailyUsage,
   externalApiRateLimits,
   journalDays,
   journalMatches,
@@ -83,6 +84,18 @@ export async function releaseManualOpenDotaSyncClaim(
     );
 }
 
+export async function advanceManualOpenDotaSyncCursor(
+  userId: string,
+  claimedAt: Date,
+) {
+  await getDb()
+    .update(users)
+    .set({ manualSyncCursorAt: claimedAt, updatedAt: claimedAt })
+    .where(
+      and(eq(users.id, userId), eq(users.lastManualSyncAt, claimedAt)),
+    );
+}
+
 interface RateWindow {
   key: string;
   durationSeconds: number;
@@ -94,6 +107,7 @@ export async function claimOpenDotaRequestQuota(params: {
   dailyRequestLimit: number;
 }) {
   const now = new Date();
+  const utcDay = now.toISOString().slice(0, 10);
   const windows: RateWindow[] = [
     {
       key: "opendota:minute",
@@ -164,6 +178,22 @@ export async function claimOpenDotaRequestQuota(params: {
         })
         .where(eq(externalApiRateLimits.key, window.key));
     }
+
+    await tx
+      .insert(externalApiDailyUsage)
+      .values({
+        provider: "opendota",
+        day: utcDay,
+        requestCount: 1,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: [externalApiDailyUsage.provider, externalApiDailyUsage.day],
+        set: {
+          requestCount: sql`${externalApiDailyUsage.requestCount} + 1`,
+          updatedAt: now,
+        },
+      });
   });
 }
 
@@ -340,6 +370,7 @@ export async function saveDiscoveredOpenDotaMatch(params: {
         netWorth: player.net_worth ?? null,
         heroDamage: player.hero_damage ?? null,
         towerDamage: player.tower_damage ?? null,
+        analyzedAt: now,
         createdAt: startedAt,
         updatedAt: now,
       })
@@ -470,6 +501,7 @@ export async function saveOpenDotaMatch(params: {
         netWorth: player.net_worth ?? null,
         heroDamage: player.hero_damage ?? null,
         towerDamage: player.tower_damage ?? null,
+        analyzedAt: now,
         updatedAt: now,
       })
       .where(

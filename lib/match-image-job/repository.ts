@@ -101,7 +101,11 @@ export async function claimNextMatchImageJob() {
           lte(matchImageJobs.runAfter, now),
         ),
       )
-      .orderBy(asc(matchImageJobs.runAfter), asc(matchImageJobs.createdAt))
+      .orderBy(
+        asc(matchImageJobs.runAfter),
+        asc(matchImageJobs.createdAt),
+        asc(matchImageJobs.id),
+      )
       .limit(1)
       .for("update", { skipLocked: true });
     if (!candidate) return null;

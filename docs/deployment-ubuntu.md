@@ -136,12 +136,10 @@ sudo -u dota2notes -H npm run build
 Migration فقط schema را به‌روز می‌کند و در اجرای مجدد migrationهای انجام‌شده را تکرار
 نمی‌کند.
 
-## ۸. نصب سرویس و Timerها
+## ۸. نصب سرویس و Image Worker
 
 ```bash
 sudo cp deploy/systemd/dota2notes.service /etc/systemd/system/
-sudo cp deploy/systemd/dota2notes-sync.service /etc/systemd/system/
-sudo cp deploy/systemd/dota2notes-sync.timer /etc/systemd/system/
 sudo cp deploy/systemd/dota2notes-images.service /etc/systemd/system/
 sudo cp deploy/systemd/dota2notes-images.timer /etc/systemd/system/
 sudo systemctl daemon-reload
@@ -155,21 +153,20 @@ sudo systemctl status dota2notes.service --no-pager
 sudo -u dota2notes -H bash deploy/scripts/health-check.sh
 ```
 
-پس از موفقیت Health Check، Timerها را فعال کنید:
+پس از موفقیت Health Check، Timer ساخت تصاویر را فعال کنید:
 
 ```bash
-sudo systemctl enable --now dota2notes-sync.timer
 sudo systemctl enable --now dota2notes-images.timer
 systemctl list-timers 'dota2notes-*'
 ```
 
-Sync هر ساعت و Image Worker هر دقیقه اجرا می‌شود. اجرای هم‌زمان به‌خاطر قفل‌های دیتابیس یک
-Job را دوبار پردازش نمی‌کند.
+Sync کاربران فقط با دکمه داخل سایت انجام می‌شود. Image Worker هر دقیقه صف مشترک تصاویر را
+پردازش می‌کند و قفل دیتابیس اجازه نمی‌دهد یک Job دوبار ساخته شود. فایل‌های Scheduler ساعتی
+برای توسعه آینده در مخزن باقی مانده‌اند، اما در این نسخه نباید نصب یا فعال شوند.
 
 برای اجرای دستی روی VPS:
 
 ```bash
-sudo systemctl start dota2notes-sync.service
 sudo systemctl start dota2notes-images.service
 ```
 
@@ -177,7 +174,6 @@ sudo systemctl start dota2notes-images.service
 
 ```bash
 sudo journalctl -u dota2notes.service -n 100 --no-pager
-sudo journalctl -u dota2notes-sync.service -n 100 --no-pager
 sudo journalctl -u dota2notes-images.service -n 100 --no-pager
 ```
 

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { heroById, heroImage } from "@/data/heroes";
 import { QUEUE_OPTIONS, ROLE_OPTIONS, queueLabel, roleLabel } from "@/lib/constants";
 import { newMatchId } from "@/lib/date";
-import type { Hero, Match, MatchResult, MatchRole, QueueType } from "@/lib/types";
+import type { Hero, Match, MatchImage, MatchResult, MatchRole, QueueType } from "@/lib/types";
 import BanPicker from "./BanPicker";
 import HeroPicker from "./HeroPicker";
 
@@ -124,6 +124,8 @@ export default function MatchDialog({
             <span>یادداشت بازی</span>
             <p>{draft.notes || "—"}</p>
           </div>
+          <OpenDotaDetails match={draft} />
+          <GeneratedImages match={draft} />
         </section>
       </div>
     );
@@ -260,6 +262,9 @@ export default function MatchDialog({
           <p className="form-error field-full" role="alert">{formError}</p>
         </div>
 
+        <OpenDotaDetails match={draft} />
+        <GeneratedImages match={draft} />
+
         <footer className="modal-actions">
           {match && (
             <button
@@ -281,5 +286,94 @@ export default function MatchDialog({
         </footer>
       </form>
     </div>
+  );
+}
+
+function OpenDotaDetails({ match }: { match: Match }) {
+  if (!match.dotaMatchId) return null;
+  const duration = match.durationSeconds
+    ? `${Math.floor(match.durationSeconds / 60)}:${String(match.durationSeconds % 60).padStart(2, "0")}`
+    : "—";
+  return (
+    <section className="opendota-details" aria-label="آمار OpenDota">
+      <header>
+        <div>
+          <span>اطلاعات خودکار</span>
+          <strong lang="en" dir="ltr">Match #{match.dotaMatchId}</strong>
+        </div>
+        <span className="opendota-badge">OpenDota</span>
+      </header>
+      <div className="opendota-stat-grid">
+        <div><span>نوع بازی</span><strong>{match.gameModeName || "—"}</strong></div>
+        <div><span>مدت</span><strong lang="en" dir="ltr">{duration}</strong></div>
+        <div><span>K / D / A</span><strong lang="en" dir="ltr">{match.kills ?? "—"} / {match.deaths ?? "—"} / {match.assists ?? "—"}</strong></div>
+        <div><span>GPM / XPM</span><strong lang="en" dir="ltr">{match.goldPerMinute ?? "—"} / {match.xpPerMinute ?? "—"}</strong></div>
+        <div><span>Net Worth</span><strong>{match.netWorth?.toLocaleString("fa-IR") || "—"}</strong></div>
+        <div><span>Hero Damage</span><strong>{match.heroDamage?.toLocaleString("fa-IR") || "—"}</strong></div>
+      </div>
+    </section>
+  );
+}
+
+function GeneratedImages({ match }: { match: Match }) {
+  const [images, setImages] = useState<MatchImage[]>(match.images || []);
+
+  useEffect(() => {
+    setImages(match.images || []);
+    if (!match.dotaMatchId || (match.images?.length || 0) >= 3) return;
+    let cancelled = false;
+    async function refresh() {
+      try {
+        const response = await fetch(`/api/matches/${match.id}/images`, {
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+        const body = await response.json() as { images?: MatchImage[] };
+        if (!cancelled && body.images?.length) setImages(body.images);
+      } catch {
+        // Queue polling in the main page remains the source of truth on failure.
+      }
+    }
+    void refresh();
+    const timer = window.setInterval(refresh, 3_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [match.dotaMatchId, match.id, match.images]);
+
+  if (!match.dotaMatchId) return null;
+
+  if (!images.length) {
+    const label = match.imageJobStatus === "failed"
+      ? "ساخت تصاویر ناموفق بود و توسط سرور دوباره بررسی می‌شود."
+      : match.imageJobStatus === "processing"
+        ? "تصاویر همین حالا در حال ساخته‌شدن هستند."
+        : "تصاویر این مچ در صف ساخت قرار دارند.";
+    return (
+      <section className={`generated-images-empty is-${match.imageJobStatus || "pending"}`}>
+        <span className="image-build-icon">◫</span>
+        <div><strong>تصاویر گزارش</strong><p>{label}</p></div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="generated-images" aria-label="تصاویر گزارش مچ">
+      <header><span>تصاویر گزارش</span><strong>{images.length.toLocaleString("fa-IR")} تصویر آماده</strong></header>
+      <div className="generated-images-grid">
+        {images.map((image) => (
+          <a href={image.publicUrl} target="_blank" rel="noreferrer" key={image.id}>
+            <img
+              src={image.publicUrl}
+              width={image.width || 1280}
+              height={image.height || 720}
+              alt={image.altText || `گزارش مچ ${match.dotaMatchId}`}
+            />
+            <span>مشاهده اندازه کامل</span>
+          </a>
+        ))}
+      </div>
+    </section>
   );
 }

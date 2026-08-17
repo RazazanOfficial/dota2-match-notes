@@ -17,6 +17,7 @@ import {
   journalDays,
   journalMatches,
   matchBans,
+  matchImageJobs,
   matchImages,
   users,
 } from "@/lib/db/schema";
@@ -25,6 +26,7 @@ import {
   isStorageNotFound,
 } from "@/lib/storage/client";
 import { collectDismissedDotaMatchIds } from "./dismissed";
+import { makePublicImageUrl } from "@/lib/storage/media";
 import type { DayInput } from "./validation";
 
 interface JournalOwner {
@@ -118,6 +120,22 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
         .where(inArray(matchBans.matchId, matchIds))
         .orderBy(asc(matchBans.sortOrder))
     : [];
+  const [imageRows, imageJobRows] = matchIds.length
+    ? await Promise.all([
+        db
+          .select()
+          .from(matchImages)
+          .where(inArray(matchImages.matchId, matchIds))
+          .orderBy(asc(matchImages.sortOrder)),
+        db
+          .select({
+            matchId: matchImageJobs.matchId,
+            status: matchImageJobs.status,
+          })
+          .from(matchImageJobs)
+          .where(inArray(matchImageJobs.matchId, matchIds)),
+      ])
+    : [[], []];
   const bansByMatch = new Map<string, number[]>();
 
   banRows.forEach((ban) => {
@@ -125,6 +143,29 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
     bans.push(ban.heroId);
     bansByMatch.set(ban.matchId, bans);
   });
+  const imagesByMatch = new Map<string, Array<{
+    id: string;
+    publicUrl: string;
+    altText: string;
+    width: number | null;
+    height: number | null;
+    sortOrder: number;
+  }>>();
+  imageRows.forEach((image) => {
+    const images = imagesByMatch.get(image.matchId) || [];
+    images.push({
+      id: image.id,
+      publicUrl: makePublicImageUrl(image.objectKey),
+      altText: image.altText,
+      width: image.width,
+      height: image.height,
+      sortOrder: image.sortOrder,
+    });
+    imagesByMatch.set(image.matchId, images);
+  });
+  const imageJobByMatch = new Map(
+    imageJobRows.map((job) => [job.matchId, job.status]),
+  );
 
   const matchesByDay = new Map<string, typeof matchRows>();
   matchRows.forEach((match) => {
@@ -175,6 +216,8 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
                 gameModeName: gameModeName(match.gameModeId),
                 lobbyTypeId: match.lobbyTypeId,
                 lobbyTypeName: lobbyTypeName(match.lobbyTypeId),
+                images: imagesByMatch.get(match.id) || [],
+                imageJobStatus: imageJobByMatch.get(match.id) || null,
                 createdAt: match.createdAt.toISOString(),
                 updatedAt: match.updatedAt.toISOString(),
               },

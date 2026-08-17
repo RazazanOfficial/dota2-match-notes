@@ -15,6 +15,9 @@ export interface SessionUser {
   profileUrl: string | null;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  createdAt: Date;
+  lastManualSyncAt: Date | null;
+  manualSyncCursorAt: Date | null;
 }
 
 function hashSessionToken(token: string) {
@@ -47,6 +50,9 @@ export async function getSessionUser(token: string | undefined) {
       avatarUrl: users.avatarUrl,
       profileUrl: users.profileUrl,
       isAdmin: users.isAdmin,
+      createdAt: users.createdAt,
+      lastManualSyncAt: users.lastManualSyncAt,
+      manualSyncCursorAt: users.manualSyncCursorAt,
     })
     .from(sessions)
     .innerJoin(users, eq(sessions.userId, users.id))

@@ -1,6 +1,7 @@
 import type { SessionUser } from "@/lib/auth/session";
 import {
   fetchOpenDotaMatch,
+  fetchOpenDotaPlayerMatchesSince,
   fetchOpenDotaRecentMatches,
 } from "./client";
 import { getOpenDotaConfig } from "./config";
@@ -10,6 +11,7 @@ import {
   selectRecentSyncMatches,
 } from "./recent";
 import {
+  advanceManualOpenDotaSyncCursor,
   claimManualOpenDotaSync,
   claimOpenDotaRequestQuota,
   findKnownOpenDotaMatchIds,
@@ -60,6 +62,7 @@ interface RecentSyncOptions {
   initialMatches?: number;
   throwOnRetryableError?: boolean;
   onExternalRequestClaimed?: () => void;
+  fetchSince?: Date;
 }
 
 async function discoverRecentMatches(
@@ -69,7 +72,12 @@ async function discoverRecentMatches(
   const config = getOpenDotaConfig();
   await claimOpenDotaRequestQuota(quotaConfig(config));
   options.onExternalRequestClaimed?.();
-  const recentMatches = await fetchOpenDotaRecentMatches(user.steamAccountId);
+  const recentMatches = options.fetchSince
+    ? await fetchOpenDotaPlayerMatchesSince(
+        user.steamAccountId,
+        options.fetchSince,
+      )
+    : await fetchOpenDotaRecentMatches(user.steamAccountId);
   const { importedIds, dismissedIds } = await findKnownOpenDotaMatchIds(
     user.id,
     recentMatches.map((match) => match.match_id),
@@ -214,14 +222,28 @@ export async function syncRecentMatchesFromOpenDota(user: SessionUser) {
   let externalRequestClaimed = false;
 
   try {
+    const cursor = user.manualSyncCursorAt || user.createdAt;
+    const fetchSince = new Date(
+      Math.max(
+        user.createdAt.getTime(),
+        cursor.getTime() - config.manualSyncLookbackSeconds * 1_000,
+      ),
+    );
     const sync = await discoverRecentMatches(user, {
       maxNewMatches: config.maxNewMatchesPerSync,
+      since: fetchSince,
+      fetchSince,
       onExternalRequestClaimed: () => {
         externalRequestClaimed = true;
       },
     });
+    if (!sync.deferred && !sync.failed.length) {
+      await advanceManualOpenDotaSyncCursor(user.id, claimedAt);
+    }
     return {
       ...sync,
+      registeredAt: user.createdAt.toISOString(),
+      trackedFrom: fetchSince.toISOString(),
       nextAllowedAt: new Date(
         claimedAt.getTime() + config.manualSyncCooldownSeconds * 1_000,
       ).toISOString(),
