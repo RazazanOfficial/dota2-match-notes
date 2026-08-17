@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   fetchOpenDotaMatch,
+  fetchOpenDotaPlayerMatchesSince,
   fetchOpenDotaRecentMatches,
 } from "../lib/opendota/client";
 import { getOpenDotaConfig } from "../lib/opendota/config";
@@ -17,6 +18,7 @@ const OPENDOTA_ENV = [
   "OPENDOTA_TIMEOUT_MS",
   "OPENDOTA_MAX_RESPONSE_BYTES",
   "OPENDOTA_MANUAL_SYNC_COOLDOWN_SECONDS",
+  "OPENDOTA_MANUAL_SYNC_LOOKBACK_SECONDS",
   "OPENDOTA_MINUTE_REQUEST_LIMIT",
   "OPENDOTA_DAILY_REQUEST_LIMIT",
   "OPENDOTA_MAX_NEW_MATCHES_PER_SYNC",
@@ -55,6 +57,7 @@ beforeEach(() => {
   process.env.OPENDOTA_TIMEOUT_MS = "10000";
   process.env.OPENDOTA_MAX_RESPONSE_BYTES = "8388608";
   process.env.OPENDOTA_MANUAL_SYNC_COOLDOWN_SECONDS = "300";
+  process.env.OPENDOTA_MANUAL_SYNC_LOOKBACK_SECONDS = "21600";
   process.env.OPENDOTA_MINUTE_REQUEST_LIMIT = "50";
   process.env.OPENDOTA_DAILY_REQUEST_LIMIT = "2900";
   process.env.OPENDOTA_MAX_NEW_MATCHES_PER_SYNC = "3";
@@ -77,6 +80,7 @@ describe("OpenDota configuration", () => {
       timeoutMs: 10_000,
       maxResponseBytes: 8_388_608,
       manualSyncCooldownSeconds: 300,
+      manualSyncLookbackSeconds: 21_600,
       minuteRequestLimit: 50,
       dailyRequestLimit: 2_900,
       maxNewMatchesPerSync: 3,
@@ -201,6 +205,21 @@ describe("OpenDota HTTP client", () => {
     expect(url.origin + url.pathname).toBe(
       "https://api.example.test/api/players/988195076/recentMatches",
     );
+    expect(url.searchParams.get("api_key")).toBe("server-secret");
+  });
+
+  it("requests player history only as far back as the tracking cursor", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json([]));
+    vi.stubGlobal("fetch", fetchMock);
+    const since = new Date(Date.now() - 2 * 86_400_000);
+
+    await expect(
+      fetchOpenDotaPlayerMatchesSince(988_195_076, since),
+    ).resolves.toEqual([]);
+
+    const [url] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(url.pathname).toBe("/api/players/988195076/matches");
+    expect(Number(url.searchParams.get("date"))).toBeGreaterThanOrEqual(3);
     expect(url.searchParams.get("api_key")).toBe("server-secret");
   });
 

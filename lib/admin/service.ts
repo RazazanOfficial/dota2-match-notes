@@ -54,8 +54,8 @@ export async function provisionUserFromSteam(
   return { ...result, user: withEffectiveAccess(result.user) };
 }
 
-export async function getAdminOverview() {
-  const data = await getAdminOverviewData();
+export async function getAdminOverview(rangeDays = 30) {
+  const data = await getAdminOverviewData(rangeDays);
   const { rateLimits, ...overview } = data;
   const config = getOpenDotaConfig();
   const now = Date.now();
@@ -91,6 +91,7 @@ export async function getAdminOverview() {
         used,
         limit: window.limit,
         remaining: Math.max(0, window.limit - used),
+        percent: window.limit ? Math.min(100, (used / window.limit) * 100) : 0,
         resetAt: active ? resetAt : null,
       };
     }),

@@ -74,6 +74,9 @@ export const users = pgTable(
     isAdmin: boolean("is_admin").default(false).notNull(),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     lastManualSyncAt: timestamp("last_manual_sync_at", { withTimezone: true }),
+    manualSyncCursorAt: timestamp("manual_sync_cursor_at", {
+      withTimezone: true,
+    }),
     lastScheduledSyncAt: timestamp("last_scheduled_sync_at", {
       withTimezone: true,
     }),
@@ -177,6 +180,7 @@ export const journalMatches = pgTable(
     netWorth: integer("net_worth"),
     heroDamage: integer("hero_damage"),
     towerDamage: integer("tower_damage"),
+    analyzedAt: timestamp("analyzed_at", { withTimezone: true }),
     generatedImageKey: text("generated_image_key"),
     generatedImageAt: timestamp("generated_image_at", { withTimezone: true }),
     ...timestamps,
@@ -288,6 +292,29 @@ export const externalApiRateLimits = pgTable(
   (table) => [
     check(
       "external_api_rate_limits_count_check",
+      sql`${table.requestCount} >= 0`,
+    ),
+  ],
+);
+
+export const externalApiDailyUsage = pgTable(
+  "external_api_daily_usage",
+  {
+    provider: varchar("provider", { length: 32 }).notNull(),
+    day: date("day", { mode: "string" }).notNull(),
+    requestCount: integer("request_count").default(0).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "external_api_daily_usage_pkey",
+      columns: [table.provider, table.day],
+    }),
+    index("external_api_daily_usage_day_idx").on(table.day),
+    check(
+      "external_api_daily_usage_count_check",
       sql`${table.requestCount} >= 0`,
     ),
   ],

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   adminAuditLogs,
   dismissedDotaMatches,
+  externalApiDailyUsage,
   externalApiRateLimits,
   journalMatches,
   matchImageJobs,
@@ -22,6 +23,9 @@ describe("database schema", () => {
     expect(getTableConfig(externalApiRateLimits).name).toBe(
       "external_api_rate_limits",
     );
+    expect(getTableConfig(externalApiDailyUsage).name).toBe(
+      "external_api_daily_usage",
+    );
     expect(getTableConfig(syncJobs).name).toBe("sync_jobs");
     expect(getTableConfig(adminAuditLogs).name).toBe("admin_audit_logs");
     expect(getTableConfig(dismissedDotaMatches).name).toBe(
@@ -33,6 +37,17 @@ describe("database schema", () => {
     const config = getTableConfig(externalApiRateLimits);
     const checkNames = config.checks.map((constraint) => constraint.name);
     expect(checkNames).toContain("external_api_rate_limits_count_check");
+  });
+
+  it("keeps daily OpenDota usage for admin charts", () => {
+    const config = getTableConfig(externalApiDailyUsage);
+    expect(config.primaryKeys[0]?.columns.map((column) => column.name)).toEqual([
+      "provider",
+      "day",
+    ]);
+    expect(config.checks.map((constraint) => constraint.name)).toContain(
+      "external_api_daily_usage_count_check",
+    );
   });
 
   it("enforces three generated image slots at the database level", () => {

@@ -50,7 +50,7 @@ const openDotaRecentMatchSchema = z
 
 const openDotaRecentMatchesSchema = z
   .array(openDotaRecentMatchSchema)
-  .max(100);
+  .max(1_000);
 
 export const openDotaMatchSchema = z
   .object({

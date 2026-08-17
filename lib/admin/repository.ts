@@ -1,6 +1,8 @@
 import {
+  and,
   desc,
   eq,
+  gte,
   gt,
   ilike,
   or,
@@ -11,6 +13,7 @@ import { getDb } from "@/lib/db";
 import {
   adminAuditLogs,
   dotaMatches,
+  externalApiDailyUsage,
   externalApiRateLimits,
   journalMatches,
   matchImageJobs,
@@ -134,9 +137,21 @@ export async function provisionAdminUser(params: {
   });
 }
 
-export async function getAdminOverviewData() {
+function utcDay(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function analyticsStart(rangeDays: number, now: Date) {
+  const start = new Date(`${utcDay(now)}T00:00:00.000Z`);
+  start.setUTCDate(start.getUTCDate() - rangeDays + 1);
+  return start;
+}
+
+export async function getAdminOverviewData(rangeDays = 30) {
   const db = getDb();
   const now = new Date();
+  const start = analyticsStart(rangeDays, now);
+  const startDay = utcDay(start);
   const [
     [userCounts],
     [activeSessionCount],
@@ -148,6 +163,10 @@ export async function getAdminOverviewData() {
     rateLimits,
     [auditCount],
     recentAuditLogs,
+    dailyUsers,
+    dailyMatches,
+    dailyApiUsage,
+    recentImageJobs,
   ] = await Promise.all([
     db
       .select({
@@ -160,7 +179,10 @@ export async function getAdminOverviewData() {
       .select({ total: sql<number>`count(*)::int` })
       .from(sessions)
       .where(gt(sessions.expiresAt, now)),
-    db.select({ total: sql<number>`count(*)::int` }).from(journalMatches),
+    db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(journalMatches)
+      .where(eq(journalMatches.source, "opendota")),
     db.select({ total: sql<number>`count(*)::int` }).from(dotaMatches),
     db
       .select({
@@ -199,6 +221,59 @@ export async function getAdminOverviewData() {
       .from(adminAuditLogs)
       .orderBy(desc(adminAuditLogs.createdAt))
       .limit(20),
+    db
+      .select({
+        day: sql<string>`to_char(timezone('UTC', ${users.createdAt}), 'YYYY-MM-DD')`,
+        total: sql<number>`count(*)::int`,
+      })
+      .from(users)
+      .where(gte(users.createdAt, start))
+      .groupBy(sql`to_char(timezone('UTC', ${users.createdAt}), 'YYYY-MM-DD')`),
+    db
+      .select({
+        day: sql<string>`to_char(timezone('UTC', ${journalMatches.analyzedAt}), 'YYYY-MM-DD')`,
+        total: sql<number>`count(*)::int`,
+      })
+      .from(journalMatches)
+      .where(
+        and(
+          eq(journalMatches.source, "opendota"),
+          gte(journalMatches.analyzedAt, start),
+        ),
+      )
+      .groupBy(
+        sql`to_char(timezone('UTC', ${journalMatches.analyzedAt}), 'YYYY-MM-DD')`,
+      ),
+    db
+      .select({
+        day: externalApiDailyUsage.day,
+        total: externalApiDailyUsage.requestCount,
+      })
+      .from(externalApiDailyUsage)
+      .where(
+        and(
+          eq(externalApiDailyUsage.provider, "opendota"),
+          gte(externalApiDailyUsage.day, startDay),
+        ),
+      )
+      .orderBy(externalApiDailyUsage.day),
+    db
+      .select({
+        id: matchImageJobs.id,
+        status: matchImageJobs.status,
+        attempts: matchImageJobs.attempts,
+        errorCode: matchImageJobs.errorCode,
+        updatedAt: matchImageJobs.updatedAt,
+        matchId: journalMatches.id,
+        dotaMatchId: journalMatches.dotaMatchId,
+        heroName: journalMatches.heroName,
+        userHandle: users.handle,
+      })
+      .from(matchImageJobs)
+      .innerJoin(journalMatches, eq(matchImageJobs.matchId, journalMatches.id))
+      .innerJoin(users, eq(journalMatches.userId, users.id))
+      .orderBy(desc(matchImageJobs.updatedAt))
+      .limit(20),
   ]);
 
   const syncJobSummary = {
@@ -216,6 +291,22 @@ export async function getAdminOverviewData() {
   };
   for (const row of imageJobCounts) imageJobSummary[row.status] = row.total;
 
+  const usersByDay = new Map(dailyUsers.map((row) => [row.day, row.total]));
+  const matchesByDay = new Map(dailyMatches.map((row) => [row.day, row.total]));
+  const apiByDay = new Map(dailyApiUsage.map((row) => [row.day, row.total]));
+  const daily = Array.from({ length: rangeDays }, (_, index) => {
+    const day = new Date(start);
+    day.setUTCDate(start.getUTCDate() + index);
+    const key = utcDay(day);
+    return {
+      day: key,
+      newUsers: usersByDay.get(key) || 0,
+      analyzedMatches: matchesByDay.get(key) || 0,
+      openDotaRequests: apiByDay.get(key) || 0,
+    };
+  });
+  const today = daily[daily.length - 1];
+
   return {
     counts: {
       users: userCounts?.total || 0,
@@ -227,10 +318,23 @@ export async function getAdminOverviewData() {
       generatedImages: imageTotals?.total || 0,
       generatedImageBytes: Number(imageTotals?.sizeBytes || 0),
       adminAuditLogs: auditCount?.total || 0,
+      newUsersToday: today?.newUsers || 0,
+      analyzedMatchesToday: today?.analyzedMatches || 0,
     },
     syncJobs: syncJobSummary,
     imageJobs: imageJobSummary,
     rateLimits,
     recentAuditLogs,
+    recentImageJobs: recentImageJobs.map((job) => ({
+      ...job,
+      dotaMatchId: job.dotaMatchId === null ? null : String(job.dotaMatchId),
+      updatedAt: job.updatedAt.toISOString(),
+    })),
+    analytics: {
+      rangeDays,
+      from: startDay,
+      to: utcDay(now),
+      daily,
+    },
   };
 }

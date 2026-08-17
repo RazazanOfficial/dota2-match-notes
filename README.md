@@ -33,9 +33,10 @@ OPENDOTA_API_KEY=
 OPENDOTA_TIMEOUT_MS=30000
 OPENDOTA_MAX_RESPONSE_BYTES=8388608
 OPENDOTA_MANUAL_SYNC_COOLDOWN_SECONDS=300
+OPENDOTA_MANUAL_SYNC_LOOKBACK_SECONDS=21600
 OPENDOTA_MINUTE_REQUEST_LIMIT=50
 OPENDOTA_DAILY_REQUEST_LIMIT=2900
-OPENDOTA_MAX_NEW_MATCHES_PER_SYNC=3
+OPENDOTA_MAX_NEW_MATCHES_PER_SYNC=20
 
 SYNC_WORKER_SECRET=GENERATE_A_RANDOM_32_PLUS_CHARACTER_SECRET
 SCHEDULED_SYNC_INTERVAL_SECONDS=3600
@@ -167,23 +168,25 @@ GPM، XPM، Net Worth و Damageها در `journal_matches` ثبت می‌شود.
 
 - `POST /api/sync/me`
 
-این مسیر بدون دریافت Match ID، فهرست مچ‌های اخیر حساب Steam واردشده را از OpenDota بررسی
-می‌کند. مچ‌های تکراری نادیده گرفته می‌شوند و در هر اجرا حداکثر تعداد مشخص‌شده در
+این مسیر بدون دریافت Match ID، مچ‌های حساب Steam را از زمان عضویت کاربر در سایت بررسی
+می‌کند. بعد از Sync موفق یک Cursor داخلی با هم‌پوشانی امن شش‌ساعته جلو می‌رود تا هم پاسخ
+OpenDota کوچک بماند و هم مچی که با تأخیر منتشر شده از دست نرود. مچ‌های تکراری نادیده گرفته
+می‌شوند و در هر اجرا حداکثر تعداد مشخص‌شده در
 `OPENDOTA_MAX_NEW_MATCHES_PER_SYNC` با اطلاعات کامل دریافت و در تاریخ واقعی مچ ثبت می‌شوند.
-مقدار پیش‌فرض سه مچ است تا اولین اجرا ناگهان تعداد زیادی درخواست خارجی مصرف نکند. همان
+مقدار پیش‌فرض ۲۰ مچ است؛ بنابراین چند بازی همان روز با یک کلیک وارد می‌شوند. همان
 Cooldown پنج‌دقیقه‌ای و سهمیه‌های سراسری OpenDota روی این مسیر نیز اعمال می‌شوند.
 
 پاسخ شامل تعداد مچ‌های بررسی‌شده، تکراری، ثبت‌شده، ناموفق و عقب‌افتاده است. روز مچ با منطقه
 زمانی `JOURNAL_TIME_ZONE` محاسبه می‌شود که مقدار پیش‌فرض آن `Asia/Tehran` است؛ بنابراین ساعت
-UTC سرور VPS تاریخ دفتر را جابه‌جا نمی‌کند. این سرویس پایه مشترک دکمه Sync و Scheduler ساعتی
-VPS خواهد بود.
+UTC سرور VPS تاریخ دفتر را جابه‌جا نمی‌کند. وضعیت Cooldown و صف ساخت تصاویر با
+`GET /api/sync/me` برای رابط کاربری خوانده می‌شود.
 
 اگر کاربر یک مچ متصل به OpenDota را از دفتر حذف کند، شناسه آن در جدول
 `dismissed_dota_matches` ثبت می‌شود و Syncهای بعدی آن را دوباره وارد نمی‌کنند. داده این جدول
 فقط تصمیم حذف کاربر را نگه می‌دارد و شامل آمار یا اطلاعات خصوصی نیست. اتصال صریح همان Match
 ID از مسیر همگام‌سازی تکی، این علامت حذف را برمی‌دارد و مچ را دوباره فعال می‌کند.
 
-## Worker همگام‌سازی زمان‌بندی‌شده
+## Worker همگام‌سازی زمان‌بندی‌شده (غیرفعال)
 
 - `POST /api/internal/sync/tick`
 - Header اجباری: `Authorization: Bearer SYNC_WORKER_SECRET`
@@ -208,8 +211,8 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
 ```
 
 این Secret فقط در `.env.local` یا تنظیمات سرویس VPS قرار می‌گیرد و نباید به Git، مرورگر یا
-متغیرهای `NEXT_PUBLIC_` وارد شود. این پچ خود Timer سیستم‌عامل را فعال نمی‌کند؛ endpoint و صف
-را آماده می‌کند تا در مرحله استقرار با systemd timer فراخوانی شود.
+متغیرهای `NEXT_PUBLIC_` وارد شود. کد Scheduler برای استفاده آینده حفظ شده، اما Timer آن در
+استقرار فعلی نصب یا فعال نمی‌شود؛ Sync کاربران فقط با دکمه خودشان انجام می‌شود.
 
 اطلاعات ثابت هیروها از پروژه MIT
 [`odota/dotaconstants`](https://github.com/odota/dotaconstants) تهیه شده و تصاویر هیروها

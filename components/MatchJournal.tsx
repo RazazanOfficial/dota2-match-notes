@@ -32,6 +32,7 @@ import {
 import type { Day, Match, Profile, Session } from "@/lib/types";
 import MatchDialog from "./MatchDialog";
 import ReportDialog from "./ReportDialog";
+import SyncPanel from "./SyncPanel";
 
 type AccessView = "roles" | "coach";
 
@@ -47,6 +48,7 @@ export default function MatchJournal() {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState("");
   const [reportOpen, setReportOpen] = useState(false);
+  const [refreshVersion, setRefreshVersion] = useState(0);
   const [editing, setEditing] = useState<{ dateKey: string; matchId: string | null } | null>(
     null,
   );
@@ -103,7 +105,7 @@ export default function MatchJournal() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [editing, rangeFrom, rangeTo, session]);
+  }, [editing, rangeFrom, rangeTo, session, refreshVersion]);
 
   function showToast(message: string) {
     setToast(message);
@@ -265,6 +267,11 @@ export default function MatchJournal() {
               <span className="status-dot" />
               {syncState === "syncing" ? "در حال ثبت" : syncState === "error" ? "خطا" : "همگام"}
             </span>
+            {session.mode === "player" && session.isSuperAdmin && (
+              <a className="admin-link" href="/admin">
+                مدیریت
+              </a>
+            )}
             <button className="secondary-button" type="button" disabled={busy} onClick={leave}>
               خروج
             </button>
@@ -272,6 +279,16 @@ export default function MatchJournal() {
         </header>
 
         <main>
+          {session.mode === "player" && (
+            <SyncPanel
+              onMatchesImported={(result) => {
+                if (result.imported.length) {
+                  setActiveWeek(getCurrentWeekIndex(ANCHOR_DATE));
+                  setRefreshVersion((version) => version + 1);
+                }
+              }}
+            />
+          )}
           <section className="week-overview">
             <div className="week-heading">
               <div>
@@ -528,6 +545,20 @@ function MatchCard({ match, onClick }: { match: Match; onClick: () => void }) {
         </p>
       )}
       {match.notes && <p className="match-notes">{match.notes}</p>}
+      {match.dotaMatchId && (
+        <div className="match-auto-meta">
+          <span lang="en" dir="ltr">#{match.dotaMatchId}</span>
+          <span className={`match-image-state is-${match.images?.length ? "ready" : match.imageJobStatus || "pending"}`}>
+            {match.images?.length
+              ? `${faNumber.format(match.images.length)} تصویر`
+              : match.imageJobStatus === "processing"
+                ? "در حال ساخت تصویر"
+                : match.imageJobStatus === "failed"
+                  ? "خطای تصویر"
+                  : "در صف تصویر"}
+          </span>
+        </div>
+      )}
     </button>
   );
 }

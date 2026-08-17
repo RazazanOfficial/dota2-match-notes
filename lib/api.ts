@@ -1,7 +1,13 @@
 "use client";
 
 import { normalizeProfile } from "./date";
-import type { Day, Profile, Session } from "./types";
+import type {
+  Day,
+  ManualSyncResult,
+  PlayerSyncStatus,
+  Profile,
+  Session,
+} from "./types";
 
 interface ErrorPayload {
   error?: string | { code?: string; message?: string };
@@ -12,6 +18,9 @@ interface SessionResponse {
   authenticated: boolean;
   user?: {
     handle: string;
+    displayName: string;
+    avatarUrl: string | null;
+    isSuperAdmin: boolean;
   };
 }
 
@@ -94,7 +103,25 @@ export async function restorePlayer(): Promise<Session | null> {
   return {
     mode: "player",
     username: response.user.handle,
+    displayName: response.user.displayName,
+    avatarUrl: response.user.avatarUrl,
+    isSuperAdmin: response.user.isSuperAdmin,
   };
+}
+
+export async function getPlayerSyncStatus() {
+  const response = await requestJson<{ ok: boolean; status: PlayerSyncStatus }>(
+    "/api/sync/me",
+  );
+  return response.status;
+}
+
+export async function syncPlayerMatches() {
+  const response = await requestJson<{ ok: boolean; sync: ManualSyncResult }>(
+    "/api/sync/me",
+    { method: "POST" },
+  );
+  return response.sync;
 }
 
 export async function viewPlayer(username: string, from: string, to: string) {

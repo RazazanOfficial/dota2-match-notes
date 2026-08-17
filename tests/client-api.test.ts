@@ -23,12 +23,20 @@ describe("journal client API", () => {
   it("restores the Steam session using its public handle", async () => {
     mockFetch({
       authenticated: true,
-      user: { handle: "steam_123" },
+      user: {
+        handle: "steam_123",
+        displayName: "Player",
+        avatarUrl: "https://example.test/avatar.jpg",
+        isSuperAdmin: true,
+      },
     });
 
     await expect(restorePlayer()).resolves.toEqual({
       mode: "player",
       username: "steam_123",
+      displayName: "Player",
+      avatarUrl: "https://example.test/avatar.jpg",
+      isSuperAdmin: true,
     });
   });
 

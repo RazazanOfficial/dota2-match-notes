@@ -191,6 +191,26 @@ export function sanitizeMatch(raw: Record<string, unknown>, fallback = 1): Match
       typeof raw.lobbyTypeName === "string"
         ? raw.lobbyTypeName
         : lobbyTypeName(lobbyTypeId),
+    images: Array.isArray(raw.images)
+      ? raw.images
+          .filter((image): image is Record<string, unknown> =>
+            Boolean(image && typeof image === "object"),
+          )
+          .map((image) => ({
+            id: String(image.id || ""),
+            publicUrl: String(image.publicUrl || ""),
+            altText: String(image.altText || ""),
+            width: nullableNumber(image.width),
+            height: nullableNumber(image.height),
+            sortOrder: nullableNumber(image.sortOrder) || 1,
+          }))
+          .filter((image) => image.id && /^https:\/\//.test(image.publicUrl))
+      : [],
+    imageJobStatus: ["pending", "processing", "completed", "failed"].includes(
+      String(raw.imageJobStatus),
+    )
+      ? (raw.imageJobStatus as Match["imageJobStatus"])
+      : null,
   };
 }
 
