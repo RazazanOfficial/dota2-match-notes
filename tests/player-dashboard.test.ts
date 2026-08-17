@@ -1,7 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { serializePlayerSyncSnapshot } from "../lib/player-dashboard/repository";
+import { PgDialect } from "drizzle-orm/pg-core";
+import {
+  buildQueueAheadExpression,
+  serializePlayerSyncSnapshot,
+} from "../lib/player-dashboard/repository";
 
 describe("player sync dashboard", () => {
+  it("uses the real image-job table with a correlated queue alias", () => {
+    const query = new PgDialect().sqlToQuery(buildQueueAheadExpression());
+
+    expect(query.sql).toContain(
+      'from "match_image_jobs" as "queued_image_jobs"',
+    );
+    expect(query.sql).not.toContain('from "queued_image_jobs"');
+  });
+
   it("exposes cooldown and live image queue positions without storage secrets", () => {
     const lastSyncAt = new Date("2026-08-16T10:00:00.000Z");
     const status = serializePlayerSyncSnapshot(

@@ -188,8 +188,8 @@ describe("OpenDota HTTP client", () => {
         player_slot: 0,
         radiant_win: true,
         duration: 2_400,
-        game_mode: 22,
-        lobby_type: 7,
+        game_mode: 23,
+        lobby_type: 0,
         hero_id: 1,
         start_time: 1_786_000_000,
         kills: 8,
@@ -200,7 +200,9 @@ describe("OpenDota HTTP client", () => {
     const fetchMock = vi.fn().mockResolvedValue(Response.json(recentPayload));
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(fetchOpenDotaRecentMatches(988_195_076)).resolves.toHaveLength(1);
+    await expect(fetchOpenDotaRecentMatches(988_195_076)).resolves.toMatchObject([
+      { game_mode: 23, lobby_type: 0 },
+    ]);
     const [url] = fetchMock.mock.calls[0] as [URL, RequestInit];
     expect(url.origin + url.pathname).toBe(
       "https://api.example.test/api/players/988195076/recentMatches",

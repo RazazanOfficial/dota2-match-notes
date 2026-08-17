@@ -1,7 +1,6 @@
 import type { SessionUser } from "@/lib/auth/session";
 import {
   fetchOpenDotaMatch,
-  fetchOpenDotaPlayerMatchesSince,
   fetchOpenDotaRecentMatches,
 } from "./client";
 import { getOpenDotaConfig } from "./config";
@@ -62,7 +61,6 @@ interface RecentSyncOptions {
   initialMatches?: number;
   throwOnRetryableError?: boolean;
   onExternalRequestClaimed?: () => void;
-  fetchSince?: Date;
 }
 
 async function discoverRecentMatches(
@@ -72,12 +70,10 @@ async function discoverRecentMatches(
   const config = getOpenDotaConfig();
   await claimOpenDotaRequestQuota(quotaConfig(config));
   options.onExternalRequestClaimed?.();
-  const recentMatches = options.fetchSince
-    ? await fetchOpenDotaPlayerMatchesSince(
-        user.steamAccountId,
-        options.fetchSince,
-      )
-    : await fetchOpenDotaRecentMatches(user.steamAccountId);
+  // OpenDota's recentMatches feed is updated before the general player-history
+  // query for some newly finished matches (including Turbo). Always discover
+  // from the freshest feed, then apply the registration/cursor cutoff locally.
+  const recentMatches = await fetchOpenDotaRecentMatches(user.steamAccountId);
   const { importedIds, dismissedIds } = await findKnownOpenDotaMatchIds(
     user.id,
     recentMatches.map((match) => match.match_id),
@@ -232,7 +228,6 @@ export async function syncRecentMatchesFromOpenDota(user: SessionUser) {
     const sync = await discoverRecentMatches(user, {
       maxNewMatches: config.maxNewMatchesPerSync,
       since: fetchSince,
-      fetchSince,
       onExternalRequestClaimed: () => {
         externalRequestClaimed = true;
       },

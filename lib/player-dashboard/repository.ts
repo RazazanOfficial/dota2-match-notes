@@ -8,6 +8,36 @@ import {
   users,
 } from "../db/schema";
 
+export function buildQueueAheadExpression() {
+  const queuedJobs = alias(matchImageJobs, "queued_image_jobs");
+
+  return sql<number>`(
+    select count(*)::int
+    from ${matchImageJobs} as "queued_image_jobs"
+    where
+      ${matchImageJobs.status} = 'pending'
+      and (
+        ${queuedJobs.status} = 'processing'
+        or (
+          ${queuedJobs.status} = 'pending'
+          and (
+            ${queuedJobs.runAfter} < ${matchImageJobs.runAfter}
+            or (
+              ${queuedJobs.runAfter} = ${matchImageJobs.runAfter}
+              and (
+                ${queuedJobs.createdAt} < ${matchImageJobs.createdAt}
+                or (
+                  ${queuedJobs.createdAt} = ${matchImageJobs.createdAt}
+                  and ${queuedJobs.id} < ${matchImageJobs.id}
+                )
+              )
+            )
+          )
+        )
+      )
+  )`;
+}
+
 export async function getPlayerSyncSnapshot(userId: string) {
   const db = getDb();
   const [user] = await db
@@ -22,7 +52,6 @@ export async function getPlayerSyncSnapshot(userId: string) {
 
   if (!user) return null;
 
-  const queuedJobs = alias(matchImageJobs, "queued_image_jobs");
   const [jobs, countRows] = await Promise.all([
     db
       .select({
@@ -41,31 +70,7 @@ export async function getPlayerSyncSnapshot(userId: string) {
           from ${matchImages}
           where ${matchImages.matchId} = ${journalMatches.id}
         )`,
-        queueAhead: sql<number>`(
-          select count(*)::int
-          from ${queuedJobs}
-          where
-            ${matchImageJobs.status} = 'pending'
-            and (
-              ${queuedJobs.status} = 'processing'
-              or (
-                ${queuedJobs.status} = 'pending'
-                and (
-                  ${queuedJobs.runAfter} < ${matchImageJobs.runAfter}
-                  or (
-                    ${queuedJobs.runAfter} = ${matchImageJobs.runAfter}
-                    and (
-                      ${queuedJobs.createdAt} < ${matchImageJobs.createdAt}
-                      or (
-                        ${queuedJobs.createdAt} = ${matchImageJobs.createdAt}
-                        and ${queuedJobs.id} < ${matchImageJobs.id}
-                      )
-                    )
-                  )
-                )
-              )
-            )
-        )`,
+        queueAhead: buildQueueAheadExpression(),
       })
       .from(matchImageJobs)
       .innerJoin(
