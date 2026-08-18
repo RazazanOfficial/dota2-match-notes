@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import AppLogo from "./AppLogo";
 
 type RangeDays = 7 | 30 | 90;
 type JobStatus = "pending" | "processing" | "completed" | "failed";
@@ -180,7 +181,12 @@ export default function AdminDashboard() {
   }
 
   if (loading && !overview) {
-    return <main className="admin-state"><span className="loading-mark">D2</span><p>در حال آماده‌سازی داشبورد</p></main>;
+    return (
+      <main className="admin-state">
+        <span className="loading-mark"><AppLogo size={70} alt="" priority /></span>
+        <p>در حال آماده‌سازی داشبورد</p>
+      </main>
+    );
   }
 
   if (error && !overview) {
@@ -199,9 +205,12 @@ export default function AdminDashboard() {
   return (
     <main className="admin-shell">
       <header className="admin-topbar">
-        <div>
-          <p className="week-kicker">SUPER ADMIN</p>
-          <h1>مرکز مدیریت Dota2 Notes</h1>
+        <div className="admin-brand">
+          <AppLogo size={64} priority />
+          <div>
+            <p className="week-kicker">SUPER ADMIN</p>
+            <h1>مرکز مدیریت Dota2 Notes</h1>
+          </div>
         </div>
         <div className="admin-top-actions">
           <span className="queue-live-dot">داده زنده</span>

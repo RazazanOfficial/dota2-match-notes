@@ -1,6 +1,6 @@
 {
   "name": "دفتر مچ‌های دوتا ۲",
-  "short_name": "Dota Notes",
+  "short_name": "Dota2 Notes",
   "description": "دفتر فارسی ثبت و مرور مچ‌های دوتا ۲",
   "lang": "fa",
   "dir": "rtl",
@@ -11,9 +11,27 @@
   "theme_color": "#0b0c10",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/logos/logo_64x64.png",
+      "sizes": "64x64",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logos/logo_128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logos/logo_256x256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logos/logo_512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]

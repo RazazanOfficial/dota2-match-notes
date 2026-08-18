@@ -15,6 +15,7 @@
 - ذخیره اطلاعات در PostgreSQL از طریق API داخلی Next.js
 - انتشار تصاویر تولیدشده مچ توسط بک‌اند در Object Storage سازگار با S3 پارس‌پک
 - دریافت و ذخیره آمار واقعی مچ از OpenDota با محدودیت همگام‌سازی دستی
+- هفت ست نشانگر Dota 2 با پنج حالت کاربردی و افکت‌های ظریف Gold، Fire و Ice
 
 ## آماده‌سازی محلی
 
@@ -85,6 +86,13 @@ npm run db:studio
 راهنمای استقرار بدون Docker روی Ubuntu، شامل PostgreSQL، systemd، Timerهای Worker، Nginx و
 TLS در [`docs/deployment-ubuntu.md`](docs/deployment-ubuntu.md) قرار دارد. فایل‌های آماده‌ی
 سرور داخل پوشه `deploy` هستند و برای دامنه `dota2notes.ir` تنظیم شده‌اند.
+
+تصمیم معماری و نقشه مهاجرت تدریجی Web، Android و Windows در
+[`docs/multiplatform-architecture.md`](docs/multiplatform-architecture.md) ثبت شده است.
+راهنمای زبان بصری و بررسی بازطراحی نیز در
+[`docs/ui-ux-redesign.md`](docs/ui-ux-redesign.md) قرار دارد.
+نگاشت حالت‌ها، ساختار فایل‌ها و رفتار پنل نشانگر در
+[`docs/cursor-themes.md`](docs/cursor-themes.md) مستند شده است.
 
 ## API ژورنال
 

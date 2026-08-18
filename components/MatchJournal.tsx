@@ -33,6 +33,8 @@ import type { Day, Match, Profile, Session } from "@/lib/types";
 import MatchDialog from "./MatchDialog";
 import ReportDialog from "./ReportDialog";
 import SyncPanel from "./SyncPanel";
+import AppLogo from "./AppLogo";
+import { GameIcon } from "./GameIcon";
 
 type AccessView = "roles" | "coach";
 
@@ -233,7 +235,9 @@ export default function MatchJournal() {
   if (loading) {
     return (
       <main className="loading-screen">
-        <span className="loading-mark" lang="en">D2</span>
+        <span className="loading-mark">
+          <AppLogo size={70} alt="" priority />
+        </span>
         <span className="loading-line" />
       </main>
     );
@@ -292,8 +296,9 @@ export default function MatchJournal() {
           <section className="week-overview">
             <div className="week-heading">
               <div>
-                <p className="week-kicker">{getWeekLabel(activeWeek)}</p>
+                <p className="week-kicker"><span aria-hidden="true" />{getWeekLabel(activeWeek)}</p>
                 <h2>{formatWeekRange(dates)}</h2>
+                <p className="week-subtitle">میدان عملکرد هفتگی · هر مچ، یک تصمیم بهتر</p>
               </div>
               <div className="week-navigation" aria-label="پیمایش هفته‌ها">
                 <button
@@ -326,7 +331,7 @@ export default function MatchJournal() {
               <Stat label="باخت" value={faNumber.format(weekSummary.losses)} tone="loss" />
               <Stat label="نرخ برد" value={faPercent.format(weekSummary.winRate)} />
               <button className="report-button" type="button" onClick={() => setReportOpen(true)}>
-                گزارش هفته
+                <GameIcon name="report" /> گزارش هفته
               </button>
             </div>
           </section>
@@ -428,10 +433,10 @@ export default function MatchJournal() {
 function Brand() {
   return (
     <div className="brand">
-      <span className="brand-mark" lang="en">D2</span>
+      <AppLogo size={64} priority />
       <div>
-        <p className="eyebrow" lang="en">MATCH JOURNAL</p>
-        <h1>دفتر مچ‌های دوتا ۲</h1>
+        <p className="eyebrow" lang="en">DOTA2 NOTES</p>
+        <h1>دفترچه دوتا2</h1>
       </div>
     </div>
   );
@@ -466,48 +471,73 @@ function AccessScreen({
   return (
     <main className="access-screen">
       <header className="access-brand"><Brand /></header>
-      <section className="access-panel">
-        <div className="access-heading">
-          <p className="week-kicker">{view === "roles" ? "دسترسی" : "مربی"}</p>
-          <h2>{view === "roles" ? "نوع ورود را انتخاب کنید" : "مشاهده گزارش بازیکن"}</h2>
-        </div>
-        {view === "roles" ? (
-          <div className="role-grid">
-            <button className="role-card role-player" type="button" onClick={onPlayerLogin}>
-              <span className="role-icon">✦</span><span className="role-name">بازیکن</span>
-              <span className="role-description">ثبت و مدیریت بازی‌ها</span>
-            </button>
-            <button className="role-card role-coach" type="button" onClick={() => onViewChange("coach")}>
-              <span className="role-icon">◎</span><span className="role-name">مربی</span>
-              <span className="role-description">مشاهده گزارش بازیکن</span>
-            </button>
+      <div className="access-stage">
+        <section className="access-intro">
+          <p className="access-overline" lang="en">KNOW YOUR MATCH. MASTER YOUR GAME.</p>
+          <h2>هر تحلیل، نشانه ای از<br /><em>پیشرفت توست.</em></h2>
+          <p className="access-lead">
+            عملکرد خودت را ثبت کن و با کمک ما مشکلاتت را پیدا کن.
+          </p>
+          <div className="access-feature-list" aria-label="امکانات اصلی">
+            <span><GameIcon name="journal" /> ژورنال هوشمند</span>
+            <span><GameIcon name="report" /> گزارش عملکرد</span>
+            <span><GameIcon name="gold" /> آمار واقعی مچ</span>
           </div>
-        ) : (
-          <form className="access-form" onSubmit={submit}>
-            <label className="field">
-              <span>نام کاربری بازیکن</span>
-              <input
-                lang="en"
-                dir="ltr"
-                autoComplete="off"
-                value={username}
-                maxLength={32}
-                required
-                onChange={(event) => setUsername(event.target.value)}
-              />
-            </label>
-            <p className="form-error" role="alert">{error}</p>
-            <div className="access-actions">
-              <button className="secondary-button" type="button" onClick={() => onViewChange("roles")}>
-                بازگشت
+          <div className="access-runes" aria-hidden="true">
+            <span>STR</span><span>AGI</span><span>INT</span>
+          </div>
+        </section>
+        <section className="access-panel">
+          <div className="access-heading">
+            <p className="week-kicker"><span aria-hidden="true" />{view === "roles" ? "پنل ورود" : "مشاهده به عنوان مهمان"}</p>
+            <h2>{view === "roles" ? "نحوه ورود را انتخاب کن" : ""}</h2>
+          </div>
+          {view === "roles" ? (
+            <div className="role-grid">
+              <button className="role-card role-player" type="button" onClick={onPlayerLogin}>
+                <span className="role-icon"><GameIcon name="player" /></span>
+                <span className="role-card-index" lang="en">01</span>
+                <span className="role-name">حساب کاربری</span>
+                <span className="role-description">بررسی و مشاهده عملکرد خود</span>
+                <span className="role-cta">ورود به ژورنال ←</span>
               </button>
-              <button className="primary-button" type="submit" disabled={busy}>
-                {busy ? "در حال اتصال" : "مشاهده"}
+              <button className="role-card role-coach" type="button" onClick={() => onViewChange("coach")}>
+                <span className="role-icon"><GameIcon name="coach" /></span>
+                <span className="role-card-index" lang="en">02</span>
+                <span className="role-name">مشاهده پروفایل دیگران</span>
+                <span className="role-description">مشاهده‌ی عمومی عملکرد دیگران</span>
+                <span className="role-cta">مشاهده گزارش ←</span>
               </button>
             </div>
-          </form>
-        )}
-      </section>
+          ) : (
+            <form className="access-form" onSubmit={submit}>
+              <label className="field">
+                <span>شناسه بازیکن</span>
+                <input
+                  lang="en"
+                  dir="ltr"
+                  autoComplete="off"
+                  placeholder="steam_123456789"
+                  value={username}
+                  maxLength={32}
+                  required
+                  onChange={(event) => setUsername(event.target.value)}
+                />
+              </label>
+              <p className="form-error" role="alert">{error}</p>
+              <div className="access-actions">
+                <button className="secondary-button" type="button" onClick={() => onViewChange("roles")}>
+                  بازگشت
+                </button>
+                <button className="primary-button" type="submit" disabled={busy}>
+                  {busy ? "در حال اتصال" : "مشاهده پروفایل"}
+                </button>
+              </div>
+            </form>
+          )}
+          <footer className="access-panel-footer"><span lang="en">Developed By Meraj</span><span></span></footer>
+        </section>
+      </div>
     </main>
   );
 }
@@ -539,6 +569,13 @@ function MatchCard({ match, onClick }: { match: Match; onClick: () => void }) {
           </span>
         </div>
       </div>
+      {match.dotaMatchId && (
+        <div className="match-combat-stats" aria-label="خلاصه آمار مچ">
+          <span title="K / D / A"><GameIcon name="kda" /><b lang="en" dir="ltr">{match.kills ?? "—"}/{match.deaths ?? "—"}/{match.assists ?? "—"}</b></span>
+          <span className="is-gold" title="Gold per minute"><GameIcon name="gold" /><b lang="en" dir="ltr">{match.goldPerMinute ?? "—"}</b></span>
+          <span className="is-networth" title="Net worth"><GameIcon name="gold" /><b lang="en" dir="ltr">{match.netWorth?.toLocaleString("en-US") ?? "—"}</b></span>
+        </div>
+      )}
       {(match.bans.length > 0 || match.legacyBans) && (
         <p className="match-bans">
           بن‌ها: {match.bans.map((ban) => ban.name).join("، ") || match.legacyBans}

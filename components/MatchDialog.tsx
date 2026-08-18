@@ -7,6 +7,7 @@ import { newMatchId } from "@/lib/date";
 import type { Hero, Match, MatchImage, MatchResult, MatchRole, QueueType } from "@/lib/types";
 import BanPicker from "./BanPicker";
 import HeroPicker from "./HeroPicker";
+import { GameIcon, type GameIconName } from "./GameIcon";
 
 interface MatchDialogProps {
   open: boolean;
@@ -304,14 +305,39 @@ function OpenDotaDetails({ match }: { match: Match }) {
         <span className="opendota-badge">OpenDota</span>
       </header>
       <div className="opendota-stat-grid">
-        <div><span>نوع بازی</span><strong>{match.gameModeName || "—"}</strong></div>
-        <div><span>مدت</span><strong lang="en" dir="ltr">{duration}</strong></div>
-        <div><span>K / D / A</span><strong lang="en" dir="ltr">{match.kills ?? "—"} / {match.deaths ?? "—"} / {match.assists ?? "—"}</strong></div>
-        <div><span>GPM / XPM</span><strong lang="en" dir="ltr">{match.goldPerMinute ?? "—"} / {match.xpPerMinute ?? "—"}</strong></div>
-        <div><span>Net Worth</span><strong>{match.netWorth?.toLocaleString("fa-IR") || "—"}</strong></div>
-        <div><span>Hero Damage</span><strong>{match.heroDamage?.toLocaleString("fa-IR") || "—"}</strong></div>
+        <DotaMetric icon="mode" label="نوع بازی" value={match.gameModeName || "—"} />
+        <DotaMetric icon="clock" label="مدت" value={duration} ltr />
+        <DotaMetric icon="kda" label="K / D / A" value={`${match.kills ?? "—"} / ${match.deaths ?? "—"} / ${match.assists ?? "—"}`} ltr />
+        <DotaMetric icon="gold" label="Gold / Minute" value={match.goldPerMinute ?? "—"} tone="gold" ltr />
+        <DotaMetric icon="xp" label="XP / Minute" value={match.xpPerMinute ?? "—"} tone="xp" ltr />
+        <DotaMetric icon="gold" label="Net Worth" value={match.netWorth?.toLocaleString("en-US") || "—"} tone="gold" ltr />
+        <DotaMetric icon="damage" label="Hero Damage" value={match.heroDamage?.toLocaleString("en-US") || "—"} tone="damage" ltr />
       </div>
     </section>
+  );
+}
+
+function DotaMetric({
+  icon,
+  label,
+  value,
+  tone = "",
+  ltr = false,
+}: {
+  icon: GameIconName;
+  label: string;
+  value: string | number;
+  tone?: "" | "gold" | "xp" | "damage";
+  ltr?: boolean;
+}) {
+  return (
+    <div className={`dota-metric${tone ? ` is-${tone}` : ""}`}>
+      <span className="dota-metric-icon"><GameIcon name={icon} /></span>
+      <span className="dota-metric-copy">
+        <small>{label}</small>
+        <strong lang={ltr ? "en" : undefined} dir={ltr ? "ltr" : undefined}>{value}</strong>
+      </span>
+    </div>
   );
 }
 

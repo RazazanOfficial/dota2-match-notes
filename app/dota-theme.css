@@ -1,0 +1,403 @@
+:root {
+  --bg: #07090a;
+  --surface: #111518;
+  --surface-2: #171c20;
+  --surface-3: #20262b;
+  --border: #2c302f;
+  --border-strong: #49463f;
+  --text: #f1eee7;
+  --muted: #aaa69d;
+  --muted-2: #746f67;
+  --accent: #b94736;
+  --accent-strong: #d45a43;
+  --accent-soft: rgba(185, 71, 54, 0.14);
+  --gold: #d0ad5d;
+  --gold-soft: rgba(208, 173, 93, 0.12);
+  --radiant: #5b9c86;
+  --dire: #b94736;
+  --win: #63ad8b;
+  --win-soft: rgba(99, 173, 139, 0.12);
+  --loss: #d56555;
+  --loss-soft: rgba(213, 101, 85, 0.12);
+  --shadow: 0 26px 80px rgba(0, 0, 0, 0.48);
+  --radius-xl: 12px;
+  --radius-lg: 10px;
+  --radius-md: 8px;
+  --radius-sm: 6px;
+  font-family: Tahoma, "Segoe UI", Arial, sans-serif;
+}
+
+::selection { color: #fff8e8; background: rgba(185, 71, 54, 0.7); }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #090b0c; }
+::-webkit-scrollbar-thumb { border: 2px solid #090b0c; background: #4a4640; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+body {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+    radial-gradient(circle at 86% -8%, rgba(185, 71, 54, 0.18), transparent 30rem),
+    radial-gradient(circle at 7% 88%, rgba(73, 119, 105, 0.11), transparent 34rem),
+    var(--bg);
+  background-size: 48px 48px, 48px 48px, auto, auto, auto;
+  cursor: url("/cursors/dota-default.svg") 4 2, auto;
+}
+
+:lang(en),
+input[name="username"],
+#activeUsername,
+.hero-picker-control input,
+.opendota-badge,
+.admin-metric > strong,
+.bar-chart > header strong {
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+a,
+button,
+select,
+input[type="radio"],
+input[type="checkbox"],
+[role="button"] { cursor: url("/cursors/dota-pointer.svg") 6 3, pointer; }
+
+button,
+input,
+textarea,
+select { font: inherit; }
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+.game-icon { display: inline-block; width: 1.15em; height: 1.15em; flex: 0 0 auto; vertical-align: -0.18em; }
+.game-mark { display: block; width: 100%; height: 100%; }
+.app-logo { display: block; flex: 0 0 auto; object-fit: contain; }
+
+.brand { gap: 12px; }
+.brand > .app-logo { width: 52px; height: 52px; filter: drop-shadow(0 8px 16px rgba(185, 38, 24, 0.28)); }
+.brand-mark {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  padding: 7px;
+  overflow: visible;
+  border: 1px solid rgba(208, 173, 93, 0.45);
+  border-radius: 2px;
+  color: var(--accent-strong);
+  background: linear-gradient(135deg, rgba(185, 71, 54, 0.18), transparent 55%), #111416;
+  box-shadow: inset 0 0 18px rgba(185, 71, 54, 0.12), 0 8px 24px rgba(0, 0, 0, 0.34);
+  transform: rotate(2deg);
+}
+.brand-mark::before,
+.brand-mark::after { position: absolute; width: 8px; height: 8px; content: ""; border-color: var(--gold); }
+.brand-mark::before { top: -3px; right: -3px; border-top: 1px solid; border-right: 1px solid; }
+.brand-mark::after { bottom: -3px; left: -3px; border-bottom: 1px solid; border-left: 1px solid; }
+.brand h1 { letter-spacing: -0.04em; text-shadow: 0 1px 18px rgba(255, 255, 255, 0.08); }
+.eyebrow { color: var(--gold); font-size: 0.59rem; letter-spacing: 0.18em; }
+
+.loading-mark {
+  width: 70px;
+  height: 70px;
+  border: 0;
+  border-radius: 0;
+  color: transparent;
+  background: transparent;
+  box-shadow: none;
+  clip-path: none;
+}
+.loading-mark::before { display: none; content: none; }
+.loading-mark .app-logo { width: 100%; height: 100%; filter: drop-shadow(0 12px 22px rgba(204, 39, 25, 0.38)); animation: logo-loading-pulse 900ms ease-in-out infinite alternate; }
+.loading-line { height: 2px; border-radius: 0; }
+.loading-line::after { border-radius: 0; background: linear-gradient(90deg, var(--accent), var(--gold)); }
+
+.admin-brand { display: flex; align-items: center; gap: 13px; }
+.admin-brand > .app-logo { width: 56px; height: 56px; filter: drop-shadow(0 9px 18px rgba(185, 38, 24, 0.3)); }
+
+@keyframes logo-loading-pulse {
+  from { opacity: .72; transform: scale(.9); filter: drop-shadow(0 8px 16px rgba(204, 39, 25, .25)); }
+  to { opacity: 1; transform: scale(1.05); filter: drop-shadow(0 14px 28px rgba(220, 51, 32, .55)); }
+}
+
+/* Landing and authentication */
+.access-screen { position: relative; isolation: isolate; display: block; width: min(1440px, 100%); min-height: 100vh; padding: 0 42px 54px; }
+.access-screen::before,
+.access-screen::after { position: fixed; z-index: -1; content: ""; pointer-events: none; }
+.access-screen::before {
+  inset: 0;
+  background:
+    linear-gradient(110deg, rgba(7, 9, 10, 0.08), rgba(7, 9, 10, 0.87) 72%),
+    radial-gradient(ellipse at 22% 43%, rgba(185, 71, 54, 0.21), transparent 27%),
+    linear-gradient(145deg, transparent 47%, rgba(208, 173, 93, 0.035) 47.4%, transparent 48%);
+}
+.access-screen::after {
+  top: 17%;
+  left: 2%;
+  width: 46vw;
+  height: 64vh;
+  border: 1px solid rgba(208, 173, 93, 0.055);
+  background: repeating-conic-gradient(from 15deg, rgba(208, 173, 93, 0.025) 0 8deg, transparent 8deg 22deg);
+  opacity: 0.65;
+  transform: rotate(-8deg);
+  mask-image: radial-gradient(circle, #000, transparent 69%);
+}
+.access-brand { min-height: 106px; border-bottom-color: rgba(208, 173, 93, 0.17); }
+.access-stage { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(540px, 0.8fr); align-items: center; gap: clamp(42px, 8vw, 128px); min-height: calc(100vh - 160px); padding: 50px 0; }
+.access-intro { max-width: 650px; }
+.access-overline { margin: 0 0 20px; color: var(--gold); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.18em; }
+.access-overline::before { display: inline-block; width: 38px; height: 1px; margin-left: 10px; content: ""; background: var(--accent); vertical-align: middle; }
+.access-intro h2 { margin: 0; font-size: clamp(2.55rem, 5.4vw, 5.8rem); font-weight: 900; line-height: 1.24; letter-spacing: -0.065em; }
+.access-intro h2 em { color: transparent; font-style: normal; background: linear-gradient(90deg, #f1eee7 0%, #d2ad62 58%, #8d6536 100%); background-clip: text; -webkit-background-clip: text; }
+.access-lead { max-width: 580px; margin: 28px 0 0; color: var(--muted); font-size: 1rem; line-height: 2.05; }
+.access-feature-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+.access-feature-list span { display: inline-flex; align-items: center; gap: 8px; padding: 9px 11px; border: 1px solid rgba(208, 173, 93, 0.15); color: #c8c1b4; background: rgba(12, 15, 16, 0.58); font-size: 0.73rem; }
+.access-feature-list .game-icon { color: var(--gold); }
+.access-runes { display: flex; gap: 36px; margin-top: 66px; color: var(--muted-2); direction: ltr; font: 0.63rem "Segoe UI", Arial, sans-serif; letter-spacing: 0.22em; }
+.access-runes span::before { display: inline-block; width: 6px; height: 6px; margin-right: 8px; content: ""; transform: rotate(45deg); }
+.access-runes span:nth-child(1)::before { background: #b74d3d; box-shadow: 0 0 12px #b74d3d; }
+.access-runes span:nth-child(2)::before { background: #59a272; box-shadow: 0 0 12px #59a272; }
+.access-runes span:nth-child(3)::before { background: #548ab3; box-shadow: 0 0 12px #548ab3; }
+.access-panel {
+  position: relative;
+  align-self: auto;
+  width: 100%;
+  margin: 0;
+  padding: clamp(24px, 3vw, 38px);
+  border-color: rgba(208, 173, 93, 0.22);
+  border-radius: 2px;
+  background: linear-gradient(135deg, rgba(185, 71, 54, 0.09), transparent 35%), linear-gradient(315deg, rgba(208, 173, 93, 0.035), transparent 36%), rgba(15, 18, 20, 0.94);
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.52);
+  clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+}
+.access-panel::before { position: absolute; top: 0; right: 42px; width: 88px; height: 2px; content: ""; background: linear-gradient(90deg, var(--accent), var(--gold)); box-shadow: 0 0 22px rgba(185, 71, 54, 0.6); }
+.access-heading { margin-bottom: 25px; }
+.access-heading h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); }
+.access-heading > p:last-child { margin: 10px 0 0; color: var(--muted); font-size: 0.78rem; }
+.week-kicker { display: flex; align-items: center; gap: 8px; color: var(--gold); letter-spacing: 0.08em; }
+.week-kicker > span { width: 18px; height: 2px; background: var(--accent); }
+.role-grid { gap: 10px; }
+.role-card {
+  position: relative;
+  min-height: 222px;
+  padding: 18px;
+  overflow: hidden;
+  border-color: rgba(255, 255, 255, 0.09);
+  border-radius: 2px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.025), transparent 42%), #171b1e;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+.role-card::after { position: absolute; right: -32px; bottom: -54px; width: 130px; height: 130px; border: 1px solid currentColor; content: ""; opacity: 0.07; transform: rotate(45deg); }
+.role-card:hover { background: #1c2124; transform: translateY(-3px); }
+.role-player:hover { border-color: rgba(185, 71, 54, 0.72); box-shadow: inset 0 -3px 0 var(--accent); }
+.role-coach:hover { border-color: rgba(91, 156, 134, 0.7); box-shadow: inset 0 -3px 0 var(--radiant); }
+.role-icon { width: 44px; height: 44px; margin: 0 0 28px; border-radius: 2px; transform: rotate(45deg); }
+.role-icon .game-icon { width: 24px; height: 24px; transform: rotate(-45deg); }
+.role-coach .role-icon { color: #72b29c; }
+.role-card-index { position: absolute; top: 14px; left: 16px; color: var(--muted-2); font-size: 0.64rem; letter-spacing: 0.16em; }
+.role-name { margin: 0; font-size: 1.12rem; }
+.role-description { margin-top: 8px; line-height: 1.7; }
+.role-cta { margin-top: auto; padding-top: 22px; color: var(--gold); font-size: 0.7rem; font-weight: 700; }
+.access-form { padding-top: 8px; }
+.access-form .field input { height: 56px; font-size: 0.92rem; }
+.access-panel-footer { display: flex; justify-content: space-between; gap: 12px; margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--muted-2); font-size: 0.58rem; }
+.access-panel-footer span:first-child { color: var(--gold); letter-spacing: 0.08em; }
+
+/* Journal HUD */
+.app-shell { width: min(1780px, 100%); padding-right: 30px; padding-left: 30px; }
+.topbar { position: sticky; z-index: 40; top: 0; min-height: 94px; border-bottom-color: rgba(208, 173, 93, 0.15); background: rgba(7, 9, 10, 0.82); backdrop-filter: blur(18px); }
+.topbar::after { position: absolute; right: 0; bottom: -1px; width: min(290px, 38vw); height: 1px; content: ""; background: linear-gradient(90deg, var(--accent), transparent); }
+.account-summary { gap: 9px; }
+.mode-badge,
+.sync-status,
+.admin-link,
+.secondary-button { border-radius: 2px; }
+.mode-badge { border: 1px solid rgba(185, 71, 54, 0.28); background: var(--accent-soft); }
+.mode-badge.is-coach { border-color: rgba(91, 156, 134, 0.3); color: #86c0ac; background: rgba(91, 156, 134, 0.11); }
+.admin-link { border-color: rgba(208, 173, 93, 0.4); color: var(--gold); }
+.week-overview { position: relative; padding: 44px 0 30px; }
+.week-heading h2 { font-size: clamp(1.9rem, 3.4vw, 3.25rem); font-weight: 900; }
+.week-subtitle { margin: 9px 0 0; color: var(--muted-2); font-size: 0.72rem; }
+.week-navigation { padding: 4px; border: 1px solid var(--border); background: rgba(14, 17, 18, 0.72); }
+.nav-button,
+.today-button,
+.secondary-button,
+.primary-button,
+.report-button,
+.sync-button { border-radius: 2px; }
+.today-button { color: var(--gold); background: var(--gold-soft); }
+.week-stats { grid-template-columns: repeat(4, minmax(120px, 170px)) minmax(170px, 1fr); }
+.stat-card { position: relative; min-height: 72px; overflow: hidden; border-radius: 2px; background: linear-gradient(145deg, rgba(255,255,255,.025), transparent 50%), rgba(16, 20, 22, 0.9); clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px); }
+.stat-card::after { position: absolute; right: 0; bottom: 0; width: 45%; height: 2px; content: ""; background: var(--gold); opacity: .36; }
+.stat-card strong { font: 700 1.45rem "Segoe UI", Arial, sans-serif; }
+.stat-win::after { background: var(--win); opacity: .9; }
+.stat-loss::after { background: var(--loss); opacity: .9; }
+.report-button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; justify-self: end; border-color: rgba(208, 173, 93, 0.34); color: #f0dfb9; background: linear-gradient(135deg, rgba(208, 173, 93, 0.12), rgba(185, 71, 54, 0.08)); }
+.calendar { gap: 12px; }
+.day-card { min-height: 485px; border-radius: 2px; background: linear-gradient(160deg, rgba(255,255,255,.025), transparent 30%), rgba(15, 18, 20, 0.9); box-shadow: 0 16px 42px rgba(0, 0, 0, 0.2); clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px); }
+.day-card.is-today { border-color: rgba(208, 173, 93, 0.58); box-shadow: inset 0 2px 0 var(--gold), 0 18px 50px rgba(0,0,0,.28); }
+.day-card.is-today .day-header { background: linear-gradient(90deg, rgba(208, 173, 93, 0.08), transparent); }
+.day-card.is-complete { background: linear-gradient(180deg, rgba(91, 156, 134, 0.08), transparent 34%), rgba(15, 18, 20, 0.9); }
+.day-header { min-height: 78px; border-bottom-color: rgba(255,255,255,.08); }
+.day-date { font-family: "Segoe UI", Tahoma, sans-serif; }
+.today-badge { border-radius: 2px; color: #f1dba9; background: var(--gold-soft); }
+.add-match-button { border-radius: 2px; color: var(--gold); clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); }
+.match-card { padding: 11px 11px 11px 13px; overflow: hidden; border-radius: 2px; background: linear-gradient(110deg, transparent 60%, rgba(255, 255, 255, 0.018)), #171c1f; clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px); }
+.match-card:hover { border-color: rgba(208, 173, 93, .37); background-color: #1b2124; transform: translateY(-2px); box-shadow: 0 9px 24px rgba(0,0,0,.22); }
+.match-card::before { top: 0; right: 0; bottom: 0; width: 2px; border-radius: 0; }
+.match-hero-row > img { width: 62px; height: 36px; border-radius: 2px; filter: saturate(.82) contrast(1.08); }
+.match-card:hover .match-hero-row > img { filter: saturate(1.1) contrast(1.05); }
+.result-badge { border: 1px solid currentColor; border-radius: 2px; }
+.match-combat-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin-top: 9px; direction: ltr; }
+.match-combat-stats > span { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; padding: 5px 3px; border: 1px solid rgba(255,255,255,.055); color: #aaa69d; background: rgba(6,8,9,.34); }
+.match-combat-stats .game-icon { width: 13px; height: 13px; }
+.match-combat-stats b { overflow: hidden; font: 700 .58rem "Segoe UI", Arial, sans-serif; text-overflow: ellipsis; }
+.match-combat-stats .is-gold,
+.match-combat-stats .is-networth { color: var(--gold); }
+.match-combat-stats .is-networth { display: none; }
+.day-summary { border-top-color: rgba(255,255,255,.08); background: rgba(5,7,8,.3); }
+.day-stat,
+.day-complete-button,
+.day-complete-readonly { border-radius: 2px; }
+
+/* Sync, dialogs and match data */
+.sync-panel { position: relative; border-radius: 2px; border-color: rgba(208, 173, 93, 0.16); background: linear-gradient(120deg, rgba(185, 71, 54, 0.11), transparent 34%), rgba(15, 18, 20, 0.92); clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); }
+.sync-panel::before { position: absolute; top: 0; right: 28px; width: 86px; height: 2px; content: ""; background: var(--accent); }
+.sync-button { border-color: #8f392e; background: linear-gradient(135deg, #a63e31, #5b211b); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 12px 30px rgba(185,71,54,.16); clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px); }
+.queue-job,
+.opendota-details,
+.generated-images,
+.generated-images-empty { border-radius: 2px; }
+.modal-backdrop { background: rgba(2, 3, 4, 0.82); backdrop-filter: blur(9px) saturate(.7); }
+.modal { border-radius: 2px; border-color: rgba(208, 173, 93, 0.28); background: linear-gradient(145deg, rgba(185, 71, 54, 0.07), transparent 30%), #111416; clip-path: polygon(13px 0, 100% 0, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0 100%, 0 13px); }
+.modal-header { padding-bottom: 15px; border-bottom: 1px solid var(--border); }
+.modal-header h2 { font-size: 1.55rem; }
+.modal-kicker { color: var(--gold); letter-spacing: .04em; }
+.close-button { border: 1px solid var(--border); border-radius: 2px; background: rgba(0,0,0,.18); }
+.field input,
+.field textarea,
+.field select,
+.result-option span { border-radius: 2px; background: #0b0e0f; }
+.field input:focus,
+.field textarea:focus,
+.field select:focus { border-color: rgba(208,173,93,.7); box-shadow: inset 3px 0 0 var(--gold); }
+.hero-options { border-radius: 2px; background: #101416; }
+.hero-options button,
+.hero-options img,
+.hero-chip,
+.hero-chip img,
+.hero-chip button { border-radius: 2px; }
+.primary-button { border-color: #9e3d30; border-radius: 2px; background: linear-gradient(135deg, #b94736, #76291f); box-shadow: inset 0 1px 0 rgba(255,255,255,.12); }
+.match-detail-hero,
+.detail-grid > div,
+.detail-section,
+.report-summary > div,
+.report-day,
+.report-match { border-radius: 2px; }
+.opendota-details { padding: 17px; background: rgba(6,8,9,.44); }
+.opendota-badge { border-radius: 2px; color: #84b9c8; }
+.opendota-stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.dota-metric { display: flex; align-items: center; gap: 9px; min-width: 0; min-height: 62px; padding: 9px; border: 1px solid rgba(255,255,255,.055); background: linear-gradient(135deg, rgba(255,255,255,.018), transparent), var(--surface-2); }
+.dota-metric-icon { display: grid; place-items: center; width: 30px; height: 30px; flex: 0 0 auto; border: 1px solid rgba(255,255,255,.08); color: #9da5aa; background: rgba(0,0,0,.22); transform: rotate(45deg); }
+.dota-metric-icon .game-icon { width: 17px; height: 17px; transform: rotate(-45deg); }
+.dota-metric-copy { min-width: 0; }
+.dota-metric-copy small,
+.dota-metric-copy strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dota-metric-copy small { margin-bottom: 4px; color: var(--muted-2); font-size: .58rem; }
+.dota-metric-copy strong { font: 700 .76rem "Segoe UI", Tahoma, sans-serif; }
+.dota-metric.is-gold .dota-metric-icon,
+.dota-metric.is-gold strong { color: var(--gold); }
+.dota-metric.is-xp .dota-metric-icon,
+.dota-metric.is-xp strong { color: #7bafd0; }
+.dota-metric.is-damage .dota-metric-icon,
+.dota-metric.is-damage strong { color: #dc7463; }
+.generated-images-grid a,
+.generated-images-grid img { border-radius: 2px; }
+
+/* Admin */
+.admin-shell { width: min(1580px, 100%); }
+.admin-topbar { border-bottom-color: rgba(208,173,93,.18); }
+.admin-topbar h1 { letter-spacing: -.04em; }
+.admin-metric,
+.admin-section,
+.bar-chart,
+.quota-card,
+.admin-table-wrap,
+.admin-users-table th,
+.admin-job-list article,
+.queue-metric { border-radius: 2px; }
+.admin-metric,
+.admin-section { background: linear-gradient(145deg, rgba(255,255,255,.02), transparent 32%), rgba(15,18,20,.94); }
+.admin-metric::after { right: 0; left: auto; width: 2px; background: var(--accent); }
+.admin-metric.gold::after { background: var(--gold); }
+.bar-chart.is-gold .bar-column > span { background: var(--gold); }
+.range-switch { border-radius: 2px; }
+.range-switch button { border-radius: 1px; }
+.range-switch button.is-active { background: linear-gradient(135deg, var(--accent), #76291f); }
+.access-chip { border-radius: 2px; }
+.access-chip.is-super { color: var(--gold); background: var(--gold-soft); }
+
+@media (min-width: 1500px) { .match-combat-stats .is-networth { display: flex; } }
+
+@media (max-width: 1180px) {
+  .access-stage { grid-template-columns: minmax(0, .8fr) minmax(500px, 1fr); gap: 46px; }
+  .access-intro h2 { font-size: clamp(2.5rem, 5vw, 4.2rem); }
+  .opendota-stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 920px) {
+  .access-screen { padding-right: 24px; padding-left: 24px; }
+  .access-stage { grid-template-columns: 1fr; gap: 38px; padding-top: 54px; }
+  .access-intro { max-width: 720px; }
+  .access-intro h2 br { display: none; }
+  .access-runes { margin-top: 28px; }
+  .access-panel { max-width: 720px; }
+  .week-stats { grid-template-columns: repeat(4, minmax(100px, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  body { background-size: 32px 32px, 32px 32px, auto, auto, auto; }
+  .access-screen { padding: 0 14px 34px; }
+  .access-brand { min-height: 82px; }
+  .access-stage { min-height: auto; padding: 42px 0 16px; }
+  .access-overline { font-size: .57rem; }
+  .access-overline::before { width: 20px; }
+  .access-intro h2 { font-size: clamp(2.1rem, 10.7vw, 3.2rem); line-height: 1.32; }
+  .access-lead { margin-top: 19px; font-size: .82rem; }
+  .access-feature-list { display: grid; grid-template-columns: 1fr 1fr; margin-top: 22px; }
+  .access-feature-list span:last-child { grid-column: 1 / -1; }
+  .access-runes { gap: 21px; }
+  .access-panel { padding: 21px 16px; }
+  .role-grid { grid-template-columns: 1fr; }
+  .role-card { min-height: 168px; }
+  .role-icon { margin-bottom: 18px; }
+  .role-cta { padding-top: 14px; }
+  .access-panel-footer { align-items: flex-start; flex-direction: column; }
+  .app-shell { padding-right: 12px; padding-left: 12px; }
+  .topbar { min-height: 74px; }
+  .brand-mark { width: 40px; height: 40px; }
+  .brand > .app-logo { width: 42px; height: 42px; }
+  .admin-brand > .app-logo { width: 46px; height: 46px; }
+  .brand h1 { font-size: .98rem; }
+  .week-overview { padding-top: 28px; }
+  .week-heading h2 { font-size: 1.75rem; }
+  .week-subtitle { display: none; }
+  .week-stats { grid-template-columns: 1fr 1fr; }
+  .stat-card { min-height: 63px; }
+  .calendar { gap: 10px; }
+  .day-card { min-height: 420px; }
+  .modal { border-radius: 2px; }
+  .opendota-stat-grid { grid-template-columns: 1fr 1fr; }
+  .dota-metric { min-height: 58px; }
+  .admin-shell { padding-right: 12px; padding-left: 12px; }
+}
+
+@media (max-width: 390px) {
+  .access-feature-list { grid-template-columns: 1fr; }
+  .access-feature-list span:last-child { grid-column: auto; }
+  .access-runes { justify-content: space-between; gap: 8px; }
+  .week-navigation { display: grid; grid-template-columns: 1fr 1fr; }
+  .today-button { grid-column: 1 / -1; grid-row: 1; }
+  .opendota-stat-grid { grid-template-columns: 1fr; }
+}
