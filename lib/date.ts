@@ -137,8 +137,23 @@ export function sanitizeMatch(raw: Record<string, unknown>, fallback = 1): Match
       if (typeof item === "number") return heroById(item);
       if (typeof item === "string") return heroByName(item);
       if (item && typeof item === "object") {
-        const candidate = item as { id?: unknown; name?: unknown };
-        return heroById(Number(candidate.id)) || heroByName(String(candidate.name || ""));
+        const candidate = item as {
+          id?: unknown;
+          name?: unknown;
+          source?: unknown;
+          team?: unknown;
+          draftOrder?: unknown;
+          inRolePool?: unknown;
+        };
+        const hero = heroById(Number(candidate.id)) || heroByName(String(candidate.name || ""));
+        if (!hero) return null;
+        return {
+          ...hero,
+          source: candidate.source === "opendota" ? "opendota" as const : "manual" as const,
+          team: nullableNumber(candidate.team),
+          draftOrder: nullableNumber(candidate.draftOrder),
+          inRolePool: Boolean(candidate.inRolePool),
+        };
       }
       return null;
     })
@@ -162,10 +177,22 @@ export function sanitizeMatch(raw: Record<string, unknown>, fallback = 1): Match
     )
       ? (raw.role as Match["role"])
       : "",
+    roleSource: ["manual", "opendota"].includes(String(raw.roleSource))
+      ? (raw.roleSource as Match["roleSource"])
+      : null,
+    heroPoolEligible: Boolean(raw.heroPoolEligible),
+    heroPoolMatch: typeof raw.heroPoolMatch === "boolean" ? raw.heroPoolMatch : null,
+    heroPoolVersion: nullableNumber(raw.heroPoolVersion),
     queueType: ["role_selected", "earn_role_queue"].includes(String(raw.queueType))
       ? (raw.queueType as Match["queueType"])
       : "",
     notes: String(raw.notes || "").trim(),
+    positivePoints: Array.isArray(raw.positivePoints)
+      ? raw.positivePoints.map(String).map((item) => item.trim()).filter(Boolean).slice(0, 20)
+      : [],
+    negativePoints: Array.isArray(raw.negativePoints)
+      ? raw.negativePoints.map(String).map((item) => item.trim()).filter(Boolean).slice(0, 20)
+      : [],
     result: raw.result === "win" ? "win" : "loss",
     createdAt: String(raw.createdAt || new Date().toISOString()),
     updatedAt: nullableDate(raw.updatedAt) || undefined,

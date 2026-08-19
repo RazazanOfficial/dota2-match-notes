@@ -60,6 +60,9 @@ export const matchImageJobStatusEnum = pgEnum("match_image_job_status", [
   "completed",
   "failed",
 ]);
+export const matchBanSourceEnum = pgEnum("match_ban_source", ["manual", "opendota"]);
+export const matchRoleSourceEnum = pgEnum("match_role_source", ["manual", "opendota"]);
+export const releaseStatusEnum = pgEnum("release_status", ["draft", "published"]);
 
 export const users = pgTable(
   "users",
@@ -147,6 +150,51 @@ export const dotaMatches = pgTable("dota_matches", {
     .notNull(),
 });
 
+export const heroPoolVersions = pgTable(
+  "hero_pool_versions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    version: integer("version").notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("hero_pool_versions_user_version_uidx").on(table.userId, table.version),
+    uniqueIndex("hero_pool_versions_one_active_uidx")
+      .on(table.userId)
+      .where(sql`${table.isActive}`),
+    check("hero_pool_versions_version_check", sql`${table.version} > 0`),
+  ],
+);
+
+export const heroPoolEntries = pgTable(
+  "hero_pool_entries",
+  {
+    poolVersionId: uuid("pool_version_id")
+      .notNull()
+      .references(() => heroPoolVersions.id, { onDelete: "cascade" }),
+    role: matchRoleEnum("role").notNull(),
+    heroId: integer("hero_id").notNull(),
+    heroName: varchar("hero_name", { length: 100 }).notNull(),
+    sortOrder: smallint("sort_order").notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "hero_pool_entries_pkey",
+      columns: [table.poolVersionId, table.role, table.heroId],
+    }),
+    uniqueIndex("hero_pool_entries_role_sort_uidx").on(
+      table.poolVersionId,
+      table.role,
+      table.sortOrder,
+    ),
+    check("hero_pool_entries_sort_order_check", sql`${table.sortOrder} between 0 and 7`),
+  ],
+);
+
 export const journalMatches = pgTable(
   "journal_matches",
   {
@@ -166,9 +214,17 @@ export const journalMatches = pgTable(
     heroId: integer("hero_id"),
     heroName: varchar("hero_name", { length: 100 }).default("").notNull(),
     role: matchRoleEnum("role"),
+    roleSource: matchRoleSourceEnum("role_source"),
+    heroPoolVersionId: uuid("hero_pool_version_id").references(
+      () => heroPoolVersions.id,
+      { onDelete: "set null" },
+    ),
+    heroPoolEligible: boolean("hero_pool_eligible").default(false).notNull(),
     queueType: queueTypeEnum("queue_type"),
     result: matchResultEnum("result").notNull(),
     notes: text("notes").default("").notNull(),
+    positivePoints: jsonb("positive_points").$type<string[]>().default([]).notNull(),
+    negativePoints: jsonb("negative_points").$type<string[]>().default([]).notNull(),
     legacyBans: varchar("legacy_bans", { length: 500 }).default("").notNull(),
     startedAt: timestamp("started_at", { withTimezone: true }),
     durationSeconds: integer("duration_seconds"),
@@ -197,6 +253,14 @@ export const journalMatches = pgTable(
     check(
       "journal_matches_duration_check",
       sql`${table.durationSeconds} is null or ${table.durationSeconds} >= 0`,
+    ),
+    check(
+      "journal_matches_positive_points_check",
+      sql`jsonb_typeof(${table.positivePoints}) = 'array' and jsonb_array_length(${table.positivePoints}) <= 20`,
+    ),
+    check(
+      "journal_matches_negative_points_check",
+      sql`jsonb_typeof(${table.negativePoints}) = 'array' and jsonb_array_length(${table.negativePoints}) <= 20`,
     ),
   ],
 );
@@ -235,6 +299,9 @@ export const matchBans = pgTable(
     heroId: integer("hero_id").notNull(),
     heroName: varchar("hero_name", { length: 100 }).notNull(),
     sortOrder: smallint("sort_order").notNull(),
+    source: matchBanSourceEnum("source").default("manual").notNull(),
+    team: smallint("team"),
+    draftOrder: smallint("draft_order"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -243,6 +310,45 @@ export const matchBans = pgTable(
     uniqueIndex("match_bans_match_hero_uidx").on(table.matchId, table.heroId),
     uniqueIndex("match_bans_match_sort_uidx").on(table.matchId, table.sortOrder),
     check("match_bans_sort_order_check", sql`${table.sortOrder} >= 0`),
+  ],
+);
+
+export const releaseNotes = pgTable(
+  "release_notes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    version: varchar("version", { length: 32 }).notNull(),
+    title: varchar("title", { length: 160 }).notNull(),
+    summary: varchar("summary", { length: 500 }).default("").notNull(),
+    content: jsonb("content").$type<Record<string, unknown>>().notNull(),
+    status: releaseStatusEnum("status").default("draft").notNull(),
+    authorUserId: uuid("author_user_id")
+      .notNull()
+      .references(() => users.id),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("release_notes_version_uidx").on(table.version),
+    index("release_notes_status_published_idx").on(table.status, table.publishedAt),
+    check("release_notes_version_length_check", sql`char_length(${table.version}) between 1 and 32`),
+  ],
+);
+
+export const releaseNoteReads = pgTable(
+  "release_note_reads",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    releaseId: uuid("release_id")
+      .notNull()
+      .references(() => releaseNotes.id, { onDelete: "cascade" }),
+    seenAt: timestamp("seen_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    primaryKey({ name: "release_note_reads_pkey", columns: [table.userId, table.releaseId] }),
+    index("release_note_reads_release_idx").on(table.releaseId),
   ],
 );
 
@@ -423,6 +529,21 @@ export const usersRelations = relations(users, ({ many }) => ({
   matches: many(journalMatches),
   dismissedDotaMatches: many(dismissedDotaMatches),
   syncJobs: many(syncJobs),
+  heroPoolVersions: many(heroPoolVersions),
+  releaseNoteReads: many(releaseNoteReads),
+}));
+
+export const heroPoolVersionsRelations = relations(heroPoolVersions, ({ one, many }) => ({
+  user: one(users, { fields: [heroPoolVersions.userId], references: [users.id] }),
+  entries: many(heroPoolEntries),
+  matches: many(journalMatches),
+}));
+
+export const heroPoolEntriesRelations = relations(heroPoolEntries, ({ one }) => ({
+  version: one(heroPoolVersions, {
+    fields: [heroPoolEntries.poolVersionId],
+    references: [heroPoolVersions.id],
+  }),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -459,6 +580,10 @@ export const journalMatchesRelations = relations(
       fields: [journalMatches.dotaMatchId],
       references: [dotaMatches.matchId],
     }),
+    heroPoolVersion: one(heroPoolVersions, {
+      fields: [journalMatches.heroPoolVersionId],
+      references: [heroPoolVersions.id],
+    }),
     bans: many(matchBans),
     images: many(matchImages),
     imageJobs: many(matchImageJobs),
@@ -476,6 +601,19 @@ export const matchImagesRelations = relations(matchImages, ({ one }) => ({
   match: one(journalMatches, {
     fields: [matchImages.matchId],
     references: [journalMatches.id],
+  }),
+}));
+
+export const releaseNotesRelations = relations(releaseNotes, ({ one, many }) => ({
+  author: one(users, { fields: [releaseNotes.authorUserId], references: [users.id] }),
+  reads: many(releaseNoteReads),
+}));
+
+export const releaseNoteReadsRelations = relations(releaseNoteReads, ({ one }) => ({
+  user: one(users, { fields: [releaseNoteReads.userId], references: [users.id] }),
+  release: one(releaseNotes, {
+    fields: [releaseNoteReads.releaseId],
+    references: [releaseNotes.id],
   }),
 }));
 

@@ -8,6 +8,9 @@ import type { Hero, Match, MatchImage, MatchResult, MatchRole, QueueType } from 
 import BanPicker from "./BanPicker";
 import HeroPicker from "./HeroPicker";
 import { GameIcon, type GameIconName } from "./GameIcon";
+import ReviewListInput from "./ReviewListInput";
+
+type MatchTab = "overview" | "review" | "media";
 
 interface MatchDialogProps {
   open: boolean;
@@ -30,6 +33,8 @@ const EMPTY_MATCH: Match = {
   role: "",
   queueType: "",
   notes: "",
+  positivePoints: [],
+  negativePoints: [],
   result: "win",
   createdAt: "",
 };
@@ -47,6 +52,7 @@ export default function MatchDialog({
 }: MatchDialogProps) {
   const [draft, setDraft] = useState<Match>(EMPTY_MATCH);
   const [formError, setFormError] = useState("");
+  const [activeTab, setActiveTab] = useState<MatchTab>("overview");
   const initializedSource = useRef("");
   const hero = draft.heroId ? heroById(draft.heroId) || null : null;
 
@@ -59,6 +65,7 @@ export default function MatchDialog({
     if (initializedSource.current === source) return;
     initializedSource.current = source;
     setFormError("");
+    setActiveTab("overview");
     setDraft(
       match
         ? structuredClone(match)
@@ -92,7 +99,9 @@ export default function MatchDialog({
               ×
             </button>
           </header>
-          <div className="match-detail-hero">
+          <MatchTabs active={activeTab} onChange={setActiveTab} />
+          <div className={`match-tab-panel${activeTab === "overview" ? " is-active" : ""}`} data-match-tab="overview">
+          <div className={`match-detail-hero${draft.heroPoolEligible ? draft.heroPoolMatch ? " is-in-pool" : " is-outside-pool" : ""}`}>
             {hero && <img src={heroImage(hero)} alt="" />}
             <div>
               <span>هیرو</span>
@@ -108,25 +117,37 @@ export default function MatchDialog({
             <div><span>Role</span><strong lang="en">{roleLabel(draft.role)}</strong></div>
             <div><span>Queue Type</span><strong lang="en">{queueLabel(draft.queueType)}</strong></div>
           </div>
+          {draft.dotaMatchId && (
+            <div className="detail-grid">
+              <div><span>Game Mode</span><strong lang="en">{draft.gameModeName || "—"}</strong></div>
+              <div><span>Lobby</span><strong lang="en">{draft.lobbyTypeName || "—"}</strong></div>
+            </div>
+          )}
           <div className="detail-section">
             <span>بن‌ها</span>
             <div className="readonly-bans">
               {draft.bans.length
                 ? draft.bans.map((ban) => (
-                    <span key={ban.id}>
-                      <img src={heroImage(ban)} alt="" />
+                    <span className={`ban-portrait${ban.inRolePool ? " is-pool-priority" : ""}`} key={ban.id}>
+                      <span className="ban-portrait-image"><img src={heroImage(ban)} alt="" /></span>
                       <b lang="en">{ban.name}</b>
                     </span>
                   ))
                 : draft.legacyBans || "—"}
             </div>
           </div>
+          <OpenDotaDetails match={draft} />
+          </div>
+          <div className={`match-tab-panel${activeTab === "review" ? " is-active" : ""}`} data-match-tab="review">
           <div className="detail-section">
             <span>یادداشت بازی</span>
             <p>{draft.notes || "—"}</p>
           </div>
-          <OpenDotaDetails match={draft} />
+          <ReadonlyReview match={draft} />
+          </div>
+          <div className={`match-tab-panel${activeTab === "media" ? " is-active" : ""}`} data-match-tab="media">
           <GeneratedImages match={draft} />
+          </div>
         </section>
       </div>
     );
@@ -160,7 +181,9 @@ export default function MatchDialog({
             ×
           </button>
         </header>
+        <MatchTabs active={activeTab} onChange={setActiveTab} />
 
+        <div className={`match-tab-panel${activeTab === "overview" ? " is-active" : ""}`} data-match-tab="overview">
         <div className="form-grid">
           <label className="field">
             <span>شماره بازی</span>
@@ -233,17 +256,6 @@ export default function MatchDialog({
             legacyBans={draft.legacyBans}
             onChange={(bans) => setDraft((current) => ({ ...current, bans }))}
           />
-          <label className="field field-full">
-            <span>یادداشت بازی</span>
-            <textarea
-              rows={5}
-              maxLength={5000}
-              value={draft.notes}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, notes: event.target.value }))
-              }
-            />
-          </label>
           <fieldset className="result-field field-full">
             <legend>نتیجه</legend>
             <div className="result-options">
@@ -262,9 +274,25 @@ export default function MatchDialog({
           </fieldset>
           <p className="form-error field-full" role="alert">{formError}</p>
         </div>
-
         <OpenDotaDetails match={draft} />
+        </div>
+
+        <div className={`match-tab-panel${activeTab === "review" ? " is-active" : ""}`} data-match-tab="review">
+          <div className="match-review-layout">
+            <label className="field match-general-notes">
+              <span>یادداشت بازی</span>
+              <textarea rows={12} maxLength={5000} value={draft.notes} onChange={(event) => setDraft((current) => ({ ...current, notes: event.target.value }))} />
+            </label>
+            <div className="match-review-lists">
+              <ReviewListInput tone="positive" label="نکات مثبت" value={draft.positivePoints} onChange={(positivePoints) => setDraft((current) => ({ ...current, positivePoints }))} />
+              <ReviewListInput tone="negative" label="نکات منفی" value={draft.negativePoints} onChange={(negativePoints) => setDraft((current) => ({ ...current, negativePoints }))} />
+            </div>
+          </div>
+        </div>
+
+        <div className={`match-tab-panel${activeTab === "media" ? " is-active" : ""}`} data-match-tab="media">
         <GeneratedImages match={draft} />
+        </div>
 
         <footer className="modal-actions">
           {match && (
@@ -290,6 +318,31 @@ export default function MatchDialog({
   );
 }
 
+function MatchTabs({ active, onChange }: { active: MatchTab; onChange: (tab: MatchTab) => void }) {
+  return (
+    <nav className="match-modal-tabs" aria-label="بخش‌های مچ">
+      <button className={active === "overview" ? "is-active" : ""} type="button" onClick={() => onChange("overview")}>اطلاعات مچ</button>
+      <button className={active === "review" ? "is-active" : ""} type="button" onClick={() => onChange("review")}>مرور عملکرد</button>
+      <button className={active === "media" ? "is-active" : ""} type="button" onClick={() => onChange("media")}>تصاویر</button>
+    </nav>
+  );
+}
+
+function ReadonlyReview({ match }: { match: Match }) {
+  return (
+    <div className="readonly-review-grid">
+      <section className="readonly-review is-positive">
+        <strong>نکات مثبت</strong>
+        {match.positivePoints.length ? <ul>{match.positivePoints.map((point, index) => <li key={`${point}-${index}`}><span>✓</span>{point}</li>)}</ul> : <p>—</p>}
+      </section>
+      <section className="readonly-review is-negative">
+        <strong>نکات منفی</strong>
+        {match.negativePoints.length ? <ul>{match.negativePoints.map((point, index) => <li key={`${point}-${index}`}><span>×</span>{point}</li>)}</ul> : <p>—</p>}
+      </section>
+    </div>
+  );
+}
+
 function OpenDotaDetails({ match }: { match: Match }) {
   if (!match.dotaMatchId) return null;
   const duration = match.durationSeconds
@@ -306,6 +359,7 @@ function OpenDotaDetails({ match }: { match: Match }) {
       </header>
       <div className="opendota-stat-grid">
         <DotaMetric icon="mode" label="نوع بازی" value={match.gameModeName || "—"} />
+        <DotaMetric icon="mode" label="Lobby" value={match.lobbyTypeName || "—"} />
         <DotaMetric icon="clock" label="مدت" value={duration} ltr />
         <DotaMetric icon="kda" label="K / D / A" value={`${match.kills ?? "—"} / ${match.deaths ?? "—"} / ${match.assists ?? "—"}`} ltr />
         <DotaMetric icon="gold" label="Gold / Minute" value={match.goldPerMinute ?? "—"} tone="gold" ltr />

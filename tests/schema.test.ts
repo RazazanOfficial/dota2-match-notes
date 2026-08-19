@@ -5,9 +5,13 @@ import {
   dismissedDotaMatches,
   externalApiDailyUsage,
   externalApiRateLimits,
+  heroPoolEntries,
+  heroPoolVersions,
   journalMatches,
   matchImageJobs,
   matchImages,
+  releaseNoteReads,
+  releaseNotes,
   sessions,
   syncJobs,
   users,
@@ -31,6 +35,22 @@ describe("database schema", () => {
     expect(getTableConfig(dismissedDotaMatches).name).toBe(
       "dismissed_dota_matches",
     );
+    expect(getTableConfig(heroPoolVersions).name).toBe("hero_pool_versions");
+    expect(getTableConfig(heroPoolEntries).name).toBe("hero_pool_entries");
+    expect(getTableConfig(releaseNotes).name).toBe("release_notes");
+    expect(getTableConfig(releaseNoteReads).name).toBe("release_note_reads");
+  });
+
+  it("keeps one active versioned hero pool per player", () => {
+    const versions = getTableConfig(heroPoolVersions);
+    expect(versions.indexes.map((index) => index.config.name)).toContain("hero_pool_versions_one_active_uidx");
+    const entries = getTableConfig(heroPoolEntries);
+    expect(entries.checks.map((constraint) => constraint.name)).toContain("hero_pool_entries_sort_order_check");
+  });
+
+  it("stores durable release reads per user and version", () => {
+    const reads = getTableConfig(releaseNoteReads);
+    expect(reads.primaryKeys[0]?.columns.map((column) => column.name)).toEqual(["user_id", "release_id"]);
   });
 
   it("stores persistent external API rate-limit windows", () => {

@@ -22,6 +22,9 @@ const openDotaPlayerSchema = z
     net_worth: nullableStat(2_147_483_647),
     hero_damage: nullableStat(2_147_483_647),
     tower_damage: nullableStat(2_147_483_647),
+    lane: z.number().int().min(0).max(5).nullable().optional(),
+    lane_role: z.number().int().min(0).max(5).nullable().optional(),
+    is_roaming: z.boolean().nullable().optional(),
   })
   .passthrough();
 
@@ -63,6 +66,18 @@ export const openDotaMatchSchema = z
     game_mode: z.number().int().min(0).nullable().optional(),
     lobby_type: z.number().int().min(0).nullable().optional(),
     players: z.array(openDotaPlayerSchema).min(1).max(24),
+    picks_bans: z
+      .array(
+        z.object({
+          is_pick: z.boolean(),
+          hero_id: z.number().int().positive(),
+          team: z.number().int().min(0).max(3),
+          order: z.number().int().min(0).max(255).nullable().optional(),
+        }).passthrough(),
+      )
+      .max(64)
+      .nullable()
+      .optional(),
   })
   .passthrough();
 

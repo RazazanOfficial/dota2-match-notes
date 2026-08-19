@@ -25,16 +25,29 @@ export interface Hero {
   name: string;
 }
 
+export interface MatchBan extends Hero {
+  source?: "manual" | "opendota";
+  team?: number | null;
+  draftOrder?: number | null;
+  inRolePool?: boolean;
+}
+
 export interface Match {
   id: string;
   number: number;
   heroId: number | null;
   heroName: string;
-  bans: Hero[];
+  bans: MatchBan[];
   legacyBans?: string;
   role: MatchRole | "";
+  roleSource?: "manual" | "opendota" | null;
+  heroPoolEligible?: boolean;
+  heroPoolMatch?: boolean | null;
+  heroPoolVersion?: number | null;
   queueType: QueueType | "";
   notes: string;
+  positivePoints: string[];
+  negativePoints: string[];
   result: MatchResult;
   createdAt: string;
   updatedAt?: string;
@@ -68,6 +81,11 @@ export interface Profile {
   createdAt?: string;
   updatedAt?: string;
   days: Record<string, Day>;
+}
+
+export interface HeroPoolData {
+  version: { id: string; number: number; createdAt: string } | null;
+  pools: Record<MatchRole, Hero[]>;
 }
 
 export interface Session {

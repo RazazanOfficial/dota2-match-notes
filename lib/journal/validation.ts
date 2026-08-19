@@ -3,6 +3,10 @@ import { heroById } from "../../data/heroes";
 
 const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_RANGE_DAYS = 62;
+const reviewPoints = z
+  .array(z.string().trim().min(1).max(240))
+  .max(20)
+  .refine((points) => new Set(points).size === points.length, "مورد تکراری است");
 
 const dateKeySchema = z
   .string()
@@ -39,6 +43,8 @@ const matchSchema = z
       z.enum(["role_selected", "earn_role_queue"]),
     ]),
     notes: z.string().max(5_000),
+    positivePoints: reviewPoints.default([]),
+    negativePoints: reviewPoints.default([]),
     result: z.enum(["win", "loss"]),
     createdAt: z
       .string()

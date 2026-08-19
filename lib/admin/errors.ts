@@ -29,8 +29,14 @@ export function adminErrorResponse(error: unknown) {
     );
   }
 
-  const databaseError = error as { code?: string };
+  const databaseError = error as { code?: string; constraint?: string };
   if (databaseError?.code === "23505") {
+    if (databaseError.constraint === "release_notes_version_uidx") {
+      return Response.json(
+        { ok: false, error: { code: "release_version_conflict", message: "این شماره نسخه قبلاً ثبت شده است" } },
+        { status: 409 },
+      );
+    }
     return Response.json(
       {
         ok: false,
