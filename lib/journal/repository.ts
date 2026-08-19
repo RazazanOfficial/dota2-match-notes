@@ -14,6 +14,8 @@ import { gameModeName, lobbyTypeName } from "@/lib/dota/modes";
 import {
   dismissedDotaMatches,
   dotaMatches,
+  heroPoolEntries,
+  heroPoolVersions,
   journalDays,
   journalMatches,
   matchBans,
@@ -120,6 +122,15 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
         .where(inArray(matchBans.matchId, matchIds))
         .orderBy(asc(matchBans.sortOrder))
     : [];
+  const poolVersionIds = [...new Set(matchRows.map((match) => match.heroPoolVersionId).filter((id): id is string => Boolean(id)))];
+  const [poolEntryRows, poolVersionRows] = poolVersionIds.length
+    ? await Promise.all([
+        db.select().from(heroPoolEntries).where(inArray(heroPoolEntries.poolVersionId, poolVersionIds)),
+        db.select({ id: heroPoolVersions.id, version: heroPoolVersions.version })
+          .from(heroPoolVersions)
+          .where(inArray(heroPoolVersions.id, poolVersionIds)),
+      ])
+    : [[], []];
   const [imageRows, imageJobRows] = matchIds.length
     ? await Promise.all([
         db
@@ -136,13 +147,21 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
           .where(inArray(matchImageJobs.matchId, matchIds)),
       ])
     : [[], []];
-  const bansByMatch = new Map<string, number[]>();
+  const bansByMatch = new Map<string, typeof banRows>();
 
   banRows.forEach((ban) => {
     const bans = bansByMatch.get(ban.matchId) || [];
-    bans.push(ban.heroId);
+    bans.push(ban);
     bansByMatch.set(ban.matchId, bans);
   });
+  const poolHeroIds = new Map<string, Set<number>>();
+  poolEntryRows.forEach((entry) => {
+    const key = `${entry.poolVersionId}:${entry.role}`;
+    const heroes = poolHeroIds.get(key) || new Set<number>();
+    heroes.add(entry.heroId);
+    poolHeroIds.set(key, heroes);
+  });
+  const poolVersionNumber = new Map(poolVersionRows.map((version) => [version.id, version.version]));
   const imagesByMatch = new Map<string, Array<{
     id: string;
     publicUrl: string;
@@ -191,11 +210,35 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
                 number: match.number,
                 heroId: match.heroId,
                 heroName: match.heroName,
-                banIds: bansByMatch.get(match.id) || [],
+                bans: (bansByMatch.get(match.id) || [])
+                  .map((ban) => ({
+                    id: ban.heroId,
+                    name: ban.heroName,
+                    source: ban.source,
+                    team: ban.team,
+                    draftOrder: ban.draftOrder,
+                    inRolePool: Boolean(
+                      match.heroPoolVersionId &&
+                      match.role &&
+                      poolHeroIds.get(`${match.heroPoolVersionId}:${match.role}`)?.has(ban.heroId),
+                    ),
+                  }))
+                  .sort((left, right) => Number(right.inRolePool) - Number(left.inRolePool) || (left.draftOrder ?? 999) - (right.draftOrder ?? 999)),
                 legacyBans: match.legacyBans,
                 role: match.role || "",
+                roleSource: match.roleSource,
+                heroPoolEligible: match.heroPoolEligible,
+                heroPoolMatch:
+                  match.heroPoolEligible && match.heroPoolVersionId && match.role && match.heroId
+                    ? Boolean(poolHeroIds.get(`${match.heroPoolVersionId}:${match.role}`)?.has(match.heroId))
+                    : null,
+                heroPoolVersion: match.heroPoolVersionId
+                  ? poolVersionNumber.get(match.heroPoolVersionId) || null
+                  : null,
                 queueType: match.queueType || "",
                 notes: match.notes,
+                positivePoints: match.positivePoints,
+                negativePoints: match.negativePoints,
                 result: match.result,
                 source: match.source,
                 dotaMatchId:
@@ -314,8 +357,11 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
         heroId: match.heroId,
         heroName: match.heroName,
         role: match.role || null,
+        roleSource: match.role ? "manual" as const : null,
         queueType: match.queueType || null,
         notes: match.notes,
+        positivePoints: match.positivePoints,
+        negativePoints: match.negativePoints,
         legacyBans: match.legacyBans,
         result: match.result,
         updatedAt: now,
@@ -343,15 +389,24 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
         });
       }
 
-      await tx.delete(matchBans).where(eq(matchBans.matchId, match.id));
+      const [automaticBan] = await tx
+        .select({ id: matchBans.id })
+        .from(matchBans)
+        .where(and(eq(matchBans.matchId, match.id), eq(matchBans.source, "opendota")))
+        .limit(1);
 
-      if (match.banIds.length) {
+      await tx
+        .delete(matchBans)
+        .where(and(eq(matchBans.matchId, match.id), eq(matchBans.source, "manual")));
+
+      if (!automaticBan && match.banIds.length) {
         await tx.insert(matchBans).values(
           match.banIds.map((heroId, sortOrder) => ({
             matchId: match.id,
             heroId,
             heroName: heroById(heroId)?.name || String(heroId),
             sortOrder,
+            source: "manual" as const,
           })),
         );
       }

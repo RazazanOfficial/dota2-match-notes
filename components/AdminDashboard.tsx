@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import AppLogo from "./AppLogo";
+import AdminReleaseNotes from "./AdminReleaseNotes";
 
 type RangeDays = 7 | 30 | 90;
 type JobStatus = "pending" | "processing" | "completed" | "failed";
@@ -315,6 +316,7 @@ export default function AdminDashboard() {
           <button className="secondary-button" type="button" disabled={offset + 25 >= totalUsers} onClick={() => setOffset(offset + 25)}>صفحه بعد</button>
         </footer>
       </section>
+      <AdminReleaseNotes />
     </main>
   );
 }

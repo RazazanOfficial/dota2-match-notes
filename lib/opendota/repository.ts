@@ -7,12 +7,16 @@ import {
   dotaMatches,
   externalApiDailyUsage,
   externalApiRateLimits,
+  heroPoolVersions,
   journalDays,
   journalMatches,
+  matchBans,
   matchImageJobs,
   users,
 } from "@/lib/db/schema";
+import { isHeroPoolEligibleMode } from "@/lib/hero-pool/rules";
 import { OpenDotaError } from "./errors";
+import { collectAutomaticBans, suggestMatchRole } from "./match-insights";
 import type { OpenDotaMatch, OpenDotaPlayer } from "./validation";
 
 export async function findOpenDotaSyncTarget(userId: string, matchId: string) {
@@ -252,6 +256,9 @@ export async function saveDiscoveredOpenDotaMatch(params: {
   const isRadiant = player.player_slot < 128;
   const result = match.radiant_win === isRadiant ? "win" : "loss";
   const heroName = heroById(player.hero_id)?.name || `Hero ${player.hero_id}`;
+  const suggestedRole = suggestMatchRole(match, player);
+  const heroPoolEligible = isHeroPoolEligibleMode(match.game_mode, match.lobby_type);
+  const automaticBans = heroPoolEligible ? collectAutomaticBans(match) : [];
 
   return getDb().transaction(async (tx) => {
     await tx.execute(
@@ -349,6 +356,12 @@ export async function saveDiscoveredOpenDotaMatch(params: {
         },
       });
 
+    const [activePool] = await tx
+      .select({ id: heroPoolVersions.id })
+      .from(heroPoolVersions)
+      .where(and(eq(heroPoolVersions.userId, userId), eq(heroPoolVersions.isActive, true)))
+      .limit(1);
+
     const [saved] = await tx
       .insert(journalMatches)
       .values({
@@ -359,6 +372,10 @@ export async function saveDiscoveredOpenDotaMatch(params: {
         number,
         heroId: player.hero_id,
         heroName,
+        role: suggestedRole,
+        roleSource: suggestedRole ? "opendota" : null,
+        heroPoolVersionId: activePool?.id || null,
+        heroPoolEligible,
         result,
         startedAt,
         durationSeconds: match.duration,
@@ -375,6 +392,20 @@ export async function saveDiscoveredOpenDotaMatch(params: {
         updatedAt: now,
       })
       .returning({ id: journalMatches.id });
+
+    if (automaticBans.length) {
+      await tx.insert(matchBans).values(
+        automaticBans.map((ban, sortOrder) => ({
+          matchId: saved.id,
+          heroId: ban.heroId,
+          heroName: ban.heroName,
+          sortOrder,
+          source: "opendota" as const,
+          team: ban.team,
+          draftOrder: ban.draftOrder,
+        })),
+      );
+    }
 
     await tx
       .insert(matchImageJobs)
@@ -417,6 +448,9 @@ export async function saveOpenDotaMatch(params: {
   const isRadiant = player.player_slot < 128;
   const result = match.radiant_win === isRadiant ? "win" : "loss";
   const heroName = heroById(player.hero_id)?.name || `Hero ${player.hero_id}`;
+  const suggestedRole = suggestMatchRole(match, player);
+  const heroPoolEligible = isHeroPoolEligibleMode(match.game_mode, match.lobby_type);
+  const automaticBans = heroPoolEligible ? collectAutomaticBans(match) : [];
 
   return getDb().transaction(async (tx) => {
     await tx.execute(
@@ -424,7 +458,12 @@ export async function saveOpenDotaMatch(params: {
     );
 
     const [ownedMatch] = await tx
-      .select({ id: journalMatches.id })
+      .select({
+        id: journalMatches.id,
+        role: journalMatches.role,
+        roleSource: journalMatches.roleSource,
+        heroPoolVersionId: journalMatches.heroPoolVersionId,
+      })
       .from(journalMatches)
       .where(
         and(
@@ -483,6 +522,14 @@ export async function saveOpenDotaMatch(params: {
         },
       });
 
+    const [activePool] = ownedMatch.heroPoolVersionId
+      ? [{ id: ownedMatch.heroPoolVersionId }]
+      : await tx
+          .select({ id: heroPoolVersions.id })
+          .from(heroPoolVersions)
+          .where(and(eq(heroPoolVersions.userId, userId), eq(heroPoolVersions.isActive, true)))
+          .limit(1);
+
     const [saved] = await tx
       .update(journalMatches)
       .set({
@@ -490,6 +537,10 @@ export async function saveOpenDotaMatch(params: {
         source: "opendota",
         heroId: player.hero_id,
         heroName,
+        role: ownedMatch.role || suggestedRole,
+        roleSource: ownedMatch.role ? ownedMatch.roleSource || "manual" : suggestedRole ? "opendota" : null,
+        heroPoolVersionId: activePool?.id || null,
+        heroPoolEligible,
         result,
         startedAt,
         durationSeconds: match.duration,
@@ -511,6 +562,27 @@ export async function saveOpenDotaMatch(params: {
         ),
       )
       .returning();
+
+    await tx
+      .delete(matchBans)
+      .where(
+        automaticBans.length
+          ? eq(matchBans.matchId, journalMatchId)
+          : and(eq(matchBans.matchId, journalMatchId), eq(matchBans.source, "opendota")),
+      );
+    if (automaticBans.length) {
+      await tx.insert(matchBans).values(
+        automaticBans.map((ban, sortOrder) => ({
+          matchId: journalMatchId,
+          heroId: ban.heroId,
+          heroName: ban.heroName,
+          sortOrder,
+          source: "opendota" as const,
+          team: ban.team,
+          draftOrder: ban.draftOrder,
+        })),
+      );
+    }
 
     await tx
       .insert(matchImageJobs)

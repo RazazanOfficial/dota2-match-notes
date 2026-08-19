@@ -64,6 +64,13 @@
       "when": 1786908541013,
       "tag": "0008_add_manual_sync_ui_analytics",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787137852136,
+      "tag": "0009_add_player_development_suite",
+      "breakpoints": true
     }
   ]
 }

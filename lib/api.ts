@@ -3,6 +3,7 @@
 import { normalizeProfile } from "./date";
 import type {
   Day,
+  HeroPoolData,
   ManualSyncResult,
   PlayerSyncStatus,
   Profile,
@@ -77,6 +78,8 @@ function serializeDay(day: Day) {
           role: match.role,
           queueType: match.queueType,
           notes: match.notes,
+          positivePoints: match.positivePoints,
+          negativePoints: match.negativePoints,
           result: match.result,
           createdAt: match.createdAt,
         },
@@ -172,4 +175,21 @@ export async function purgeLegacyBrowserCache() {
       keys.filter((key) => key.startsWith("dota2-match-notes-")).map((key) => caches.delete(key)),
     );
   }
+}
+
+export async function getHeroPool() {
+  const response = await requestJson<{ ok: boolean; heroPool: HeroPoolData }>("/api/hero-pool/me");
+  return response.heroPool;
+}
+
+export async function updateHeroPool(heroPool: HeroPoolData["pools"]) {
+  const body = Object.fromEntries(
+    Object.entries(heroPool).map(([role, heroes]) => [role, heroes.map((hero) => hero.id)]),
+  );
+  const response = await requestJson<{ ok: boolean; heroPool: HeroPoolData }>("/api/hero-pool/me", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return response.heroPool;
 }

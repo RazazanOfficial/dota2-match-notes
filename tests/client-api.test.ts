@@ -78,6 +78,8 @@ describe("journal client API", () => {
           role: "safe_lane",
           queueType: "role_selected",
           notes: "client test",
+          positivePoints: [],
+          negativePoints: [],
           result: "win",
           createdAt: "2026-08-04T12:00:00.000Z",
           source: "opendota",

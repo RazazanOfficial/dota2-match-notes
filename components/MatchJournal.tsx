@@ -4,10 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { heroById, heroImage } from "@/data/heroes";
 import {
   loginPlayer,
+  getHeroPool,
   logout,
   purgeLegacyBrowserCache,
   restorePlayer,
   saveDay,
+  updateHeroPool,
   viewCoach,
   viewPlayer,
 } from "@/lib/api";
@@ -29,12 +31,14 @@ import {
   summarizeWeek,
   toDateKey,
 } from "@/lib/date";
-import type { Day, Match, Profile, Session } from "@/lib/types";
+import type { Day, HeroPoolData, Match, Profile, Session } from "@/lib/types";
 import MatchDialog from "./MatchDialog";
 import ReportDialog from "./ReportDialog";
 import SyncPanel from "./SyncPanel";
 import AppLogo from "./AppLogo";
 import { GameIcon } from "./GameIcon";
+import HeroPoolDialog from "./HeroPoolDialog";
+import ReleaseNotes from "./ReleaseNotes";
 
 type AccessView = "roles" | "coach";
 
@@ -50,6 +54,8 @@ export default function MatchJournal() {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState("");
   const [reportOpen, setReportOpen] = useState(false);
+  const [heroPoolOpen, setHeroPoolOpen] = useState(false);
+  const [heroPool, setHeroPool] = useState<HeroPoolData | null>(null);
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [editing, setEditing] = useState<{ dateKey: string; matchId: string | null } | null>(
     null,
@@ -77,6 +83,15 @@ export default function MatchJournal() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (session?.mode !== "player") return;
+    let cancelled = false;
+    getHeroPool()
+      .then((pool) => { if (!cancelled) setHeroPool(pool); })
+      .catch(() => { if (!cancelled) setSyncState("error"); });
+    return () => { cancelled = true; };
+  }, [session]);
 
   useEffect(() => {
     if (!session || editing) return;
@@ -261,6 +276,7 @@ export default function MatchJournal() {
         <header className="topbar">
           <Brand />
           <div className="account-summary">
+            <ReleaseNotes authenticated={session.mode === "player"} compact />
             <div className="account-copy">
               <span className={`mode-badge${session.mode === "coach" ? " is-coach" : ""}`}>
                 {session.mode === "player" ? "بازیکن" : "مربی"}
@@ -275,6 +291,11 @@ export default function MatchJournal() {
               <a className="admin-link" href="/admin">
                 مدیریت
               </a>
+            )}
+            {session.mode === "player" && (
+              <button className="secondary-button" type="button" onClick={() => setHeroPoolOpen(true)}>
+                Hero Pool
+              </button>
             )}
             <button className="secondary-button" type="button" disabled={busy} onClick={leave}>
               خروج
@@ -423,6 +444,24 @@ export default function MatchJournal() {
         onClose={() => setReportOpen(false)}
         onToast={showToast}
       />
+      <HeroPoolDialog
+        open={heroPoolOpen}
+        value={heroPool}
+        busy={busy}
+        onClose={() => setHeroPoolOpen(false)}
+        onSave={async (pools) => {
+          setBusy(true);
+          try {
+            setHeroPool(await updateHeroPool(pools));
+            setHeroPoolOpen(false);
+            showToast("Hero Pool ثبت شد");
+          } catch (error) {
+            showToast(error instanceof Error ? error.message : "ثبت Hero Pool انجام نشد");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      />
       <div className={`toast${toast ? " is-visible" : ""}`} role="status" aria-live="polite">
         {toast}
       </div>
@@ -470,7 +509,10 @@ function AccessScreen({
 
   return (
     <main className="access-screen">
-      <header className="access-brand"><Brand /></header>
+      <header className="access-brand">
+        <Brand />
+        <div className="access-header-actions"><ReleaseNotes /><a className="primary-button" href="#login">ورود</a></div>
+      </header>
       <div className="access-stage">
         <section className="access-intro">
           <p className="access-overline" lang="en">KNOW YOUR MATCH. MASTER YOUR GAME.</p>
@@ -487,7 +529,7 @@ function AccessScreen({
             <span>STR</span><span>AGI</span><span>INT</span>
           </div>
         </section>
-        <section className="access-panel">
+        <section className="access-panel" id="login">
           <div className="access-heading">
             <p className="week-kicker"><span aria-hidden="true" />{view === "roles" ? "پنل ورود" : "مشاهده به عنوان مهمان"}</p>
             <h2>{view === "roles" ? "نحوه ورود را انتخاب کن" : ""}</h2>
@@ -530,7 +572,7 @@ function AccessScreen({
                   بازگشت
                 </button>
                 <button className="primary-button" type="submit" disabled={busy}>
-                  {busy ? "در حال اتصال" : "مشاهده پروفایل"}
+                  {busy ? "در حال اتصال" : "باز کردن گزارش"}
                 </button>
               </div>
             </form>
@@ -538,8 +580,41 @@ function AccessScreen({
           <footer className="access-panel-footer"><span lang="en">Developed By Meraj</span><span></span></footer>
         </section>
       </div>
+      <section className="feature-chronicle" aria-label="ویژگی‌های Dota2 Notes">
+        <header className="feature-chronicle-heading">
+          <p lang="en">YOUR MATCHES. YOUR PATTERNS.</p>
+          <h2>از نتیجه عبور کن؛<br /><em>دلیلش را پیدا کن.</em></h2>
+        </header>
+        <article className="feature-story">
+          <div className="feature-story-copy"><span lang="en">01 · ROLE MASTERY</span><h3>هیروهایی که واقعاً<br />با آن‌ها رشد می‌کنی</h3><p>Hero Pool هر رول، مرز تمرکز تو را مشخص می‌کند و هر مچ را با نسخه همان روز مقایسه می‌کند.</p></div>
+          <HeroPoolPreview />
+        </article>
+        <article className="feature-story is-reversed">
+          <div className="feature-story-copy"><span lang="en">02 · MATCH REVIEW</span><h3>تصمیم‌های خوب را<br />از اشتباه‌ها جدا کن</h3><p>نکات مثبت، نکات منفی و یادداشت آزاد کنار آمار واقعی مچ قرار می‌گیرند.</p></div>
+          <ReviewPreview />
+        </article>
+        <article className="feature-story">
+          <div className="feature-story-copy"><span lang="en">03 · DRAFT MEMORY</span><h3>Draft را همان‌طور که<br />اتفاق افتاد ببین</h3><p>بن‌های OpenDota خودکار ثبت می‌شوند و هیروهای Hero Pool همان رول در اولویت می‌آیند.</p></div>
+          <DraftPreview />
+        </article>
+        <footer className="feature-final-cta"><AppLogo size={78} alt="" /><h2>مچ بعدی، شروع تحلیل بعدی است.</h2><a className="primary-button" href="#login">ورود به ژورنال</a></footer>
+      </section>
     </main>
   );
+}
+
+function HeroPoolPreview() {
+  const heroes = [1, 8, 44, 48, 93].map((id) => heroById(id)).filter(Boolean);
+  return <div className="feature-visual pool-preview"><header><span lang="en">SAFE LANE</span><b>۵ / ۸</b></header><div>{heroes.map((hero, index) => hero && <span key={hero.id} style={{ "--delay": `${index * 80}ms` } as React.CSSProperties}><img src={heroImage(hero)} alt="" /><b lang="en">{hero.name}</b></span>)}</div><footer><i /> HERO POOL · BALANCED</footer></div>;
+}
+
+function ReviewPreview() {
+  return <div className="feature-visual review-preview"><header><span lang="en">MATCH #842913</span><b>Victory</b></header><section className="is-positive"><strong>نکات مثبت</strong><p><span>✓</span> کنترل خوب Rune پیش از دقیقه ۶</p><p><span>✓</span> حفظ TP برای درگیری Roshan</p></section><section className="is-negative"><strong>نکات منفی</strong><p><span>×</span> ورود بدون Vision به Triangle</p></section></div>;
+}
+
+function DraftPreview() {
+  const heroes = [74, 14, 25, 86, 44].map((id) => heroById(id)).filter(Boolean);
+  return <div className="feature-visual draft-preview"><header><span lang="en">RANKED · ALL DRAFT</span><b>OpenDota</b></header><div>{heroes.map((hero, index) => hero && <span className={`ban-portrait${index < 2 ? " is-pool-priority" : ""}`} key={hero.id}><span className="ban-portrait-image"><img src={heroImage(hero)} alt="" /></span><b lang="en">{hero.name}</b></span>)}</div><footer>PRIORITIZED FOR MID LANE</footer></div>;
 }
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
@@ -560,8 +635,8 @@ function MatchCard({ match, onClick }: { match: Match; onClick: () => void }) {
           {match.result === "win" ? "برد" : "باخت"}
         </span>
       </div>
-      <div className="match-hero-row">
-        {hero && <img src={heroImage(hero)} alt="" />}
+      <div className={`match-hero-row${match.heroPoolEligible ? match.heroPoolMatch ? " is-in-pool" : " is-outside-pool" : ""}`}>
+        {hero && <span className="match-hero-portrait"><img src={heroImage(hero)} alt="" /></span>}
         <div>
           <h4 className="match-hero" lang="en">{match.heroName || "بدون هیرو"}</h4>
           <span className="match-meta" lang="en">
@@ -571,6 +646,7 @@ function MatchCard({ match, onClick }: { match: Match; onClick: () => void }) {
       </div>
       {match.dotaMatchId && (
         <div className="match-combat-stats" aria-label="خلاصه آمار مچ">
+          <span title="Game mode"><GameIcon name="mode" /><b lang="en" dir="ltr">{match.gameModeName || "—"}</b></span>
           <span title="K / D / A"><GameIcon name="kda" /><b lang="en" dir="ltr">{match.kills ?? "—"}/{match.deaths ?? "—"}/{match.assists ?? "—"}</b></span>
           <span className="is-gold" title="Gold per minute"><GameIcon name="gold" /><b lang="en" dir="ltr">{match.goldPerMinute ?? "—"}</b></span>
           <span className="is-networth" title="Net worth"><GameIcon name="gold" /><b lang="en" dir="ltr">{match.netWorth?.toLocaleString("en-US") ?? "—"}</b></span>
