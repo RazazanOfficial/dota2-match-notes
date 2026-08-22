@@ -55,7 +55,7 @@ describe("STRATZ diagnostics client", () => {
     expect(() => stratzDiagnosticsQuerySchema.parse({ matchIds: "1,2,3,4" })).toThrow();
   });
 
-  it("requests exact match fields with bearer authentication", async () => {
+  it("requests exact match fields with bearer authentication and the required user agent", async () => {
     const matchId = 8_954_423_810;
     const fetchMock = vi.fn().mockResolvedValue(Response.json({
       data: {
@@ -74,7 +74,9 @@ describe("STRATZ diagnostics client", () => {
     expect(result[0]?.match?.players?.[0]?.position).toBe("POSITION_2");
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("https://stratz.example.test/graphql");
-    expect(new Headers(init.headers).get("Authorization")).toBe("Bearer server-only-token");
+    const headers = new Headers(init.headers);
+    expect(headers.get("Authorization")).toBe("Bearer server-only-token");
+    expect(headers.get("User-Agent")).toBe("STRATZ_API");
     const body = JSON.parse(String(init.body)) as { query: string };
     expect(body.query).toContain(`match0: match(id: ${matchId})`);
     expect(body.query).not.toContain("server-only-token");
