@@ -47,7 +47,7 @@ export async function fetchStratzDiagnostics(matchIds: number[]) {
         Accept: "application/json",
         Authorization: `Bearer ${config.token}`,
         "Content-Type": "application/json",
-        "User-Agent": "Dota2MatchNotes/1.0",
+        "User-Agent": "STRATZ_API",
       },
       body: JSON.stringify({ operationName: "MatchDiagnostics", query }),
       cache: "no-store",
