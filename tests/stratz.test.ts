@@ -107,4 +107,41 @@ describe("STRATZ diagnostics client", () => {
       code: "stratz_graphql_error",
     });
   });
+
+  it("reports the STRATZ single-IP restriction instead of an authentication failure", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(
+      "You cannot use different IP Addresses when using the API.",
+      { status: 403, headers: { "cf-ray": "example-ray" } },
+    )));
+    await expect(fetchStratzDiagnostics([100])).rejects.toMatchObject({
+      code: "stratz_ip_conflict",
+      details: { upstreamStatus: 403, cfRay: "example-ray" },
+    });
+  });
+
+  it("distinguishes a Cloudflare challenge from token authentication", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(
+      "<html><title>Just a moment...</title></html>",
+      { status: 403, headers: { "content-type": "text/html", "cf-ray": "challenge-ray" } },
+    )));
+    await expect(fetchStratzDiagnostics([100])).rejects.toMatchObject({
+      code: "stratz_edge_blocked",
+      details: { upstreamStatus: 403, cfRay: "challenge-ray" },
+    });
+  });
+
+  it("keeps genuine authentication and upstream failures separate", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response("Unauthorized", { status: 401 }))
+      .mockResolvedValueOnce(new Response("An unexpected error occurred", { status: 500 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(fetchStratzDiagnostics([100])).rejects.toMatchObject({
+      code: "stratz_auth_failed",
+      details: { upstreamStatus: 401 },
+    });
+    await expect(fetchStratzDiagnostics([100])).rejects.toMatchObject({
+      code: "stratz_upstream_error",
+      details: { upstreamStatus: 500 },
+    });
+  });
 });
