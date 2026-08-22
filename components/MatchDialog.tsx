@@ -8,6 +8,7 @@ import type { Hero, Match, MatchImage, MatchResult, MatchRole, QueueType } from 
 import BanPicker from "./BanPicker";
 import HeroPicker from "./HeroPicker";
 import { GameIcon, type GameIconName } from "./GameIcon";
+import GeneratedImageGallery from "./GeneratedImageGallery";
 import ReviewListInput from "./ReviewListInput";
 
 type MatchTab = "overview" | "review" | "media";
@@ -441,19 +442,7 @@ function GeneratedImages({ match }: { match: Match }) {
   return (
     <section className="generated-images" aria-label="تصاویر گزارش مچ">
       <header><span>تصاویر گزارش</span><strong>{images.length.toLocaleString("fa-IR")} تصویر آماده</strong></header>
-      <div className="generated-images-grid">
-        {images.map((image) => (
-          <a href={image.publicUrl} target="_blank" rel="noreferrer" key={image.id}>
-            <img
-              src={image.publicUrl}
-              width={image.width || 1280}
-              height={image.height || 720}
-              alt={image.altText || `گزارش مچ ${match.dotaMatchId}`}
-            />
-            <span>مشاهده اندازه کامل</span>
-          </a>
-        ))}
-      </div>
+      <GeneratedImageGallery images={images} matchId={match.dotaMatchId} />
     </section>
   );
 }

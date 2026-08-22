@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import sharp from "sharp";
 import { createHeroPortraitLoader } from "../lib/match-image/assets";
 import { getMatchImageConfig } from "../lib/match-image/config";
@@ -52,7 +52,6 @@ function matchPayload() {
 }
 
 afterEach(() => {
-  vi.unstubAllGlobals();
   restoreEnv("MATCH_IMAGE_ASSET_TIMEOUT_MS", ORIGINAL_IMAGE_ENV.timeout);
   restoreEnv("MATCH_IMAGE_ASSET_MAX_BYTES", ORIGINAL_IMAGE_ENV.maxBytes);
   restoreEnv("MATCH_IMAGE_WEBP_QUALITY", ORIGINAL_IMAGE_ENV.quality);
@@ -127,41 +126,22 @@ describe("in-memory match image renderer", () => {
 });
 
 describe("hero portrait loader", () => {
-  it("fetches only known hero URLs, validates size and caches bytes", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(Uint8Array.from([137, 80, 78, 71]), {
-        headers: {
-          "Content-Type": "image/png",
-          "Content-Length": "4",
-        },
-      }),
-    );
-    vi.stubGlobal("fetch", fetchMock);
+  it("reads known portraits from local project assets and caches bytes", async () => {
     const loader = createHeroPortraitLoader({
       assetTimeoutMs: 1_000,
-      assetMaxBytes: 65_536,
+      assetMaxBytes: 1_572_864,
       webpQuality: 88,
     });
 
     await expect(loader(1)).resolves.toMatch(/^data:image\/png;base64,/);
     await expect(loader(1)).resolves.toMatch(/^data:image\/png;base64,/);
     await expect(loader(999_999)).resolves.toBeNull();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(String(fetchMock.mock.calls[0]?.[0])).toMatch(
-      /^https:\/\/cdn\.cloudflare\.steamstatic\.com\//,
-    );
   });
 
-  it("rejects a streamed portrait as soon as it exceeds the byte limit", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(Uint8Array.from({ length: 65_537 }, () => 1), {
-        headers: { "Content-Type": "image/png" },
-      }),
-    );
-    vi.stubGlobal("fetch", fetchMock);
+  it("rejects a local portrait larger than the configured limit", async () => {
     const loader = createHeroPortraitLoader({
       assetTimeoutMs: 1_000,
-      assetMaxBytes: 65_536,
+      assetMaxBytes: 1_024,
       webpQuality: 88,
     });
 

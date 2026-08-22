@@ -135,5 +135,5 @@ const NAME_MAP = new Map(HEROES.map((hero) => [hero.name.toLowerCase(), hero]));
 
 export const heroById = (id: number) => ID_MAP.get(id);
 export const heroByName = (name: string) => NAME_MAP.get(name.trim().toLowerCase());
-export const heroImage = (hero: Hero) =>
-  `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${hero.slug}.png`;
+export const heroPortraitFileName = (hero: Hero) => `${hero.slug}.png`;
+export const heroImage = (hero: Hero) => `/heroes/${heroPortraitFileName(hero)}`;
