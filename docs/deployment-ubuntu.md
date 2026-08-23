@@ -136,12 +136,14 @@ sudo -u dota2notes -H npm run build
 Migration فقط schema را به‌روز می‌کند و در اجرای مجدد migrationهای انجام‌شده را تکرار
 نمی‌کند.
 
-## ۸. نصب سرویس و Image Worker
+## ۸. نصب سرویس و Workerها
 
 ```bash
 sudo cp deploy/systemd/dota2notes.service /etc/systemd/system/
 sudo cp deploy/systemd/dota2notes-images.service /etc/systemd/system/
 sudo cp deploy/systemd/dota2notes-images.timer /etc/systemd/system/
+sudo cp deploy/systemd/dota2notes-stratz.service /etc/systemd/system/
+sudo cp deploy/systemd/dota2notes-stratz.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now dota2notes.service
 ```
@@ -153,21 +155,23 @@ sudo systemctl status dota2notes.service --no-pager
 sudo -u dota2notes -H bash deploy/scripts/health-check.sh
 ```
 
-پس از موفقیت Health Check، Timer ساخت تصاویر را فعال کنید:
+پس از موفقیت Health Check، Timerهای تصاویر و تکمیل STRATZ را فعال کنید:
 
 ```bash
 sudo systemctl enable --now dota2notes-images.timer
+sudo systemctl enable --now dota2notes-stratz.timer
 systemctl list-timers 'dota2notes-*'
 ```
 
-Sync کاربران فقط با دکمه داخل سایت انجام می‌شود. Image Worker هر دقیقه صف مشترک تصاویر را
-پردازش می‌کند و قفل دیتابیس اجازه نمی‌دهد یک Job دوبار ساخته شود. فایل‌های Scheduler ساعتی
+Sync کاربران فقط با دکمه داخل سایت انجام می‌شود. Workerهای تصاویر و STRATZ هر دقیقه صف‌های
+مستقل را پردازش می‌کنند و قفل دیتابیس اجازه نمی‌دهد یک Job دوبار پردازش شود. فایل‌های Scheduler ساعتی
 برای توسعه آینده در مخزن باقی مانده‌اند، اما در این نسخه نباید نصب یا فعال شوند.
 
 برای اجرای دستی روی VPS:
 
 ```bash
 sudo systemctl start dota2notes-images.service
+sudo systemctl start dota2notes-stratz.service
 ```
 
 برای دیدن Logها:
@@ -175,6 +179,7 @@ sudo systemctl start dota2notes-images.service
 ```bash
 sudo journalctl -u dota2notes.service -n 100 --no-pager
 sudo journalctl -u dota2notes-images.service -n 100 --no-pager
+sudo journalctl -u dota2notes-stratz.service -n 100 --no-pager
 ```
 
 ## ۹. فعال‌کردن Nginx
@@ -193,11 +198,12 @@ sudo systemctl reload nginx
 curl --fail --show-error http://dota2notes.ir/api/health
 ```
 
-دو endpoint داخلی عمداً از طریق دامنه مسدود شده‌اند و باید `404` بدهند:
+سه endpoint داخلی عمداً از طریق دامنه مسدود شده‌اند و باید `404` بدهند:
 
 ```bash
 curl -i -X POST http://dota2notes.ir/api/internal/sync/tick
 curl -i -X POST http://dota2notes.ir/api/internal/images/tick
+curl -i -X POST http://dota2notes.ir/api/internal/stratz/tick
 ```
 
 ## ۱۰. Firewall بدون قطع‌شدن SSH
@@ -252,6 +258,7 @@ sudo certbot renew --dry-run
 
 ```bash
 cd /var/www/dota2notes
+sudo systemctl stop dota2notes-images.timer dota2notes-stratz.timer
 sudo systemctl stop dota2notes.service
 sudo -u dota2notes -H git pull --ff-only origin main
 sudo -u dota2notes -H npm ci
@@ -261,6 +268,7 @@ sudo -u dota2notes -H npm run typecheck
 sudo -u dota2notes -H npm run build
 sudo systemctl start dota2notes.service
 sudo -u dota2notes -H bash deploy/scripts/health-check.sh
+sudo systemctl start dota2notes-images.timer dota2notes-stratz.timer
 ```
 
 اگر هر فرمان قبل از `systemctl start` شکست خورد، ادامه ندهید و Log همان فرمان را بررسی
@@ -283,18 +291,23 @@ systemctl list-timers 'dota2notes-*'
 
 ### مسیر مستقیم STRATZ
 
-اگر مسیر DNS سرور بعضی دامنه‌ها را از یک واسط با IP چرخشی عبور می‌دهد، IPهای فعلی
+اگر مسیر DNS سرور بعضی دامنه‌ها را از یک واسط با IP چرخشی عبور می‌دهد، یک IP فعلی
 مقصد STRATZ را خارج از VPS دریافت و در `.env.production` ثبت کنید:
 
 ```dotenv
-STRATZ_DIRECT_IPS=IP_1,IP_2
+STRATZ_DIRECT_IP=IP_1
+STRATZ_MIN_REQUEST_INTERVAL_MS=1000
+STRATZ_MAX_ATTEMPTS=2
+STRATZ_RETRY_DELAY_MS=2000
+STRATZ_BACKFILL_ON_MANUAL_SYNC=false
 ```
 
 این گزینه در زمان درخواست از DNS استفاده نمی‌کند و DNS سراسری سیستم یا ارتباط سرویس‌های
 دیگر را تغییر نمی‌دهد. پیش از استفاده از توکن، مسیر مستقیم را بدون ارسال توکن بررسی کنید:
 
 ```bash
-sudo -u dota2notes -H npm run stratz:route-check -- IP_1,IP_2
+sudo -u dota2notes -H npm run stratz:route-check -- IP_1
 ```
 
-مقدار `Unique direct egress IPs` باید فقط یک IP داشته باشد. سپس برنامه را Restart کنید.
+مقدار `Observed direct egress IP` باید IP ثابت VPS باشد. برنامه و Worker STRATZ فقط
+از همین مقصد استفاده می‌کنند و Retry خودکار نیز روی همان مقصد انجام می‌شود.

@@ -82,16 +82,43 @@ export default function SyncPanel({
     try {
       const result = await syncPlayerMatches();
       onMatchesImported(result);
+      const enriched =
+        result.stratz?.jobs.filter((job) => job.status === "completed").length || 0;
+      const pendingEnrichment =
+        result.stratz?.jobs.filter((job) => job.status === "pending").length || 0;
+      const failedEnrichment =
+        result.stratz?.jobs.filter((job) => job.status === "failed").length || 0;
       if (result.imported.length) {
         setMessage(
-          `${faNumber.format(result.imported.length)} مچ جدید ثبت شد و برای ساخت تصاویر وارد صف شد.`,
+          `${faNumber.format(result.imported.length)} مچ جدید ثبت شد.`,
         );
+      } else if (enriched) {
+        setMessage(`${faNumber.format(enriched)} مچ با اطلاعات STRATZ تکمیل شد.`);
       } else {
         setMessage("مچ جدیدی از زمان آخرین بررسی پیدا نشد.");
+      }
+      if (result.stratz?.backfillQueued) {
+        setMessage((current) =>
+          `${current} ${faNumber.format(result.stratz?.backfillQueued || 0)} مچ قبلی وارد صف تکمیل شد.`,
+        );
+      } else if (result.imported.length && enriched) {
+        setMessage((current) =>
+          `${current} اطلاعات ${faNumber.format(enriched)} مچ از STRATZ تکمیل شد.`,
+        );
       }
       if (result.deferred) {
         setMessage((current) =>
           `${current} ${faNumber.format(result.deferred)} مچ دیگر برای Sync بعدی باقی ماند.`,
+        );
+      }
+      if (pendingEnrichment) {
+        setMessage((current) =>
+          `${current} تکمیل STRATZ برای ${faNumber.format(pendingEnrichment)} مچ در صف باقی ماند.`,
+        );
+      }
+      if (failedEnrichment) {
+        setMessage((current) =>
+          `${current} تکمیل STRATZ برای ${faNumber.format(failedEnrichment)} مچ انجام نشد.`,
         );
       }
       await loadStatus();
@@ -106,7 +133,7 @@ export default function SyncPanel({
   return (
     <section className="sync-panel" aria-labelledby="sync-panel-title">
       <div className="sync-panel-copy">
-        <p className="week-kicker">OPEN DOTA SYNC</p>
+        <p className="week-kicker">DOTA DATA SYNC</p>
         <h2 id="sync-panel-title">دریافت مچ‌های جدید</h2>
         <p>
           مچ‌ها از زمان عضویت شما بررسی می‌شوند. پس از ثبت، ساخت سه تصویر در صف سرور انجام می‌شود.

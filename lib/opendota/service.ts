@@ -1,4 +1,7 @@
 import type { SessionUser } from "@/lib/auth/session";
+import { getStratzConfig } from "@/lib/stratz/config";
+import { runStratzEnrichmentTick } from "@/lib/stratz/job-service";
+import { enqueueStratzBackfillForUser } from "@/lib/stratz/job-repository";
 import {
   fetchOpenDotaMatch,
   fetchOpenDotaRecentMatches,
@@ -151,6 +154,7 @@ export async function syncJournalMatchFromOpenDota(
   journalMatchId: string,
   dotaMatchId: number,
 ) {
+  const stratzConfig = getStratzConfig();
   const target = await findOpenDotaSyncTarget(user.id, journalMatchId);
   if (!target) {
     throw new OpenDotaError(404, "match_not_found", "مچ دفتر پیدا نشد");
@@ -182,6 +186,12 @@ export async function syncJournalMatchFromOpenDota(
       match,
       player,
     });
+    const stratz = stratzConfig.inlineProcessBatchSize
+      ? await runStratzEnrichmentTick({
+          userId: user.id,
+          processBatchSize: 1,
+        })
+      : { processed: 0, jobs: [] };
     completed = true;
     return {
       journalMatchId: saved.id,
@@ -200,6 +210,7 @@ export async function syncJournalMatchFromOpenDota(
       netWorth: saved.netWorth,
       heroDamage: saved.heroDamage,
       towerDamage: saved.towerDamage,
+      stratz,
       fetchedAt: new Date().toISOString(),
     };
   } finally {
@@ -211,6 +222,7 @@ export async function syncJournalMatchFromOpenDota(
 
 export async function syncRecentMatchesFromOpenDota(user: SessionUser) {
   const config = getOpenDotaConfig();
+  const stratzConfig = getStratzConfig();
   const claimedAt = await claimManualOpenDotaSync(
     user.id,
     config.manualSyncCooldownSeconds,
@@ -235,8 +247,22 @@ export async function syncRecentMatchesFromOpenDota(user: SessionUser) {
     if (!sync.deferred && !sync.failed.length) {
       await advanceManualOpenDotaSyncCursor(user.id, claimedAt);
     }
+    const backfillQueued = stratzConfig.backfillOnManualSync
+      ? await enqueueStratzBackfillForUser(user.id)
+      : 0;
+    const stratz = stratzConfig.inlineProcessBatchSize
+      ? await runStratzEnrichmentTick({
+          userId: user.id,
+          processBatchSize: stratzConfig.inlineProcessBatchSize,
+        })
+      : { processed: 0, jobs: [] };
     return {
       ...sync,
+      stratz: {
+        backfillEnabled: stratzConfig.backfillOnManualSync,
+        backfillQueued,
+        ...stratz,
+      },
       registeredAt: user.createdAt.toISOString(),
       trackedFrom: fetchSince.toISOString(),
       nextAllowedAt: new Date(

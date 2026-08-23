@@ -17,12 +17,15 @@ describe("production reverse proxy", () => {
     expect(nginx).toContain("proxy_set_header X-Forwarded-Proto $scheme;");
   });
 
-  it("blocks both internal worker endpoints at Nginx", () => {
+  it("blocks every internal worker endpoint at Nginx", () => {
     expect(nginx).toMatch(
       /location = \/api\/internal\/sync\/tick\s*\{\s*return 404;/,
     );
     expect(nginx).toMatch(
       /location = \/api\/internal\/images\/tick\s*\{\s*return 404;/,
+    );
+    expect(nginx).toMatch(
+      /location = \/api\/internal\/stratz\/tick\s*\{\s*return 404;/,
     );
   });
 });
@@ -31,6 +34,7 @@ describe("production systemd units", () => {
   const appService = fixture("deploy/systemd/dota2notes.service");
   const syncTimer = fixture("deploy/systemd/dota2notes-sync.timer");
   const imageTimer = fixture("deploy/systemd/dota2notes-images.timer");
+  const stratzTimer = fixture("deploy/systemd/dota2notes-stratz.timer");
 
   it("runs Next.js as the restricted app user on localhost", () => {
     expect(appService).toContain("User=dota2notes");
@@ -42,11 +46,13 @@ describe("production systemd units", () => {
     expect(appService).toContain("MemoryMax=2048M");
   });
 
-  it("schedules independent sync and image workers", () => {
+  it("schedules independent sync, image, and STRATZ workers", () => {
     expect(syncTimer).toContain("OnCalendar=hourly");
     expect(syncTimer).toContain("Persistent=true");
     expect(imageTimer).toContain("OnCalendar=*-*-* *:*:00");
     expect(imageTimer).toContain("Persistent=true");
+    expect(stratzTimer).toContain("OnCalendar=*-*-* *:*:00");
+    expect(stratzTimer).toContain("Persistent=true");
   });
 
   it("keeps hourly sync disabled in the current deployment guide", () => {
@@ -63,6 +69,7 @@ describe("production worker invocation", () => {
   it("allows only known localhost worker paths and hides the secret from argv", () => {
     expect(worker).toContain('endpoint="/api/internal/sync/tick"');
     expect(worker).toContain('endpoint="/api/internal/images/tick"');
+    expect(worker).toContain('endpoint="/api/internal/stratz/tick"');
     expect(worker).toContain("curl --config -");
     expect(worker).not.toContain("curl -H");
   });

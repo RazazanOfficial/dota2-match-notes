@@ -2,10 +2,9 @@ import { request as httpsRequest } from "node:https";
 import { isIP } from "node:net";
 
 const endpoint = new URL(process.env.STRATZ_API_URL || "https://api.stratz.com/graphql");
-const rawAddresses = process.env.STRATZ_DIRECT_IPS || process.argv.slice(2).join(",");
-const addresses = [...new Set(rawAddresses.split(",").map((value) => value.trim()).filter(Boolean))];
-if (!addresses.length || addresses.some((address) => isIP(address) !== 4)) {
-  console.error("Provide STRATZ_DIRECT_IPS or pass comma-separated IPv4 addresses as the command argument.");
+const address = (process.env.STRATZ_DIRECT_IP || process.argv[2] || "").trim();
+if (isIP(address) !== 4) {
+  console.error("Provide STRATZ_DIRECT_IP or pass one IPv4 address as the command argument.");
   process.exit(64);
 }
 
@@ -42,23 +41,7 @@ function traceThrough(address) {
   });
 }
 
-console.log(`Pinned STRATZ destination IPs: ${addresses.join(", ")}`);
-const observed = new Set();
-const successes = new Map(addresses.map((address) => [address, 0]));
-let failures = 0;
-for (let index = 0; index < 20; index += 1) {
-  const address = addresses[index % addresses.length];
-  try {
-    const observedIp = await traceThrough(address);
-    observed.add(observedIp);
-    successes.set(address, (successes.get(address) || 0) + 1);
-    console.log(`${index + 1} connected=${address} observed=${observedIp}`);
-  } catch (error) {
-    failures += 1;
-    console.warn(`${index + 1} connected=${address} failed=${error.message}`);
-  }
-}
-console.log(`Unique direct egress IPs: ${[...observed].join(", ")}`);
-console.log(`Successful requests per destination: ${JSON.stringify(Object.fromEntries(successes))}`);
-console.log(`Timed-out or failed requests: ${failures}`);
-if (observed.size !== 1 || [...successes.values()].some((count) => count === 0)) process.exitCode = 2;
+console.log(`Pinned STRATZ destination IP: ${address}`);
+const observedIp = await traceThrough(address);
+console.log(`Connected destination: ${address}`);
+console.log(`Observed direct egress IP: ${observedIp}`);

@@ -12,11 +12,11 @@ import {
   journalMatches,
   matchBans,
   matchImageJobs,
+  stratzEnrichmentJobs,
   users,
 } from "@/lib/db/schema";
 import { isHeroPoolEligibleMode } from "@/lib/hero-pool/rules";
 import { OpenDotaError } from "./errors";
-import { collectAutomaticBans, suggestMatchRole } from "./match-insights";
 import type { OpenDotaMatch, OpenDotaPlayer } from "./validation";
 
 export async function findOpenDotaSyncTarget(userId: string, matchId: string) {
@@ -256,9 +256,7 @@ export async function saveDiscoveredOpenDotaMatch(params: {
   const isRadiant = player.player_slot < 128;
   const result = match.radiant_win === isRadiant ? "win" : "loss";
   const heroName = heroById(player.hero_id)?.name || `Hero ${player.hero_id}`;
-  const suggestedRole = suggestMatchRole(match, player);
   const heroPoolEligible = isHeroPoolEligibleMode(match.game_mode, match.lobby_type);
-  const automaticBans = heroPoolEligible ? collectAutomaticBans(match) : [];
 
   return getDb().transaction(async (tx) => {
     await tx.execute(
@@ -372,8 +370,8 @@ export async function saveDiscoveredOpenDotaMatch(params: {
         number,
         heroId: player.hero_id,
         heroName,
-        role: suggestedRole,
-        roleSource: suggestedRole ? "opendota" : null,
+        role: null,
+        roleSource: null,
         heroPoolVersionId: activePool?.id || null,
         heroPoolEligible,
         result,
@@ -393,19 +391,10 @@ export async function saveDiscoveredOpenDotaMatch(params: {
       })
       .returning({ id: journalMatches.id });
 
-    if (automaticBans.length) {
-      await tx.insert(matchBans).values(
-        automaticBans.map((ban, sortOrder) => ({
-          matchId: saved.id,
-          heroId: ban.heroId,
-          heroName: ban.heroName,
-          sortOrder,
-          source: "opendota" as const,
-          team: ban.team,
-          draftOrder: ban.draftOrder,
-        })),
-      );
-    }
+    await tx
+      .insert(stratzEnrichmentJobs)
+      .values({ matchId: saved.id, runAfter: now, updatedAt: now })
+      .onConflictDoNothing({ target: stratzEnrichmentJobs.matchId });
 
     await tx
       .insert(matchImageJobs)
@@ -448,13 +437,11 @@ export async function saveOpenDotaMatch(params: {
   const isRadiant = player.player_slot < 128;
   const result = match.radiant_win === isRadiant ? "win" : "loss";
   const heroName = heroById(player.hero_id)?.name || `Hero ${player.hero_id}`;
-  const suggestedRole = suggestMatchRole(match, player);
   const heroPoolEligible = isHeroPoolEligibleMode(match.game_mode, match.lobby_type);
-  const automaticBans = heroPoolEligible ? collectAutomaticBans(match) : [];
 
   return getDb().transaction(async (tx) => {
     await tx.execute(
-      sql`select pg_advisory_xact_lock(hashtextextended(${`opendota:${journalMatchId}`}, 0))`,
+      sql`select pg_advisory_xact_lock(hashtextextended(${`journal-match:${journalMatchId}`}, 0))`,
     );
 
     const [ownedMatch] = await tx
@@ -537,8 +524,14 @@ export async function saveOpenDotaMatch(params: {
         source: "opendota",
         heroId: player.hero_id,
         heroName,
-        role: ownedMatch.role || suggestedRole,
-        roleSource: ownedMatch.role ? ownedMatch.roleSource || "manual" : suggestedRole ? "opendota" : null,
+        role:
+          ownedMatch.roleSource === "manual" || ownedMatch.roleSource === "stratz"
+            ? ownedMatch.role
+            : null,
+        roleSource:
+          ownedMatch.roleSource === "manual" || ownedMatch.roleSource === "stratz"
+            ? ownedMatch.roleSource
+            : null,
         heroPoolVersionId: activePool?.id || null,
         heroPoolEligible,
         result,
@@ -566,23 +559,29 @@ export async function saveOpenDotaMatch(params: {
     await tx
       .delete(matchBans)
       .where(
-        automaticBans.length
-          ? eq(matchBans.matchId, journalMatchId)
-          : and(eq(matchBans.matchId, journalMatchId), eq(matchBans.source, "opendota")),
+        and(
+          eq(matchBans.matchId, journalMatchId),
+          eq(matchBans.source, "opendota"),
+        ),
       );
-    if (automaticBans.length) {
-      await tx.insert(matchBans).values(
-        automaticBans.map((ban, sortOrder) => ({
-          matchId: journalMatchId,
-          heroId: ban.heroId,
-          heroName: ban.heroName,
-          sortOrder,
-          source: "opendota" as const,
-          team: ban.team,
-          draftOrder: ban.draftOrder,
-        })),
-      );
-    }
+
+    await tx
+      .insert(stratzEnrichmentJobs)
+      .values({ matchId: journalMatchId, runAfter: now, updatedAt: now })
+      .onConflictDoUpdate({
+        target: stratzEnrichmentJobs.matchId,
+        set: {
+          status: "pending",
+          attempts: 0,
+          runAfter: now,
+          lockedAt: null,
+          finishedAt: null,
+          errorCode: null,
+          errorMessage: null,
+          updatedAt: now,
+        },
+        setWhere: ne(stratzEnrichmentJobs.status, "processing"),
+      });
 
     await tx
       .insert(matchImageJobs)

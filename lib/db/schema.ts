@@ -60,8 +60,16 @@ export const matchImageJobStatusEnum = pgEnum("match_image_job_status", [
   "completed",
   "failed",
 ]);
-export const matchBanSourceEnum = pgEnum("match_ban_source", ["manual", "opendota"]);
-export const matchRoleSourceEnum = pgEnum("match_role_source", ["manual", "opendota"]);
+export const matchBanSourceEnum = pgEnum("match_ban_source", [
+  "manual",
+  "opendota",
+  "stratz",
+]);
+export const matchRoleSourceEnum = pgEnum("match_role_source", [
+  "manual",
+  "opendota",
+  "stratz",
+]);
 export const releaseStatusEnum = pgEnum("release_status", ["draft", "published"]);
 
 export const users = pgTable(
@@ -142,6 +150,8 @@ export const dotaMatches = pgTable("dota_matches", {
   gameMode: integer("game_mode"),
   lobbyType: integer("lobby_type"),
   rawData: jsonb("raw_data").$type<Record<string, unknown>>(),
+  stratzRawData: jsonb("stratz_raw_data").$type<Record<string, unknown>>(),
+  stratzFetchedAt: timestamp("stratz_fetched_at", { withTimezone: true }),
   fetchedAt: timestamp("fetched_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -523,6 +533,37 @@ export const matchImageJobs = pgTable(
   ],
 );
 
+export const stratzEnrichmentJobs = pgTable(
+  "stratz_enrichment_jobs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    matchId: uuid("match_id")
+      .notNull()
+      .references(() => journalMatches.id, { onDelete: "cascade" }),
+    status: syncJobStatusEnum("status").default("pending").notNull(),
+    attempts: smallint("attempts").default(0).notNull(),
+    runAfter: timestamp("run_after", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    errorCode: varchar("error_code", { length: 64 }),
+    errorMessage: text("error_message"),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("stratz_enrichment_jobs_match_id_uidx").on(table.matchId),
+    index("stratz_enrichment_jobs_status_run_after_idx").on(
+      table.status,
+      table.runAfter,
+    ),
+    check(
+      "stratz_enrichment_jobs_attempts_check",
+      sql`${table.attempts} >= 0`,
+    ),
+  ],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   days: many(journalDays),
@@ -587,6 +628,10 @@ export const journalMatchesRelations = relations(
     bans: many(matchBans),
     images: many(matchImages),
     imageJobs: many(matchImageJobs),
+    stratzEnrichmentJob: one(stratzEnrichmentJobs, {
+      fields: [journalMatches.id],
+      references: [stratzEnrichmentJobs.matchId],
+    }),
   }),
 );
 
@@ -639,6 +684,16 @@ export const matchImageJobsRelations = relations(
   ({ one }) => ({
     match: one(journalMatches, {
       fields: [matchImageJobs.matchId],
+      references: [journalMatches.id],
+    }),
+  }),
+);
+
+export const stratzEnrichmentJobsRelations = relations(
+  stratzEnrichmentJobs,
+  ({ one }) => ({
+    match: one(journalMatches, {
+      fields: [stratzEnrichmentJobs.matchId],
       references: [journalMatches.id],
     }),
   }),
