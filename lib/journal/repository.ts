@@ -301,6 +301,8 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
       .select({
         id: journalMatches.id,
         dotaMatchId: journalMatches.dotaMatchId,
+        role: journalMatches.role,
+        roleSource: journalMatches.roleSource,
       })
       .from(journalMatches)
       .where(
@@ -310,6 +312,7 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
         ),
       );
     const existingIds = new Set(existingMatches.map((match) => match.id));
+    const existingById = new Map(existingMatches.map((match) => [match.id, match]));
     const incomingMatches = Object.values(input.matches);
     const incomingIds = new Set(incomingMatches.map((match) => match.id));
     const removedIds = existingMatches
@@ -352,12 +355,18 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
     }
 
     for (const match of incomingMatches) {
+      const existing = existingById.get(match.id);
+      const nextRole = match.role || null;
       const values = {
         number: match.number,
         heroId: match.heroId,
         heroName: match.heroName,
-        role: match.role || null,
-        roleSource: match.role ? "manual" as const : null,
+        role: nextRole,
+        roleSource: nextRole
+          ? existing?.role === nextRole
+            ? existing.roleSource || "manual" as const
+            : "manual" as const
+          : null,
         queueType: match.queueType || null,
         notes: match.notes,
         positivePoints: match.positivePoints,
@@ -392,7 +401,12 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
       const [automaticBan] = await tx
         .select({ id: matchBans.id })
         .from(matchBans)
-        .where(and(eq(matchBans.matchId, match.id), eq(matchBans.source, "opendota")))
+        .where(
+          and(
+            eq(matchBans.matchId, match.id),
+            inArray(matchBans.source, ["opendota", "stratz"]),
+          ),
+        )
         .limit(1);
 
       await tx

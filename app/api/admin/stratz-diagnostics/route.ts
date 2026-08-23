@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { requireSuperAdmin } from "@/lib/admin/auth";
 import { AdminError } from "@/lib/admin/errors";
-import { fetchStratzDiagnostics } from "@/lib/stratz/client";
+import { fetchStratzMatches } from "@/lib/stratz/gateway";
 import { getStratzConfig } from "@/lib/stratz/config";
 import { buildStratzMatchDiagnostics } from "@/lib/stratz/diagnostics";
 import { stratzErrorResponse } from "@/lib/stratz/errors";
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const { matchIds } = stratzDiagnosticsQuerySchema.parse({
       matchIds: request.nextUrl.searchParams.get("matchIds") || "",
     });
-    const matches = await fetchStratzDiagnostics(matchIds);
+    const matches = await fetchStratzMatches(matchIds);
     return Response.json(
       {
         ok: true,

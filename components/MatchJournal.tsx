@@ -307,7 +307,10 @@ export default function MatchJournal() {
           {session.mode === "player" && (
             <SyncPanel
               onMatchesImported={(result) => {
-                if (result.imported.length) {
+                const enriched = result.stratz?.jobs.some(
+                  (job) => job.status === "completed",
+                );
+                if (result.imported.length || enriched) {
                   setActiveWeek(getCurrentWeekIndex(ANCHOR_DATE));
                   setRefreshVersion((version) => version + 1);
                 }
@@ -594,7 +597,7 @@ function AccessScreen({
           <ReviewPreview />
         </article>
         <article className="feature-story">
-          <div className="feature-story-copy"><span lang="en">03 · DRAFT MEMORY</span><h3>Draft را همان‌طور که<br />اتفاق افتاد ببین</h3><p>بن‌های OpenDota خودکار ثبت می‌شوند و هیروهای Hero Pool همان رول در اولویت می‌آیند.</p></div>
+          <div className="feature-story-copy"><span lang="en">03 · DRAFT MEMORY</span><h3>Draft را همان‌طور که<br />اتفاق افتاد ببین</h3><p>بن‌های STRATZ خودکار ثبت می‌شوند و هیروهای Hero Pool همان رول در اولویت می‌آیند.</p></div>
           <DraftPreview />
         </article>
         <footer className="feature-final-cta"><AppLogo size={78} alt="" /><h2>مچ بعدی، شروع تحلیل بعدی است.</h2><a className="primary-button" href="#login">ورود به ژورنال</a></footer>
@@ -614,7 +617,7 @@ function ReviewPreview() {
 
 function DraftPreview() {
   const heroes = [74, 14, 25, 86, 44].map((id) => heroById(id)).filter(Boolean);
-  return <div className="feature-visual draft-preview"><header><span lang="en">RANKED · ALL DRAFT</span><b>OpenDota</b></header><div>{heroes.map((hero, index) => hero && <span className={`ban-portrait${index < 2 ? " is-pool-priority" : ""}`} key={hero.id}><span className="ban-portrait-image"><img src={heroImage(hero)} alt="" /></span><b lang="en">{hero.name}</b></span>)}</div><footer>PRIORITIZED FOR MID LANE</footer></div>;
+  return <div className="feature-visual draft-preview"><header><span lang="en">RANKED · ALL DRAFT</span><b>STRATZ</b></header><div>{heroes.map((hero, index) => hero && <span className={`ban-portrait${index < 2 ? " is-pool-priority" : ""}`} key={hero.id}><span className="ban-portrait-image"><img src={heroImage(hero)} alt="" /></span><b lang="en">{hero.name}</b></span>)}</div><footer>PRIORITIZED FOR MID LANE</footer></div>;
 }
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {

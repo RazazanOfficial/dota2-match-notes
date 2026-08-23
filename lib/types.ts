@@ -26,7 +26,7 @@ export interface Hero {
 }
 
 export interface MatchBan extends Hero {
-  source?: "manual" | "opendota";
+  source?: "manual" | "opendota" | "stratz";
   team?: number | null;
   draftOrder?: number | null;
   inRolePool?: boolean;
@@ -40,7 +40,7 @@ export interface Match {
   bans: MatchBan[];
   legacyBans?: string;
   role: MatchRole | "";
-  roleSource?: "manual" | "opendota" | null;
+  roleSource?: "manual" | "opendota" | "stratz" | null;
   heroPoolEligible?: boolean;
   heroPoolMatch?: boolean | null;
   heroPoolVersion?: number | null;
@@ -142,6 +142,15 @@ export interface ManualSyncResult {
   registeredAt: string;
   trackedFrom: string;
   nextAllowedAt: string;
+  stratz?: {
+    backfillEnabled: boolean;
+    backfillQueued: number;
+    processed: number;
+    jobs: Array<{
+      status: "completed" | "pending" | "failed";
+      [key: string]: unknown;
+    }>;
+  };
 }
 
 export interface Summary {

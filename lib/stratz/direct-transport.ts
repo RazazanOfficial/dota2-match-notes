@@ -2,13 +2,6 @@ import { request as httpsRequest } from "node:https";
 import { StratzError } from "./errors";
 
 const DIRECT_CONNECT_TIMEOUT_MS = 5_000;
-let nextAddressIndex = 0;
-
-export function orderDirectIps(addresses: string[], startIndex: number) {
-  if (!addresses.length) return [];
-  const normalizedStart = ((startIndex % addresses.length) + addresses.length) % addresses.length;
-  return addresses.map((_, index) => addresses[(normalizedStart + index) % addresses.length]);
-}
 
 function headersToRecord(headers: Headers) {
   const record: Record<string, string> = {};
@@ -79,24 +72,12 @@ function requestAddress(
   });
 }
 
-export async function fetchWithDirectIps(
+export async function fetchWithDirectIp(
   endpoint: string,
   init: RequestInit,
-  directIps: string[],
+  directIp: string,
   maxResponseBytes: number,
 ) {
   const url = new URL(endpoint);
-  const addresses = orderDirectIps(directIps, nextAddressIndex);
-  nextAddressIndex = (nextAddressIndex + 1) % directIps.length;
-  let lastError: unknown;
-  for (const address of addresses) {
-    try {
-      return await requestAddress(url, address, init, maxResponseBytes);
-    } catch (error) {
-      if (error instanceof StratzError) throw error;
-      if (init.signal?.aborted) throw error;
-      lastError = error;
-    }
-  }
-  throw lastError || new Error("No direct STRATZ address was reachable");
+  return requestAddress(url, directIp, init, maxResponseBytes);
 }

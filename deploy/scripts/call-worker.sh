@@ -8,8 +8,11 @@ case "${1:-}" in
   images)
     endpoint="/api/internal/images/tick"
     ;;
+  stratz)
+    endpoint="/api/internal/stratz/tick"
+    ;;
   *)
-    echo "usage: call-worker.sh sync|images" >&2
+    echo "usage: call-worker.sh sync|images|stratz" >&2
     exit 64
     ;;
 esac

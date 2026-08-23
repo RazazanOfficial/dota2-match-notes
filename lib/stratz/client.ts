@@ -1,11 +1,11 @@
 import { getStratzConfig } from "./config";
 import { StratzError } from "./errors";
 import { parseStratzResponse } from "./validation";
-import { fetchWithDirectIps } from "./direct-transport";
+import { fetchWithDirectIp } from "./direct-transport";
 
-function matchSelection(matchId: number, index: number) {
+function matchSelection(matchId: number) {
   return `
-    match${index}: match(id: ${matchId}) {
+    match0: match(id: ${matchId}) {
       id
       parsedDateTime
       statsDateTime
@@ -35,11 +35,23 @@ function retryAfter(value: string | null) {
   return Number.isInteger(seconds) && seconds > 0 ? seconds : undefined;
 }
 
-function errorDetails(response: Response) {
+function numberHeader(response: Response, name: string) {
+  const raw = response.headers.get(name);
+  if (raw === null || raw.trim() === "") return undefined;
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 ? value : undefined;
+}
+
+function errorDetails(response: Response, destinationIp: string) {
   const cfRay = response.headers.get("cf-ray")?.trim();
   return {
     upstreamStatus: response.status,
+    destinationIp,
     ...(cfRay ? { cfRay } : {}),
+    rateLimitRemainingSecond: numberHeader(response, "x-ratelimit-remaining-second"),
+    rateLimitRemainingMinute: numberHeader(response, "x-ratelimit-remaining-minute"),
+    rateLimitRemainingHour: numberHeader(response, "x-ratelimit-remaining-hour"),
+    rateLimitRemainingDay: numberHeader(response, "x-ratelimit-remaining-day"),
   };
 }
 
@@ -69,9 +81,13 @@ function upstreamMessage(text: string) {
   return trimmed;
 }
 
-function throwForUpstreamError(response: Response, text: string): never {
+function throwForUpstreamError(
+  response: Response,
+  text: string,
+  destinationIp: string,
+): never {
   const message = upstreamMessage(text);
-  const details = errorDetails(response);
+  const details = errorDetails(response, destinationIp);
   if (/cannot use different ip addresses/i.test(message)) {
     throw new StratzError(
       502,
@@ -102,11 +118,7 @@ function throwForUpstreamError(response: Response, text: string): never {
       details,
     );
   }
-  const contentType = response.headers.get("content-type")?.toLowerCase() || "";
-  if (
-    contentType.includes("text/html")
-    || /just a moment|attention required|cloudflare challenge/i.test(message)
-  ) {
+  if (/just a moment|attention required|cloudflare challenge|cf-chl-/i.test(message)) {
     throw new StratzError(
       502,
       "stratz_edge_blocked",
@@ -142,9 +154,12 @@ function throwForUpstreamError(response: Response, text: string): never {
   );
 }
 
-export async function fetchStratzDiagnostics(matchIds: number[]) {
+export async function fetchStratzMatchOnce(
+  matchId: number,
+  transport: typeof fetchWithDirectIp = fetchWithDirectIp,
+) {
   const config = getStratzConfig();
-  const query = `query MatchDiagnostics {${matchIds.map(matchSelection).join("")}\n}`;
+  const query = `query MatchEnrichment {${matchSelection(matchId)}\n}`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
   try {
@@ -156,18 +171,18 @@ export async function fetchStratzDiagnostics(matchIds: number[]) {
         "Content-Type": "application/json",
         "User-Agent": "STRATZ_API",
       },
-      body: JSON.stringify({ operationName: "MatchDiagnostics", query }),
+      body: JSON.stringify({ operationName: "MatchEnrichment", query }),
       cache: "no-store",
       signal: controller.signal,
     };
-    const response = config.directIps.length
-      ? await fetchWithDirectIps(
-          config.endpoint,
-          requestInit,
-          config.directIps,
-          config.maxResponseBytes,
-        )
-      : await fetch(config.endpoint, requestInit);
+    const response = await transport(
+      config.endpoint,
+      requestInit,
+      config.directIp,
+      config.maxResponseBytes,
+    );
+    const details = errorDetails(response, config.directIp);
+    console.info("STRATZ upstream response", details);
     const declaredSize = Number(response.headers.get("content-length") || 0);
     if (declaredSize > config.maxResponseBytes) {
       throw new StratzError(502, "stratz_response_too_large", "حجم پاسخ STRATZ بیش از حد مجاز است");
@@ -177,7 +192,7 @@ export async function fetchStratzDiagnostics(matchIds: number[]) {
       throw new StratzError(502, "stratz_response_too_large", "حجم پاسخ STRATZ بیش از حد مجاز است");
     }
     const text = new TextDecoder().decode(bytes);
-    if (!response.ok) throwForUpstreamError(response, text);
+    if (!response.ok) throwForUpstreamError(response, text, config.directIp);
     if (!bytes.byteLength) {
       throw new StratzError(502, "invalid_stratz_json", "STRATZ پاسخ JSON معتبر نداد");
     }
@@ -188,7 +203,7 @@ export async function fetchStratzDiagnostics(matchIds: number[]) {
     } catch {
       throw new StratzError(502, "invalid_stratz_json", "STRATZ پاسخ JSON معتبر نداد");
     }
-    return parseStratzResponse(raw, matchIds);
+    return parseStratzResponse(raw, [matchId])[0];
   } catch (error) {
     if (error instanceof StratzError) throw error;
     if (error instanceof Error && error.name === "AbortError") {

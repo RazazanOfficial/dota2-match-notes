@@ -1,18 +1,8 @@
 import { heroById } from "../../data/heroes";
-import type { MatchRole } from "../types";
-import type { StratzMatch, StratzPosition } from "./validation";
+import { roleFromStratzPosition } from "./enrichment";
+import type { StratzMatch } from "./validation";
 
-const POSITION_ROLE: Partial<Record<StratzPosition, MatchRole>> = {
-  POSITION_1: "safe_lane",
-  POSITION_2: "mid_lane",
-  POSITION_3: "off_lane",
-  POSITION_4: "soft_support",
-  POSITION_5: "hard_support",
-};
-
-export function roleFromStratzPosition(position: StratzPosition | null | undefined) {
-  return position ? POSITION_ROLE[position] || null : null;
-}
+export { roleFromStratzPosition } from "./enrichment";
 
 function heroSummary(heroId: number | null | undefined) {
   if (!heroId) return null;

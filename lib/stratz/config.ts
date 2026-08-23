@@ -6,7 +6,16 @@ export interface StratzConfig {
   timeoutMs: number;
   maxResponseBytes: number;
   diagnosticsEnabled: boolean;
-  directIps: string[];
+  directIp: string;
+  retryDelayMs: number;
+  maxAttempts: number;
+  minRequestIntervalMs: number;
+  backfillOnManualSync: boolean;
+  inlineProcessBatchSize: number;
+  processBatchSize: number;
+  staleLockSeconds: number;
+  jobMaxAttempts: number;
+  jobRetryBaseSeconds: number;
 }
 
 const DEFAULT_ENDPOINT = "https://api.stratz.com/graphql";
@@ -43,14 +52,20 @@ function isPublicIpv4(address: string) {
   return true;
 }
 
-function parseDirectIps() {
-  const raw = process.env.STRATZ_DIRECT_IPS?.trim();
-  if (!raw) return [];
-  const addresses = [...new Set(raw.split(",").map((value) => value.trim()).filter(Boolean))];
-  if (!addresses.length || addresses.length > 8 || addresses.some((address) => !isPublicIpv4(address))) {
-    throw new Error("Invalid env: STRATZ_DIRECT_IPS");
+function parseBoolean(name: string, fallback = false) {
+  const raw = process.env[name]?.trim().toLowerCase();
+  if (!raw) return fallback;
+  if (raw === "true") return true;
+  if (raw === "false") return false;
+  throw new Error(`Invalid env: ${name}`);
+}
+
+function parseDirectIp() {
+  const address = process.env.STRATZ_DIRECT_IP?.trim();
+  if (!address || !isPublicIpv4(address)) {
+    throw new Error("Invalid env: STRATZ_DIRECT_IP");
   }
-  return addresses;
+  return address;
 }
 
 export function getStratzConfig(): StratzConfig {
@@ -67,7 +82,31 @@ export function getStratzConfig(): StratzConfig {
       64 * 1024,
       8 * 1024 * 1024,
     ),
-    diagnosticsEnabled: process.env.STRATZ_DIAGNOSTICS_ENABLED?.trim() === "true",
-    directIps: parseDirectIps(),
+    diagnosticsEnabled: parseBoolean("STRATZ_DIAGNOSTICS_ENABLED"),
+    directIp: parseDirectIp(),
+    retryDelayMs: parseInteger("STRATZ_RETRY_DELAY_MS", 2_000, 1_000, 10_000),
+    maxAttempts: parseInteger("STRATZ_MAX_ATTEMPTS", 2, 1, 2),
+    minRequestIntervalMs: parseInteger(
+      "STRATZ_MIN_REQUEST_INTERVAL_MS",
+      1_000,
+      1_000,
+      60_000,
+    ),
+    backfillOnManualSync: parseBoolean("STRATZ_BACKFILL_ON_MANUAL_SYNC"),
+    inlineProcessBatchSize: parseInteger(
+      "STRATZ_INLINE_PROCESS_BATCH_SIZE",
+      3,
+      0,
+      10,
+    ),
+    processBatchSize: parseInteger("STRATZ_PROCESS_BATCH_SIZE", 10, 1, 50),
+    staleLockSeconds: parseInteger("STRATZ_STALE_LOCK_SECONDS", 900, 60, 3_600),
+    jobMaxAttempts: parseInteger("STRATZ_JOB_MAX_ATTEMPTS", 6, 1, 20),
+    jobRetryBaseSeconds: parseInteger(
+      "STRATZ_JOB_RETRY_BASE_SECONDS",
+      120,
+      10,
+      7_200,
+    ),
   };
 }

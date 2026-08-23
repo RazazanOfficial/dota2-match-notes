@@ -71,6 +71,13 @@
       "when": 1787137852136,
       "tag": "0009_add_player_development_suite",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787500330932,
+      "tag": "0010_add_stratz_enrichment",
+      "breakpoints": true
     }
   ]
 }

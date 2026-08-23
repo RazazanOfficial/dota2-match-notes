@@ -149,7 +149,12 @@ export function sanitizeMatch(raw: Record<string, unknown>, fallback = 1): Match
         if (!hero) return null;
         return {
           ...hero,
-          source: candidate.source === "opendota" ? "opendota" as const : "manual" as const,
+          source:
+            candidate.source === "stratz"
+              ? "stratz" as const
+              : candidate.source === "opendota"
+                ? "opendota" as const
+                : "manual" as const,
           team: nullableNumber(candidate.team),
           draftOrder: nullableNumber(candidate.draftOrder),
           inRolePool: Boolean(candidate.inRolePool),
@@ -177,7 +182,7 @@ export function sanitizeMatch(raw: Record<string, unknown>, fallback = 1): Match
     )
       ? (raw.role as Match["role"])
       : "",
-    roleSource: ["manual", "opendota"].includes(String(raw.roleSource))
+    roleSource: ["manual", "opendota", "stratz"].includes(String(raw.roleSource))
       ? (raw.roleSource as Match["roleSource"])
       : null,
     heroPoolEligible: Boolean(raw.heroPoolEligible),
