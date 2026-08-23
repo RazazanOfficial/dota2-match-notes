@@ -1,14 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchStratzDiagnostics } from "../lib/stratz/client";
 import { getStratzConfig } from "../lib/stratz/config";
-import { parseDnsJson } from "../lib/stratz/direct-transport";
 import { buildStratzMatchDiagnostics, roleFromStratzPosition } from "../lib/stratz/diagnostics";
 import { stratzDiagnosticsQuerySchema } from "../lib/stratz/validation";
 
 const ENV_NAMES = [
   "STRATZ_API_URL",
   "STRATZ_API_TOKEN",
-  "STRATZ_DNS_OVER_HTTPS_URL",
+  "STRATZ_DIRECT_IPS",
   "STRATZ_TIMEOUT_MS",
   "STRATZ_MAX_RESPONSE_BYTES",
   "STRATZ_DIAGNOSTICS_ENABLED",
@@ -18,7 +17,7 @@ const originalEnv = Object.fromEntries(ENV_NAMES.map((name) => [name, process.en
 beforeEach(() => {
   process.env.STRATZ_API_URL = "https://stratz.example.test/graphql/";
   process.env.STRATZ_API_TOKEN = "server-only-token";
-  delete process.env.STRATZ_DNS_OVER_HTTPS_URL;
+  delete process.env.STRATZ_DIRECT_IPS;
   process.env.STRATZ_TIMEOUT_MS = "10000";
   process.env.STRATZ_MAX_RESPONSE_BYTES = "2097152";
   process.env.STRATZ_DIAGNOSTICS_ENABLED = "true";
@@ -41,7 +40,7 @@ describe("STRATZ configuration", () => {
       timeoutMs: 10_000,
       maxResponseBytes: 2_097_152,
       diagnosticsEnabled: true,
-      dnsOverHttpsUrl: undefined,
+      directIps: [],
     });
   });
 
@@ -50,25 +49,11 @@ describe("STRATZ configuration", () => {
     expect(() => getStratzConfig()).toThrow("Missing env: STRATZ_API_TOKEN");
   });
 
-  it("accepts a secure DNS-over-HTTPS endpoint", () => {
-    process.env.STRATZ_DNS_OVER_HTTPS_URL = "https://dns.google/resolve/";
-    expect(getStratzConfig().dnsOverHttpsUrl).toBe("https://dns.google/resolve");
-    process.env.STRATZ_DNS_OVER_HTTPS_URL = "http://dns.example.test/resolve";
-    expect(() => getStratzConfig()).toThrow("Invalid env: STRATZ_DNS_OVER_HTTPS_URL");
-  });
-});
-
-describe("STRATZ direct DNS", () => {
-  it("keeps only public IPv4 answers and caps their cache lifetime", () => {
-    expect(parseDnsJson({
-      Status: 0,
-      Answer: [
-        { type: 5, data: "example.cdn.test.", TTL: 600 },
-        { type: 1, data: "104.18.1.1", TTL: 900 },
-        { type: 1, data: "10.0.0.1", TTL: 900 },
-        { type: 1, data: "104.18.1.1", TTL: 900 },
-      ],
-    })).toEqual({ addresses: ["104.18.1.1"], ttlSeconds: 300 });
+  it("accepts only explicit public IPv4 destinations", () => {
+    process.env.STRATZ_DIRECT_IPS = "104.18.1.1, 172.64.1.1,104.18.1.1";
+    expect(getStratzConfig().directIps).toEqual(["104.18.1.1", "172.64.1.1"]);
+    process.env.STRATZ_DIRECT_IPS = "10.0.0.1";
+    expect(() => getStratzConfig()).toThrow("Invalid env: STRATZ_DIRECT_IPS");
   });
 });
 
