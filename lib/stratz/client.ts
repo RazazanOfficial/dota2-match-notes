@@ -1,6 +1,7 @@
 import { getStratzConfig } from "./config";
 import { StratzError } from "./errors";
 import { parseStratzResponse } from "./validation";
+import { fetchWithDirectDns } from "./direct-transport";
 
 function matchSelection(matchId: number, index: number) {
   return `
@@ -147,7 +148,7 @@ export async function fetchStratzDiagnostics(matchIds: number[]) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
   try {
-    const response = await fetch(config.endpoint, {
+    const requestInit: RequestInit = {
       method: "POST",
       headers: {
         Accept: "application/json",
@@ -158,7 +159,15 @@ export async function fetchStratzDiagnostics(matchIds: number[]) {
       body: JSON.stringify({ operationName: "MatchDiagnostics", query }),
       cache: "no-store",
       signal: controller.signal,
-    });
+    };
+    const response = config.dnsOverHttpsUrl
+      ? await fetchWithDirectDns(
+          config.endpoint,
+          requestInit,
+          config.dnsOverHttpsUrl,
+          config.maxResponseBytes,
+        )
+      : await fetch(config.endpoint, requestInit);
     const declaredSize = Number(response.headers.get("content-length") || 0);
     if (declaredSize > config.maxResponseBytes) {
       throw new StratzError(502, "stratz_response_too_large", "حجم پاسخ STRATZ بیش از حد مجاز است");

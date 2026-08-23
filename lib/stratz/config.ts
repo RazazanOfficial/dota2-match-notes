@@ -4,6 +4,7 @@ export interface StratzConfig {
   timeoutMs: number;
   maxResponseBytes: number;
   diagnosticsEnabled: boolean;
+  dnsOverHttpsUrl?: string;
 }
 
 const DEFAULT_ENDPOINT = "https://api.stratz.com/graphql";
@@ -27,6 +28,22 @@ function parseEndpoint() {
   return url.toString().replace(/\/+$/, "");
 }
 
+function parseDnsOverHttpsUrl() {
+  const raw = process.env.STRATZ_DNS_OVER_HTTPS_URL?.trim();
+  if (!raw) return undefined;
+  const url = new URL(raw);
+  if (
+    url.protocol !== "https:"
+    || url.username
+    || url.password
+    || url.search
+    || url.hash
+  ) {
+    throw new Error("Invalid env: STRATZ_DNS_OVER_HTTPS_URL");
+  }
+  return url.toString().replace(/\/+$/, "");
+}
+
 export function getStratzConfig(): StratzConfig {
   const token = process.env.STRATZ_API_TOKEN?.trim();
   if (!token) throw new Error("Missing env: STRATZ_API_TOKEN");
@@ -42,5 +59,6 @@ export function getStratzConfig(): StratzConfig {
       8 * 1024 * 1024,
     ),
     diagnosticsEnabled: process.env.STRATZ_DIAGNOSTICS_ENABLED?.trim() === "true",
+    dnsOverHttpsUrl: parseDnsOverHttpsUrl(),
   };
 }

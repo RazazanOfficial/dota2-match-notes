@@ -280,3 +280,21 @@ systemctl list-timers 'dota2notes-*'
 - PostgreSQL باید روی localhost بماند.
 - خطای Steam callback معمولاً از `APP_URL` یا DNS/HTTPS است.
 - خطای Worker را ابتدا در unit مربوطه و سپس در جدول Job مربوطه بررسی کنید.
+
+### مسیر مستقیم STRATZ
+
+اگر DNS سرور بعضی دامنه‌ها را از یک واسط با IP چرخشی عبور می‌دهد، فقط برای STRATZ
+نام‌حل‌کنی مستقیم را در `.env.production` فعال کنید:
+
+```dotenv
+STRATZ_DNS_OVER_HTTPS_URL=https://dns.google/resolve
+```
+
+این گزینه DNS سراسری سیستم یا ارتباط سرویس‌های دیگر را تغییر نمی‌دهد. پیش از استفاده از
+توکن، مسیر مستقیم را بدون ارسال توکن بررسی کنید:
+
+```bash
+sudo -u dota2notes -H npm run stratz:route-check
+```
+
+مقدار `Unique direct egress IPs` باید فقط یک IP داشته باشد. سپس برنامه را Restart کنید.

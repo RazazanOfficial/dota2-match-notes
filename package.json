@@ -8,6 +8,7 @@
     "start": "next start",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
+    "stratz:route-check": "node scripts/check-stratz-direct-route.mjs",
     "heroes:sync": "node scripts/sync-hero-portraits.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
