@@ -21,7 +21,7 @@ function traceThrough(address) {
       servername: endpoint.hostname,
       rejectUnauthorized: true,
       agent: false,
-      timeout: 15_000,
+      timeout: 6_000,
     }, (response) => {
       const chunks = [];
       response.on("data", (chunk) => chunks.push(chunk));
@@ -44,11 +44,21 @@ function traceThrough(address) {
 
 console.log(`Pinned STRATZ destination IPs: ${addresses.join(", ")}`);
 const observed = new Set();
+const successes = new Map(addresses.map((address) => [address, 0]));
+let failures = 0;
 for (let index = 0; index < 20; index += 1) {
   const address = addresses[index % addresses.length];
-  const observedIp = await traceThrough(address);
-  observed.add(observedIp);
-  console.log(`${index + 1} connected=${address} observed=${observedIp}`);
+  try {
+    const observedIp = await traceThrough(address);
+    observed.add(observedIp);
+    successes.set(address, (successes.get(address) || 0) + 1);
+    console.log(`${index + 1} connected=${address} observed=${observedIp}`);
+  } catch (error) {
+    failures += 1;
+    console.warn(`${index + 1} connected=${address} failed=${error.message}`);
+  }
 }
 console.log(`Unique direct egress IPs: ${[...observed].join(", ")}`);
-if (observed.size !== 1) process.exitCode = 2;
+console.log(`Successful requests per destination: ${JSON.stringify(Object.fromEntries(successes))}`);
+console.log(`Timed-out or failed requests: ${failures}`);
+if (observed.size !== 1 || [...successes.values()].some((count) => count === 0)) process.exitCode = 2;

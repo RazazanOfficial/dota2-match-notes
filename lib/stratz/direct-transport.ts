@@ -1,6 +1,15 @@
 import { request as httpsRequest } from "node:https";
 import { StratzError } from "./errors";
 
+const DIRECT_CONNECT_TIMEOUT_MS = 5_000;
+let nextAddressIndex = 0;
+
+export function orderDirectIps(addresses: string[], startIndex: number) {
+  if (!addresses.length) return [];
+  const normalizedStart = ((startIndex % addresses.length) + addresses.length) % addresses.length;
+  return addresses.map((_, index) => addresses[(normalizedStart + index) % addresses.length]);
+}
+
 function headersToRecord(headers: Headers) {
   const record: Record<string, string> = {};
   headers.forEach((value, key) => {
@@ -61,6 +70,9 @@ function requestAddress(
         }));
       });
     });
+    request.setTimeout(DIRECT_CONNECT_TIMEOUT_MS, () => {
+      request.destroy(new Error(`Direct STRATZ connection to ${address} timed out`));
+    });
     request.once("error", reject);
     if (body) request.write(body);
     request.end();
@@ -74,8 +86,10 @@ export async function fetchWithDirectIps(
   maxResponseBytes: number,
 ) {
   const url = new URL(endpoint);
+  const addresses = orderDirectIps(directIps, nextAddressIndex);
+  nextAddressIndex = (nextAddressIndex + 1) % directIps.length;
   let lastError: unknown;
-  for (const address of directIps) {
+  for (const address of addresses) {
     try {
       return await requestAddress(url, address, init, maxResponseBytes);
     } catch (error) {

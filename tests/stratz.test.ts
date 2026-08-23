@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchStratzDiagnostics } from "../lib/stratz/client";
 import { getStratzConfig } from "../lib/stratz/config";
+import { orderDirectIps } from "../lib/stratz/direct-transport";
 import { buildStratzMatchDiagnostics, roleFromStratzPosition } from "../lib/stratz/diagnostics";
 import { stratzDiagnosticsQuerySchema } from "../lib/stratz/validation";
 
@@ -58,6 +59,13 @@ describe("STRATZ configuration", () => {
 });
 
 describe("STRATZ diagnostics client", () => {
+  it("rotates pinned destinations while retaining all fallbacks", () => {
+    const addresses = ["104.26.8.64", "104.26.9.64", "172.67.74.142"];
+    expect(orderDirectIps(addresses, 0)).toEqual(addresses);
+    expect(orderDirectIps(addresses, 1)).toEqual([addresses[1], addresses[2], addresses[0]]);
+    expect(orderDirectIps(addresses, 4)).toEqual([addresses[1], addresses[2], addresses[0]]);
+  });
+
   it("accepts at most three unique safe Match IDs", () => {
     expect(stratzDiagnosticsQuerySchema.parse({ matchIds: "100, 200,100" })).toEqual({
       matchIds: [100, 200],
