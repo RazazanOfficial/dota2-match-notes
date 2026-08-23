@@ -115,13 +115,13 @@ export default function MatchDialog({
             </span>
           </div>
           <div className="detail-grid">
-            <div><span>Role</span><strong lang="en">{roleLabel(draft.role)}</strong></div>
-            <div><span>Queue Type</span><strong lang="en">{queueLabel(draft.queueType)}</strong></div>
+            <div><span>رول</span><strong lang="en">{roleLabel(draft.role)}</strong></div>
+            <div><span>نوع صف</span><strong lang="en">{queueLabel(draft.queueType)}</strong></div>
           </div>
           {draft.dotaMatchId && (
             <div className="detail-grid">
-              <div><span>Game Mode</span><strong lang="en">{draft.gameModeName || "—"}</strong></div>
-              <div><span>Lobby</span><strong lang="en">{draft.lobbyTypeName || "—"}</strong></div>
+              <div><span>نوع بازی</span><strong lang="en">{draft.gameModeName || "—"}</strong></div>
+              <div><span>نوع لابی</span><strong lang="en">{draft.lobbyTypeName || "—"}</strong></div>
             </div>
           )}
           <div className="detail-section">
@@ -137,7 +137,7 @@ export default function MatchDialog({
                 : draft.legacyBans || "—"}
             </div>
           </div>
-          <OpenDotaDetails match={draft} />
+          <MatchStats match={draft} />
           </div>
           <div className={`match-tab-panel${activeTab === "review" ? " is-active" : ""}`} data-match-tab="review">
           <div className="detail-section">
@@ -166,7 +166,7 @@ export default function MatchDialog({
             return;
           }
           if (!draft.role || !draft.queueType) {
-            setFormError("Role و Queue Type را انتخاب کنید");
+            setFormError("رول و نوع صف را انتخاب کنید");
             return;
           }
           setFormError("");
@@ -212,7 +212,7 @@ export default function MatchDialog({
             }
           />
           <label className="field">
-            <span lang="en">Role</span>
+            <span>رول</span>
             <select
               required
               value={draft.role}
@@ -232,7 +232,7 @@ export default function MatchDialog({
             </select>
           </label>
           <label className="field">
-            <span lang="en">Queue Type</span>
+            <span>نوع صف</span>
             <select
               required
               value={draft.queueType}
@@ -275,7 +275,7 @@ export default function MatchDialog({
           </fieldset>
           <p className="form-error field-full" role="alert">{formError}</p>
         </div>
-        <OpenDotaDetails match={draft} />
+        <MatchStats match={draft} />
         </div>
 
         <div className={`match-tab-panel${activeTab === "review" ? " is-active" : ""}`} data-match-tab="review">
@@ -344,23 +344,23 @@ function ReadonlyReview({ match }: { match: Match }) {
   );
 }
 
-function OpenDotaDetails({ match }: { match: Match }) {
+function MatchStats({ match }: { match: Match }) {
   if (!match.dotaMatchId) return null;
   const duration = match.durationSeconds
     ? `${Math.floor(match.durationSeconds / 60)}:${String(match.durationSeconds % 60).padStart(2, "0")}`
     : "—";
   return (
-    <section className="opendota-details" aria-label="آمار OpenDota">
+    <section className="opendota-details" aria-label="آمار مچ">
       <header>
         <div>
-          <span>اطلاعات خودکار</span>
+          <span>خلاصه مچ</span>
           <strong lang="en" dir="ltr">Match #{match.dotaMatchId}</strong>
         </div>
-        <span className="opendota-badge">OpenDota</span>
+        <span className="opendota-badge">Dota2Notes</span>
       </header>
       <div className="opendota-stat-grid">
         <DotaMetric icon="mode" label="نوع بازی" value={match.gameModeName || "—"} />
-        <DotaMetric icon="mode" label="Lobby" value={match.lobbyTypeName || "—"} />
+        <DotaMetric icon="mode" label="نوع لابی" value={match.lobbyTypeName || "—"} />
         <DotaMetric icon="clock" label="مدت" value={duration} ltr />
         <DotaMetric icon="kda" label="K / D / A" value={`${match.kills ?? "—"} / ${match.deaths ?? "—"} / ${match.assists ?? "—"}`} ltr />
         <DotaMetric icon="gold" label="Gold / Minute" value={match.goldPerMinute ?? "—"} tone="gold" ltr />
@@ -427,10 +427,10 @@ function GeneratedImages({ match }: { match: Match }) {
 
   if (!images.length) {
     const label = match.imageJobStatus === "failed"
-      ? "ساخت تصاویر ناموفق بود و توسط سرور دوباره بررسی می‌شود."
+      ? "تصاویر این مچ هنوز آماده نشده‌اند."
       : match.imageJobStatus === "processing"
-        ? "تصاویر همین حالا در حال ساخته‌شدن هستند."
-        : "تصاویر این مچ در صف ساخت قرار دارند.";
+        ? "تصاویر این مچ در حال آماده‌شدن هستند."
+        : "تصاویر این مچ به‌زودی آماده می‌شوند.";
     return (
       <section className={`generated-images-empty is-${match.imageJobStatus || "pending"}`}>
         <span className="image-build-icon">◫</span>

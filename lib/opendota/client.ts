@@ -33,13 +33,13 @@ async function fetchOpenDotaJson(
       throw new OpenDotaError(
         504,
         "opendota_timeout",
-        "زمان پاسخ‌گویی OpenDota بیش از حد طول کشید",
+        "دریافت اطلاعات مچ‌ها بیش از حد طول کشید؛ دوباره تلاش کنید",
       );
     }
     throw new OpenDotaError(
       502,
       "opendota_unavailable",
-      "ارتباط با OpenDota برقرار نشد",
+      "اطلاعات مچ‌ها دریافت نشد؛ دوباره تلاش کنید",
     );
   } finally {
     clearTimeout(timeout);
@@ -56,7 +56,7 @@ async function fetchOpenDotaJson(
     throw new OpenDotaError(
       429,
       "opendota_rate_limited",
-      "محدودیت درخواست OpenDota فعال شده است؛ کمی بعد دوباره تلاش کنید",
+      "درخواست‌های زیادی در حال بررسی است؛ کمی بعد دوباره تلاش کنید",
       parseRetryAfter(response.headers.get("retry-after")),
     );
   }
@@ -64,7 +64,7 @@ async function fetchOpenDotaJson(
     throw new OpenDotaError(
       502,
       "opendota_bad_status",
-      "OpenDota پاسخ قابل استفاده‌ای نداد",
+      "اطلاعات مچ‌ها فعلاً در دسترس نیست",
     );
   }
 
@@ -73,7 +73,7 @@ async function fetchOpenDotaJson(
     throw new OpenDotaError(
       502,
       "opendota_response_too_large",
-      "حجم پاسخ OpenDota بیش از حد مجاز است",
+      "اطلاعات دریافتی این مچ بیش از حد مجاز است",
     );
   }
 
@@ -82,7 +82,7 @@ async function fetchOpenDotaJson(
     throw new OpenDotaError(
       502,
       "opendota_response_too_large",
-      "حجم پاسخ OpenDota نامعتبر است",
+      "اطلاعات دریافتی این مچ معتبر نیست",
     );
   }
 
@@ -93,7 +93,7 @@ async function fetchOpenDotaJson(
     throw new OpenDotaError(
       502,
       "invalid_opendota_json",
-      "OpenDota پاسخ JSON معتبر نداد",
+      "اطلاعات دریافتی مچ معتبر نیست",
     );
   }
 
@@ -103,7 +103,7 @@ async function fetchOpenDotaJson(
 export async function fetchOpenDotaMatch(dotaMatchId: number) {
   const raw = await fetchOpenDotaJson(`matches/${dotaMatchId}`, {
     code: "opendota_match_not_found",
-    message: "این Match ID در OpenDota پیدا نشد",
+    message: "این Match ID پیدا نشد",
   });
   return parseOpenDotaMatch(raw, dotaMatchId);
 }
@@ -113,7 +113,7 @@ export async function fetchOpenDotaRecentMatches(steamAccountId: number) {
     `players/${steamAccountId}/recentMatches`,
     {
       code: "opendota_player_not_found",
-      message: "پروفایل بازیکن در OpenDota پیدا نشد",
+      message: "مچ‌های این بازیکن پیدا نشد",
     },
   );
   return parseOpenDotaRecentMatches(raw);
@@ -130,7 +130,7 @@ export async function fetchOpenDotaPlayerMatchesSince(
     `players/${steamAccountId}/matches?${params.toString()}`,
     {
       code: "opendota_player_not_found",
-      message: "پروفایل بازیکن در OpenDota پیدا نشد",
+      message: "مچ‌های این بازیکن پیدا نشد",
     },
   );
   return parseOpenDotaRecentMatches(raw);

@@ -20,9 +20,6 @@ export default function BanPicker({
 }: BanPickerProps) {
   const [candidate, setCandidate] = useState<Hero | null>(null);
   const automatic = value.some((hero) => hero.source && hero.source !== "manual");
-  const automaticProvider = value.some((hero) => hero.source === "stratz")
-    ? "STRATZ"
-    : "OpenDota";
 
   function add(hero: Hero | null) {
     setCandidate(hero);
@@ -34,7 +31,7 @@ export default function BanPicker({
   return (
     <div className="field field-full ban-field">
       {automatic ? (
-        <div className="automatic-ban-heading"><span>بن‌های Draft</span><b>{automaticProvider}</b></div>
+        <div className="automatic-ban-heading"><span>بن‌های مچ</span><b>Dota2Notes</b></div>
       ) : (
         <HeroPicker
           label="بن‌ها"

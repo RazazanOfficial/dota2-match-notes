@@ -100,6 +100,7 @@ export interface ImageQueueJob {
   id: string;
   matchId: string;
   dotaMatchId: string | null;
+  heroId: number | null;
   heroName: string;
   status: ImageJobStatus;
   attempts: number;

@@ -67,7 +67,7 @@ export default function HeroPoolDialog({
         <header className="modal-header">
           <div>
             <p className="modal-kicker" lang="en">ROLE MASTERY</p>
-            <h2>Hero Pool</h2>
+            <h2>Hero Pool من</h2>
           </div>
           <button className="close-button" type="button" onClick={onClose} aria-label="بستن">×</button>
         </header>
@@ -103,10 +103,9 @@ export default function HeroPoolDialog({
         </div>
         <p className="form-error" role="alert">{error}</p>
         <footer className="modal-actions">
-          {value?.version && <span className="pool-version">Pool #{value.version.number.toLocaleString("fa-IR")}</span>}
           <span className="action-spacer" />
           <button className="secondary-button" type="button" onClick={onClose}>انصراف</button>
-          <button className="primary-button" type="submit" disabled={busy}>{busy ? "در حال ثبت" : "ثبت Hero Pool"}</button>
+          <button className="primary-button" type="submit" disabled={busy}>{busy ? "در حال ذخیره" : "ذخیره Hero Pool"}</button>
         </footer>
       </form>
     </div>

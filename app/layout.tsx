@@ -6,8 +6,8 @@ import "./dota-theme.css";
 import "./cursor-themes.css";
 
 export const metadata: Metadata = {
-  title: "Dota Notes | دفتر عملکرد دوتا ۲",
-  description: "ژورنال فارسی تحلیل، ثبت و مرور عملکرد مچ‌های Dota 2",
+  title: "Dota2Notes | دفتر شخصی مچ‌های Dota 2",
+  description: "مچ‌هایت را مرور کن، الگوهای بازیت را بشناس و پیشرفتت را دنبال کن.",
   icons: {
     icon: [
       { url: "/logos/logo_64x64.png", sizes: "64x64", type: "image/png" },

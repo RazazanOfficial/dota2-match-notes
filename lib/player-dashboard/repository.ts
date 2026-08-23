@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { getDb } from "../db";
 import {
@@ -58,6 +58,7 @@ export async function getPlayerSyncSnapshot(userId: string) {
         id: matchImageJobs.id,
         matchId: journalMatches.id,
         dotaMatchId: journalMatches.dotaMatchId,
+        heroId: journalMatches.heroId,
         heroName: journalMatches.heroName,
         status: matchImageJobs.status,
         attempts: matchImageJobs.attempts,
@@ -77,9 +78,12 @@ export async function getPlayerSyncSnapshot(userId: string) {
         journalMatches,
         eq(matchImageJobs.matchId, journalMatches.id),
       )
-      .where(eq(journalMatches.userId, userId))
-      .orderBy(desc(matchImageJobs.updatedAt))
-      .limit(30),
+      .where(
+        and(
+          eq(journalMatches.userId, userId),
+          inArray(matchImageJobs.status, ["pending", "processing"]),
+        ),
+      ),
     db
       .select({
         status: matchImageJobs.status,
@@ -122,6 +126,7 @@ export function serializePlayerSyncSnapshot(
         matchId: job.matchId,
         dotaMatchId:
           job.dotaMatchId === null ? null : String(job.dotaMatchId),
+        heroId: job.heroId,
         heroName: job.heroName,
         status: job.status,
         attempts: job.attempts,

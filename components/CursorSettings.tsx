@@ -71,7 +71,7 @@ export default function CursorSettings({
           >
             <header>
               <div>
-                <span autoCapitalize="words" className="eyebrow">CURSORS CUSTOMIZE</span>
+                <span autoCapitalize="words" className="eyebrow">CURSOR CUSTOMIZATION</span>
                 <h2 id="cursor-settings-title">تنظیم نشانگر</h2>
               </div>
               <button
@@ -85,11 +85,8 @@ export default function CursorSettings({
               </button>
             </header>
 
-            <p className="cursor-settings-help">
-            </p>
-
             <fieldset>
-              <legend>Cursor pack</legend>
+              <legend>CURSOR PACK</legend>
               <div className="cursor-pack-grid">
                 {CURSOR_PACKS.map((item) => (
                   <button
@@ -114,7 +111,7 @@ export default function CursorSettings({
             </fieldset>
 
             <fieldset>
-              <legend>CURSOR EFFECT AURA</legend>
+              <legend>CURSOR AURA</legend>
               <div className="cursor-effect-grid">
                 {CURSOR_EFFECTS.map((item) => (
                   <button
