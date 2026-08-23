@@ -1,7 +1,7 @@
 import { getStratzConfig } from "./config";
 import { StratzError } from "./errors";
 import { parseStratzResponse } from "./validation";
-import { fetchWithDirectDns } from "./direct-transport";
+import { fetchWithDirectIps } from "./direct-transport";
 
 function matchSelection(matchId: number, index: number) {
   return `
@@ -160,11 +160,11 @@ export async function fetchStratzDiagnostics(matchIds: number[]) {
       cache: "no-store",
       signal: controller.signal,
     };
-    const response = config.dnsOverHttpsUrl
-      ? await fetchWithDirectDns(
+    const response = config.directIps.length
+      ? await fetchWithDirectIps(
           config.endpoint,
           requestInit,
-          config.dnsOverHttpsUrl,
+          config.directIps,
           config.maxResponseBytes,
         )
       : await fetch(config.endpoint, requestInit);

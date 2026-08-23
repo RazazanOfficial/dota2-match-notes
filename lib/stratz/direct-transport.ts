@@ -1,107 +1,7 @@
 import { request as httpsRequest } from "node:https";
-import { isIP } from "node:net";
 import { StratzError } from "./errors";
 
-interface DnsJsonAnswer {
-  data?: unknown;
-  type?: unknown;
-  TTL?: unknown;
-}
-
-interface DnsJsonResponse {
-  Status?: unknown;
-  Answer?: unknown;
-}
-
-interface CachedAddresses {
-  addresses: string[];
-  expiresAt: number;
-}
-
-const dnsCache = new Map<string, CachedAddresses>();
-const MIN_DNS_TTL_SECONDS = 30;
-const MAX_DNS_TTL_SECONDS = 300;
-
-function isPublicIpv4(address: string) {
-  if (isIP(address) !== 4) return false;
-  const [a, b] = address.split(".").map(Number);
-  if (a === 0 || a === 10 || a === 127) return false;
-  if (a === 100 && b >= 64 && b <= 127) return false;
-  if (a === 169 && b === 254) return false;
-  if (a === 172 && b >= 16 && b <= 31) return false;
-  if (a === 192 && b === 0) return false;
-  if (a === 192 && b === 168) return false;
-  if (a === 198 && (b === 18 || b === 19)) return false;
-  if (a >= 224) return false;
-  return true;
-}
-
-export function parseDnsJson(input: unknown) {
-  if (!input || typeof input !== "object") return { addresses: [], ttlSeconds: MIN_DNS_TTL_SECONDS };
-  const response = input as DnsJsonResponse;
-  if (response.Status !== 0 || !Array.isArray(response.Answer)) {
-    return { addresses: [], ttlSeconds: MIN_DNS_TTL_SECONDS };
-  }
-
-  const answers = response.Answer as DnsJsonAnswer[];
-  const addresses = [...new Set(answers
-    .filter((answer) => answer?.type === 1 && typeof answer.data === "string")
-    .map((answer) => String(answer.data).trim())
-    .filter(isPublicIpv4))];
-  const ttls = answers
-    .filter((answer) => answer?.type === 1 && typeof answer.TTL === "number")
-    .map((answer) => Number(answer.TTL))
-    .filter((ttl) => Number.isFinite(ttl) && ttl > 0);
-  const ttlSeconds = Math.max(
-    MIN_DNS_TTL_SECONDS,
-    Math.min(MAX_DNS_TTL_SECONDS, ttls.length ? Math.min(...ttls) : MIN_DNS_TTL_SECONDS),
-  );
-  return { addresses, ttlSeconds };
-}
-
-async function resolveWithDnsOverHttps(
-  hostname: string,
-  dnsOverHttpsUrl: string,
-  signal: AbortSignal,
-) {
-  const cacheKey = `${dnsOverHttpsUrl}|${hostname}`;
-  const cached = dnsCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) return cached.addresses;
-
-  const url = new URL(dnsOverHttpsUrl);
-  url.searchParams.set("name", hostname);
-  url.searchParams.set("type", "A");
-  url.searchParams.set("edns_client_subnet", "0.0.0.0/0");
-  const response = await fetch(url, {
-    headers: {
-      Accept: "application/dns-json",
-      "User-Agent": "Dota2Notes/1.0",
-    },
-    cache: "no-store",
-    signal,
-  });
-  if (!response.ok) {
-    throw new StratzError(502, "stratz_dns_unavailable", "نام سرور STRATZ از مسیر مستقیم پیدا نشد");
-  }
-
-  let raw: unknown;
-  try {
-    raw = await response.json();
-  } catch {
-    throw new StratzError(502, "stratz_dns_unavailable", "پاسخ DNS مستقیم معتبر نبود");
-  }
-  const { addresses, ttlSeconds } = parseDnsJson(raw);
-  if (!addresses.length) {
-    throw new StratzError(502, "stratz_dns_unavailable", "DNS مستقیم هیچ IP عمومی برای STRATZ برنگرداند");
-  }
-  dnsCache.set(cacheKey, {
-    addresses,
-    expiresAt: Date.now() + ttlSeconds * 1_000,
-  });
-  return addresses;
-}
-
-function headersFromIncoming(headers: Headers) {
+function headersToRecord(headers: Headers) {
   const record: Record<string, string> = {};
   headers.forEach((value, key) => {
     record[key] = value;
@@ -127,7 +27,7 @@ function requestAddress(
       port: url.port ? Number(url.port) : 443,
       path: `${url.pathname}${url.search}`,
       method: init.method || "GET",
-      headers: headersFromIncoming(requestHeaders),
+      headers: headersToRecord(requestHeaders),
       servername: url.hostname,
       rejectUnauthorized: true,
       agent: false,
@@ -167,24 +67,20 @@ function requestAddress(
   });
 }
 
-export async function fetchWithDirectDns(
+export async function fetchWithDirectIps(
   endpoint: string,
   init: RequestInit,
-  dnsOverHttpsUrl: string,
+  directIps: string[],
   maxResponseBytes: number,
 ) {
   const url = new URL(endpoint);
-  const signal = init.signal;
-  if (!signal) throw new Error("STRATZ direct transport requires an AbortSignal");
-  const addresses = await resolveWithDnsOverHttps(url.hostname, dnsOverHttpsUrl, signal);
-
   let lastError: unknown;
-  for (const address of addresses) {
+  for (const address of directIps) {
     try {
       return await requestAddress(url, address, init, maxResponseBytes);
     } catch (error) {
       if (error instanceof StratzError) throw error;
-      if (signal.aborted) throw error;
+      if (init.signal?.aborted) throw error;
       lastError = error;
     }
   }

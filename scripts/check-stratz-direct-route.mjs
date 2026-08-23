@@ -2,23 +2,12 @@ import { request as httpsRequest } from "node:https";
 import { isIP } from "node:net";
 
 const endpoint = new URL(process.env.STRATZ_API_URL || "https://api.stratz.com/graphql");
-const dnsOverHttpsUrl = new URL(
-  process.env.STRATZ_DNS_OVER_HTTPS_URL || "https://dns.google/resolve",
-);
-
-dnsOverHttpsUrl.searchParams.set("name", endpoint.hostname);
-dnsOverHttpsUrl.searchParams.set("type", "A");
-dnsOverHttpsUrl.searchParams.set("edns_client_subnet", "0.0.0.0/0");
-
-const dnsResponse = await fetch(dnsOverHttpsUrl, {
-  headers: { Accept: "application/dns-json", "User-Agent": "Dota2Notes/1.0" },
-});
-if (!dnsResponse.ok) throw new Error(`DNS-over-HTTPS returned HTTP ${dnsResponse.status}`);
-const dnsJson = await dnsResponse.json();
-const addresses = [...new Set((dnsJson.Answer || [])
-  .filter((answer) => answer?.type === 1 && isIP(String(answer.data || "")) === 4)
-  .map((answer) => String(answer.data)))];
-if (!addresses.length) throw new Error("No public IPv4 address was returned for STRATZ");
+const rawAddresses = process.env.STRATZ_DIRECT_IPS || process.argv.slice(2).join(",");
+const addresses = [...new Set(rawAddresses.split(",").map((value) => value.trim()).filter(Boolean))];
+if (!addresses.length || addresses.some((address) => isIP(address) !== 4)) {
+  console.error("Provide STRATZ_DIRECT_IPS or pass comma-separated IPv4 addresses as the command argument.");
+  process.exit(64);
+}
 
 function traceThrough(address) {
   return new Promise((resolve, reject) => {
@@ -53,7 +42,7 @@ function traceThrough(address) {
   });
 }
 
-console.log(`Resolved ${endpoint.hostname} directly to: ${addresses.join(", ")}`);
+console.log(`Pinned STRATZ destination IPs: ${addresses.join(", ")}`);
 const observed = new Set();
 for (let index = 0; index < 20; index += 1) {
   const address = addresses[index % addresses.length];

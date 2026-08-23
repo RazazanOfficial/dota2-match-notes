@@ -1,10 +1,12 @@
+import { isIP } from "node:net";
+
 export interface StratzConfig {
   endpoint: string;
   token: string;
   timeoutMs: number;
   maxResponseBytes: number;
   diagnosticsEnabled: boolean;
-  dnsOverHttpsUrl?: string;
+  directIps: string[];
 }
 
 const DEFAULT_ENDPOINT = "https://api.stratz.com/graphql";
@@ -28,20 +30,27 @@ function parseEndpoint() {
   return url.toString().replace(/\/+$/, "");
 }
 
-function parseDnsOverHttpsUrl() {
-  const raw = process.env.STRATZ_DNS_OVER_HTTPS_URL?.trim();
-  if (!raw) return undefined;
-  const url = new URL(raw);
-  if (
-    url.protocol !== "https:"
-    || url.username
-    || url.password
-    || url.search
-    || url.hash
-  ) {
-    throw new Error("Invalid env: STRATZ_DNS_OVER_HTTPS_URL");
+function isPublicIpv4(address: string) {
+  if (isIP(address) !== 4) return false;
+  const [a, b] = address.split(".").map(Number);
+  if (a === 0 || a === 10 || a === 127) return false;
+  if (a === 100 && b >= 64 && b <= 127) return false;
+  if (a === 169 && b === 254) return false;
+  if (a === 172 && b >= 16 && b <= 31) return false;
+  if (a === 192 && (b === 0 || b === 168)) return false;
+  if (a === 198 && (b === 18 || b === 19)) return false;
+  if (a >= 224) return false;
+  return true;
+}
+
+function parseDirectIps() {
+  const raw = process.env.STRATZ_DIRECT_IPS?.trim();
+  if (!raw) return [];
+  const addresses = [...new Set(raw.split(",").map((value) => value.trim()).filter(Boolean))];
+  if (!addresses.length || addresses.length > 8 || addresses.some((address) => !isPublicIpv4(address))) {
+    throw new Error("Invalid env: STRATZ_DIRECT_IPS");
   }
-  return url.toString().replace(/\/+$/, "");
+  return addresses;
 }
 
 export function getStratzConfig(): StratzConfig {
@@ -59,6 +68,6 @@ export function getStratzConfig(): StratzConfig {
       8 * 1024 * 1024,
     ),
     diagnosticsEnabled: process.env.STRATZ_DIAGNOSTICS_ENABLED?.trim() === "true",
-    dnsOverHttpsUrl: parseDnsOverHttpsUrl(),
+    directIps: parseDirectIps(),
   };
 }

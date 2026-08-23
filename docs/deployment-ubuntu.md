@@ -283,18 +283,18 @@ systemctl list-timers 'dota2notes-*'
 
 ### مسیر مستقیم STRATZ
 
-اگر DNS سرور بعضی دامنه‌ها را از یک واسط با IP چرخشی عبور می‌دهد، فقط برای STRATZ
-نام‌حل‌کنی مستقیم را در `.env.production` فعال کنید:
+اگر مسیر DNS سرور بعضی دامنه‌ها را از یک واسط با IP چرخشی عبور می‌دهد، IPهای فعلی
+مقصد STRATZ را خارج از VPS دریافت و در `.env.production` ثبت کنید:
 
 ```dotenv
-STRATZ_DNS_OVER_HTTPS_URL=https://dns.google/resolve
+STRATZ_DIRECT_IPS=IP_1,IP_2
 ```
 
-این گزینه DNS سراسری سیستم یا ارتباط سرویس‌های دیگر را تغییر نمی‌دهد. پیش از استفاده از
-توکن، مسیر مستقیم را بدون ارسال توکن بررسی کنید:
+این گزینه در زمان درخواست از DNS استفاده نمی‌کند و DNS سراسری سیستم یا ارتباط سرویس‌های
+دیگر را تغییر نمی‌دهد. پیش از استفاده از توکن، مسیر مستقیم را بدون ارسال توکن بررسی کنید:
 
 ```bash
-sudo -u dota2notes -H npm run stratz:route-check
+sudo -u dota2notes -H npm run stratz:route-check -- IP_1,IP_2
 ```
 
 مقدار `Unique direct egress IPs` باید فقط یک IP داشته باشد. سپس برنامه را Restart کنید.
