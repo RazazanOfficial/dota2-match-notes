@@ -169,7 +169,7 @@ export async function claimOpenDotaRequestQuota(params: {
         throw new OpenDotaError(
           429,
           "opendota_global_rate_limited",
-          "ظرفیت موقت OpenDota پر شده است؛ کمی بعد دوباره تلاش کنید",
+          "درخواست‌های زیادی در حال بررسی است؛ کمی بعد دوباره تلاش کنید",
           retryAfterSeconds,
         );
       }

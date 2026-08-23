@@ -50,7 +50,7 @@ async function requestJson<T>(input: string, init?: RequestInit): Promise<T> {
       payload.error && typeof payload.error === "object" ? payload.error.message : undefined;
     const plainError = typeof payload.error === "string" ? payload.error : undefined;
     throw new Error(
-      nestedError || plainError || payload.message || "ارتباط با سرور انجام نشد",
+      nestedError || plainError || payload.message || "ارتباط برقرار نشد؛ دوباره تلاش کنید",
     );
   }
 
@@ -90,7 +90,7 @@ function serializeDay(day: Day) {
 
 function normalizeProfileResponse(response: ProfileResponse, username: string) {
   if (!response.ok || !response.profile) {
-    throw new Error("اطلاعات دفتر مچ از سرور دریافت نشد");
+    throw new Error("اطلاعات مچ‌ها دریافت نشد");
   }
   return normalizeProfile(response.profile, username);
 }

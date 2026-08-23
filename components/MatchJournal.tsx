@@ -279,13 +279,13 @@ export default function MatchJournal() {
             <ReleaseNotes authenticated={session.mode === "player"} compact />
             <div className="account-copy">
               <span className={`mode-badge${session.mode === "coach" ? " is-coach" : ""}`}>
-                {session.mode === "player" ? "بازیکن" : "مربی"}
+                {session.mode === "player" ? "بازیکن" : "بازدیدکننده"}
               </span>
               <strong lang="en" dir="ltr">{session.username}</strong>
             </div>
-            <span className={`sync-status is-${syncState}`}>
-              <span className="status-dot" />
-              {syncState === "syncing" ? "در حال ثبت" : syncState === "error" ? "خطا" : "همگام"}
+              <span className={`sync-status is-${syncState}`}>
+                <span className="status-dot" />
+              {syncState === "syncing" ? "در حال ذخیره" : syncState === "error" ? "اتصال ناموفق" : "ذخیره شد"}
             </span>
             {session.mode === "player" && session.isSuperAdmin && (
               <a className="admin-link" href="/admin">
@@ -322,7 +322,7 @@ export default function MatchJournal() {
               <div>
                 <p className="week-kicker"><span aria-hidden="true" />{getWeekLabel(activeWeek)}</p>
                 <h2>{formatWeekRange(dates)}</h2>
-                <p className="week-subtitle">میدان عملکرد هفتگی · هر مچ، یک تصمیم بهتر</p>
+                <p className="week-subtitle">هر مچ را ببین، الگوی بازیت را پیدا کن</p>
               </div>
               <div className="week-navigation" aria-label="پیمایش هفته‌ها">
                 <button
@@ -403,7 +403,7 @@ export default function MatchJournal() {
                           />
                         ))
                     ) : (
-                      <div className="empty-day">بدون بازی ثبت‌شده</div>
+                      <div className="empty-day">هنوز مچی ثبت نشده</div>
                     )}
                   </div>
                   <footer className="day-summary">
@@ -411,11 +411,11 @@ export default function MatchJournal() {
                     <div className="day-stat"><span>باخت</span><strong>{faNumber.format(summary.losses)}</strong></div>
                     {session.mode === "player" ? (
                       <button className="day-complete-button" type="button" onClick={() => toggleDay(dateKey)}>
-                        {day.completed ? "روز تکمیل شد" : "اتمام روز"}
+                        {day.completed ? "روز جمع‌بندی شد" : "جمع‌بندی روز"}
                       </button>
                     ) : (
                       <span className="day-complete-readonly">
-                        {day.completed ? "روز تکمیل شد" : "روز باز"}
+                        {day.completed ? "روز جمع‌بندی شد" : "هنوز جمع‌بندی نشده"}
                       </span>
                     )}
                   </footer>
@@ -478,7 +478,7 @@ function Brand() {
       <AppLogo size={64} priority />
       <div>
         <p className="eyebrow" lang="en">DOTA2 NOTES</p>
-        <h1>دفترچه دوتا2</h1>
+        <h1>دفتر مچ‌های من</h1>
       </div>
     </div>
   );
@@ -518,15 +518,15 @@ function AccessScreen({
       </header>
       <div className="access-stage">
         <section className="access-intro">
-          <p className="access-overline" lang="en">KNOW YOUR MATCH. MASTER YOUR GAME.</p>
-          <h2>هر تحلیل، نشانه ای از<br /><em>پیشرفت توست.</em></h2>
+          <p className="access-overline" lang="en">TURN EVERY MATCH INTO PROGRESS</p>
+          <h2>هر مچ، یک قدم به<br /><em>بازی بهتر.</em></h2>
           <p className="access-lead">
-            عملکرد خودت را ثبت کن و با کمک ما مشکلاتت را پیدا کن.
+            مچ‌هایت را مرور کن، الگوهای بازیت را بشناس و تصمیم‌های بعدی را آگاهانه‌تر بگیر.
           </p>
           <div className="access-feature-list" aria-label="امکانات اصلی">
-            <span><GameIcon name="journal" /> ژورنال هوشمند</span>
-            <span><GameIcon name="report" /> گزارش عملکرد</span>
-            <span><GameIcon name="gold" /> آمار واقعی مچ</span>
+            <span><GameIcon name="journal" /> مرور مچ‌ها</span>
+            <span><GameIcon name="report" /> Hero Pool شخصی</span>
+            <span><GameIcon name="gold" /> گزارش پیشرفت</span>
           </div>
           <div className="access-runes" aria-hidden="true">
             <span>STR</span><span>AGI</span><span>INT</span>
@@ -534,35 +534,35 @@ function AccessScreen({
         </section>
         <section className="access-panel" id="login">
           <div className="access-heading">
-            <p className="week-kicker"><span aria-hidden="true" />{view === "roles" ? "پنل ورود" : "مشاهده به عنوان مهمان"}</p>
-            <h2>{view === "roles" ? "نحوه ورود را انتخاب کن" : ""}</h2>
+            <p className="week-kicker"><span aria-hidden="true" />{view === "roles" ? "ورود به Dota2Notes" : "دفتر عمومی بازیکن"}</p>
+            <h2>{view === "roles" ? "چطور می‌خواهی وارد شوی؟" : "دفتر کدام بازیکن را می‌خواهی ببینی؟"}</h2>
           </div>
           {view === "roles" ? (
             <div className="role-grid">
               <button className="role-card role-player" type="button" onClick={onPlayerLogin}>
                 <span className="role-icon"><GameIcon name="player" /></span>
                 <span className="role-card-index" lang="en">01</span>
-                <span className="role-name">حساب کاربری</span>
-                <span className="role-description">بررسی و مشاهده عملکرد خود</span>
-                <span className="role-cta">ورود به ژورنال ←</span>
+                <span className="role-name">دفتر شخصی من</span>
+                <span className="role-description">ثبت و مرور مچ‌های خودت</span>
+                <span className="role-cta">ورود با Steam ←</span>
               </button>
               <button className="role-card role-coach" type="button" onClick={() => onViewChange("coach")}>
                 <span className="role-icon"><GameIcon name="coach" /></span>
                 <span className="role-card-index" lang="en">02</span>
-                <span className="role-name">مشاهده پروفایل دیگران</span>
-                <span className="role-description">مشاهده‌ی عمومی عملکرد دیگران</span>
-                <span className="role-cta">مشاهده گزارش ←</span>
+                <span className="role-name">دفتر یک بازیکن</span>
+                <span className="role-description">مرور پروفایل عمومی با شناسه Dota2Notes</span>
+                <span className="role-cta">پیدا کردن بازیکن ←</span>
               </button>
             </div>
           ) : (
             <form className="access-form" onSubmit={submit}>
               <label className="field">
-                <span>شناسه بازیکن</span>
+                <span>شناسه Dota2Notes</span>
                 <input
                   lang="en"
                   dir="ltr"
                   autoComplete="off"
-                  placeholder="steam_123456789"
+                  placeholder="player_name"
                   value={username}
                   maxLength={32}
                   required
@@ -575,12 +575,12 @@ function AccessScreen({
                   بازگشت
                 </button>
                 <button className="primary-button" type="submit" disabled={busy}>
-                  {busy ? "در حال اتصال" : "باز کردن گزارش"}
+                  {busy ? "در حال پیدا کردن" : "مشاهده دفتر"}
                 </button>
               </div>
             </form>
           )}
-          <footer className="access-panel-footer"><span lang="en">Developed By Meraj</span><span></span></footer>
+          <footer className="access-panel-footer"><span lang="en">DOTA2NOTES · YOUR MATCH JOURNAL</span><span></span></footer>
         </section>
       </div>
       <section className="feature-chronicle" aria-label="ویژگی‌های Dota2 Notes">
@@ -589,15 +589,15 @@ function AccessScreen({
           <h2>از نتیجه عبور کن؛<br /><em>دلیلش را پیدا کن.</em></h2>
         </header>
         <article className="feature-story">
-          <div className="feature-story-copy"><span lang="en">01 · ROLE MASTERY</span><h3>هیروهایی که واقعاً<br />با آن‌ها رشد می‌کنی</h3><p>Hero Pool هر رول، مرز تمرکز تو را مشخص می‌کند و هر مچ را با نسخه همان روز مقایسه می‌کند.</p></div>
+          <div className="feature-story-copy"><span lang="en">01 · ROLE MASTERY</span><h3>هیروهایی که واقعاً<br />با آن‌ها رشد می‌کنی</h3><p>برای هر رول چند هیروی مشخص نگه دار و ببین انتخاب هر مچ داخل برنامه تمرینی‌ات بوده یا نه.</p></div>
           <HeroPoolPreview />
         </article>
         <article className="feature-story is-reversed">
-          <div className="feature-story-copy"><span lang="en">02 · MATCH REVIEW</span><h3>تصمیم‌های خوب را<br />از اشتباه‌ها جدا کن</h3><p>نکات مثبت، نکات منفی و یادداشت آزاد کنار آمار واقعی مچ قرار می‌گیرند.</p></div>
+          <div className="feature-story-copy"><span lang="en">02 · MATCH REVIEW</span><h3>تصمیم‌های خوب را<br />از اشتباه‌ها جدا کن</h3><p>بعد از هر بازی، کارهای خوب و اشتباه‌هایت را کنار آمار همان مچ نگه دار و الگوهای تکراری را پیدا کن.</p></div>
           <ReviewPreview />
         </article>
         <article className="feature-story">
-          <div className="feature-story-copy"><span lang="en">03 · DRAFT MEMORY</span><h3>Draft را همان‌طور که<br />اتفاق افتاد ببین</h3><p>بن‌های STRATZ خودکار ثبت می‌شوند و هیروهای Hero Pool همان رول در اولویت می‌آیند.</p></div>
+          <div className="feature-story-copy"><span lang="en">03 · DRAFT MEMORY</span><h3>Draft را همان‌طور که<br />اتفاق افتاد ببین</h3><p>بن‌های مچ کنار Hero Pool همان رول قرار می‌گیرند تا Draft را با همان شرایطی که بازی کردی مرور کنی.</p></div>
           <DraftPreview />
         </article>
         <footer className="feature-final-cta"><AppLogo size={78} alt="" /><h2>مچ بعدی، شروع تحلیل بعدی است.</h2><a className="primary-button" href="#login">ورود به ژورنال</a></footer>
@@ -617,7 +617,7 @@ function ReviewPreview() {
 
 function DraftPreview() {
   const heroes = [74, 14, 25, 86, 44].map((id) => heroById(id)).filter(Boolean);
-  return <div className="feature-visual draft-preview"><header><span lang="en">RANKED · ALL DRAFT</span><b>STRATZ</b></header><div>{heroes.map((hero, index) => hero && <span className={`ban-portrait${index < 2 ? " is-pool-priority" : ""}`} key={hero.id}><span className="ban-portrait-image"><img src={heroImage(hero)} alt="" /></span><b lang="en">{hero.name}</b></span>)}</div><footer>PRIORITIZED FOR MID LANE</footer></div>;
+  return <div className="feature-visual draft-preview"><header><span lang="en">RANKED · ALL DRAFT</span><b>DOTA2NOTES</b></header><div>{heroes.map((hero, index) => hero && <span className={`ban-portrait${index < 2 ? " is-pool-priority" : ""}`} key={hero.id}><span className="ban-portrait-image"><img src={heroImage(hero)} alt="" /></span><b lang="en">{hero.name}</b></span>)}</div><footer>MID LANE HERO POOL</footer></div>;
 }
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
@@ -668,10 +668,10 @@ function MatchCard({ match, onClick }: { match: Match; onClick: () => void }) {
             {match.images?.length
               ? `${faNumber.format(match.images.length)} تصویر`
               : match.imageJobStatus === "processing"
-                ? "در حال ساخت تصویر"
+                ? "در حال آماده‌سازی"
                 : match.imageJobStatus === "failed"
-                  ? "خطای تصویر"
-                  : "در صف تصویر"}
+                  ? "تصاویر آماده نیست"
+                  : "در حال آماده‌سازی"}
           </span>
         </div>
       )}

@@ -104,14 +104,14 @@ export function parseOpenDotaMatch(input: unknown, expectedMatchId: number) {
     throw new OpenDotaError(
       502,
       "invalid_opendota_response",
-      "پاسخ OpenDota ساختار معتبر ندارد",
+      "اطلاعات دریافتی مچ معتبر نیست",
     );
   }
   if (result.data.match_id !== expectedMatchId) {
     throw new OpenDotaError(
       502,
       "opendota_match_mismatch",
-      "شناسه پاسخ OpenDota با مچ درخواستی هماهنگ نیست",
+      "شناسه اطلاعات دریافتی با مچ درخواستی هماهنگ نیست",
     );
   }
   return result.data;
@@ -123,7 +123,7 @@ export function parseOpenDotaRecentMatches(input: unknown) {
     throw new OpenDotaError(
       502,
       "invalid_opendota_response",
-      "فهرست مچ‌های OpenDota ساختار معتبر ندارد",
+      "فهرست مچ‌های دریافتی معتبر نیست",
     );
   }
 

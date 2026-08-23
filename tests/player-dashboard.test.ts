@@ -30,6 +30,7 @@ describe("player sync dashboard", () => {
             id: "job-1",
             matchId: "match-1",
             dotaMatchId: 8_940_973_270,
+            heroId: 11,
             heroName: "Shadow Fiend",
             status: "pending" as const,
             attempts: 0,
@@ -48,6 +49,7 @@ describe("player sync dashboard", () => {
     expect(status.nextAllowedAt).toBe("2026-08-16T10:05:00.000Z");
     expect(status.imageQueue.jobs[0]).toMatchObject({
       dotaMatchId: "8940973270",
+      heroId: 11,
       position: 3,
       status: "pending",
     });

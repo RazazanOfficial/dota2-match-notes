@@ -94,7 +94,7 @@ export default function ReportDialog({
                   <header>
                     <div>
                       <h3>{formatFullDate(date)}</h3>
-                      <span>{day.completed ? "روز تکمیل شد" : "روز باز"}</span>
+                      <span>{day.completed ? "روز جمع‌بندی شد" : "هنوز جمع‌بندی نشده"}</span>
                     </div>
                     <strong>
                       {faNumber.format(daySummary.wins)} برد · {faNumber.format(daySummary.losses)} باخت
@@ -125,7 +125,7 @@ export default function ReportDialog({
                         ))}
                     </div>
                   ) : (
-                    <p className="report-empty">بدون بازی ثبت‌شده</p>
+                    <p className="report-empty">هنوز مچی ثبت نشده</p>
                   )}
                 </article>
               );
