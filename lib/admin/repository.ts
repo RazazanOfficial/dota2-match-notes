@@ -31,6 +31,7 @@ const publicUserFields = {
   displayName: users.displayName,
   avatarUrl: users.avatarUrl,
   profileUrl: users.profileUrl,
+  hasPassword: sql<boolean>`${users.passwordHash} is not null`,
   isAdmin: users.isAdmin,
   lastLoginAt: users.lastLoginAt,
   lastManualSyncAt: users.lastManualSyncAt,

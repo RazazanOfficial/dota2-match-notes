@@ -1,5 +1,6 @@
 "use client";
 
+import { Copy, Download, X } from "lucide-react";
 import { heroById, heroImage } from "@/data/heroes";
 import { queueLabel, roleLabel } from "@/lib/constants";
 import {
@@ -69,7 +70,7 @@ export default function ReportDialog({
             <h2 id="report-title">گزارش هفتگی</h2>
           </div>
           <button className="close-button" type="button" onClick={onClose} aria-label="بستن">
-            ×
+            <X aria-hidden="true" />
           </button>
         </header>
 
@@ -135,11 +136,11 @@ export default function ReportDialog({
 
         <footer className="modal-actions">
           <button className="secondary-button" type="button" onClick={download}>
-            دریافت گزارش
+            <Download aria-hidden="true" /> دریافت گزارش
           </button>
           <span className="action-spacer" />
           <button className="primary-button" type="button" onClick={copy}>
-            کپی گزارش
+            <Copy aria-hidden="true" /> کپی گزارش
           </button>
         </footer>
       </section>

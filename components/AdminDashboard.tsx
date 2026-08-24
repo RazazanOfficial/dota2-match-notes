@@ -1,8 +1,18 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CircleX,
+  KeyRound,
+  Search,
+  UserPlus,
+} from "lucide-react";
+import { toast } from "react-toastify";
 import AppLogo from "./AppLogo";
 import AdminReleaseNotes from "./AdminReleaseNotes";
+import AdminPasswordDialog from "./AdminPasswordDialog";
 
 type RangeDays = 7 | 30 | 90;
 type JobStatus = "pending" | "processing" | "completed" | "failed";
@@ -62,6 +72,7 @@ interface AdminUser {
   displayName: string;
   avatarUrl: string | null;
   profileUrl: string | null;
+  hasPassword: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
   lastLoginAt: string | null;
@@ -106,7 +117,7 @@ export default function AdminDashboard() {
   const [error, setError] = useState("");
   const [steamIdentifier, setSteamIdentifier] = useState("");
   const [provisioning, setProvisioning] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [passwordUser, setPasswordUser] = useState<AdminUser | null>(null);
 
   const loadOverview = useCallback(async () => {
     const result = await adminRequest<{ ok: true; overview: AdminOverview }>(
@@ -156,8 +167,6 @@ export default function AdminDashboard() {
   async function provision(event: FormEvent) {
     event.preventDefault();
     setProvisioning(true);
-    setError("");
-    setNotice("");
     try {
       const result = await adminRequest<{ created: boolean; user: AdminUser }>(
         "/api/admin/users",
@@ -167,7 +176,7 @@ export default function AdminDashboard() {
           body: JSON.stringify({ steamIdentifier }),
         },
       );
-      setNotice(
+      toast.success(
         result.created
           ? `حساب ${result.user.displayName} ساخته شد.`
           : `اطلاعات ${result.user.displayName} از Steam به‌روزرسانی شد.`,
@@ -175,7 +184,7 @@ export default function AdminDashboard() {
       setSteamIdentifier("");
       await Promise.all([loadUsers(), loadOverview()]);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "ثبت حساب انجام نشد");
+      toast.error(reason instanceof Error ? reason.message : "ثبت حساب انجام نشد");
     } finally {
       setProvisioning(false);
     }
@@ -193,7 +202,7 @@ export default function AdminDashboard() {
   if (error && !overview) {
     return (
       <main className="admin-state">
-        <span className="admin-lock">×</span>
+        <span className="admin-lock"><CircleX aria-hidden="true" /></span>
         <h1>دسترسی به داشبورد ممکن نیست</h1>
         <p>{error}</p>
         <a className="secondary-button" href="/">بازگشت به دفتر مچ</a>
@@ -215,7 +224,7 @@ export default function AdminDashboard() {
         </div>
         <div className="admin-top-actions">
           <span className="queue-live-dot">داده زنده</span>
-          <a className="secondary-button" href="/">بازگشت به دفتر</a>
+          <a className="secondary-button" href="/"><ArrowRight aria-hidden="true" /> بازگشت به دفتر</a>
         </div>
       </header>
 
@@ -286,17 +295,16 @@ export default function AdminDashboard() {
         <div className="user-admin-tools">
           <form className="admin-search" onSubmit={(event) => { event.preventDefault(); setOffset(0); setAppliedQuery(query.trim()); }}>
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="جستجو نام، Handle یا Steam ID" />
-            <button className="secondary-button" type="submit">جستجو</button>
+            <button className="secondary-button" type="submit"><Search aria-hidden="true" /> جستجو</button>
           </form>
           <form className="provision-form" onSubmit={provision}>
             <input lang="en" dir="ltr" value={steamIdentifier} onChange={(event) => setSteamIdentifier(event.target.value)} placeholder="SteamID64 یا Account ID" required />
-            <button className="primary-button" type="submit" disabled={provisioning}>{provisioning ? "در حال دریافت" : "افزودن کاربر"}</button>
+            <button className="primary-button" type="submit" disabled={provisioning}><UserPlus aria-hidden="true" /> {provisioning ? "در حال دریافت" : "افزودن کاربر"}</button>
           </form>
         </div>
-        {(notice || error) && <p className={`admin-notice${error ? " is-error" : ""}`}>{error || notice}</p>}
         <div className="admin-table-wrap">
           <table className="admin-users-table">
-            <thead><tr><th>کاربر</th><th>Steam Account</th><th>عضویت</th><th>آخرین Sync</th><th>دسترسی</th></tr></thead>
+            <thead><tr><th>کاربر</th><th>Steam Account</th><th>عضویت</th><th>آخرین Sync</th><th>دسترسی</th><th>رمز عبور</th></tr></thead>
             <tbody>
               {users.map((user) => (
                 <tr key={user.id}>
@@ -305,18 +313,26 @@ export default function AdminDashboard() {
                   <td>{dateTime.format(new Date(user.createdAt))}</td>
                   <td>{user.lastManualSyncAt ? dateTime.format(new Date(user.lastManualSyncAt)) : "—"}</td>
                   <td>{user.isSuperAdmin ? <span className="access-chip is-super">Super Admin</span> : user.isAdmin ? <span className="access-chip">Admin</span> : <span className="access-chip is-user">User</span>}</td>
+                  <td><button className={`password-admin-button${user.hasPassword ? " is-active" : ""}`} type="button" onClick={() => setPasswordUser(user)}><KeyRound aria-hidden="true" /> {user.hasPassword ? "تغییر" : "تعیین رمز"}</button></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
         <footer className="admin-pagination">
-          <button className="secondary-button" type="button" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 25))}>صفحه قبل</button>
+          <button className="secondary-button" type="button" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 25))}><ArrowRight aria-hidden="true" /> صفحه قبل</button>
           <span>{number.format(offset + 1)} تا {number.format(Math.min(offset + 25, totalUsers))}</span>
-          <button className="secondary-button" type="button" disabled={offset + 25 >= totalUsers} onClick={() => setOffset(offset + 25)}>صفحه بعد</button>
+          <button className="secondary-button" type="button" disabled={offset + 25 >= totalUsers} onClick={() => setOffset(offset + 25)}>صفحه بعد <ArrowLeft aria-hidden="true" /></button>
         </footer>
       </section>
       <AdminReleaseNotes />
+      <AdminPasswordDialog
+        user={passwordUser}
+        onClose={() => setPasswordUser(null)}
+        onChange={(userId, hasPassword) => {
+          setUsers((current) => current.map((user) => user.id === userId ? { ...user, hasPassword } : user));
+        }}
+      />
     </main>
   );
 }

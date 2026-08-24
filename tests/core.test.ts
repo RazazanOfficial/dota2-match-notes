@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getWeekAnchorDate,
   getWeekDates,
   isValidUsername,
   mergeProfiles,
@@ -11,7 +12,7 @@ import {
 } from "../lib/date";
 
 describe("calendar", () => {
-  it("starts week one on Saturday 2026-07-25", () => {
+  it("builds a Saturday-to-Friday week", () => {
     expect(getWeekDates("2026-07-25", 0).map(toDateKey)).toEqual([
       "2026-07-25",
       "2026-07-26",
@@ -21,6 +22,10 @@ describe("calendar", () => {
       "2026-07-30",
       "2026-07-31",
     ]);
+  });
+
+  it("anchors week one to the signup week's Saturday", () => {
+    expect(getWeekAnchorDate("2026-08-25")).toBe("2026-08-22");
   });
 });
 

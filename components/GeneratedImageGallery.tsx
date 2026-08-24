@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Eye, X } from "lucide-react";
 import type { MatchImage } from "@/lib/types";
 
 interface GeneratedImageGalleryProps {
@@ -70,7 +71,7 @@ export default function GeneratedImageGallery({ images, matchId }: GeneratedImag
               height={image.height || 720}
               alt={image.altText || `گزارش مچ ${matchId}`}
             />
-            <span>مشاهده اندازه کامل</span>
+            <span><Eye aria-hidden="true" /> مشاهده اندازه کامل</span>
           </button>
         ))}
       </div>
@@ -94,7 +95,7 @@ export default function GeneratedImageGallery({ images, matchId }: GeneratedImag
                 onClick={close}
                 aria-label="بستن تصویر"
               >
-                ×
+                <X aria-hidden="true" />
               </button>
             </header>
             <img
@@ -105,8 +106,8 @@ export default function GeneratedImageGallery({ images, matchId }: GeneratedImag
             />
             {images.length > 1 && (
               <>
-                <button className="image-lightbox-nav is-previous" type="button" onClick={() => move(-1)} aria-label="تصویر قبلی">‹</button>
-                <button className="image-lightbox-nav is-next" type="button" onClick={() => move(1)} aria-label="تصویر بعدی">›</button>
+                <button className="image-lightbox-nav is-previous" type="button" onClick={() => move(-1)} aria-label="تصویر قبلی"><ChevronLeft aria-hidden="true" /></button>
+                <button className="image-lightbox-nav is-next" type="button" onClick={() => move(1)} aria-label="تصویر بعدی"><ChevronRight aria-hidden="true" /></button>
               </>
             )}
           </div>

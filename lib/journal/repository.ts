@@ -19,6 +19,7 @@ import {
   journalDays,
   journalMatches,
   matchBans,
+  matchPicks,
   matchImageJobs,
   matchImages,
   users,
@@ -30,6 +31,7 @@ import {
 import { collectDismissedDotaMatchIds } from "./dismissed";
 import { makePublicImageUrl } from "@/lib/storage/media";
 import type { DayInput } from "./validation";
+import { toJournalDateKey } from "./timezone";
 
 interface JournalOwner {
   id: string;
@@ -122,6 +124,13 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
         .where(inArray(matchBans.matchId, matchIds))
         .orderBy(asc(matchBans.sortOrder))
     : [];
+  const pickRows = matchIds.length
+    ? await db
+        .select()
+        .from(matchPicks)
+        .where(inArray(matchPicks.matchId, matchIds))
+        .orderBy(asc(matchPicks.sortOrder))
+    : [];
   const poolVersionIds = [...new Set(matchRows.map((match) => match.heroPoolVersionId).filter((id): id is string => Boolean(id)))];
   const [poolEntryRows, poolVersionRows] = poolVersionIds.length
     ? await Promise.all([
@@ -148,11 +157,17 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
       ])
     : [[], []];
   const bansByMatch = new Map<string, typeof banRows>();
+  const picksByMatch = new Map<string, typeof pickRows>();
 
   banRows.forEach((ban) => {
     const bans = bansByMatch.get(ban.matchId) || [];
     bans.push(ban);
     bansByMatch.set(ban.matchId, bans);
+  });
+  pickRows.forEach((pick) => {
+    const picks = picksByMatch.get(pick.matchId) || [];
+    picks.push(pick);
+    picksByMatch.set(pick.matchId, picks);
   });
   const poolHeroIds = new Map<string, Set<number>>();
   poolEntryRows.forEach((entry) => {
@@ -195,6 +210,7 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
 
   return {
     username: owner.handle,
+    registeredDate: toJournalDateKey(owner.createdAt),
     createdAt: owner.createdAt.toISOString(),
     updatedAt: owner.updatedAt.toISOString(),
     days: Object.fromEntries(
@@ -224,6 +240,19 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
                     ),
                   }))
                   .sort((left, right) => Number(right.inRolePool) - Number(left.inRolePool) || (left.draftOrder ?? 999) - (right.draftOrder ?? 999)),
+                picks: (picksByMatch.get(match.id) || []).map((pick) => ({
+                  id: pick.heroId,
+                  name: pick.heroName,
+                  playerSlot: pick.playerSlot,
+                  team: pick.team,
+                  inRolePool: Boolean(
+                    match.heroPoolVersionId &&
+                    match.role &&
+                    poolHeroIds
+                      .get(`${match.heroPoolVersionId}:${match.role}`)
+                      ?.has(pick.heroId),
+                  ),
+                })),
                 legacyBans: match.legacyBans,
                 role: match.role || "",
                 roleSource: match.roleSource,

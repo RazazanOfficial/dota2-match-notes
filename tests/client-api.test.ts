@@ -74,6 +74,7 @@ describe("journal client API", () => {
           heroId: 1,
           heroName: "Anti-Mage",
           bans: [{ id: 2, slug: "axe", name: "Axe" }],
+          picks: [],
           legacyBans: "",
           role: "safe_lane",
           queueType: "role_selected",

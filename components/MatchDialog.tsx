@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Check, CircleX, ImageIcon, Save, Trash2, X } from "lucide-react";
 import { heroById, heroImage } from "@/data/heroes";
 import { QUEUE_OPTIONS, ROLE_OPTIONS, queueLabel, roleLabel } from "@/lib/constants";
 import { newMatchId } from "@/lib/date";
-import type { Hero, Match, MatchImage, MatchResult, MatchRole, QueueType } from "@/lib/types";
+import type { Hero, Match, MatchImage, MatchPick, MatchResult, MatchRole, QueueType } from "@/lib/types";
 import BanPicker from "./BanPicker";
+import ConfirmDialog from "./ConfirmDialog";
+import DotaSelect from "./DotaSelect";
 import HeroPicker from "./HeroPicker";
 import { GameIcon, type GameIconName } from "./GameIcon";
 import GeneratedImageGallery from "./GeneratedImageGallery";
@@ -31,6 +34,7 @@ const EMPTY_MATCH: Match = {
   heroId: null,
   heroName: "",
   bans: [],
+  picks: [],
   role: "",
   queueType: "",
   notes: "",
@@ -54,7 +58,10 @@ export default function MatchDialog({
   const [draft, setDraft] = useState<Match>(EMPTY_MATCH);
   const [formError, setFormError] = useState("");
   const [activeTab, setActiveTab] = useState<MatchTab>("overview");
+  const [discardWarning, setDiscardWarning] = useState(false);
+  const [deleteWarning, setDeleteWarning] = useState(false);
   const initializedSource = useRef("");
+  const initialDraft = useRef("");
   const hero = draft.heroId ? heroById(draft.heroId) || null : null;
 
   useEffect(() => {
@@ -67,17 +74,27 @@ export default function MatchDialog({
     initializedSource.current = source;
     setFormError("");
     setActiveTab("overview");
-    setDraft(
-      match
-        ? structuredClone(match)
-        : {
-            ...EMPTY_MATCH,
-            id: newMatchId(),
-            number: nextNumber,
-            createdAt: new Date().toISOString(),
-        },
-    );
+    setDiscardWarning(false);
+    setDeleteWarning(false);
+    const nextDraft = match
+      ? structuredClone(match)
+      : {
+          ...EMPTY_MATCH,
+          id: newMatchId(),
+          number: nextNumber,
+          createdAt: new Date().toISOString(),
+        };
+    setDraft(nextDraft);
+    initialDraft.current = JSON.stringify(nextDraft);
   }, [dateLabel, match, nextNumber, open]);
+
+  function requestClose() {
+    if (JSON.stringify(draft) !== initialDraft.current) {
+      setDiscardWarning(true);
+      return;
+    }
+    onClose();
+  }
 
   if (!open) return null;
 
@@ -97,7 +114,7 @@ export default function MatchDialog({
               <h2 id="match-read-title">بازی {draft.number.toLocaleString("fa-IR")}</h2>
             </div>
             <button className="close-button" type="button" onClick={onClose} aria-label="بستن">
-              ×
+              <X aria-hidden="true" />
             </button>
           </header>
           <MatchTabs active={activeTab} onChange={setActiveTab} />
@@ -124,6 +141,10 @@ export default function MatchDialog({
               <div><span>نوع لابی</span><strong lang="en">{draft.lobbyTypeName || "—"}</strong></div>
             </div>
           )}
+          <div className="detail-section">
+            <span>هیروهای انتخاب‌شده</span>
+            <DraftPicks picks={draft.picks} />
+          </div>
           <div className="detail-section">
             <span>بن‌ها</span>
             <div className="readonly-bans">
@@ -155,7 +176,7 @@ export default function MatchDialog({
   }
 
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
+    <div className="modal-backdrop" role="presentation" onMouseDown={requestClose}>
       <form
         className="modal match-modal"
         onMouseDown={(event) => event.stopPropagation()}
@@ -178,8 +199,8 @@ export default function MatchDialog({
             <p className="modal-kicker">{dateLabel}</p>
             <h2>{match ? "ویرایش بازی" : "ثبت بازی"}</h2>
           </div>
-          <button className="close-button" type="button" onClick={onClose} aria-label="بستن">
-            ×
+          <button className="close-button" type="button" onClick={requestClose} aria-label="بستن">
+            <X aria-hidden="true" />
           </button>
         </header>
         <MatchTabs active={activeTab} onChange={setActiveTab} />
@@ -211,48 +232,25 @@ export default function MatchDialog({
               }))
             }
           />
-          <label className="field">
-            <span>رول</span>
-            <select
-              required
-              value={draft.role}
-              onChange={(event) =>
-                setDraft((current) => ({
-                  ...current,
-                  role: event.target.value as MatchRole,
-                }))
-              }
-            >
-              <option value="">انتخاب رول</option>
-              {ROLE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value} lang="en">
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span>نوع صف</span>
-            <select
-              required
-              value={draft.queueType}
-              onChange={(event) =>
-                setDraft((current) => ({
-                  ...current,
-                  queueType: event.target.value as QueueType,
-                }))
-              }
-            >
-              <option value="">انتخاب نوع صف</option>
-              {QUEUE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value} lang="en">
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <DotaSelect<MatchRole>
+            label="رول"
+            value={draft.role}
+            placeholder="انتخاب رول"
+            options={ROLE_OPTIONS}
+            required
+            onChange={(role) => setDraft((current) => ({ ...current, role }))}
+          />
+          <DotaSelect<QueueType>
+            label="نوع صف"
+            value={draft.queueType}
+            placeholder="انتخاب نوع صف"
+            options={QUEUE_OPTIONS}
+            required
+            onChange={(queueType) => setDraft((current) => ({ ...current, queueType }))}
+          />
           <BanPicker
             value={draft.bans}
+            picks={draft.picks}
             pickedHeroId={draft.heroId}
             legacyBans={draft.legacyBans}
             onChange={(bans) => setDraft((current) => ({ ...current, bans }))}
@@ -301,20 +299,37 @@ export default function MatchDialog({
               className="secondary-button danger-button"
               type="button"
               disabled={busy}
-              onClick={() => onDelete(match.id)}
+              onClick={() => setDeleteWarning(true)}
             >
-              حذف بازی
+              <Trash2 aria-hidden="true" /> حذف بازی
             </button>
           )}
           <span className="action-spacer" />
-          <button className="secondary-button" type="button" onClick={onClose}>
-            انصراف
+          <button className="secondary-button" type="button" onClick={requestClose}>
+            <X aria-hidden="true" /> انصراف
           </button>
           <button className="primary-button" type="submit" disabled={busy}>
-            {busy ? "در حال ثبت" : "ثبت بازی"}
+            <Save aria-hidden="true" /> {busy ? "در حال ثبت" : "ثبت بازی"}
           </button>
         </footer>
       </form>
+      <ConfirmDialog
+        open={discardWarning}
+        title="تغییرات ذخیره نشده‌اند"
+        description="اگر خارج شوید، تغییراتی که در این بازی انجام داده‌اید از بین می‌روند."
+        confirmLabel="خروج بدون ذخیره"
+        onCancel={() => setDiscardWarning(false)}
+        onConfirm={onClose}
+      />
+      <ConfirmDialog
+        open={deleteWarning}
+        title="حذف این بازی؟"
+        description="این بازی و یادداشت‌های آن از دفترچه حذف می‌شوند."
+        confirmLabel="حذف بازی"
+        tone="delete"
+        onCancel={() => setDeleteWarning(false)}
+        onConfirm={() => match && onDelete(match.id)}
+      />
     </div>
   );
 }
@@ -334,12 +349,26 @@ function ReadonlyReview({ match }: { match: Match }) {
     <div className="readonly-review-grid">
       <section className="readonly-review is-positive">
         <strong>نکات مثبت</strong>
-        {match.positivePoints.length ? <ul>{match.positivePoints.map((point, index) => <li key={`${point}-${index}`}><span>✓</span>{point}</li>)}</ul> : <p>—</p>}
+        {match.positivePoints.length ? <ul>{match.positivePoints.map((point, index) => <li key={`${point}-${index}`}><Check aria-hidden="true" />{point}</li>)}</ul> : <p>—</p>}
       </section>
       <section className="readonly-review is-negative">
         <strong>نکات منفی</strong>
-        {match.negativePoints.length ? <ul>{match.negativePoints.map((point, index) => <li key={`${point}-${index}`}><span>×</span>{point}</li>)}</ul> : <p>—</p>}
+        {match.negativePoints.length ? <ul>{match.negativePoints.map((point, index) => <li key={`${point}-${index}`}><CircleX aria-hidden="true" />{point}</li>)}</ul> : <p>—</p>}
       </section>
+    </div>
+  );
+}
+
+function DraftPicks({ picks }: { picks: MatchPick[] }) {
+  if (!picks.length) return <p>—</p>;
+  return (
+    <div className="draft-picks" aria-label="هیروهای انتخاب‌شده توسط دیگر بازیکنان">
+      {picks.map((pick) => (
+        <span className={`draft-pick${pick.inRolePool ? " is-pool-priority" : ""}`} key={pick.id} title={pick.name}>
+          <img src={heroImage(pick)} alt="" />
+          <b lang="en" dir="ltr">{pick.name}</b>
+        </span>
+      ))}
     </div>
   );
 }
@@ -433,7 +462,7 @@ function GeneratedImages({ match }: { match: Match }) {
         : "تصاویر این مچ به‌زودی آماده می‌شوند.";
     return (
       <section className={`generated-images-empty is-${match.imageJobStatus || "pending"}`}>
-        <span className="image-build-icon">◫</span>
+        <span className="image-build-icon"><ImageIcon aria-hidden="true" /></span>
         <div><strong>تصاویر گزارش</strong><p>{label}</p></div>
       </section>
     );

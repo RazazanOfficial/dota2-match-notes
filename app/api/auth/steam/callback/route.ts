@@ -3,12 +3,11 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import {
   getAppUrl,
-  SESSION_COOKIE,
-  SESSION_DURATION_SECONDS,
   STEAM_STATE_COOKIE,
   useSecureCookies,
 } from "@/lib/auth/config";
 import { createSession } from "@/lib/auth/session";
+import { setSessionCookie } from "@/lib/auth/session-cookie";
 import { fetchSteamProfile, verifySteamOpenId } from "@/lib/auth/steam";
 import { upsertSteamUser } from "@/lib/auth/user";
 
@@ -59,14 +58,7 @@ export async function GET(request: NextRequest) {
     const session = await createSession(user.id);
     const response = NextResponse.redirect(new URL("/", getAppUrl()));
 
-    response.cookies.set(SESSION_COOKIE, session.token, {
-      httpOnly: true,
-      secure: useSecureCookies(),
-      sameSite: "lax",
-      maxAge: SESSION_DURATION_SECONDS,
-      expires: session.expiresAt,
-      path: "/",
-    });
+    setSessionCookie(response, session);
     clearState(response);
 
     return response;

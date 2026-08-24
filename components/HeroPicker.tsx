@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Search, X } from "lucide-react";
 import { HEROES, heroImage } from "@/data/heroes";
 import type { Hero } from "@/lib/types";
 
@@ -47,6 +48,7 @@ export default function HeroPicker({
       <label htmlFor={listId}>{label}</label>
       <div className={`hero-picker-control${value ? " has-value" : ""}`}>
         {value && <img src={heroImage(value)} alt="" />}
+        {!value && <Search className="hero-search-icon" aria-hidden="true" />}
         <input
           id={listId}
           value={query}
@@ -80,7 +82,7 @@ export default function HeroPicker({
             aria-label={`حذف ${value.name}`}
             onClick={() => onChange(null)}
           >
-            ×
+            <X aria-hidden="true" />
           </button>
         )}
       </div>

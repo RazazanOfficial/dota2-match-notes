@@ -65,6 +65,28 @@ export function buildStratzEnrichment(params: {
     team: number | null;
     draftOrder: number | null;
   }>();
+  const uniquePicks = new Map<number, {
+    heroId: number;
+    heroName: string;
+    playerSlot: number | null;
+    team: number | null;
+  }>();
+  for (const candidate of match.players || []) {
+    if (
+      candidate.steamAccountId === steamAccountId ||
+      !candidate.heroId ||
+      uniquePicks.has(candidate.heroId)
+    ) continue;
+    const hero = heroById(candidate.heroId);
+    if (!hero) continue;
+    const playerSlot = candidate.playerSlot ?? null;
+    uniquePicks.set(candidate.heroId, {
+      heroId: candidate.heroId,
+      heroName: hero.name,
+      playerSlot,
+      team: playerSlot === null ? null : playerSlot >= 128 ? 1 : 0,
+    });
+  }
   if (heroPoolEligible) {
     for (const entry of match.pickBans || []) {
       if (entry.isPick !== false || entry.wasBannedSuccessfully === false) continue;
@@ -90,6 +112,13 @@ export function buildStratzEnrichment(params: {
 
   return {
     role,
+    picks: [...uniquePicks.values()]
+      .sort(
+        (left, right) =>
+          (left.playerSlot ?? Number.MAX_SAFE_INTEGER) -
+          (right.playerSlot ?? Number.MAX_SAFE_INTEGER),
+      )
+      .slice(0, 9),
     bans: [...uniqueBans.values()].sort(
       (left, right) =>
         (left.draftOrder ?? Number.MAX_SAFE_INTEGER)

@@ -13,6 +13,7 @@ import {
   dotaMatches,
   journalMatches,
   matchBans,
+  matchPicks,
   matchImageJobs,
   stratzEnrichmentJobs,
   users,
@@ -77,7 +78,7 @@ export async function enqueueStratzBackfillForUser(userId: string) {
           errorMessage: null,
           updatedAt: now,
         },
-        setWhere: eq(stratzEnrichmentJobs.status, "failed"),
+        setWhere: ne(stratzEnrichmentJobs.status, "processing"),
       })
       .returning({ id: stratzEnrichmentJobs.id });
     return queued.length;
@@ -230,6 +231,12 @@ export async function saveStratzEnrichment(params: {
     team: number | null;
     draftOrder: number | null;
   }>;
+  picks: Array<{
+    heroId: number;
+    heroName: string;
+    playerSlot: number | null;
+    team: number | null;
+  }>;
   match: StratzMatch;
 }) {
   const db = getDb();
@@ -302,6 +309,20 @@ export async function saveStratzEnrichment(params: {
             inArray(matchBans.source, ["opendota", "stratz"]),
           ),
         );
+    }
+
+    await tx.delete(matchPicks).where(eq(matchPicks.matchId, params.journalMatchId));
+    if (params.picks.length) {
+      await tx.insert(matchPicks).values(
+        params.picks.slice(0, 9).map((pick, sortOrder) => ({
+          matchId: params.journalMatchId,
+          heroId: pick.heroId,
+          heroName: pick.heroName,
+          sortOrder,
+          playerSlot: pick.playerSlot,
+          team: pick.team,
+        })),
+      );
     }
 
     await tx
