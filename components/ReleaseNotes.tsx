@@ -55,7 +55,7 @@ export default function ReleaseNotes({ authenticated = false, compact = false }:
   return (
     <>
       <button className={`site-version${compact ? " is-compact" : ""}`} type="button" onClick={showReleases}>
-        <span lang="en">Alpha 0.9.0</span>
+        <span lang="en">version-3.0.0</span>
         {unread && <i aria-label="نسخه جدید" />}
       </button>
       {open && (
