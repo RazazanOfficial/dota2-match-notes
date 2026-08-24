@@ -13,6 +13,7 @@ export interface SessionUser {
   displayName: string;
   avatarUrl: string | null;
   profileUrl: string | null;
+  passwordHash: string | null;
   isAdmin: boolean;
   isSuperAdmin: boolean;
   createdAt: Date;
@@ -49,6 +50,7 @@ export async function getSessionUser(token: string | undefined) {
       displayName: users.displayName,
       avatarUrl: users.avatarUrl,
       profileUrl: users.profileUrl,
+      passwordHash: users.passwordHash,
       isAdmin: users.isAdmin,
       createdAt: users.createdAt,
       lastManualSyncAt: users.lastManualSyncAt,

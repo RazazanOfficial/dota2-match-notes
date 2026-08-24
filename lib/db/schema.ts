@@ -82,6 +82,8 @@ export const users = pgTable(
     displayName: varchar("display_name", { length: 100 }).notNull(),
     avatarUrl: text("avatar_url"),
     profileUrl: text("profile_url"),
+    passwordHash: varchar("password_hash", { length: 255 }),
+    passwordUpdatedAt: timestamp("password_updated_at", { withTimezone: true }),
     isAdmin: boolean("is_admin").default(false).notNull(),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     lastManualSyncAt: timestamp("last_manual_sync_at", { withTimezone: true }),
@@ -320,6 +322,49 @@ export const matchBans = pgTable(
     uniqueIndex("match_bans_match_hero_uidx").on(table.matchId, table.heroId),
     uniqueIndex("match_bans_match_sort_uidx").on(table.matchId, table.sortOrder),
     check("match_bans_sort_order_check", sql`${table.sortOrder} >= 0`),
+  ],
+);
+
+export const matchPicks = pgTable(
+  "match_picks",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    matchId: uuid("match_id")
+      .notNull()
+      .references(() => journalMatches.id, { onDelete: "cascade" }),
+    heroId: integer("hero_id").notNull(),
+    heroName: varchar("hero_name", { length: 100 }).notNull(),
+    sortOrder: smallint("sort_order").notNull(),
+    playerSlot: smallint("player_slot"),
+    team: smallint("team"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("match_picks_match_hero_uidx").on(table.matchId, table.heroId),
+    uniqueIndex("match_picks_match_sort_uidx").on(table.matchId, table.sortOrder),
+    index("match_picks_match_id_idx").on(table.matchId),
+    check("match_picks_sort_order_check", sql`${table.sortOrder} between 0 and 8`),
+  ],
+);
+
+export const passwordLoginAttempts = pgTable(
+  "password_login_attempts",
+  {
+    keyHash: varchar("key_hash", { length: 64 }).primaryKey(),
+    failedAttempts: smallint("failed_attempts").default(0).notNull(),
+    lockedUntil: timestamp("locked_until", { withTimezone: true }),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("password_login_attempts_updated_at_idx").on(table.updatedAt),
+    check(
+      "password_login_attempts_failed_attempts_check",
+      sql`${table.failedAttempts} >= 0`,
+    ),
   ],
 );
 
@@ -626,6 +671,7 @@ export const journalMatchesRelations = relations(
       references: [heroPoolVersions.id],
     }),
     bans: many(matchBans),
+    picks: many(matchPicks),
     images: many(matchImages),
     imageJobs: many(matchImageJobs),
     stratzEnrichmentJob: one(stratzEnrichmentJobs, {
@@ -638,6 +684,13 @@ export const journalMatchesRelations = relations(
 export const matchBansRelations = relations(matchBans, ({ one }) => ({
   match: one(journalMatches, {
     fields: [matchBans.matchId],
+    references: [journalMatches.id],
+  }),
+}));
+
+export const matchPicksRelations = relations(matchPicks, ({ one }) => ({
+  match: one(journalMatches, {
+    fields: [matchPicks.matchId],
     references: [journalMatches.id],
   }),
 }));

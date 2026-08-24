@@ -1,9 +1,24 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  CircleX,
+  LogOut,
+  Menu,
+  Plus,
+  RotateCcw,
+  Search,
+  Settings,
+  Shield,
+  UserRound,
+} from "lucide-react";
+import { toast } from "react-toastify";
 import { heroById, heroImage } from "@/data/heroes";
 import {
-  loginPlayer,
   getHeroPool,
   logout,
   purgeLegacyBrowserCache,
@@ -13,7 +28,7 @@ import {
   viewCoach,
   viewPlayer,
 } from "@/lib/api";
-import { ANCHOR_DATE, queueLabel, roleLabel } from "@/lib/constants";
+import { queueLabel, roleLabel } from "@/lib/constants";
 import {
   faNumber,
   faPercent,
@@ -22,6 +37,7 @@ import {
   formatWeekRange,
   formatWeekday,
   getCurrentWeekIndex,
+  getWeekAnchorDate,
   getWeekDates,
   getWeekLabel,
   isValidUsername,
@@ -39,6 +55,9 @@ import AppLogo from "./AppLogo";
 import { GameIcon } from "./GameIcon";
 import HeroPoolDialog from "./HeroPoolDialog";
 import ReleaseNotes from "./ReleaseNotes";
+import AccountSettingsDialog from "./AccountSettingsDialog";
+import LoginDialog from "./LoginDialog";
+import PlayerSearchDialog from "./PlayerSearchDialog";
 
 type AccessView = "roles" | "coach";
 
@@ -49,10 +68,14 @@ export default function MatchJournal() {
   const [accessView, setAccessView] = useState<AccessView>("roles");
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
-  const [activeWeek, setActiveWeek] = useState(() => getCurrentWeekIndex(ANCHOR_DATE));
+  const [activeWeek, setActiveWeek] = useState(0);
   const [syncState, setSyncState] = useState<"synced" | "syncing" | "error">("synced");
   const [busy, setBusy] = useState(false);
-  const [toast, setToast] = useState("");
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
+  const [playerSearchOpen, setPlayerSearchOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [viewingHandle, setViewingHandle] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [heroPoolOpen, setHeroPoolOpen] = useState(false);
   const [heroPool, setHeroPool] = useState<HeroPoolData | null>(null);
@@ -60,8 +83,17 @@ export default function MatchJournal() {
   const [editing, setEditing] = useState<{ dateKey: string; matchId: string | null } | null>(
     null,
   );
-  const toastTimer = useRef<number | null>(null);
-  const dates = useMemo(() => getWeekDates(ANCHOR_DATE, activeWeek), [activeWeek]);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+  const membershipDate = viewingHandle
+    ? profile.registeredDate || profile.createdAt
+    : session?.registeredDate || profile.registeredDate || session?.createdAt || profile.createdAt;
+  const anchorDate = useMemo(
+    () => getWeekAnchorDate(membershipDate || toDateKey(new Date())),
+    [membershipDate],
+  );
+  const registrationDate = membershipDate?.slice(0, 10) || toDateKey(new Date());
+  const canEdit = session?.mode === "player" && !viewingHandle;
+  const dates = useMemo(() => getWeekDates(anchorDate, activeWeek), [activeWeek, anchorDate]);
   const rangeFrom = toDateKey(dates[0]);
   const rangeTo = toDateKey(dates[dates.length - 1]);
 
@@ -85,6 +117,19 @@ export default function MatchJournal() {
   }, []);
 
   useEffect(() => {
+    setActiveWeek(getCurrentWeekIndex(anchorDate));
+  }, [anchorDate, session?.username, viewingHandle]);
+
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+    const close = (event: PointerEvent) => {
+      if (!accountMenuRef.current?.contains(event.target as Node)) setAccountMenuOpen(false);
+    };
+    window.addEventListener("pointerdown", close);
+    return () => window.removeEventListener("pointerdown", close);
+  }, [accountMenuOpen]);
+
+  useEffect(() => {
     if (session?.mode !== "player") return;
     let cancelled = false;
     getHeroPool()
@@ -100,10 +145,11 @@ export default function MatchJournal() {
     let cancelled = false;
     async function refresh() {
       try {
+        const targetHandle = viewingHandle || activeSession.username;
         const latest =
-          activeSession.mode === "player"
+          activeSession.mode === "player" && !viewingHandle
             ? await viewPlayer(activeSession.username, rangeFrom, rangeTo)
-            : await viewCoach(activeSession.username, rangeFrom, rangeTo);
+            : await viewCoach(targetHandle, rangeFrom, rangeTo);
         if (cancelled) return;
         setProfile((current) =>
           current.username && current.username !== latest.username
@@ -122,17 +168,19 @@ export default function MatchJournal() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [editing, rangeFrom, rangeTo, session, refreshVersion]);
+  }, [editing, rangeFrom, rangeTo, session, refreshVersion, viewingHandle]);
 
   function showToast(message: string) {
-    setToast(message);
-    if (toastTimer.current) window.clearTimeout(toastTimer.current);
-    toastTimer.current = window.setTimeout(() => setToast(""), 3200);
+    toast.success(message);
   }
 
-  function handlePlayerLogin() {
-    setBusy(true);
-    loginPlayer();
+  async function handleAuthenticated() {
+    const restored = await restorePlayer();
+    if (!restored) throw new Error("ورود کامل نشد؛ دوباره تلاش کنید");
+    setSession(restored);
+    setViewingHandle(null);
+    setProfile(EMPTY_PROFILE);
+    setRefreshVersion((version) => version + 1);
   }
 
   async function handleCoachLogin(usernameValue: string) {
@@ -146,10 +194,32 @@ export default function MatchJournal() {
     try {
       const nextProfile = await viewCoach(username, rangeFrom, rangeTo);
       setSession({ mode: "coach", username });
+      setViewingHandle(null);
       setProfile(nextProfile);
     } finally {
       setBusy(false);
     }
+  }
+
+  async function handlePlayerSearch(identifierValue: string) {
+    const username = normalizePublicHandle(identifierValue);
+    if (!isValidUsername(username)) throw new Error("شناسه بازیکن معتبر نیست");
+    setBusy(true);
+    try {
+      const nextProfile = await viewCoach(username, rangeFrom, rangeTo);
+      setViewingHandle(username);
+      setProfile(nextProfile);
+      setEditing(null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function returnToMyJournal() {
+    setViewingHandle(null);
+    setProfile(EMPTY_PROFILE);
+    setEditing(null);
+    setRefreshVersion((version) => version + 1);
   }
 
   async function leave() {
@@ -158,6 +228,7 @@ export default function MatchJournal() {
       await logout(session);
     } finally {
       setSession(null);
+      setViewingHandle(null);
       setProfile(EMPTY_PROFILE);
       setAccessView("roles");
       setEditing(null);
@@ -178,7 +249,7 @@ export default function MatchJournal() {
       : null;
 
   async function mutateDay(dateKey: string, mutate: (day: Day) => Day) {
-    if (!session || session.mode !== "player") return false;
+    if (!session || !canEdit) return false;
     const previous = profile;
     const baseDay = profile.days[dateKey] || { completed: false, matches: [] };
     const nextDay = mutate(structuredClone(baseDay));
@@ -196,7 +267,7 @@ export default function MatchJournal() {
     } catch (error) {
       setProfile(previous);
       setSyncState("error");
-      showToast(error instanceof Error ? error.message : "ثبت اطلاعات انجام نشد");
+      toast.error(error instanceof Error ? error.message : "ثبت اطلاعات انجام نشد");
       return false;
     }
   }
@@ -219,7 +290,7 @@ export default function MatchJournal() {
   }
 
   async function handleDeleteMatch(matchId: string) {
-    if (!editing || !window.confirm("این بازی حذف شود؟")) return;
+    if (!editing) return;
     setBusy(true);
     const saved = await mutateDay(editing.dateKey, (day) => ({
       ...day,
@@ -236,7 +307,7 @@ export default function MatchJournal() {
   async function toggleDay(dateKey: string) {
     const day = profile.days[dateKey] || { completed: false, matches: [] };
     if (!day.matches.length && !day.completed) {
-      showToast("بازی‌ای برای این روز ثبت نشده");
+      toast.info("بازی‌ای برای این روز ثبت نشده");
       return;
     }
     const completed = !day.completed;
@@ -260,13 +331,20 @@ export default function MatchJournal() {
 
   if (!session) {
     return (
-      <AccessScreen
-        view={accessView}
-        busy={busy}
-        onViewChange={setAccessView}
-        onPlayerLogin={handlePlayerLogin}
-        onCoachLogin={handleCoachLogin}
-      />
+      <>
+        <AccessScreen
+          view={accessView}
+          busy={busy}
+          onViewChange={setAccessView}
+          onPlayerLogin={() => setLoginOpen(true)}
+          onCoachLogin={handleCoachLogin}
+        />
+        <LoginDialog
+          open={loginOpen}
+          onClose={() => setLoginOpen(false)}
+          onAuthenticated={handleAuthenticated}
+        />
+      </>
     );
   }
 
@@ -275,43 +353,66 @@ export default function MatchJournal() {
       <div className="app-shell">
         <header className="topbar">
           <Brand />
-          <div className="account-summary">
+          <div className="header-actions">
             <ReleaseNotes authenticated={session.mode === "player"} compact />
-            <div className="account-copy">
-              <span className={`mode-badge${session.mode === "coach" ? " is-coach" : ""}`}>
-                {session.mode === "player" ? "بازیکن" : "بازدیدکننده"}
-              </span>
-              <strong lang="en" dir="ltr">{session.username}</strong>
-            </div>
-              <span className={`sync-status is-${syncState}`}>
-                <span className="status-dot" />
-              {syncState === "syncing" ? "در حال ذخیره" : syncState === "error" ? "اتصال ناموفق" : "ذخیره شد"}
-            </span>
-            {session.mode === "player" && session.isSuperAdmin && (
-              <a className="admin-link" href="/admin">
-                مدیریت
-              </a>
-            )}
-            {session.mode === "player" && (
-              <button className="secondary-button" type="button" onClick={() => setHeroPoolOpen(true)}>
-                Hero Pool
+            {canEdit && (
+              <button className="hero-pool-header-button" type="button" onClick={() => setHeroPoolOpen(true)}>
+                <Shield aria-hidden="true" /><span>Hero Pool</span>
               </button>
             )}
-            <button className="secondary-button" type="button" disabled={busy} onClick={leave}>
-              خروج
+            <button className="header-icon-button" type="button" onClick={() => setPlayerSearchOpen(true)} aria-label="جست‌وجوی بازیکن">
+              <Search aria-hidden="true" />
             </button>
+            <div className="account-menu" ref={accountMenuRef}>
+              <button
+                className={`account-menu-trigger sync-${syncState}`}
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={accountMenuOpen}
+                onClick={() => setAccountMenuOpen((current) => !current)}
+              >
+                <span className="steam-avatar-diamond">
+                  {session.avatarUrl ? <img src={session.avatarUrl} alt="" /> : <UserRound aria-hidden="true" />}
+                </span>
+                <span className="account-menu-name"><strong>{session.displayName || session.username}</strong></span>
+                <Menu className="account-menu-glyph" aria-hidden="true" />
+                <ChevronDown className={accountMenuOpen ? "is-open" : ""} aria-hidden="true" />
+              </button>
+              {accountMenuOpen && (
+                <div className="account-menu-popover" role="menu">
+                  {session.mode === "player" && (
+                    <button type="button" role="menuitem" onClick={() => { setAccountMenuOpen(false); setAccountSettingsOpen(true); }}>
+                      <Settings aria-hidden="true" /> تنظیمات حساب
+                    </button>
+                  )}
+                  {session.mode === "player" && session.isSuperAdmin && (
+                    <a href="/admin" role="menuitem"><Shield aria-hidden="true" /> مدیریت</a>
+                  )}
+                  <button type="button" role="menuitem" disabled={busy} onClick={leave}>
+                    <LogOut aria-hidden="true" /> خروج
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
+        {viewingHandle && (
+          <div className="public-view-banner">
+            <span>در حال دیدن دفتر <b lang="en" dir="ltr">{profile.username}</b></span>
+            <button type="button" onClick={returnToMyJournal}><RotateCcw aria-hidden="true" /> بازگشت به دفتر من</button>
+          </div>
+        )}
+
         <main>
-          {session.mode === "player" && (
+          {canEdit && (
             <SyncPanel
               onMatchesImported={(result) => {
                 const enriched = result.stratz?.jobs.some(
                   (job) => job.status === "completed",
                 );
                 if (result.imported.length || enriched) {
-                  setActiveWeek(getCurrentWeekIndex(ANCHOR_DATE));
+                  setActiveWeek(getCurrentWeekIndex(anchorDate));
                   setRefreshVersion((version) => version + 1);
                 }
               }}
@@ -331,12 +432,12 @@ export default function MatchJournal() {
                   disabled={activeWeek === 0}
                   onClick={() => setActiveWeek((week) => Math.max(0, week - 1))}
                 >
-                  → هفته قبل
+                  <ChevronRight aria-hidden="true" /> هفته قبل
                 </button>
                 <button
                   className="today-button"
                   type="button"
-                  onClick={() => setActiveWeek(getCurrentWeekIndex(ANCHOR_DATE))}
+                  onClick={() => setActiveWeek(getCurrentWeekIndex(anchorDate))}
                 >
                   هفته جاری
                 </button>
@@ -345,7 +446,7 @@ export default function MatchJournal() {
                   type="button"
                   onClick={() => setActiveWeek((week) => week + 1)}
                 >
-                  هفته بعد ←
+                  هفته بعد <ChevronLeft aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -366,10 +467,12 @@ export default function MatchJournal() {
               const day = profile.days[dateKey] || { completed: false, matches: [] };
               const summary = summarizeMatches(day.matches);
               const today = toDateKey(new Date()) === dateKey;
+              const disabled = activeWeek === 0 && dateKey < registrationDate;
               return (
                 <article
-                  className={`day-card${today ? " is-today" : ""}${day.completed ? " is-complete" : ""}`}
+                  className={`day-card${today ? " is-today" : ""}${day.completed ? " is-complete" : ""}${disabled ? " is-disabled" : ""}`}
                   key={dateKey}
+                  aria-disabled={disabled}
                 >
                   <header className="day-header">
                     <div>
@@ -379,14 +482,14 @@ export default function MatchJournal() {
                       </p>
                       <h3 className="day-date">{formatDayDate(date)}</h3>
                     </div>
-                    {session.mode === "player" && (
+                    {canEdit && !disabled && (
                       <button
                         className="add-match-button"
                         type="button"
                         aria-label="افزودن بازی"
                         onClick={() => setEditing({ dateKey, matchId: null })}
                       >
-                        +
+                        <Plus aria-hidden="true" />
                       </button>
                     )}
                   </header>
@@ -399,23 +502,23 @@ export default function MatchJournal() {
                           <MatchCard
                             key={match.id}
                             match={match}
-                            onClick={() => setEditing({ dateKey, matchId: match.id })}
+                            onClick={() => { if (!disabled) setEditing({ dateKey, matchId: match.id }); }}
                           />
                         ))
                     ) : (
-                      <div className="empty-day">هنوز مچی ثبت نشده</div>
+                      <div className="empty-day">{disabled ? "پیش از شروع دفتر" : "هنوز مچی ثبت نشده"}</div>
                     )}
                   </div>
                   <footer className="day-summary">
                     <div className="day-stat"><span>برد</span><strong>{faNumber.format(summary.wins)}</strong></div>
                     <div className="day-stat"><span>باخت</span><strong>{faNumber.format(summary.losses)}</strong></div>
-                    {session.mode === "player" ? (
+                    {canEdit && !disabled ? (
                       <button className="day-complete-button" type="button" onClick={() => toggleDay(dateKey)}>
                         {day.completed ? "روز جمع‌بندی شد" : "جمع‌بندی روز"}
                       </button>
                     ) : (
                       <span className="day-complete-readonly">
-                        {day.completed ? "روز جمع‌بندی شد" : "هنوز جمع‌بندی نشده"}
+                        {disabled ? "پیش از عضویت" : day.completed ? "روز جمع‌بندی شد" : "هنوز جمع‌بندی نشده"}
                       </span>
                     )}
                   </footer>
@@ -428,7 +531,7 @@ export default function MatchJournal() {
 
       <MatchDialog
         open={Boolean(editing)}
-        readonly={session.mode === "coach"}
+        readonly={!canEdit}
         dateLabel={editing ? formatFullDate(new Date(`${editing.dateKey}T00:00:00Z`)) : ""}
         match={editedMatch}
         nextNumber={
@@ -442,7 +545,7 @@ export default function MatchJournal() {
       <ReportDialog
         open={reportOpen}
         profile={profile}
-        anchorDate={ANCHOR_DATE}
+        anchorDate={anchorDate}
         weekIndex={activeWeek}
         onClose={() => setReportOpen(false)}
         onToast={showToast}
@@ -459,15 +562,26 @@ export default function MatchJournal() {
             setHeroPoolOpen(false);
             showToast("Hero Pool ثبت شد");
           } catch (error) {
-            showToast(error instanceof Error ? error.message : "ثبت Hero Pool انجام نشد");
+            toast.error(error instanceof Error ? error.message : "ثبت Hero Pool انجام نشد");
           } finally {
             setBusy(false);
           }
         }}
       />
-      <div className={`toast${toast ? " is-visible" : ""}`} role="status" aria-live="polite">
-        {toast}
-      </div>
+      <AccountSettingsDialog
+        open={accountSettingsOpen}
+        hasPassword={Boolean(session.hasPassword)}
+        onClose={() => setAccountSettingsOpen(false)}
+        onPasswordStateChange={(hasPassword) =>
+          setSession((current) => current ? { ...current, hasPassword } : current)
+        }
+      />
+      <PlayerSearchDialog
+        open={playerSearchOpen}
+        busy={busy}
+        onClose={() => setPlayerSearchOpen(false)}
+        onSearch={handlePlayerSearch}
+      />
     </>
   );
 }
@@ -514,7 +628,7 @@ function AccessScreen({
     <main className="access-screen">
       <header className="access-brand">
         <Brand />
-        <div className="access-header-actions"><ReleaseNotes /><a className="primary-button" href="#login">ورود</a></div>
+        <div className="access-header-actions"><ReleaseNotes /><button className="primary-button" type="button" onClick={onPlayerLogin}>ورود</button></div>
       </header>
       <div className="access-stage">
         <section className="access-intro">
@@ -544,14 +658,14 @@ function AccessScreen({
                 <span className="role-card-index" lang="en">01</span>
                 <span className="role-name">دفتر شخصی من</span>
                 <span className="role-description">ثبت و مرور مچ‌های خودت</span>
-                <span className="role-cta">ورود با Steam ←</span>
+                <span className="role-cta">ورود به حساب <ChevronLeft aria-hidden="true" /></span>
               </button>
               <button className="role-card role-coach" type="button" onClick={() => onViewChange("coach")}>
                 <span className="role-icon"><GameIcon name="coach" /></span>
                 <span className="role-card-index" lang="en">02</span>
                 <span className="role-name">دفتر یک بازیکن</span>
                 <span className="role-description">مرور پروفایل عمومی با شناسه Dota2Notes</span>
-                <span className="role-cta">پیدا کردن بازیکن ←</span>
+                <span className="role-cta">پیدا کردن بازیکن <ChevronLeft aria-hidden="true" /></span>
               </button>
             </div>
           ) : (
@@ -600,7 +714,7 @@ function AccessScreen({
           <div className="feature-story-copy"><span lang="en">03 · DRAFT MEMORY</span><h3>Draft را همان‌طور که<br />اتفاق افتاد ببین</h3><p>بن‌های مچ کنار Hero Pool همان رول قرار می‌گیرند تا Draft را با همان شرایطی که بازی کردی مرور کنی.</p></div>
           <DraftPreview />
         </article>
-        <footer className="feature-final-cta"><AppLogo size={78} alt="" /><h2>مچ بعدی، شروع تحلیل بعدی است.</h2><a className="primary-button" href="#login">ورود به ژورنال</a></footer>
+        <footer className="feature-final-cta"><AppLogo size={78} alt="" /><h2>مچ بعدی، شروع تحلیل بعدی است.</h2><button className="primary-button" type="button" onClick={onPlayerLogin}>ورود به ژورنال</button></footer>
       </section>
     </main>
   );
@@ -612,7 +726,7 @@ function HeroPoolPreview() {
 }
 
 function ReviewPreview() {
-  return <div className="feature-visual review-preview"><header><span lang="en">MATCH #842913</span><b>Victory</b></header><section className="is-positive"><strong>نکات مثبت</strong><p><span>✓</span> کنترل خوب Rune پیش از دقیقه ۶</p><p><span>✓</span> حفظ TP برای درگیری Roshan</p></section><section className="is-negative"><strong>نکات منفی</strong><p><span>×</span> ورود بدون Vision به Triangle</p></section></div>;
+  return <div className="feature-visual review-preview"><header><span lang="en">MATCH #842913</span><b>Victory</b></header><section className="is-positive"><strong>نکات مثبت</strong><p><Check aria-hidden="true" /> کنترل خوب Rune پیش از دقیقه ۶</p><p><Check aria-hidden="true" /> حفظ TP برای درگیری Roshan</p></section><section className="is-negative"><strong>نکات منفی</strong><p><CircleX aria-hidden="true" /> ورود بدون Vision به Triangle</p></section></div>;
 }
 
 function DraftPreview() {

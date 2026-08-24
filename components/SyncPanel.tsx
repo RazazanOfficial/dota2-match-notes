@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { RefreshCw } from "lucide-react";
+import { toast } from "react-toastify";
 import { heroById, heroImage } from "@/data/heroes";
 import { getPlayerSyncStatus, syncPlayerMatches } from "@/lib/api";
 import { faNumber } from "@/lib/date";
@@ -27,21 +29,21 @@ export default function SyncPanel({
 }) {
   const [status, setStatus] = useState<PlayerSyncStatus | null>(null);
   const [syncing, setSyncing] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
   const [now, setNow] = useState(() => Date.now());
 
-  const loadStatus = useCallback(async () => {
+  const loadStatus = useCallback(async (notifyOnError = false) => {
     try {
       const next = await getPlayerSyncStatus();
       setStatus(next);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "وضعیت مچ‌ها دریافت نشد");
+      if (notifyOnError) {
+        toast.error(reason instanceof Error ? reason.message : "وضعیت مچ‌ها دریافت نشد");
+      }
     }
   }, []);
 
   useEffect(() => {
-    void loadStatus();
+    void loadStatus(true);
   }, [loadStatus]);
 
   useEffect(() => {
@@ -70,8 +72,6 @@ export default function SyncPanel({
 
   async function handleSync() {
     setSyncing(true);
-    setError("");
-    setMessage("");
     try {
       const result = await syncPlayerMatches();
       onMatchesImported(result);
@@ -81,42 +81,28 @@ export default function SyncPanel({
         result.stratz?.jobs.filter((job) => job.status === "pending").length || 0;
       const failedEnrichment =
         result.stratz?.jobs.filter((job) => job.status === "failed").length || 0;
-      if (result.imported.length) {
-        setMessage(
-          `${faNumber.format(result.imported.length)} مچ تازه به دفترت اضافه شد.`,
-        );
-      } else if (enriched) {
-        setMessage(`اطلاعات ${faNumber.format(enriched)} مچ کامل شد.`);
-      } else {
-        setMessage("مچ تازه‌ای برای اضافه‌شدن پیدا نشد.");
-      }
+      const messages: string[] = [];
+      if (result.imported.length) messages.push(`${faNumber.format(result.imported.length)} مچ تازه اضافه شد.`);
+      else if (enriched) messages.push(`اطلاعات ${faNumber.format(enriched)} مچ کامل شد.`);
+      else messages.push("مچ تازه‌ای پیدا نشد.");
       if (result.stratz?.backfillQueued) {
-        setMessage((current) =>
-          `${current} اطلاعات ${faNumber.format(result.stratz?.backfillQueued || 0)} مچ قبلی در حال تکمیل است.`,
-        );
+        messages.push(`اطلاعات ${faNumber.format(result.stratz.backfillQueued)} مچ قبلی در حال تکمیل است.`);
       } else if (result.imported.length && enriched) {
-        setMessage((current) =>
-          `${current} اطلاعات ${faNumber.format(enriched)} مچ کامل شد.`,
-        );
+        messages.push(`اطلاعات ${faNumber.format(enriched)} مچ کامل شد.`);
       }
       if (result.deferred) {
-        setMessage((current) =>
-          `${current} ${faNumber.format(result.deferred)} مچ دیگر با بررسی بعدی اضافه می‌شود.`,
-        );
+        messages.push(`${faNumber.format(result.deferred)} مچ دیگر در بررسی بعدی اضافه می‌شود.`);
       }
       if (pendingEnrichment) {
-        setMessage((current) =>
-          `${current} اطلاعات ${faNumber.format(pendingEnrichment)} مچ هنوز در حال تکمیل است.`,
-        );
+        messages.push(`اطلاعات ${faNumber.format(pendingEnrichment)} مچ هنوز در حال تکمیل است.`);
       }
       if (failedEnrichment) {
-        setMessage((current) =>
-          `${current} اطلاعات ${faNumber.format(failedEnrichment)} مچ هنوز کامل نشده است.`,
-        );
+        messages.push(`اطلاعات ${faNumber.format(failedEnrichment)} مچ هنوز کامل نشده است.`);
       }
+      toast.success(messages.join(" "));
       await loadStatus();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "مچ‌ها به‌روز نشدند");
+      toast.error(reason instanceof Error ? reason.message : "مچ‌ها به‌روز نشدند");
       await loadStatus();
     } finally {
       setSyncing(false);
@@ -127,7 +113,7 @@ export default function SyncPanel({
     <section className="sync-panel" aria-labelledby="sync-panel-title">
       <div className="sync-panel-copy">
         <p className="week-kicker">RECENT MATCHES</p>
-        <h2 id="sync-panel-title">تازه‌ترین مچ‌هایت</h2>
+        <h2 id="sync-panel-title">دریافت مچ‌های جدید من</h2>
         <p>
           آخرین بازی‌هایت را به دفتر اضافه کن و برای مرور بعدی آماده نگه دار.
         </p>
@@ -142,18 +128,13 @@ export default function SyncPanel({
           disabled={syncing || cooldownSeconds > 0}
           onClick={handleSync}
         >
-          <span className={syncing ? "sync-spinner" : "sync-button-icon"}>↻</span>
-          {syncing
+          <span>{syncing
             ? "در حال بررسی"
             : cooldownSeconds
               ? `${faNumber.format(cooldownSeconds)} ثانیه تا بررسی بعدی`
-              : "به‌روزرسانی مچ‌ها"}
+              : "به‌روزرسانی مچ‌ها"}</span>
+          <RefreshCw className={syncing ? "is-spinning" : ""} aria-hidden="true" />
         </button>
-        {(message || error) && (
-          <p className={`sync-feedback${error ? " is-error" : ""}`} role="status">
-            {error || message}
-          </p>
-        )}
       </div>
 
       {visibleJobs.length > 0 && (

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
+import { APP_VERSION } from "@/lib/version";
 import TiptapDocument from "./TiptapDocument";
 
 interface ReleaseNote {
@@ -55,7 +57,7 @@ export default function ReleaseNotes({ authenticated = false, compact = false }:
   return (
     <>
       <button className={`site-version${compact ? " is-compact" : ""}`} type="button" onClick={showReleases}>
-        <span lang="en">version-3.0.0</span>
+        <span lang="en">{APP_VERSION}</span>
         {unread && <i aria-label="نسخه جدید" />}
       </button>
       {open && (
@@ -63,7 +65,7 @@ export default function ReleaseNotes({ authenticated = false, compact = false }:
           <section className="modal release-notes-modal" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
             <header className="modal-header">
               <div><p className="modal-kicker" lang="en">BATTLE REPORT</p><h2>تغییرات نسخه‌ها</h2></div>
-              <button className="close-button" type="button" onClick={() => setOpen(false)} aria-label="بستن">×</button>
+              <button className="close-button" type="button" onClick={() => setOpen(false)} aria-label="بستن"><X aria-hidden="true" /></button>
             </header>
             {releases.length ? (
               <div className="release-notes-layout">

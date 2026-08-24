@@ -1,4 +1,4 @@
-import type { Day, Match, Profile, Summary } from "./types";
+import type { Day, Match, MatchPick, Profile, Summary } from "./types";
 import { HEROES, heroById, heroByName } from "../data/heroes";
 import { gameModeName, lobbyTypeName } from "./dota/modes";
 
@@ -38,6 +38,14 @@ export function addDays(date: Date, amount: number) {
   const next = new Date(date);
   next.setUTCDate(next.getUTCDate() + amount);
   return next;
+}
+
+export function getWeekAnchorDate(value: string | Date) {
+  const source = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(source.getTime())) return toDateKey(new Date());
+  const date = parseDateKey(toDateKey(source));
+  const daysSinceSaturday = (date.getUTCDay() + 1) % 7;
+  return toDateKey(addDays(date, -daysSinceSaturday));
 }
 
 export function getWeekDates(anchorDate: string, weekIndex: number) {
@@ -163,6 +171,28 @@ export function sanitizeMatch(raw: Record<string, unknown>, fallback = 1): Match
       return null;
     })
     .filter((hero): hero is (typeof HEROES)[number] => Boolean(hero));
+  const rawPicks = Array.isArray(raw.picks) ? raw.picks : [];
+  const picks = rawPicks
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const candidate = item as {
+        id?: unknown;
+        name?: unknown;
+        playerSlot?: unknown;
+        team?: unknown;
+        inRolePool?: unknown;
+      };
+      const hero = heroById(Number(candidate.id)) || heroByName(String(candidate.name || ""));
+      if (!hero) return null;
+      return {
+        ...hero,
+        playerSlot: nullableNumber(candidate.playerSlot),
+        team: nullableNumber(candidate.team),
+        inRolePool: Boolean(candidate.inRolePool),
+      };
+    })
+    .filter((hero): hero is NonNullable<typeof hero> => hero !== null)
+    .slice(0, 9) satisfies MatchPick[];
   const number = Number(raw.number);
   const gameModeId = nullableNumber(raw.gameModeId);
   const lobbyTypeId = nullableNumber(raw.lobbyTypeId);
@@ -176,6 +206,7 @@ export function sanitizeMatch(raw: Record<string, unknown>, fallback = 1): Match
     heroId: selectedHero?.id || null,
     heroName: selectedHero?.name || legacyHero,
     bans,
+    picks,
     legacyBans: typeof raw.bans === "string" ? raw.bans.trim() : String(raw.legacyBans || "").trim(),
     role: ["safe_lane", "mid_lane", "off_lane", "soft_support", "hard_support"].includes(
       String(raw.role),
@@ -272,6 +303,9 @@ export function normalizeProfile(raw: unknown, username = ""): Profile {
 
   return {
     username: String(source.username || username),
+    registeredDate: /^\d{4}-\d{2}-\d{2}$/.test(String(source.registeredDate || ""))
+      ? String(source.registeredDate)
+      : undefined,
     createdAt: String(source.createdAt || ""),
     updatedAt: String(source.updatedAt || ""),
     days,
@@ -281,6 +315,7 @@ export function normalizeProfile(raw: unknown, username = ""): Profile {
 export function mergeProfiles(current: Profile, incoming: Profile): Profile {
   return {
     username: incoming.username || current.username,
+    registeredDate: incoming.registeredDate || current.registeredDate,
     createdAt: incoming.createdAt || current.createdAt,
     updatedAt: incoming.updatedAt || current.updatedAt,
     days: {

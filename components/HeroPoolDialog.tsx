@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Save, X } from "lucide-react";
 import { heroImage } from "@/data/heroes";
 import { roleLabel } from "@/lib/constants";
 import { HERO_POOL_ROLES, heroPoolSizeState } from "@/lib/hero-pool/rules";
@@ -69,7 +70,7 @@ export default function HeroPoolDialog({
             <p className="modal-kicker" lang="en">ROLE MASTERY</p>
             <h2>Hero Pool من</h2>
           </div>
-          <button className="close-button" type="button" onClick={onClose} aria-label="بستن">×</button>
+          <button className="close-button" type="button" onClick={onClose} aria-label="بستن"><X aria-hidden="true" /></button>
         </header>
         <div className="hero-pool-grid">
           {HERO_POOL_ROLES.map((role) => {
@@ -93,7 +94,7 @@ export default function HeroPoolDialog({
                     <span key={hero.id}>
                       <img src={heroImage(hero)} alt="" />
                       <b lang="en">{hero.name}</b>
-                      <button type="button" aria-label={`حذف ${hero.name}`} onClick={() => setPools((current) => ({ ...current, [role]: current[role].filter((item) => item.id !== hero.id) }))}>×</button>
+                      <button type="button" aria-label={`حذف ${hero.name}`} onClick={() => setPools((current) => ({ ...current, [role]: current[role].filter((item) => item.id !== hero.id) }))}><X aria-hidden="true" /></button>
                     </span>
                   ))}
                 </div>
@@ -104,8 +105,8 @@ export default function HeroPoolDialog({
         <p className="form-error" role="alert">{error}</p>
         <footer className="modal-actions">
           <span className="action-spacer" />
-          <button className="secondary-button" type="button" onClick={onClose}>انصراف</button>
-          <button className="primary-button" type="submit" disabled={busy}>{busy ? "در حال ذخیره" : "ذخیره Hero Pool"}</button>
+          <button className="secondary-button" type="button" onClick={onClose}><X aria-hidden="true" /> انصراف</button>
+          <button className="primary-button" type="submit" disabled={busy}><Save aria-hidden="true" /> {busy ? "در حال ذخیره" : "ذخیره Hero Pool"}</button>
         </footer>
       </form>
     </div>

@@ -32,12 +32,19 @@ export interface MatchBan extends Hero {
   inRolePool?: boolean;
 }
 
+export interface MatchPick extends Hero {
+  playerSlot?: number | null;
+  team?: number | null;
+  inRolePool?: boolean;
+}
+
 export interface Match {
   id: string;
   number: number;
   heroId: number | null;
   heroName: string;
   bans: MatchBan[];
+  picks: MatchPick[];
   legacyBans?: string;
   role: MatchRole | "";
   roleSource?: "manual" | "opendota" | "stratz" | null;
@@ -78,6 +85,7 @@ export interface Day {
 
 export interface Profile {
   username: string;
+  registeredDate?: string;
   createdAt?: string;
   updatedAt?: string;
   days: Record<string, Day>;
@@ -91,9 +99,14 @@ export interface HeroPoolData {
 export interface Session {
   mode: AccessMode;
   username: string;
+  steamId?: string;
+  steamAccountId?: number;
   displayName?: string;
   avatarUrl?: string | null;
   isSuperAdmin?: boolean;
+  createdAt?: string;
+  registeredDate?: string;
+  hasPassword?: boolean;
 }
 
 export interface ImageQueueJob {

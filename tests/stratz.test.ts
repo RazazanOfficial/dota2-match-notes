@@ -196,6 +196,8 @@ describe("STRATZ client and validation", () => {
           parsedDateTime: 123,
           players: [
             { steamAccountId: 42, heroId: 35, position: "POSITION_2" },
+            { steamAccountId: 43, heroId: 2, playerSlot: 1 },
+            { steamAccountId: 44, heroId: 3, playerSlot: 128 },
           ],
           pickBans: [
             {
@@ -217,6 +219,10 @@ describe("STRATZ client and validation", () => {
       }),
     ).toMatchObject({
       role: "mid_lane",
+      picks: [
+        { heroId: 2, heroName: "Axe", team: 0 },
+        { heroId: 3, heroName: "Bane", team: 1 },
+      ],
       bans: [{ heroId: 34, heroName: "Tinker" }],
     });
   });

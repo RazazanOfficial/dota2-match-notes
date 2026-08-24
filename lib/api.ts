@@ -11,17 +11,34 @@ import type {
 } from "./types";
 
 interface ErrorPayload {
-  error?: string | { code?: string; message?: string };
+  error?: string | { code?: string; message?: string; retryAfterSeconds?: number };
   message?: string;
+}
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public code?: string,
+    public retryAfterSeconds?: number,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
 }
 
 interface SessionResponse {
   authenticated: boolean;
   user?: {
     handle: string;
+    steamId: string;
+    steamAccountId: number;
     displayName: string;
     avatarUrl: string | null;
     isSuperAdmin: boolean;
+    createdAt: string;
+    registeredDate: string;
+    hasPassword: boolean;
   };
 }
 
@@ -49,8 +66,12 @@ async function requestJson<T>(input: string, init?: RequestInit): Promise<T> {
     const nestedError =
       payload.error && typeof payload.error === "object" ? payload.error.message : undefined;
     const plainError = typeof payload.error === "string" ? payload.error : undefined;
-    throw new Error(
+    const nested = payload.error && typeof payload.error === "object" ? payload.error : undefined;
+    throw new ApiError(
       nestedError || plainError || payload.message || "ارتباط برقرار نشد؛ دوباره تلاش کنید",
+      response.status,
+      nested?.code,
+      nested?.retryAfterSeconds,
     );
   }
 
@@ -99,6 +120,28 @@ export function loginPlayer() {
   window.location.assign("/api/auth/steam");
 }
 
+export async function loginWithPassword(steamIdentifier: string, password: string) {
+  return requestJson<{ ok: boolean }>("/api/auth/password/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ steamIdentifier, password }),
+  });
+}
+
+export async function updateAccountPassword(password: string, confirmPassword: string) {
+  return requestJson<{ ok: boolean; hasPassword: boolean }>("/api/auth/password/me", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password, confirmPassword }),
+  });
+}
+
+export async function removeAccountPassword() {
+  return requestJson<{ ok: boolean; hasPassword: boolean }>("/api/auth/password/me", {
+    method: "DELETE",
+  });
+}
+
 export async function restorePlayer(): Promise<Session | null> {
   const response = await requestJson<SessionResponse>("/api/auth/session");
   if (!response.authenticated || !response.user?.handle) return null;
@@ -106,9 +149,14 @@ export async function restorePlayer(): Promise<Session | null> {
   return {
     mode: "player",
     username: response.user.handle,
+    steamId: response.user.steamId,
+    steamAccountId: response.user.steamAccountId,
     displayName: response.user.displayName,
     avatarUrl: response.user.avatarUrl,
     isSuperAdmin: response.user.isSuperAdmin,
+    createdAt: response.user.createdAt,
+    registeredDate: response.user.registeredDate,
+    hasPassword: response.user.hasPassword,
   };
 }
 

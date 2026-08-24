@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
 import {
   CURSOR_EFFECTS,
   CURSOR_PACKS,
@@ -81,7 +82,7 @@ export default function CursorSettings({
                 aria-label="بستن"
                 onClick={() => setOpen(false)}
               >
-                ×
+                <X aria-hidden="true" />
               </button>
             </header>
 

@@ -94,6 +94,7 @@ export async function runStratzEnrichmentTick(options?: {
         status: "completed",
         attempts: job.attempts,
         role: enrichment.role,
+        pickCount: enrichment.picks.length,
         banCount: enrichment.bans.length,
       });
     } catch (error) {

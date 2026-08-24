@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Check, CircleX, Plus, X } from "lucide-react";
 
 export default function ReviewListInput({
   tone,
@@ -24,7 +25,7 @@ export default function ReviewListInput({
 
   return (
     <section className={`review-list is-${tone}`}>
-      <header><span>{tone === "positive" ? "✓" : "×"}</span><strong>{label}</strong><b>{value.length.toLocaleString("fa-IR")}</b></header>
+      <header><span>{tone === "positive" ? <Check aria-hidden="true" /> : <CircleX aria-hidden="true" />}</span><strong>{label}</strong><b>{value.length.toLocaleString("fa-IR")}</b></header>
       <div className="review-point-entry">
         <input
           value={draft}
@@ -38,14 +39,14 @@ export default function ReviewListInput({
             }
           }}
         />
-        <button type="button" onClick={commit} aria-label="افزودن">+</button>
+        <button type="button" onClick={commit} aria-label="افزودن"><Plus aria-hidden="true" /></button>
       </div>
       <ul>
         {value.map((point, index) => (
           <li key={`${point}-${index}`}>
-            <span>{tone === "positive" ? "✓" : "×"}</span>
+            <span>{tone === "positive" ? <Check aria-hidden="true" /> : <CircleX aria-hidden="true" />}</span>
             <p>{point}</p>
-            <button type="button" aria-label="حذف" onClick={() => onChange(value.filter((_, itemIndex) => itemIndex !== index))}>×</button>
+            <button type="button" aria-label="حذف" onClick={() => onChange(value.filter((_, itemIndex) => itemIndex !== index))}><X aria-hidden="true" /></button>
           </li>
         ))}
       </ul>
