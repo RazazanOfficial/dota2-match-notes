@@ -109,6 +109,14 @@ export interface Session {
   hasPassword?: boolean;
 }
 
+export interface PlayerSearchResult {
+  steamId: string;
+  steamAccountId: number;
+  handle: string;
+  displayName: string;
+  avatarUrl: string | null;
+}
+
 export interface ImageQueueJob {
   id: string;
   matchId: string;

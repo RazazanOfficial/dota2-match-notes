@@ -30,12 +30,16 @@ import {
 } from "@/lib/storage/client";
 import { collectDismissedDotaMatchIds } from "./dismissed";
 import { makePublicImageUrl } from "@/lib/storage/media";
-import type { DayInput } from "./validation";
+import type { DayInput, PublicPlayerIdentifier } from "./validation";
 import { toJournalDateKey } from "./timezone";
 
 interface JournalOwner {
   id: string;
   handle: string;
+  steamId?: string;
+  steamAccountId?: number;
+  displayName?: string;
+  avatarUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -72,16 +76,29 @@ export async function findJournalOwnerById(id: string) {
   return owner || null;
 }
 
-export async function findJournalOwnerByHandle(handle: string) {
+export async function findJournalOwnerByIdentifier(
+  identifier: PublicPlayerIdentifier,
+) {
+  const condition =
+    identifier.kind === "steam_id"
+      ? eq(users.steamId, identifier.value)
+      : identifier.kind === "account_id"
+        ? eq(users.steamAccountId, identifier.value)
+        : sql`lower(${users.handle}) = ${identifier.value}`;
+
   const [owner] = await getDb()
     .select({
       id: users.id,
       handle: users.handle,
+      steamId: users.steamId,
+      steamAccountId: users.steamAccountId,
+      displayName: users.displayName,
+      avatarUrl: users.avatarUrl,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
     })
     .from(users)
-    .where(sql`lower(${users.handle}) = ${handle}`)
+    .where(condition)
     .limit(1);
 
   return owner || null;

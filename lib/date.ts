@@ -103,6 +103,14 @@ export function normalizePublicHandle(value: string) {
   return /^\d{1,10}$/.test(normalized) ? `steam_${normalized}` : normalized;
 }
 
+export function normalizePublicPlayerIdentifier(value: string) {
+  return normalizeUsername(value);
+}
+
+export function isValidPublicPlayerIdentifier(value: string) {
+  return /^\d{1,17}$/.test(value) || isValidUsername(value);
+}
+
 export function isValidUsername(value: string) {
   return /^[a-z0-9._-]{3,32}$/.test(value) &&
     !["__proto__", "prototype", "constructor"].includes(value);

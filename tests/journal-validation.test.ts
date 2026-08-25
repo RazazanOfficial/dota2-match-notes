@@ -4,6 +4,7 @@ import {
   parseDateKey,
   parseDateRange,
   parseHandle,
+  parsePublicPlayerIdentifier,
 } from "../lib/journal/validation";
 
 function match(id = "11111111-1111-4111-8111-111111111111") {
@@ -63,5 +64,21 @@ describe("journal validation", () => {
   it("normalizes a bare Steam account id for public journal reads", () => {
     expect(parseHandle("988195076")).toBe("steam_988195076");
     expect(parseHandle("steam_988195076")).toBe("steam_988195076");
+  });
+
+  it("accepts handles, account ids and SteamID64 values in public profile URLs", () => {
+    expect(parsePublicPlayerIdentifier("steam_988195076")).toEqual({
+      kind: "handle",
+      value: "steam_988195076",
+    });
+    expect(parsePublicPlayerIdentifier("988195076")).toEqual({
+      kind: "account_id",
+      value: 988195076,
+    });
+    expect(parsePublicPlayerIdentifier("76561198948460804")).toEqual({
+      kind: "steam_id",
+      value: "76561198948460804",
+    });
+    expect(parsePublicPlayerIdentifier("not valid!")).toBeNull();
   });
 });

@@ -3,6 +3,8 @@ import { heroById } from "../../data/heroes";
 
 const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_RANGE_DAYS = 62;
+const STEAM_ID_BASE = 76_561_197_960_265_728n;
+const MAX_STEAM_ACCOUNT_ID = 4_294_967_295n;
 const reviewPoints = z
   .array(z.string().trim().min(1).max(240))
   .max(20)
@@ -136,4 +138,41 @@ export function parseHandle(value: string) {
     ? `steam_${normalized}`
     : normalized;
   return /^[a-z0-9._-]{3,32}$/.test(handle) ? handle : null;
+}
+
+export type PublicPlayerIdentifier =
+  | { kind: "steam_id"; value: string }
+  | { kind: "account_id"; value: number }
+  | { kind: "handle"; value: string };
+
+export function parsePublicPlayerIdentifier(
+  value: string,
+): PublicPlayerIdentifier | null {
+  const normalized = value.normalize("NFKC").trim().toLowerCase();
+
+  if (/^\d{17}$/.test(normalized)) {
+    const steamId = BigInt(normalized);
+    const accountId = steamId - STEAM_ID_BASE;
+    if (accountId >= 0n && accountId <= MAX_STEAM_ACCOUNT_ID) {
+      return { kind: "steam_id", value: normalized };
+    }
+    return null;
+  }
+
+  if (/^\d{1,10}$/.test(normalized)) {
+    const accountId = BigInt(normalized);
+    if (accountId <= MAX_STEAM_ACCOUNT_ID) {
+      return { kind: "account_id", value: Number(accountId) };
+    }
+    return null;
+  }
+
+  if (
+    /^[a-z0-9._-]{3,32}$/.test(normalized) &&
+    !["__proto__", "prototype", "constructor"].includes(normalized)
+  ) {
+    return { kind: "handle", value: normalized };
+  }
+
+  return null;
 }
