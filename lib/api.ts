@@ -5,6 +5,7 @@ import type {
   Day,
   HeroPoolData,
   ManualSyncResult,
+  PlayerSearchResult,
   PlayerSyncStatus,
   Profile,
   Session,
@@ -187,6 +188,18 @@ export async function viewCoach(username: string, from: string, to: string) {
     journalUrl(`/api/journal/users/${encodeURIComponent(username)}`, from, to),
   );
   return normalizeProfileResponse(response, username);
+}
+
+export async function searchPlayers(
+  query: string,
+  signal?: AbortSignal,
+): Promise<PlayerSearchResult[]> {
+  const params = new URLSearchParams({ q: query });
+  const response = await requestJson<{
+    ok: boolean;
+    results: PlayerSearchResult[];
+  }>(`/api/users/search?${params.toString()}`, { signal });
+  return response.results;
 }
 
 export async function saveDay(

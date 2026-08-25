@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   restorePlayer,
   saveDay,
+  searchPlayers,
   viewCoach,
   viewPlayer,
 } from "../lib/api";
@@ -56,6 +57,27 @@ describe("journal client API", () => {
     expect(profile.username).toBe("steam_123");
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/journal/users/steam_123?from=2026-08-01&to=2026-08-07",
+      expect.objectContaining({ credentials: "same-origin", cache: "no-store" }),
+    );
+  });
+
+  it("sends encoded realtime player search terms", async () => {
+    const fetchMock = mockFetch({
+      ok: true,
+      results: [
+        {
+          steamId: "76561198948460804",
+          steamAccountId: 988195076,
+          handle: "steam_988195076",
+          displayName: "MeriJ",
+          avatarUrl: null,
+        },
+      ],
+    });
+
+    await expect(searchPlayers("meri j")).resolves.toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/users/search?q=meri+j",
       expect.objectContaining({ credentials: "same-origin", cache: "no-store" }),
     );
   });

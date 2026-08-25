@@ -1,18 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   CircleX,
+  Copy,
   LogOut,
   Menu,
   Plus,
   RotateCcw,
   Search,
   Settings,
+  Share2,
   Shield,
   UserRound,
 } from "lucide-react";
@@ -40,9 +43,9 @@ import {
   getWeekAnchorDate,
   getWeekDates,
   getWeekLabel,
-  isValidUsername,
+  isValidPublicPlayerIdentifier,
   mergeProfiles,
-  normalizePublicHandle,
+  normalizePublicPlayerIdentifier,
   summarizeMatches,
   summarizeWeek,
   toDateKey,
@@ -63,7 +66,41 @@ type AccessView = "roles" | "coach";
 
 const EMPTY_PROFILE: Profile = { username: "", days: {} };
 
-export default function MatchJournal() {
+function sessionMatchesIdentifier(session: Session, identifier: string) {
+  const normalized = identifier.normalize("NFKC").trim().toLowerCase();
+  return (
+    normalized === session.username.toLowerCase() ||
+    normalized === String(session.steamAccountId || "") ||
+    normalized === String(session.steamId || "")
+  );
+}
+
+async function copyText(value: string) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const field = document.createElement("textarea");
+  field.value = value;
+  field.style.position = "fixed";
+  field.style.opacity = "0";
+  document.body.append(field);
+  field.select();
+  const copied = document.execCommand("copy");
+  field.remove();
+  if (!copied) throw new Error("کپی لینک انجام نشد");
+}
+
+export default function MatchJournal({
+  initialPublicIdentifier,
+}: {
+  initialPublicIdentifier?: string;
+} = {}) {
+  const router = useRouter();
+  const initialIdentifier = initialPublicIdentifier
+    ? normalizePublicPlayerIdentifier(initialPublicIdentifier)
+    : null;
   const [loading, setLoading] = useState(true);
   const [accessView, setAccessView] = useState<AccessView>("roles");
   const [session, setSession] = useState<Session | null>(null);
@@ -75,7 +112,7 @@ export default function MatchJournal() {
   const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
   const [playerSearchOpen, setPlayerSearchOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const [viewingHandle, setViewingHandle] = useState<string | null>(null);
+  const [viewingHandle, setViewingHandle] = useState<string | null>(initialIdentifier);
   const [reportOpen, setReportOpen] = useState(false);
   const [heroPoolOpen, setHeroPoolOpen] = useState(false);
   const [heroPool, setHeroPool] = useState<HeroPoolData | null>(null);
@@ -103,7 +140,19 @@ export default function MatchJournal() {
       try {
         await purgeLegacyBrowserCache();
         const restored = await restorePlayer();
-        if (!cancelled && restored) setSession(restored);
+        if (cancelled) return;
+
+        if (initialIdentifier) {
+          if (restored && sessionMatchesIdentifier(restored, initialIdentifier)) {
+            setSession(restored);
+            setViewingHandle(null);
+          } else {
+            setSession(restored || { mode: "coach", username: initialIdentifier });
+            setViewingHandle(initialIdentifier);
+          }
+        } else if (restored) {
+          setSession(restored);
+        }
       } catch {
         if (!cancelled) setSyncState("error");
       } finally {
@@ -114,7 +163,7 @@ export default function MatchJournal() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialIdentifier]);
 
   useEffect(() => {
     setActiveWeek(getCurrentWeekIndex(anchorDate));
@@ -178,48 +227,39 @@ export default function MatchJournal() {
     const restored = await restorePlayer();
     if (!restored) throw new Error("ورود کامل نشد؛ دوباره تلاش کنید");
     setSession(restored);
-    setViewingHandle(null);
+    setViewingHandle(
+      initialIdentifier && !sessionMatchesIdentifier(restored, initialIdentifier)
+        ? initialIdentifier
+        : null,
+    );
     setProfile(EMPTY_PROFILE);
     setRefreshVersion((version) => version + 1);
   }
 
   async function handleCoachLogin(usernameValue: string) {
-    const username = normalizePublicHandle(usernameValue);
-    if (!isValidUsername(username)) {
-      throw new Error(
-        "نام کاربری باید ۳ تا ۳۲ نویسه و شامل حروف انگلیسی، عدد، نقطه، خط تیره یا زیرخط باشد",
-      );
+    const identifier = normalizePublicPlayerIdentifier(usernameValue);
+    if (!isValidPublicPlayerIdentifier(identifier)) {
+      throw new Error("نام یا شناسه بازیکن معتبر نیست");
     }
     setBusy(true);
-    try {
-      const nextProfile = await viewCoach(username, rangeFrom, rangeTo);
-      setSession({ mode: "coach", username });
-      setViewingHandle(null);
-      setProfile(nextProfile);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handlePlayerSearch(identifierValue: string) {
-    const username = normalizePublicHandle(identifierValue);
-    if (!isValidUsername(username)) throw new Error("شناسه بازیکن معتبر نیست");
-    setBusy(true);
-    try {
-      const nextProfile = await viewCoach(username, rangeFrom, rangeTo);
-      setViewingHandle(username);
-      setProfile(nextProfile);
-      setEditing(null);
-    } finally {
-      setBusy(false);
-    }
+    router.push(`/user/${encodeURIComponent(identifier)}`);
   }
 
   function returnToMyJournal() {
-    setViewingHandle(null);
-    setProfile(EMPTY_PROFILE);
-    setEditing(null);
-    setRefreshVersion((version) => version + 1);
+    router.push("/me");
+  }
+
+  async function copyPublicProfileLink() {
+    const identifier = viewingHandle ||
+      (session?.mode === "player" ? session.steamAccountId || session.username : profile.username);
+    if (!identifier) return;
+
+    try {
+      await copyText(`${window.location.origin}/user/${encodeURIComponent(String(identifier))}`);
+      toast.success("لینک پروفایل کپی شد");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "کپی لینک انجام نشد");
+    }
   }
 
   async function leave() {
@@ -227,8 +267,13 @@ export default function MatchJournal() {
     try {
       await logout(session);
     } finally {
-      setSession(null);
-      setViewingHandle(null);
+      if (initialIdentifier) {
+        setSession({ mode: "coach", username: initialIdentifier });
+        setViewingHandle(initialIdentifier);
+      } else {
+        setSession(null);
+        setViewingHandle(null);
+      }
       setProfile(EMPTY_PROFILE);
       setAccessView("roles");
       setEditing(null);
@@ -363,7 +408,10 @@ export default function MatchJournal() {
             <button className="header-icon-button" type="button" onClick={() => setPlayerSearchOpen(true)} aria-label="جست‌وجوی بازیکن">
               <Search aria-hidden="true" />
             </button>
-            <div className="account-menu" ref={accountMenuRef}>
+            <button className="header-icon-button" type="button" onClick={copyPublicProfileLink} aria-label="کپی لینک پروفایل">
+              <Share2 aria-hidden="true" />
+            </button>
+            {session.mode === "player" ? <div className="account-menu" ref={accountMenuRef}>
               <button
                 className={`account-menu-trigger sync-${syncState}`}
                 type="button"
@@ -393,14 +441,22 @@ export default function MatchJournal() {
                   </button>
                 </div>
               )}
-            </div>
+            </div> : (
+              <button className="primary-button public-profile-login" type="button" onClick={() => setLoginOpen(true)}>
+                ورود
+              </button>
+            )}
           </div>
         </header>
 
         {viewingHandle && (
           <div className="public-view-banner">
             <span>در حال دیدن دفتر <b lang="en" dir="ltr">{profile.username}</b></span>
-            <button type="button" onClick={returnToMyJournal}><RotateCcw aria-hidden="true" /> بازگشت به دفتر من</button>
+            {session.mode === "player" ? (
+              <button type="button" onClick={returnToMyJournal}><RotateCcw aria-hidden="true" /> بازگشت به دفتر من</button>
+            ) : (
+              <button type="button" onClick={copyPublicProfileLink}><Copy aria-hidden="true" /> کپی لینک پروفایل</button>
+            )}
           </div>
         )}
 
@@ -576,11 +632,14 @@ export default function MatchJournal() {
           setSession((current) => current ? { ...current, hasPassword } : current)
         }
       />
+      <LoginDialog
+        open={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        onAuthenticated={handleAuthenticated}
+      />
       <PlayerSearchDialog
         open={playerSearchOpen}
-        busy={busy}
         onClose={() => setPlayerSearchOpen(false)}
-        onSearch={handlePlayerSearch}
       />
     </>
   );
@@ -671,14 +730,14 @@ function AccessScreen({
           ) : (
             <form className="access-form" onSubmit={submit}>
               <label className="field">
-                <span>شناسه Dota2Notes</span>
+                <span>نام یا شناسه بازیکن</span>
                 <input
                   lang="en"
                   dir="ltr"
                   autoComplete="off"
-                  placeholder="player_name"
+                  placeholder="Steam name, Account ID یا SteamID64"
                   value={username}
-                  maxLength={32}
+                  maxLength={64}
                   required
                   onChange={(event) => setUsername(event.target.value)}
                 />
