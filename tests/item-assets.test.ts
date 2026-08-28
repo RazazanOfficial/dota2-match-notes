@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 import { DOTA_ITEMS, itemImage } from "../data/items.generated";
 
@@ -30,8 +31,13 @@ describe("local match-detail assets", () => {
     ];
 
     await Promise.all(assets.map(async (name) => {
-      const bytes = await readFile(path.join(process.cwd(), "public", "match-details", name));
+      const assetPath = path.join(process.cwd(), "public", "match-details", name);
+      const bytes = await readFile(assetPath);
       expect(bytes.byteLength).toBeGreaterThan(1_000);
+      if (name.startsWith("inventory-")) {
+        const metadata = await sharp(assetPath).metadata();
+        expect(metadata).toMatchObject({ width: 1672, height: 941, hasAlpha: true });
+      }
     }));
   });
 });

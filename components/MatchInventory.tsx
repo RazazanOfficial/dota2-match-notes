@@ -10,15 +10,15 @@ interface MatchInventoryProps {
 }
 
 const SLOT_BOXES = [
-  { left: "17.65%", top: "14.75%", width: "21.1%", height: "21.65%" },
-  { left: "39.75%", top: "14.75%", width: "21.1%", height: "21.65%" },
-  { left: "62.15%", top: "14.75%", width: "21.1%", height: "21.65%" },
-  { left: "17.65%", top: "38.05%", width: "21.1%", height: "21.65%" },
-  { left: "39.75%", top: "38.05%", width: "21.1%", height: "21.65%" },
-  { left: "62.15%", top: "38.05%", width: "21.1%", height: "21.65%" },
-  { left: "17.65%", top: "61.65%", width: "21.1%", height: "17.65%" },
-  { left: "39.75%", top: "61.65%", width: "21.1%", height: "17.65%" },
-  { left: "62.15%", top: "61.65%", width: "21.1%", height: "17.65%" },
+  { left: "20%", top: "16.05%", width: "18.12%", height: "21.47%" },
+  { left: "40.4%", top: "16.05%", width: "18.74%", height: "21%" },
+  { left: "61.2%", top: "16.05%", width: "18.3%", height: "21%" },
+  { left: "20.05%", top: "40.17%", width: "18.15%", height: "20.67%" },
+  { left: "40.4%", top: "40.17%", width: "18.5%", height: "20.67%" },
+  { left: "61.1%", top: "40.17%", width: "18.5%", height: "20%" },
+  { left: "20.2%", top: "63.66%", width: "18%", height: "20%" },
+  { left: "40.5%", top: "63.66%", width: "18.45%", height: "20%" },
+  { left: "61.7%", top: "63.66%", width: "18.4%", height: "19.8%" },
 ] satisfies CSSProperties[];
 
 export default function MatchInventory({ participant }: MatchInventoryProps) {
@@ -28,15 +28,15 @@ export default function MatchInventory({ participant }: MatchInventoryProps) {
     ...participant.backpackItemIds.slice(0, 3),
   ];
   const frame = inventoryFrame(participant);
-  const assetUrls = useMemo(() => [
-    frame,
-    ...itemIds.map((itemId) => itemId ? itemImage(itemId) : null),
-    participant.neutralItemId ? itemImage(participant.neutralItemId) : null,
-  ].filter((url): url is string => Boolean(url)), [
-    frame,
-    itemIds.join(","),
-    participant.neutralItemId,
-  ]);
+  const assetUrls = useMemo(
+    () =>
+      [
+        frame,
+        ...itemIds.map((itemId) => (itemId ? itemImage(itemId) : null)),
+        participant.neutralItemId ? itemImage(participant.neutralItemId) : null,
+      ].filter((url): url is string => Boolean(url)),
+    [frame, itemIds.join(","), participant.neutralItemId],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -77,11 +77,21 @@ export default function MatchInventory({ participant }: MatchInventoryProps) {
         <InventoryItem
           itemId={participant.neutralItemId}
           className="match-inventory-neutral"
-          style={{ left: "88.45%", top: "20.35%", width: "8.7%", height: "16.2%" }}
+          style={{
+            left: "85.5%",
+            top: "24%",
+            width: "9.4%",
+            height: "16.5%",
+          }}
         />
         <span
           className="match-inventory-level"
-          style={{ left: "88.45%", top: "44.65%", width: "8.7%", height: "16.2%" }}
+          style={{
+            left: "85.0%",
+            top: "50.9%",
+            width: "9.4%",
+            height: "16.5%",
+          }}
           title={`Level ${participant.level ?? "—"}`}
           aria-label={`لول هیرو ${participant.level ?? "نامشخص"}`}
         >
