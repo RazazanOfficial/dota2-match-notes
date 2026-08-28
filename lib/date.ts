@@ -171,7 +171,7 @@ function sanitizeParticipant(value: unknown): MatchParticipant | null {
   return {
     playerSlot,
     accountId: accountId && accountId > 0 ? accountId : null,
-    personName: personName || "بازیکن ناشناس",
+    personName: personName === "بازیکن ناشناس" || !personName ? "حساب خصوصی" : personName,
     heroId: hero.id,
     heroName: hero.name,
     team: playerSlot < 128 ? "radiant" : "dire",

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Check, Copy } from "lucide-react";
+import { toast } from "react-toastify";
 import { heroById, heroImage } from "@/data/heroes";
 import { roleLabel } from "@/lib/constants";
 import type { DotaTeam, Match, MatchParticipant } from "@/lib/types";
@@ -22,10 +24,17 @@ export default function MatchScoreboard({ match }: MatchScoreboardProps) {
   const [selectedSlot, setSelectedSlot] = useState<number | null>(
     profilePlayer?.playerSlot ?? null,
   );
+  const [copiedMatchId, setCopiedMatchId] = useState(false);
 
   useEffect(() => {
     setSelectedSlot(profilePlayer?.playerSlot ?? null);
   }, [match.id, profilePlayer?.playerSlot]);
+
+  useEffect(() => {
+    if (!copiedMatchId) return;
+    const timer = window.setTimeout(() => setCopiedMatchId(false), 1_600);
+    return () => window.clearTimeout(timer);
+  }, [copiedMatchId]);
 
   const selected = participants.find((participant) => participant.playerSlot === selectedSlot)
     || profilePlayer;
@@ -35,24 +44,52 @@ export default function MatchScoreboard({ match }: MatchScoreboardProps) {
   const winner = match.radiantWin === null || match.radiantWin === undefined
     ? null
     : match.radiantWin ? "radiant" : "dire";
+  const matchType = [match.lobbyTypeName, match.gameModeName].filter(Boolean).join(" · ") || "—";
+
+  async function copyMatchId() {
+    if (!match.dotaMatchId) return;
+    try {
+      await navigator.clipboard.writeText(match.dotaMatchId);
+      setCopiedMatchId(true);
+      toast.success("شناسه مچ کپی شد");
+    } catch {
+      toast.error("کپی شناسه مچ انجام نشد");
+    }
+  }
 
   return (
     <section className="match-scoreboard" aria-label="جزئیات کامل مچ">
       <header className="match-result-strip">
-        <div className="match-result-meta">
-          <strong lang="en" dir="ltr">Match #{match.dotaMatchId || "—"}</strong>
-          <span lang="en" dir="ltr">{duration}</span>
-          <span lang="en" dir="ltr">
-            {[match.lobbyTypeName, match.gameModeName].filter(Boolean).join(" · ") || "—"}
-          </span>
+        <div className={`match-winner is-radiant${winner === "radiant" ? " is-visible" : ""}`}>
+          Radiant پیروز شد
         </div>
-        <div className="match-result-score" dir="ltr" aria-label="نتیجه مچ">
-          <strong className="is-radiant">{formatNumber(match.radiantScore)}</strong>
-          <span>—</span>
-          <strong className="is-dire">{formatNumber(match.direScore)}</strong>
+        <div className="match-result-chip is-id">
+          <span lang="en" dir="ltr">Match ID</span>
+          <strong lang="en" dir="ltr">{match.dotaMatchId || "—"}</strong>
+          <button
+            type="button"
+            disabled={!match.dotaMatchId}
+            onClick={copyMatchId}
+            aria-label="کپی شناسه مچ"
+            title="کپی شناسه مچ"
+          >
+            {copiedMatchId ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+          </button>
         </div>
-        <div className={`match-winner${winner ? ` is-${winner}` : ""}`}>
-          {winner ? `${teamName(winner)} پیروز شد` : "نتیجه مچ"}
+        <div className="match-result-center">
+          <div className="match-result-score" dir="ltr" aria-label="نتیجه مچ">
+            <strong className="is-radiant">{formatNumber(match.radiantScore)}</strong>
+            <span>—</span>
+            <strong className="is-dire">{formatNumber(match.direScore)}</strong>
+          </div>
+          <span className="match-result-duration" lang="en" dir="ltr">{duration}</span>
+        </div>
+        <div className="match-result-chip is-type">
+          <span>نوع مچ</span>
+          <strong lang="en" dir="ltr">{matchType}</strong>
+        </div>
+        <div className={`match-winner is-dire${winner === "dire" ? " is-visible" : ""}`}>
+          Dire پیروز شد
         </div>
       </header>
 
@@ -137,7 +174,7 @@ function TeamPanel({
                   {hero && <img src={heroImage(hero)} alt={participant.heroName} />}
                 </span>
                 <span className="match-player-name">
-                  <strong lang="en" dir="ltr">{participant.personName}</strong>
+                  <strong lang="en" dir="ltr">{playerName(participant.personName)}</strong>
                   <small lang="en" dir="ltr">{participant.heroName}</small>
                 </span>
               </span>
@@ -170,7 +207,7 @@ function FocusedPlayer({ match, participant }: { match: Match; participant: Matc
           {hero && <img src={heroImage(hero)} alt={participant.heroName} />}
         </span>
         <div>
-          <strong lang="en" dir="ltr">{participant.personName} · {participant.heroName}</strong>
+          <strong lang="en" dir="ltr">{playerName(participant.personName)} · {participant.heroName}</strong>
           {role && <span lang="en" dir="ltr">{role}</span>}
           <b className={won === null ? "" : won ? "is-win" : "is-loss"}>
             {won === null ? "—" : won ? "برد" : "باخت"}
@@ -193,7 +230,7 @@ function FocusedPlayer({ match, participant }: { match: Match; participant: Matc
       </div>
 
       <div className="match-focus-inventory">
-        <MatchInventory participant={participant} />
+        <MatchInventory key={participant.playerSlot} participant={participant} />
       </div>
     </section>
   );
@@ -238,4 +275,8 @@ function formatNumber(value?: number | null, grouped = false) {
 
 function teamName(team: DotaTeam) {
   return team === "radiant" ? "Radiant" : "Dire";
+}
+
+function playerName(name: string) {
+  return name === "بازیکن ناشناس" || !name.trim() ? "حساب خصوصی" : name;
 }
