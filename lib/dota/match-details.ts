@@ -59,7 +59,7 @@ export function extractMatchDetails(
       return {
         playerSlot: player.player_slot,
         accountId: player.account_id && player.account_id > 0 ? player.account_id : null,
-        personName: player.personaname?.trim() || "بازیکن ناشناس",
+        personName: player.personaname?.trim() || "حساب خصوصی",
         heroId: hero.id,
         heroName: hero.name,
         team: player.player_slot < 128 ? "radiant" : "dire",

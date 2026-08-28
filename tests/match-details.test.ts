@@ -91,7 +91,7 @@ describe("match details extraction", () => {
       team: "dire",
       heroName: "Axe",
       accountId: null,
-      personName: "بازیکن ناشناس",
+      personName: "حساب خصوصی",
     });
     expect(details.participants[1].itemIds).toEqual([null, 1, null, null, null, null]);
   });

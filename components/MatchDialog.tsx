@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { Check, CircleX, ImageIcon, Save, Trash2, X } from "lucide-react";
 import { heroById, heroImage } from "@/data/heroes";
 import { QUEUE_OPTIONS, ROLE_OPTIONS, queueLabel, roleLabel } from "@/lib/constants";
@@ -113,12 +113,13 @@ export default function MatchDialog({
           <header className="modal-header">
             <div>
               <p className="modal-kicker">{dateLabel}</p>
-              <h2 id="match-read-title">بازی {draft.number.toLocaleString("fa-IR")}</h2>
+              <h2 id="match-read-title">جزئیات بازی</h2>
             </div>
             <button className="close-button" type="button" onClick={onClose} aria-label="بستن">
               <X aria-hidden="true" />
             </button>
           </header>
+          <ReadonlyMatchContext match={draft} />
           <MatchTabs active={activeTab} onChange={setActiveTab} />
           <div className={`match-tab-panel${activeTab === "overview" ? " is-active" : ""}`} data-match-tab="overview">
             {hasTeamDetails
@@ -168,40 +169,19 @@ export default function MatchDialog({
             <X aria-hidden="true" />
           </button>
         </header>
+        <MatchPersonalEditor
+          match={draft}
+          formError={formError}
+          onChange={setDraft}
+        />
         <MatchTabs active={activeTab} onChange={setActiveTab} />
 
         <div className={`match-tab-panel${activeTab === "overview" ? " is-active" : ""}`} data-match-tab="overview">
           {hasTeamDetails ? (
-            <>
-              <MatchScoreboard match={draft} />
-              <section className="match-personal-editor" aria-label="ویرایش اطلاعات شخصی مچ">
-                <div className="form-grid">
-                  <MatchNumberField value={draft.number} onChange={(number) => setDraft((current) => ({ ...current, number }))} />
-                  <DotaSelect<MatchRole>
-                    label="رول"
-                    value={draft.role}
-                    placeholder="انتخاب رول"
-                    options={ROLE_OPTIONS}
-                    required
-                    onChange={(role) => setDraft((current) => ({ ...current, role }))}
-                  />
-                  <DotaSelect<QueueType>
-                    label="نوع صف"
-                    value={draft.queueType}
-                    placeholder="انتخاب نوع صف"
-                    options={QUEUE_OPTIONS}
-                    required
-                    onChange={(queueType) => setDraft((current) => ({ ...current, queueType }))}
-                  />
-                  <ResultField value={draft.result} onChange={(result) => setDraft((current) => ({ ...current, result }))} />
-                </div>
-                <p className="form-error" role="alert">{formError}</p>
-              </section>
-            </>
+            <MatchScoreboard match={draft} />
           ) : (
             <>
               <div className="form-grid">
-                <MatchNumberField value={draft.number} onChange={(number) => setDraft((current) => ({ ...current, number }))} />
                 <HeroPicker
                   label="هیرو"
                   value={hero}
@@ -215,22 +195,6 @@ export default function MatchDialog({
                     }))
                   }
                 />
-                <DotaSelect<MatchRole>
-                  label="رول"
-                  value={draft.role}
-                  placeholder="انتخاب رول"
-                  options={ROLE_OPTIONS}
-                  required
-                  onChange={(role) => setDraft((current) => ({ ...current, role }))}
-                />
-                <DotaSelect<QueueType>
-                  label="نوع صف"
-                  value={draft.queueType}
-                  placeholder="انتخاب نوع صف"
-                  options={QUEUE_OPTIONS}
-                  required
-                  onChange={(queueType) => setDraft((current) => ({ ...current, queueType }))}
-                />
                 <BanPicker
                   value={draft.bans}
                   picks={draft.picks}
@@ -238,12 +202,6 @@ export default function MatchDialog({
                   legacyBans={draft.legacyBans}
                   onChange={(bans) => setDraft((current) => ({ ...current, bans }))}
                 />
-                <ResultField
-                  value={draft.result}
-                  onChange={(result) => setDraft((current) => ({ ...current, result }))}
-                  fullWidth
-                />
-                <p className="form-error field-full" role="alert">{formError}</p>
               </div>
               <MatchStats match={draft} />
             </>
@@ -305,6 +263,62 @@ export default function MatchDialog({
         onConfirm={() => match && onDelete(match.id)}
       />
     </div>
+  );
+}
+
+function MatchPersonalEditor({
+  match,
+  formError,
+  onChange,
+}: {
+  match: Match;
+  formError: string;
+  onChange: Dispatch<SetStateAction<Match>>;
+}) {
+  return (
+    <section className="match-personal-editor" aria-label="اطلاعات شخصی مچ">
+      <div className="form-grid">
+        <MatchNumberField
+          value={match.number}
+          onChange={(number) => onChange((current) => ({ ...current, number }))}
+        />
+        <DotaSelect<MatchRole>
+          label="رول"
+          value={match.role}
+          placeholder="انتخاب رول"
+          options={ROLE_OPTIONS}
+          required
+          onChange={(role) => onChange((current) => ({ ...current, role }))}
+        />
+        <DotaSelect<QueueType>
+          label="نوع صف"
+          value={match.queueType}
+          placeholder="انتخاب نوع صف"
+          options={QUEUE_OPTIONS}
+          required
+          onChange={(queueType) => onChange((current) => ({ ...current, queueType }))}
+        />
+        <ResultField
+          value={match.result}
+          onChange={(result) => onChange((current) => ({ ...current, result }))}
+        />
+      </div>
+      <p className="form-error" role="alert">{formError}</p>
+    </section>
+  );
+}
+
+function ReadonlyMatchContext({ match }: { match: Match }) {
+  return (
+    <section className="match-context-bar" aria-label="اطلاعات شخصی مچ">
+      <span><small>شماره بازی</small><strong>{match.number.toLocaleString("fa-IR")}</strong></span>
+      <span><small>رول</small><strong lang="en" dir="ltr">{roleLabel(match.role)}</strong></span>
+      <span><small>نوع صف</small><strong lang="en" dir="ltr">{queueLabel(match.queueType)}</strong></span>
+      <span>
+        <small>نتیجه</small>
+        <strong className={`is-${match.result}`}>{match.result === "win" ? "برد" : "باخت"}</strong>
+      </span>
+    </section>
   );
 }
 
