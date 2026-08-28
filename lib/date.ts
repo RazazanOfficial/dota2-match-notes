@@ -1,4 +1,4 @@
-import type { Day, Match, MatchPick, Profile, Summary } from "./types";
+import type { Day, Match, MatchParticipant, MatchPick, Profile, Summary } from "./types";
 import { HEROES, heroById, heroByName } from "../data/heroes";
 import { gameModeName, lobbyTypeName } from "./dota/modes";
 
@@ -139,6 +139,66 @@ function nullableMatchId(value: unknown) {
   return /^\d{1,16}$/.test(matchId) ? matchId : null;
 }
 
+function nonNegativeInteger(value: unknown, max = Number.MAX_SAFE_INTEGER) {
+  const number = nullableNumber(value);
+  return number !== null && Number.isInteger(number) && number >= 0 && number <= max
+    ? number
+    : null;
+}
+
+function sanitizeItemList(value: unknown, length: number) {
+  const items = Array.isArray(value) ? value : [];
+  return Array.from({ length }, (_, index) => {
+    const itemId = nonNegativeInteger(items[index], 100_000);
+    return itemId && itemId > 0 ? itemId : null;
+  });
+}
+
+function sanitizeParticipant(value: unknown): MatchParticipant | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Record<string, unknown>;
+  const playerSlot = nonNegativeInteger(candidate.playerSlot, 255);
+  const standardSlot = playerSlot !== null && (
+    (playerSlot >= 0 && playerSlot <= 4) ||
+    (playerSlot >= 128 && playerSlot <= 132)
+  );
+  const hero = heroById(Number(candidate.heroId)) || heroByName(String(candidate.heroName || ""));
+  if (!standardSlot || !hero || playerSlot === null) return null;
+
+  const personName = String(candidate.personName || "").trim().slice(0, 100);
+  const accountId = nonNegativeInteger(candidate.accountId, 4_294_967_295);
+
+  return {
+    playerSlot,
+    accountId: accountId && accountId > 0 ? accountId : null,
+    personName: personName || "بازیکن ناشناس",
+    heroId: hero.id,
+    heroName: hero.name,
+    team: playerSlot < 128 ? "radiant" : "dire",
+    level: nonNegativeInteger(candidate.level, 100),
+    kills: nonNegativeInteger(candidate.kills, 32_767),
+    deaths: nonNegativeInteger(candidate.deaths, 32_767),
+    assists: nonNegativeInteger(candidate.assists, 32_767),
+    lastHits: nonNegativeInteger(candidate.lastHits, 32_767),
+    denies: nonNegativeInteger(candidate.denies, 32_767),
+    goldPerMinute: nonNegativeInteger(candidate.goldPerMinute, 32_767),
+    xpPerMinute: nonNegativeInteger(candidate.xpPerMinute, 32_767),
+    netWorth: nonNegativeInteger(candidate.netWorth, 2_147_483_647),
+    heroDamage: nonNegativeInteger(candidate.heroDamage, 2_147_483_647),
+    towerDamage: nonNegativeInteger(candidate.towerDamage, 2_147_483_647),
+    heroHealing: nonNegativeInteger(candidate.heroHealing, 2_147_483_647),
+    itemIds: sanitizeItemList(candidate.itemIds, 6),
+    backpackItemIds: sanitizeItemList(candidate.backpackItemIds, 3),
+    neutralItemId: nonNegativeInteger(candidate.neutralItemId, 100_000) || null,
+    neutralEnhancementId:
+      nonNegativeInteger(candidate.neutralEnhancementId, 100_000) || null,
+    hasAghanimsScepter: Boolean(candidate.hasAghanimsScepter),
+    hasAghanimsShard: Boolean(candidate.hasAghanimsShard),
+    isProfilePlayer: Boolean(candidate.isProfilePlayer),
+    inRolePool: Boolean(candidate.inRolePool),
+  };
+}
+
 export function sanitizeMatch(raw: Record<string, unknown>, fallback = 1): Match {
   const legacyHero = String(raw.heroName || raw.hero || "").trim();
   const selectedHero =
@@ -262,6 +322,16 @@ export function sanitizeMatch(raw: Record<string, unknown>, fallback = 1): Match
       typeof raw.lobbyTypeName === "string"
         ? raw.lobbyTypeName
         : lobbyTypeName(lobbyTypeId),
+    radiantWin: typeof raw.radiantWin === "boolean" ? raw.radiantWin : null,
+    radiantScore: nonNegativeInteger(raw.radiantScore, 32_767),
+    direScore: nonNegativeInteger(raw.direScore, 32_767),
+    participants: Array.isArray(raw.participants)
+      ? raw.participants
+          .map(sanitizeParticipant)
+          .filter((participant): participant is MatchParticipant => participant !== null)
+          .sort((left, right) => left.playerSlot - right.playerSlot)
+          .slice(0, 10)
+      : [],
     images: Array.isArray(raw.images)
       ? raw.images
           .filter((image): image is Record<string, unknown> =>
