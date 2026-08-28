@@ -5,13 +5,14 @@ import { Check, CircleX, ImageIcon, Save, Trash2, X } from "lucide-react";
 import { heroById, heroImage } from "@/data/heroes";
 import { QUEUE_OPTIONS, ROLE_OPTIONS, queueLabel, roleLabel } from "@/lib/constants";
 import { newMatchId } from "@/lib/date";
-import type { Hero, Match, MatchImage, MatchPick, MatchResult, MatchRole, QueueType } from "@/lib/types";
+import type { Hero, Match, MatchImage, MatchResult, MatchRole, QueueType } from "@/lib/types";
 import BanPicker from "./BanPicker";
 import ConfirmDialog from "./ConfirmDialog";
 import DotaSelect from "./DotaSelect";
 import HeroPicker from "./HeroPicker";
 import { GameIcon, type GameIconName } from "./GameIcon";
 import GeneratedImageGallery from "./GeneratedImageGallery";
+import MatchScoreboard from "./MatchScoreboard";
 import ReviewListInput from "./ReviewListInput";
 
 type MatchTab = "overview" | "review" | "media";
@@ -63,6 +64,7 @@ export default function MatchDialog({
   const initializedSource = useRef("");
   const initialDraft = useRef("");
   const hero = draft.heroId ? heroById(draft.heroId) || null : null;
+  const hasTeamDetails = Boolean(draft.participants?.length);
 
   useEffect(() => {
     if (!open) {
@@ -119,46 +121,9 @@ export default function MatchDialog({
           </header>
           <MatchTabs active={activeTab} onChange={setActiveTab} />
           <div className={`match-tab-panel${activeTab === "overview" ? " is-active" : ""}`} data-match-tab="overview">
-          <div className={`match-detail-hero${draft.heroPoolEligible ? draft.heroPoolMatch ? " is-in-pool" : " is-outside-pool" : ""}`}>
-            {hero && <img src={heroImage(hero)} alt="" />}
-            <div>
-              <span>هیرو</span>
-              <strong lang="en" dir="ltr">
-                {draft.heroName || "—"}
-              </strong>
-            </div>
-            <span className={`result-badge is-${draft.result}`}>
-              {draft.result === "win" ? "برد" : "باخت"}
-            </span>
-          </div>
-          <div className="detail-grid">
-            <div><span>رول</span><strong lang="en">{roleLabel(draft.role)}</strong></div>
-            <div><span>نوع صف</span><strong lang="en">{queueLabel(draft.queueType)}</strong></div>
-          </div>
-          {draft.dotaMatchId && (
-            <div className="detail-grid">
-              <div><span>نوع بازی</span><strong lang="en">{draft.gameModeName || "—"}</strong></div>
-              <div><span>نوع لابی</span><strong lang="en">{draft.lobbyTypeName || "—"}</strong></div>
-            </div>
-          )}
-          <div className="detail-section">
-            <span>هیروهای انتخاب‌شده</span>
-            <DraftPicks picks={draft.picks} />
-          </div>
-          <div className="detail-section">
-            <span>بن‌ها</span>
-            <div className="readonly-bans">
-              {draft.bans.length
-                ? draft.bans.map((ban) => (
-                    <span className={`ban-portrait${ban.inRolePool ? " is-pool-priority" : ""}`} key={ban.id}>
-                      <span className="ban-portrait-image"><img src={heroImage(ban)} alt="" /></span>
-                      <b lang="en">{ban.name}</b>
-                    </span>
-                  ))
-                : draft.legacyBans || "—"}
-            </div>
-          </div>
-          <MatchStats match={draft} />
+            {hasTeamDetails
+              ? <MatchScoreboard match={draft} />
+              : <LegacyMatchOverview match={draft} hero={hero} />}
           </div>
           <div className={`match-tab-panel${activeTab === "review" ? " is-active" : ""}`} data-match-tab="review">
           <div className="detail-section">
@@ -206,74 +171,83 @@ export default function MatchDialog({
         <MatchTabs active={activeTab} onChange={setActiveTab} />
 
         <div className={`match-tab-panel${activeTab === "overview" ? " is-active" : ""}`} data-match-tab="overview">
-        <div className="form-grid">
-          <label className="field">
-            <span>شماره بازی</span>
-            <input
-              type="number"
-              min="1"
-              value={draft.number}
-              required
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, number: Number(event.target.value) }))
-              }
-            />
-          </label>
-          <HeroPicker
-            label="هیرو"
-            value={hero}
-            required
-            excludedIds={draft.bans.map((ban) => ban.id)}
-            onChange={(nextHero) =>
-              setDraft((current) => ({
-                ...current,
-                heroId: nextHero?.id || null,
-                heroName: nextHero?.name || "",
-              }))
-            }
-          />
-          <DotaSelect<MatchRole>
-            label="رول"
-            value={draft.role}
-            placeholder="انتخاب رول"
-            options={ROLE_OPTIONS}
-            required
-            onChange={(role) => setDraft((current) => ({ ...current, role }))}
-          />
-          <DotaSelect<QueueType>
-            label="نوع صف"
-            value={draft.queueType}
-            placeholder="انتخاب نوع صف"
-            options={QUEUE_OPTIONS}
-            required
-            onChange={(queueType) => setDraft((current) => ({ ...current, queueType }))}
-          />
-          <BanPicker
-            value={draft.bans}
-            picks={draft.picks}
-            pickedHeroId={draft.heroId}
-            legacyBans={draft.legacyBans}
-            onChange={(bans) => setDraft((current) => ({ ...current, bans }))}
-          />
-          <fieldset className="result-field field-full">
-            <legend>نتیجه</legend>
-            <div className="result-options">
-              {(["win", "loss"] as MatchResult[]).map((result) => (
-                <label className={`result-option result-option-${result}`} key={result}>
-                  <input
-                    type="radio"
-                    name="result"
-                    checked={draft.result === result}
-                    onChange={() => setDraft((current) => ({ ...current, result }))}
+          {hasTeamDetails ? (
+            <>
+              <MatchScoreboard match={draft} />
+              <section className="match-personal-editor" aria-label="ویرایش اطلاعات شخصی مچ">
+                <div className="form-grid">
+                  <MatchNumberField value={draft.number} onChange={(number) => setDraft((current) => ({ ...current, number }))} />
+                  <DotaSelect<MatchRole>
+                    label="رول"
+                    value={draft.role}
+                    placeholder="انتخاب رول"
+                    options={ROLE_OPTIONS}
+                    required
+                    onChange={(role) => setDraft((current) => ({ ...current, role }))}
                   />
-                  <span>{result === "win" ? "برد" : "باخت"}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-          <p className="form-error field-full" role="alert">{formError}</p>
-        </div>
-        <MatchStats match={draft} />
+                  <DotaSelect<QueueType>
+                    label="نوع صف"
+                    value={draft.queueType}
+                    placeholder="انتخاب نوع صف"
+                    options={QUEUE_OPTIONS}
+                    required
+                    onChange={(queueType) => setDraft((current) => ({ ...current, queueType }))}
+                  />
+                  <ResultField value={draft.result} onChange={(result) => setDraft((current) => ({ ...current, result }))} />
+                </div>
+                <p className="form-error" role="alert">{formError}</p>
+              </section>
+            </>
+          ) : (
+            <>
+              <div className="form-grid">
+                <MatchNumberField value={draft.number} onChange={(number) => setDraft((current) => ({ ...current, number }))} />
+                <HeroPicker
+                  label="هیرو"
+                  value={hero}
+                  required
+                  excludedIds={draft.bans.map((ban) => ban.id)}
+                  onChange={(nextHero) =>
+                    setDraft((current) => ({
+                      ...current,
+                      heroId: nextHero?.id || null,
+                      heroName: nextHero?.name || "",
+                    }))
+                  }
+                />
+                <DotaSelect<MatchRole>
+                  label="رول"
+                  value={draft.role}
+                  placeholder="انتخاب رول"
+                  options={ROLE_OPTIONS}
+                  required
+                  onChange={(role) => setDraft((current) => ({ ...current, role }))}
+                />
+                <DotaSelect<QueueType>
+                  label="نوع صف"
+                  value={draft.queueType}
+                  placeholder="انتخاب نوع صف"
+                  options={QUEUE_OPTIONS}
+                  required
+                  onChange={(queueType) => setDraft((current) => ({ ...current, queueType }))}
+                />
+                <BanPicker
+                  value={draft.bans}
+                  picks={draft.picks}
+                  pickedHeroId={draft.heroId}
+                  legacyBans={draft.legacyBans}
+                  onChange={(bans) => setDraft((current) => ({ ...current, bans }))}
+                />
+                <ResultField
+                  value={draft.result}
+                  onChange={(result) => setDraft((current) => ({ ...current, result }))}
+                  fullWidth
+                />
+                <p className="form-error field-full" role="alert">{formError}</p>
+              </div>
+              <MatchStats match={draft} />
+            </>
+          )}
         </div>
 
         <div className={`match-tab-panel${activeTab === "review" ? " is-active" : ""}`} data-match-tab="review">
@@ -334,6 +308,78 @@ export default function MatchDialog({
   );
 }
 
+function MatchNumberField({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+  return (
+    <label className="field">
+      <span>شماره بازی</span>
+      <input type="number" min="1" value={value} required onChange={(event) => onChange(Number(event.target.value))} />
+    </label>
+  );
+}
+
+function ResultField({
+  value,
+  onChange,
+  fullWidth = false,
+}: {
+  value: MatchResult;
+  onChange: (value: MatchResult) => void;
+  fullWidth?: boolean;
+}) {
+  return (
+    <fieldset className={`result-field${fullWidth ? " field-full" : ""}`}>
+      <legend>نتیجه</legend>
+      <div className="result-options">
+        {(["win", "loss"] as MatchResult[]).map((result) => (
+          <label className={`result-option result-option-${result}`} key={result}>
+            <input type="radio" name="result" checked={value === result} onChange={() => onChange(result)} />
+            <span>{result === "win" ? "برد" : "باخت"}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+function LegacyMatchOverview({ match, hero }: { match: Match; hero: Hero | null }) {
+  return (
+    <>
+      <div className={`match-detail-hero${match.heroPoolEligible ? match.heroPoolMatch ? " is-in-pool" : " is-outside-pool" : ""}`}>
+        {hero && <img src={heroImage(hero)} alt="" />}
+        <div>
+          <span>هیرو</span>
+          <strong lang="en" dir="ltr">{match.heroName || "—"}</strong>
+        </div>
+        <span className={`result-badge is-${match.result}`}>{match.result === "win" ? "برد" : "باخت"}</span>
+      </div>
+      <div className="detail-grid">
+        <div><span>رول</span><strong lang="en">{roleLabel(match.role)}</strong></div>
+        <div><span>نوع صف</span><strong lang="en">{queueLabel(match.queueType)}</strong></div>
+      </div>
+      {match.dotaMatchId && (
+        <div className="detail-grid">
+          <div><span>نوع بازی</span><strong lang="en">{match.gameModeName || "—"}</strong></div>
+          <div><span>نوع لابی</span><strong lang="en">{match.lobbyTypeName || "—"}</strong></div>
+        </div>
+      )}
+      <div className="detail-section">
+        <span>بن‌ها</span>
+        <div className="readonly-bans">
+          {match.bans.length
+            ? match.bans.map((ban) => (
+                <span className={`ban-portrait${ban.inRolePool ? " is-pool-priority" : ""}`} key={ban.id}>
+                  <span className="ban-portrait-image"><img src={heroImage(ban)} alt="" /></span>
+                  <b lang="en">{ban.name}</b>
+                </span>
+              ))
+            : match.legacyBans || "—"}
+        </div>
+      </div>
+      <MatchStats match={match} />
+    </>
+  );
+}
+
 function MatchTabs({ active, onChange }: { active: MatchTab; onChange: (tab: MatchTab) => void }) {
   return (
     <nav className="match-modal-tabs" aria-label="بخش‌های مچ">
@@ -355,20 +401,6 @@ function ReadonlyReview({ match }: { match: Match }) {
         <strong>نکات منفی</strong>
         {match.negativePoints.length ? <ul>{match.negativePoints.map((point, index) => <li key={`${point}-${index}`}><CircleX aria-hidden="true" />{point}</li>)}</ul> : <p>—</p>}
       </section>
-    </div>
-  );
-}
-
-function DraftPicks({ picks }: { picks: MatchPick[] }) {
-  if (!picks.length) return <p>—</p>;
-  return (
-    <div className="draft-picks" aria-label="هیروهای انتخاب‌شده توسط دیگر بازیکنان">
-      {picks.map((pick) => (
-        <span className={`draft-pick${pick.inRolePool ? " is-pool-priority" : ""}`} key={pick.id} title={pick.name}>
-          <img src={heroImage(pick)} alt="" />
-          <b lang="en" dir="ltr">{pick.name}</b>
-        </span>
-      ))}
     </div>
   );
 }

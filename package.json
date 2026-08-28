@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "stratz:route-check": "node scripts/check-stratz-direct-route.mjs",
     "heroes:sync": "node scripts/sync-hero-portraits.mjs",
+    "items:sync": "node scripts/sync-item-icons.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"

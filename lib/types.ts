@@ -1,6 +1,7 @@
 export type AccessMode = "player" | "coach";
 export type MatchResult = "win" | "loss";
 export type MatchSource = "manual" | "steam" | "opendota";
+export type DotaTeam = "radiant" | "dire";
 export type MatchRole =
   | "safe_lane"
   | "mid_lane"
@@ -35,6 +36,35 @@ export interface MatchBan extends Hero {
 export interface MatchPick extends Hero {
   playerSlot?: number | null;
   team?: number | null;
+  inRolePool?: boolean;
+}
+
+export interface MatchParticipant {
+  playerSlot: number;
+  accountId: number | null;
+  personName: string;
+  heroId: number;
+  heroName: string;
+  team: DotaTeam;
+  level: number | null;
+  kills: number | null;
+  deaths: number | null;
+  assists: number | null;
+  lastHits: number | null;
+  denies: number | null;
+  goldPerMinute: number | null;
+  xpPerMinute: number | null;
+  netWorth: number | null;
+  heroDamage: number | null;
+  towerDamage: number | null;
+  heroHealing: number | null;
+  itemIds: Array<number | null>;
+  backpackItemIds: Array<number | null>;
+  neutralItemId: number | null;
+  neutralEnhancementId: number | null;
+  hasAghanimsScepter: boolean;
+  hasAghanimsShard: boolean;
+  isProfilePlayer: boolean;
   inRolePool?: boolean;
 }
 
@@ -74,6 +104,10 @@ export interface Match {
   gameModeName?: string | null;
   lobbyTypeId?: number | null;
   lobbyTypeName?: string | null;
+  radiantWin?: boolean | null;
+  radiantScore?: number | null;
+  direScore?: number | null;
+  participants?: MatchParticipant[];
   images?: MatchImage[];
   imageJobStatus?: ImageJobStatus | null;
 }

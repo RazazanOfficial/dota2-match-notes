@@ -4,6 +4,7 @@ import { OpenDotaError } from "./errors";
 const MAX_DOTA_ID = Number.MAX_SAFE_INTEGER;
 const nullableStat = (max: number) =>
   z.number().int().min(0).max(max).nullable().optional();
+const nullableItem = nullableStat(100_000);
 
 const openDotaPlayerSchema = z
   .object({
@@ -22,6 +23,20 @@ const openDotaPlayerSchema = z
     net_worth: nullableStat(2_147_483_647),
     hero_damage: nullableStat(2_147_483_647),
     tower_damage: nullableStat(2_147_483_647),
+    hero_healing: nullableStat(2_147_483_647),
+    item_0: nullableItem,
+    item_1: nullableItem,
+    item_2: nullableItem,
+    item_3: nullableItem,
+    item_4: nullableItem,
+    item_5: nullableItem,
+    backpack_0: nullableItem,
+    backpack_1: nullableItem,
+    backpack_2: nullableItem,
+    item_neutral: nullableItem,
+    item_neutral2: nullableItem,
+    aghanims_scepter: z.union([z.boolean(), z.number().int().min(0).max(1)]).nullable().optional(),
+    aghanims_shard: z.union([z.boolean(), z.number().int().min(0).max(1)]).nullable().optional(),
     lane: z.number().int().min(0).max(5).nullable().optional(),
     lane_role: z.number().int().min(0).max(5).nullable().optional(),
     is_roaming: z.boolean().nullable().optional(),

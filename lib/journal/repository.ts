@@ -10,6 +10,7 @@ import {
 } from "drizzle-orm";
 import { heroById } from "@/data/heroes";
 import { getDb } from "@/lib/db";
+import { extractMatchDetails } from "@/lib/dota/match-details";
 import { gameModeName, lobbyTypeName } from "@/lib/dota/modes";
 import {
   dismissedDotaMatches,
@@ -66,6 +67,10 @@ export async function findJournalOwnerById(id: string) {
     .select({
       id: users.id,
       handle: users.handle,
+      steamId: users.steamId,
+      steamAccountId: users.steamAccountId,
+      displayName: users.displayName,
+      avatarUrl: users.avatarUrl,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
     })
@@ -124,6 +129,8 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
           ...getTableColumns(journalMatches),
           gameModeId: dotaMatches.gameMode,
           lobbyTypeId: dotaMatches.lobbyType,
+          radiantWin: dotaMatches.radiantWin,
+          rawData: dotaMatches.rawData,
         })
         .from(journalMatches)
         .leftJoin(
@@ -236,9 +243,19 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
         {
           completed: day.completed,
           matches: Object.fromEntries(
-            (matchesByDay.get(day.id) || []).map((match) => [
-              match.id,
-              {
+            (matchesByDay.get(day.id) || []).map((match) => {
+              const details = extractMatchDetails(
+                match.rawData,
+                owner.steamAccountId,
+                match.heroId,
+              );
+              const rolePool = match.heroPoolVersionId && match.role
+                ? poolHeroIds.get(`${match.heroPoolVersionId}:${match.role}`)
+                : null;
+
+              return [
+                match.id,
+                {
                 id: match.id,
                 number: match.number,
                 heroId: match.heroId,
@@ -250,11 +267,7 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
                     source: ban.source,
                     team: ban.team,
                     draftOrder: ban.draftOrder,
-                    inRolePool: Boolean(
-                      match.heroPoolVersionId &&
-                      match.role &&
-                      poolHeroIds.get(`${match.heroPoolVersionId}:${match.role}`)?.has(ban.heroId),
-                    ),
+                    inRolePool: Boolean(rolePool?.has(ban.heroId)),
                   }))
                   .sort((left, right) => Number(right.inRolePool) - Number(left.inRolePool) || (left.draftOrder ?? 999) - (right.draftOrder ?? 999)),
                 picks: (picksByMatch.get(match.id) || []).map((pick) => ({
@@ -262,13 +275,7 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
                   name: pick.heroName,
                   playerSlot: pick.playerSlot,
                   team: pick.team,
-                  inRolePool: Boolean(
-                    match.heroPoolVersionId &&
-                    match.role &&
-                    poolHeroIds
-                      .get(`${match.heroPoolVersionId}:${match.role}`)
-                      ?.has(pick.heroId),
-                  ),
+                  inRolePool: Boolean(rolePool?.has(pick.heroId)),
                 })),
                 legacyBans: match.legacyBans,
                 role: match.role || "",
@@ -276,7 +283,7 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
                 heroPoolEligible: match.heroPoolEligible,
                 heroPoolMatch:
                   match.heroPoolEligible && match.heroPoolVersionId && match.role && match.heroId
-                    ? Boolean(poolHeroIds.get(`${match.heroPoolVersionId}:${match.role}`)?.has(match.heroId))
+                    ? Boolean(rolePool?.has(match.heroId))
                     : null,
                 heroPoolVersion: match.heroPoolVersionId
                   ? poolVersionNumber.get(match.heroPoolVersionId) || null
@@ -305,12 +312,20 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
                 gameModeName: gameModeName(match.gameModeId),
                 lobbyTypeId: match.lobbyTypeId,
                 lobbyTypeName: lobbyTypeName(match.lobbyTypeId),
+                radiantWin: details.radiantWin ?? match.radiantWin ?? null,
+                radiantScore: details.radiantScore,
+                direScore: details.direScore,
+                participants: details.participants.map((participant) => ({
+                  ...participant,
+                  inRolePool: Boolean(rolePool?.has(participant.heroId)),
+                })),
                 images: imagesByMatch.get(match.id) || [],
                 imageJobStatus: imageJobByMatch.get(match.id) || null,
                 createdAt: match.createdAt.toISOString(),
                 updatedAt: match.updatedAt.toISOString(),
-              },
-            ]),
+                },
+              ] as const;
+            }),
           ),
         },
       ]),
