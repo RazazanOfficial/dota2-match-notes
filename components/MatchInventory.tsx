@@ -10,15 +10,15 @@ interface MatchInventoryProps {
 }
 
 const SLOT_BOXES = [
-  { left: "17.65%", top: "14.75%", width: "21.1%", height: "21.65%" },
-  { left: "39.75%", top: "14.75%", width: "21.1%", height: "21.65%" },
-  { left: "62.15%", top: "14.75%", width: "21.1%", height: "21.65%" },
-  { left: "17.65%", top: "38.05%", width: "21.1%", height: "21.65%" },
-  { left: "39.75%", top: "38.05%", width: "21.1%", height: "21.65%" },
-  { left: "62.15%", top: "38.05%", width: "21.1%", height: "21.65%" },
-  { left: "17.65%", top: "61.65%", width: "21.1%", height: "17.65%" },
-  { left: "39.75%", top: "61.65%", width: "21.1%", height: "17.65%" },
-  { left: "62.15%", top: "61.65%", width: "21.1%", height: "17.65%" },
+  { left: "20.93301%", top: "15.72795%", width: "16.44737%", height: "21.25399%" },
+  { left: "41.50718%", top: "15.72795%", width: "16.44737%", height: "21.25399%" },
+  { left: "62.08134%", top: "15.72795%", width: "16.44737%", height: "21.25399%" },
+  { left: "20.93301%", top: "40.06376%", width: "16.44737%", height: "21.25399%" },
+  { left: "41.50718%", top: "40.06376%", width: "16.44737%", height: "21.25399%" },
+  { left: "62.08134%", top: "40.06376%", width: "16.44737%", height: "21.25399%" },
+  { left: "20.93301%", top: "64.39957%", width: "16.44737%", height: "21.25399%" },
+  { left: "41.50718%", top: "64.39957%", width: "16.44737%", height: "21.25399%" },
+  { left: "62.08134%", top: "64.39957%", width: "16.44737%", height: "21.25399%" },
 ] satisfies CSSProperties[];
 
 export default function MatchInventory({ participant }: MatchInventoryProps) {
@@ -77,11 +77,11 @@ export default function MatchInventory({ participant }: MatchInventoryProps) {
         <InventoryItem
           itemId={participant.neutralItemId}
           className="match-inventory-neutral"
-          style={{ left: "88.45%", top: "20.35%", width: "8.7%", height: "16.2%" }}
+          style={{ left: "85.8%", top: "24.3%", width: "8.7%", height: "16.2%" }}
         />
         <span
           className="match-inventory-level"
-          style={{ left: "88.45%", top: "44.65%", width: "8.7%", height: "16.2%" }}
+          style={{ left: "85.7%", top: "51%", width: "8.7%", height: "16.2%" }}
           title={`Level ${participant.level ?? "—"}`}
           aria-label={`لول هیرو ${participant.level ?? "نامشخص"}`}
         >
