@@ -180,6 +180,9 @@ describe("STRATZ client and validation", () => {
     expect(headers.get("User-Agent")).toBe("STRATZ_API");
     const body = JSON.parse(String(init.body)) as { query: string };
     expect(body.query).toContain(`match0: match(id: ${matchId})`);
+    expect(body.query).toContain("stats {");
+    expect(body.query).toContain("networthPerMinute");
+    expect(body.query).toContain("impPerMinute");
     expect(body.query).not.toContain("server-only-token");
   });
 

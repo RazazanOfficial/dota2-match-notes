@@ -52,3 +52,7 @@ export const listUsersQuerySchema = z.object({
 export const overviewQuerySchema = z.object({
   range: z.coerce.number().int().pipe(z.union([z.literal(7), z.literal(30), z.literal(90)])).default(30),
 });
+
+export const reprocessMatchesSchema = z.object({
+  count: z.coerce.number().int().min(1).max(20),
+}).strict();

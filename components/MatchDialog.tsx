@@ -13,6 +13,7 @@ import HeroPicker from "./HeroPicker";
 import { GameIcon, type GameIconName } from "./GameIcon";
 import GeneratedImageGallery from "./GeneratedImageGallery";
 import MatchScoreboard from "./MatchScoreboard";
+import MatchAnalysisPanel from "./MatchAnalysisPanel";
 import ReviewListInput from "./ReviewListInput";
 
 type MatchTab = "overview" | "review" | "media";
@@ -127,6 +128,7 @@ export default function MatchDialog({
               : <LegacyMatchOverview match={draft} hero={hero} />}
           </div>
           <div className={`match-tab-panel${activeTab === "review" ? " is-active" : ""}`} data-match-tab="review">
+          <MatchAnalysisPanel match={draft} active={activeTab === "review"} />
           <div className="detail-section">
             <span>یادداشت بازی</span>
             <p>{draft.notes || "—"}</p>
@@ -209,6 +211,7 @@ export default function MatchDialog({
         </div>
 
         <div className={`match-tab-panel${activeTab === "review" ? " is-active" : ""}`} data-match-tab="review">
+          <MatchAnalysisPanel match={draft} active={activeTab === "review"} />
           <div className="match-review-layout">
             <label className="field match-general-notes">
               <span>یادداشت بازی</span>

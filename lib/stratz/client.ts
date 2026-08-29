@@ -16,6 +16,18 @@ function matchSelection(matchId: number) {
         position
         role
         roleBasic
+        stats {
+          level
+          lastHitsPerMinute
+          deniesPerMinute
+          goldPerMinute
+          experiencePerMinute
+          healPerMinute
+          heroDamagePerMinute
+          towerDamagePerMinute
+          networthPerMinute
+          impPerMinute
+        }
       }
       pickBans {
         isPick

@@ -345,6 +345,15 @@ export async function saveStratzEnrichment(params: {
   });
 }
 
+export async function saveStratzRawSnapshot(dotaMatchId: number, match: StratzMatch) {
+  const now = new Date();
+  const rawData = JSON.parse(JSON.stringify(match)) as Record<string, unknown>;
+  await getDb()
+    .update(dotaMatches)
+    .set({ stratzRawData: rawData, stratzFetchedAt: now, updatedAt: now })
+    .where(eq(dotaMatches.matchId, dotaMatchId));
+}
+
 export async function completeStratzJob(job: ClaimedStratzJob) {
   const finishedAt = new Date();
   const [completed] = await getDb()

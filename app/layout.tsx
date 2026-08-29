@@ -6,6 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
 import "./dota-theme.css";
 import "./match-details.css";
+import "./match-analysis.css";
 import "./cursor-themes.css";
 
 export const metadata: Metadata = {

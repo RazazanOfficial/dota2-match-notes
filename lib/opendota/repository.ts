@@ -430,6 +430,7 @@ export async function saveOpenDotaMatch(params: {
   journalMatchId: string;
   match: OpenDotaMatch;
   player: OpenDotaPlayer;
+  queueImages?: boolean;
 }) {
   const { userId, journalMatchId, match, player } = params;
   const now = new Date();
@@ -583,23 +584,25 @@ export async function saveOpenDotaMatch(params: {
         setWhere: ne(stratzEnrichmentJobs.status, "processing"),
       });
 
-    await tx
-      .insert(matchImageJobs)
-      .values({ matchId: saved.id, runAfter: now, updatedAt: now })
-      .onConflictDoUpdate({
-        target: matchImageJobs.matchId,
-        set: {
-          status: "pending",
-          attempts: 0,
-          runAfter: now,
-          lockedAt: null,
-          finishedAt: null,
-          errorCode: null,
-          errorMessage: null,
-          updatedAt: now,
-        },
-        setWhere: ne(matchImageJobs.status, "processing"),
-      });
+    if (params.queueImages !== false) {
+      await tx
+        .insert(matchImageJobs)
+        .values({ matchId: saved.id, runAfter: now, updatedAt: now })
+        .onConflictDoUpdate({
+          target: matchImageJobs.matchId,
+          set: {
+            status: "pending",
+            attempts: 0,
+            runAfter: now,
+            lockedAt: null,
+            finishedAt: null,
+            errorCode: null,
+            errorMessage: null,
+            updatedAt: now,
+          },
+          setWhere: ne(matchImageJobs.status, "processing"),
+        });
+    }
 
     await tx
       .delete(dismissedDotaMatches)

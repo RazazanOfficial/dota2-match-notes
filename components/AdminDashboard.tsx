@@ -6,6 +6,7 @@ import {
   ArrowRight,
   CircleX,
   KeyRound,
+  RotateCcw,
   Search,
   UserPlus,
 } from "lucide-react";
@@ -13,6 +14,7 @@ import { toast } from "react-toastify";
 import AppLogo from "./AppLogo";
 import AdminReleaseNotes from "./AdminReleaseNotes";
 import AdminPasswordDialog from "./AdminPasswordDialog";
+import AdminMatchReprocessDialog from "./AdminMatchReprocessDialog";
 
 type RangeDays = 7 | 30 | 90;
 type JobStatus = "pending" | "processing" | "completed" | "failed";
@@ -118,6 +120,7 @@ export default function AdminDashboard() {
   const [steamIdentifier, setSteamIdentifier] = useState("");
   const [provisioning, setProvisioning] = useState(false);
   const [passwordUser, setPasswordUser] = useState<AdminUser | null>(null);
+  const [reprocessUser, setReprocessUser] = useState<AdminUser | null>(null);
 
   const loadOverview = useCallback(async () => {
     const result = await adminRequest<{ ok: true; overview: AdminOverview }>(
@@ -304,7 +307,7 @@ export default function AdminDashboard() {
         </div>
         <div className="admin-table-wrap">
           <table className="admin-users-table">
-            <thead><tr><th>کاربر</th><th>Steam Account</th><th>عضویت</th><th>آخرین Sync</th><th>دسترسی</th><th>رمز عبور</th></tr></thead>
+            <thead><tr><th>کاربر</th><th>Steam Account</th><th>عضویت</th><th>آخرین Sync</th><th>دسترسی</th><th>تحلیل مچ</th><th>رمز عبور</th></tr></thead>
             <tbody>
               {users.map((user) => (
                 <tr key={user.id}>
@@ -313,6 +316,7 @@ export default function AdminDashboard() {
                   <td>{dateTime.format(new Date(user.createdAt))}</td>
                   <td>{user.lastManualSyncAt ? dateTime.format(new Date(user.lastManualSyncAt)) : "—"}</td>
                   <td>{user.isSuperAdmin ? <span className="access-chip is-super">Super Admin</span> : user.isAdmin ? <span className="access-chip">Admin</span> : <span className="access-chip is-user">User</span>}</td>
+                  <td><button className="reprocess-admin-button" type="button" onClick={() => setReprocessUser(user)}><RotateCcw /> تحلیل مجدد</button></td>
                   <td><button className={`password-admin-button${user.hasPassword ? " is-active" : ""}`} type="button" onClick={() => setPasswordUser(user)}><KeyRound aria-hidden="true" /> {user.hasPassword ? "تغییر" : "تعیین رمز"}</button></td>
                 </tr>
               ))}
@@ -333,6 +337,7 @@ export default function AdminDashboard() {
           setUsers((current) => current.map((user) => user.id === userId ? { ...user, hasPassword } : user));
         }}
       />
+      <AdminMatchReprocessDialog user={reprocessUser} onClose={() => setReprocessUser(null)} />
     </main>
   );
 }

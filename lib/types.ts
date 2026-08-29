@@ -68,6 +68,73 @@ export interface MatchParticipant {
   inRolePool?: boolean;
 }
 
+export type PerformanceTone = "elite" | "strong" | "steady" | "weak" | "critical";
+export type TimelineState = "surge" | "progress" | "steady" | "setback" | "out";
+
+export interface MatchBenchmarkMetric {
+  key: string;
+  label: string;
+  value: number;
+  formattedValue: string;
+  percentile: number;
+  qualityPercentile: number;
+  tone: PerformanceTone;
+  source: "hero" | "match";
+}
+
+export interface MatchMinuteSnapshot {
+  minute: number;
+  gold: number | null;
+  xp: number | null;
+  lastHits: number | null;
+  denies: number | null;
+  heroDamage: number | null;
+  heroHealing: number | null;
+  impact: number | null;
+  goldDelta: number | null;
+  xpDelta: number | null;
+  lastHitDelta: number | null;
+  state: TimelineState;
+  label: string;
+}
+
+export interface MatchPlayerAnalysis {
+  playerSlot: number;
+  accountId: number | null;
+  heroId: number;
+  heroName: string;
+  personName: string;
+  team: DotaTeam;
+  position: number | null;
+  positionLabel: string;
+  isProfilePlayer: boolean;
+  benchmarks: MatchBenchmarkMetric[];
+  strengths: MatchBenchmarkMetric[];
+  weaknesses: MatchBenchmarkMetric[];
+  timeline: MatchMinuteSnapshot[];
+  benchmarkSource: "hero" | "match" | "unavailable";
+}
+
+export interface MatchTeamMinute {
+  minute: number;
+  radiantGoldAdvantage: number | null;
+  radiantXpAdvantage: number | null;
+}
+
+export interface MatchAnalysis {
+  status: "ready" | "partial" | "unavailable";
+  dotaMatchId: string;
+  durationMinutes: number;
+  parsed: boolean;
+  coverage: {
+    benchmarkPlayers: number;
+    timelinePlayers: number;
+    totalPlayers: number;
+  };
+  players: MatchPlayerAnalysis[];
+  teamTimeline: MatchTeamMinute[];
+}
+
 export interface Match {
   id: string;
   number: number;
@@ -110,6 +177,7 @@ export interface Match {
   participants?: MatchParticipant[];
   images?: MatchImage[];
   imageJobStatus?: ImageJobStatus | null;
+  analysis?: MatchAnalysis;
 }
 
 export interface Day {

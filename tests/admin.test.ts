@@ -8,6 +8,7 @@ import {
   normalizeSteamIdentifier,
   overviewQuerySchema,
   provisionUserInputSchema,
+  reprocessMatchesSchema,
 } from "../lib/admin/validation";
 
 const ORIGINAL_SUPER_ADMIN_IDS = process.env.SUPER_ADMIN_STEAM_IDS;
@@ -82,5 +83,11 @@ describe("admin user validation", () => {
     expect(overviewQuerySchema.parse({})).toEqual({ range: 30 });
     expect(overviewQuerySchema.parse({ range: "7" })).toEqual({ range: 7 });
     expect(overviewQuerySchema.safeParse({ range: "14" }).success).toBe(false);
+  });
+
+  it("limits admin match reprocessing to a safe batch", () => {
+    expect(reprocessMatchesSchema.parse({ count: "3" })).toEqual({ count: 3 });
+    expect(reprocessMatchesSchema.safeParse({ count: 0 }).success).toBe(false);
+    expect(reprocessMatchesSchema.safeParse({ count: 21 }).success).toBe(false);
   });
 });

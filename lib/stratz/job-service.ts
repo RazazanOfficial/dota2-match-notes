@@ -9,6 +9,7 @@ import {
   recoverStaleStratzJobs,
   rescheduleOrFailStratzJob,
   saveStratzEnrichment,
+  saveStratzRawSnapshot,
 } from "./job-repository";
 
 const PERMANENT_CODES = new Set([
@@ -67,12 +68,6 @@ export async function runStratzEnrichmentTick(options?: {
         );
       }
       const result = await fetchStratzMatch(source.dotaMatchId);
-      const enrichment = buildStratzEnrichment({
-        match: result.match,
-        steamAccountId: source.steamAccountId,
-        expectedHeroId: source.heroId,
-        heroPoolEligible: source.heroPoolEligible,
-      });
       if (!result.match) {
         throw new StratzError(
           503,
@@ -80,6 +75,13 @@ export async function runStratzEnrichmentTick(options?: {
           "اطلاعات این مچ هنوز در STRATZ آماده نیست",
         );
       }
+      await saveStratzRawSnapshot(source.dotaMatchId, result.match);
+      const enrichment = buildStratzEnrichment({
+        match: result.match,
+        steamAccountId: source.steamAccountId,
+        expectedHeroId: source.heroId,
+        heroPoolEligible: source.heroPoolEligible,
+      });
       await saveStratzEnrichment({
         journalMatchId: source.journalMatchId,
         dotaMatchId: source.dotaMatchId,

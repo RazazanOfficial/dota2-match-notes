@@ -35,6 +35,18 @@ const stratzPlayerSchema = z.object({
   position: stratzPositionSchema.nullable().optional(),
   role: z.string().nullable().optional(),
   roleBasic: z.string().nullable().optional(),
+  stats: z.object({
+    level: z.array(nullableInteger).max(300).nullable().optional(),
+    lastHitsPerMinute: z.array(nullableInteger).max(300).nullable().optional(),
+    deniesPerMinute: z.array(nullableInteger).max(300).nullable().optional(),
+    goldPerMinute: z.array(nullableInteger).max(300).nullable().optional(),
+    experiencePerMinute: z.array(nullableInteger).max(300).nullable().optional(),
+    healPerMinute: z.array(nullableInteger).max(300).nullable().optional(),
+    heroDamagePerMinute: z.array(nullableInteger).max(300).nullable().optional(),
+    towerDamagePerMinute: z.array(nullableInteger).max(300).nullable().optional(),
+    networthPerMinute: z.array(nullableInteger).max(300).nullable().optional(),
+    impPerMinute: z.array(nullableInteger).max(300).nullable().optional(),
+  }).nullable().optional(),
 });
 
 const stratzPickBanSchema = z.object({
