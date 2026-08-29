@@ -8,6 +8,7 @@ import { scheduledSyncUserFromJob } from "../lib/sync/job";
 
 const ENV_NAMES = [
   "SYNC_WORKER_SECRET",
+  "SCHEDULED_SYNC_ENABLED",
   "SCHEDULED_SYNC_INTERVAL_SECONDS",
   "SCHEDULED_SYNC_ENQUEUE_BATCH_SIZE",
   "SCHEDULED_SYNC_PROCESS_BATCH_SIZE",
@@ -39,6 +40,7 @@ describe("scheduled sync worker configuration", () => {
   it("uses conservative queue and retry defaults", () => {
     expect(getSyncWorkerConfig()).toEqual({
       secret: SECRET,
+      enabled: false,
       intervalSeconds: 3_600,
       enqueueBatchSize: 25,
       processBatchSize: 1,
@@ -48,6 +50,17 @@ describe("scheduled sync worker configuration", () => {
       lookbackSeconds: 21_600,
       initialMatches: 1,
     });
+  });
+
+  it("supports an explicit on/off switch and rejects ambiguous values", () => {
+    process.env.SCHEDULED_SYNC_ENABLED = "on";
+    expect(getSyncWorkerConfig().enabled).toBe(true);
+
+    process.env.SCHEDULED_SYNC_ENABLED = "off";
+    expect(getSyncWorkerConfig().enabled).toBe(false);
+
+    process.env.SCHEDULED_SYNC_ENABLED = "sometimes";
+    expect(() => getSyncWorkerConfig()).toThrow("SCHEDULED_SYNC_ENABLED");
   });
 
   it("rejects weak secrets and unsafe batch sizes", () => {
