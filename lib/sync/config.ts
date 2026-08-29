@@ -1,5 +1,6 @@
 export interface SyncWorkerConfig {
   secret: string;
+  enabled: boolean;
   intervalSeconds: number;
   enqueueBatchSize: number;
   processBatchSize: number;
@@ -8,6 +9,14 @@ export interface SyncWorkerConfig {
   retryBaseSeconds: number;
   lookbackSeconds: number;
   initialMatches: number;
+}
+
+function parseToggle(name: string, fallback: boolean) {
+  const raw = process.env[name]?.trim().toLowerCase();
+  if (!raw) return fallback;
+  if (raw === "on" || raw === "true") return true;
+  if (raw === "off" || raw === "false") return false;
+  throw new Error(`Invalid env: ${name}`);
 }
 
 function parseInteger(name: string, fallback: number, min: number, max: number) {
@@ -31,6 +40,7 @@ function getWorkerSecret() {
 export function getSyncWorkerConfig(): SyncWorkerConfig {
   return {
     secret: getWorkerSecret(),
+    enabled: parseToggle("SCHEDULED_SYNC_ENABLED", false),
     intervalSeconds: parseInteger(
       "SCHEDULED_SYNC_INTERVAL_SECONDS",
       3_600,

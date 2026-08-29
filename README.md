@@ -40,6 +40,7 @@ OPENDOTA_DAILY_REQUEST_LIMIT=2900
 OPENDOTA_MAX_NEW_MATCHES_PER_SYNC=20
 
 SYNC_WORKER_SECRET=GENERATE_A_RANDOM_32_PLUS_CHARACTER_SECRET
+SCHEDULED_SYNC_ENABLED=off
 SCHEDULED_SYNC_INTERVAL_SECONDS=3600
 SCHEDULED_SYNC_ENQUEUE_BATCH_SIZE=25
 SCHEDULED_SYNC_PROCESS_BATCH_SIZE=1
@@ -194,10 +195,14 @@ UTC سرور VPS تاریخ دفتر را جابه‌جا نمی‌کند. وض�
 فقط تصمیم حذف کاربر را نگه می‌دارد و شامل آمار یا اطلاعات خصوصی نیست. اتصال صریح همان Match
 ID از مسیر همگام‌سازی تکی، این علامت حذف را برمی‌دارد و مچ را دوباره فعال می‌کند.
 
-## Worker همگام‌سازی زمان‌بندی‌شده (غیرفعال)
+## Worker همگام‌سازی زمان‌بندی‌شده
 
 - `POST /api/internal/sync/tick`
 - Header اجباری: `Authorization: Bearer SYNC_WORKER_SECRET`
+
+این Worker با `SCHEDULED_SYNC_ENABLED=off` غیرفعال است. در این حالت Tick داخلی
+بدون ساخت یا پردازش Job برمی‌گردد و هیچ درخواستی به OpenDota نمی‌فرستد. برای فعال‌کردن
+بررسی دوره‌ای مقدار را روی `on` قرار دهید. این گزینه روی Sync دستی کاربر اثری ندارد.
 
 هر Tick ابتدا Jobهای گیرکرده را بازیابی می‌کند، کاربران موعدرسیده را با رعایت Job فعال یکتا
 در صف می‌گذارد و سپس تعداد محدودی Job را پردازش می‌کند. Claim هر Job با قفل ردیفی
@@ -219,8 +224,8 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
 ```
 
 این Secret فقط در `.env.local` یا تنظیمات سرویس VPS قرار می‌گیرد و نباید به Git، مرورگر یا
-متغیرهای `NEXT_PUBLIC_` وارد شود. کد Scheduler برای استفاده آینده حفظ شده، اما Timer آن در
-استقرار فعلی نصب یا فعال نمی‌شود؛ Sync کاربران فقط با دکمه خودشان انجام می‌شود.
+متغیرهای `NEXT_PUBLIC_` وارد شود. فعال‌بودن Timer به‌تنهایی Scheduler را فعال نمی‌کند؛
+تصمیم نهایی با `SCHEDULED_SYNC_ENABLED` است.
 
 اطلاعات ثابت هیروها از پروژه MIT
 [`odota/dotaconstants`](https://github.com/odota/dotaconstants) تهیه شده و تصاویر هیروها

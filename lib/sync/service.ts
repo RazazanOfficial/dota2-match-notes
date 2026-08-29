@@ -31,6 +31,17 @@ function describeWorkerError(error: unknown) {
 
 export async function runScheduledSyncTick() {
   const config = getSyncWorkerConfig();
+  if (!config.enabled) {
+    return {
+      enabled: false,
+      enqueued: 0,
+      stale: { recovered: 0, failed: 0 },
+      processed: 0,
+      stoppedEarly: false,
+      jobs: [],
+    };
+  }
+
   const stale = await recoverStaleScheduledJobs(config);
   const enqueued = await enqueueDueScheduledSyncJobs(config);
   const jobs: Array<Record<string, unknown>> = [];
@@ -80,6 +91,7 @@ export async function runScheduledSyncTick() {
   }
 
   return {
+    enabled: true,
     enqueued,
     stale,
     processed: jobs.length,
