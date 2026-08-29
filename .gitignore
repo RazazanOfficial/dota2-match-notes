@@ -8,3 +8,4 @@ apps-script/Code.gs
 .env.*
 !.env.example
 *.tsbuildinfo
+next-env.d.ts

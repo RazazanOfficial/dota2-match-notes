@@ -1,7 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, Copy } from "lucide-react";
+import {
+  Building2,
+  Check,
+  Coins,
+  Copy,
+  Crosshair,
+  Gem,
+  HeartPulse,
+  ListChecks,
+  Sparkles,
+  Swords,
+  type LucideIcon,
+} from "lucide-react";
 import { toast } from "react-toastify";
 import { heroById, heroImage } from "@/data/heroes";
 import { roleLabel } from "@/lib/constants";
@@ -77,15 +89,15 @@ export default function MatchScoreboard({ match }: MatchScoreboardProps) {
           </button>
         </div>
         <div className="match-result-center">
+          <span className="match-result-duration" lang="en" dir="ltr">{duration}</span>
           <div className="match-result-score" dir="ltr" aria-label="نتیجه مچ">
             <strong className="is-radiant">{formatNumber(match.radiantScore)}</strong>
             <span>—</span>
             <strong className="is-dire">{formatNumber(match.direScore)}</strong>
           </div>
-          <span className="match-result-duration" lang="en" dir="ltr">{duration}</span>
         </div>
         <div className="match-result-chip is-type">
-          <span>نوع مچ</span>
+          <span>Match Type</span>
           <strong lang="en" dir="ltr">{matchType}</strong>
         </div>
         <div className={`match-winner is-dire${winner === "dire" ? " is-visible" : ""}`}>
@@ -207,23 +219,21 @@ function FocusedPlayer({ match, participant }: { match: Match; participant: Matc
           {hero && <img src={heroImage(hero)} alt={participant.heroName} />}
         </span>
         <div>
-          <strong lang="en" dir="ltr">{playerName(participant.personName)} · {participant.heroName}</strong>
+          <strong lang="en" dir="ltr">{participant.heroName}</strong>
           {role && <span lang="en" dir="ltr">{role}</span>}
-          <b className={won === null ? "" : won ? "is-win" : "is-loss"}>
-            {won === null ? "—" : won ? "برد" : "باخت"}
-          </b>
         </div>
       </div>
 
       <div className="match-focus-metrics">
-        <FocusMetric label="K / D / A" value={formatKda(participant)} />
-        <FocusMetric label="GPM" value={formatNumber(participant.goldPerMinute)} tone="gold" />
-        <FocusMetric label="XPM" value={formatNumber(participant.xpPerMinute)} tone="xp" />
-        <FocusMetric label="Net Worth" value={formatNumber(participant.netWorth, true)} tone="gold" gold />
-        <FocusMetric label="Hero Damage" value={formatNumber(participant.heroDamage, true)} tone="damage" />
-        <FocusMetric label="Tower Damage" value={formatNumber(participant.towerDamage, true)} tone="damage" />
-        <FocusMetric label="Hero Healing" value={formatNumber(participant.heroHealing, true)} tone="healing" />
+        <FocusMetric icon={Swords} label="K / D / A" value={formatKda(participant)} />
+        <FocusMetric icon={Coins} label="GPM" value={formatNumber(participant.goldPerMinute)} tone="gold" />
+        <FocusMetric icon={Sparkles} label="XPM" value={formatNumber(participant.xpPerMinute)} tone="xp" />
+        <FocusMetric icon={Gem} label="Net Worth" value={formatNumber(participant.netWorth, true)} tone="gold" gold />
+        <FocusMetric icon={Crosshair} label="Hero Damage" value={formatNumber(participant.heroDamage, true)} tone="damage" />
+        <FocusMetric icon={Building2} label="Tower Damage" value={formatNumber(participant.towerDamage, true)} tone="damage" />
+        <FocusMetric icon={HeartPulse} label="Hero Healing" value={formatNumber(participant.heroHealing, true)} tone="healing" />
         <FocusMetric
+          icon={ListChecks}
           label="LH / DN"
           value={`${formatNumber(participant.lastHits)} / ${formatNumber(participant.denies)}`}
         />
@@ -237,11 +247,13 @@ function FocusedPlayer({ match, participant }: { match: Match; participant: Matc
 }
 
 function FocusMetric({
+  icon: Icon,
   label,
   value,
   tone = "",
   gold = false,
 }: {
+  icon: LucideIcon;
   label: string;
   value: string;
   tone?: "" | "gold" | "xp" | "damage" | "healing";
@@ -249,7 +261,7 @@ function FocusMetric({
 }) {
   return (
     <span className={`match-focus-metric${tone ? ` is-${tone}` : ""}`}>
-      <small lang="en">{label}</small>
+      <small lang="en"><Icon aria-hidden="true" />{label}</small>
       <strong lang="en" dir="ltr">{value}{gold && <GoldIcon />}</strong>
     </span>
   );
