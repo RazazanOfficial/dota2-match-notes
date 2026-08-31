@@ -16,7 +16,7 @@ const MOCK_MATCH: Match = {
   picks: [],
   role: "safe_lane",
   roleSource: "stratz",
-  queueType: "role_selected",
+  queueType: "",
   notes: "درگیری‌های مهم را با زمان‌بندی بهتر انتخاب کردم.",
   positivePoints: ["فشار مناسب روی لاین", "استفاده درست از تایمینگ آیتم‌ها"],
   negativePoints: ["یک مرگ غیرضروری پیش از Roshan"],
@@ -137,7 +137,7 @@ export default function DevMockPlayer() {
     <main className="dev-mock-player">
       <MatchDialog
         open
-        readonly
+        readonly={false}
         dateLabel="پنج‌شنبه ۶ شهریور"
         match={MOCK_MATCH}
         nextNumber={19}

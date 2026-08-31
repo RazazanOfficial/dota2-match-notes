@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, TriangleAlert } from "lucide-react";
 
 export default function DotaSelect<T extends string>({
   label,
@@ -10,6 +10,8 @@ export default function DotaSelect<T extends string>({
   options,
   onChange,
   required = false,
+  invalid = false,
+  validationKey,
 }: {
   label: string;
   value: T | "";
@@ -17,6 +19,8 @@ export default function DotaSelect<T extends string>({
   options: Array<{ value: T; label: string }>;
   onChange: (value: T) => void;
   required?: boolean;
+  invalid?: boolean;
+  validationKey?: string;
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -39,7 +43,11 @@ export default function DotaSelect<T extends string>({
   }, [open]);
 
   return (
-    <div className="field dota-select" ref={rootRef}>
+    <div
+      className={`field dota-select${invalid ? " is-invalid" : ""}`}
+      data-required-field={validationKey}
+      ref={rootRef}
+    >
       <span>{label}</span>
       <button
         type="button"
@@ -47,10 +55,14 @@ export default function DotaSelect<T extends string>({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-required={required}
+        aria-invalid={invalid}
         onClick={() => setOpen((current) => !current)}
       >
         <span lang="en">{selected?.label || placeholder}</span>
-        <ChevronDown aria-hidden="true" />
+        <span className="dota-select-icons">
+          {invalid && <TriangleAlert className="required-field-alert" aria-hidden="true" />}
+          <ChevronDown aria-hidden="true" />
+        </span>
       </button>
       {open && (
         <div className="dota-select-options" role="listbox">

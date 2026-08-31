@@ -875,7 +875,70 @@ clip-path: polygon(12.8% 0%, 100% 0%, 88% 100%, 0% 100%);
   margin-top: 0;
 }
 .match-personal-editor .form-error {
-  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 0;
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(224, 91, 82, 0.48);
+  color: #ffaaa3;
+  background: rgba(164, 48, 40, 0.12);
+}
+
+.match-personal-editor .form-error svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: #ef6c63;
+}
+
+.match-modal .field.is-invalid > span:first-child,
+.match-modal .field.is-invalid > label:first-child {
+  color: #ff9189;
+}
+
+.match-modal .field.is-invalid .dota-select-trigger,
+.match-modal .field.is-invalid .hero-picker-control input,
+.match-modal .field.is-invalid .required-field-control input {
+  border-color: rgba(235, 87, 77, 0.92);
+  box-shadow: inset 3px 0 0 #e2574d, 0 0 0 1px rgba(226, 87, 77, 0.16);
+}
+
+.required-field-control {
+  position: relative;
+  display: block;
+}
+
+.required-field-control input {
+  padding-left: 40px;
+}
+
+.required-field-alert {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: #ef655c;
+}
+
+.required-field-control .required-field-alert,
+.hero-required-alert {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: 11px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.dota-select-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.match-modal .dota-select-trigger .required-field-alert {
+  color: #ef655c;
 }
 
 .match-context-bar {
