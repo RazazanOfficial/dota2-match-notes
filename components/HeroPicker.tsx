@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Search, X } from "lucide-react";
+import { Search, TriangleAlert, X } from "lucide-react";
 import { HEROES, heroImage } from "@/data/heroes";
 import type { Hero } from "@/lib/types";
 
@@ -11,6 +11,8 @@ interface HeroPickerProps {
   onChange: (hero: Hero | null) => void;
   excludedIds?: number[];
   required?: boolean;
+  invalid?: boolean;
+  validationKey?: string;
 }
 
 export default function HeroPicker({
@@ -19,6 +21,8 @@ export default function HeroPicker({
   onChange,
   excludedIds = [],
   required = false,
+  invalid = false,
+  validationKey,
 }: HeroPickerProps) {
   const listId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -44,7 +48,11 @@ export default function HeroPicker({
   }, [excludedIds, query]);
 
   return (
-    <div className="field hero-picker" ref={rootRef}>
+    <div
+      className={`field hero-picker${invalid ? " is-invalid" : ""}`}
+      data-required-field={validationKey}
+      ref={rootRef}
+    >
       <label htmlFor={listId}>{label}</label>
       <div className={`hero-picker-control${value ? " has-value" : ""}`}>
         {value && <img src={heroImage(value)} alt="" />}
@@ -58,6 +66,7 @@ export default function HeroPicker({
           role="combobox"
           aria-expanded={open}
           aria-controls={`${listId}-options`}
+          aria-invalid={invalid}
           placeholder="Search heroes"
           required={required}
           onFocus={() => setOpen(true)}
@@ -75,6 +84,7 @@ export default function HeroPicker({
             }
           }}
         />
+        {invalid && <TriangleAlert className="required-field-alert hero-required-alert" aria-hidden="true" />}
         {value && (
           <button
             className="hero-clear"

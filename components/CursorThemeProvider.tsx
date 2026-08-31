@@ -46,22 +46,48 @@ export default function CursorThemeProvider({ children }: { children: ReactNode 
   }, [effect, pack, ready]);
 
   useEffect(() => {
-    const moveAura = (event: PointerEvent) => {
-      if (event.pointerType === "touch") return;
-      effectRef.current?.classList.add("is-active");
-      document.documentElement.style.setProperty("--cursor-x", `${event.clientX}px`);
-      document.documentElement.style.setProperty("--cursor-y", `${event.clientY}px`);
-    };
-
     const hideAura = () => {
       effectRef.current?.classList.remove("is-active");
     };
 
+    const moveAura = (event: PointerEvent) => {
+      if (event.pointerType === "touch") return;
+      document.documentElement.style.setProperty("--cursor-x", `${event.clientX}px`);
+      document.documentElement.style.setProperty("--cursor-y", `${event.clientY}px`);
+      const isOverPageContent =
+        event.clientX >= 0 &&
+        event.clientY >= 0 &&
+        event.clientX < document.documentElement.clientWidth &&
+        event.clientY < document.documentElement.clientHeight;
+
+      if (event.buttons === 0 && isOverPageContent) {
+        effectRef.current?.classList.add("is-active");
+      } else {
+        hideAura();
+      }
+    };
+
+    const hideWhenPageIsBackgrounded = () => {
+      if (document.visibilityState !== "visible") hideAura();
+    };
+
     window.addEventListener("pointermove", moveAura, { passive: true });
+    window.addEventListener("pointerdown", hideAura, { capture: true, passive: true });
+    window.addEventListener("pointercancel", hideAura, { passive: true });
+    window.addEventListener("wheel", hideAura, { capture: true, passive: true });
+    window.addEventListener("scroll", hideAura, { capture: true, passive: true });
+    window.addEventListener("blur", hideAura);
     document.documentElement.addEventListener("mouseleave", hideAura);
+    document.addEventListener("visibilitychange", hideWhenPageIsBackgrounded);
     return () => {
       window.removeEventListener("pointermove", moveAura);
+      window.removeEventListener("pointerdown", hideAura, true);
+      window.removeEventListener("pointercancel", hideAura);
+      window.removeEventListener("wheel", hideAura, true);
+      window.removeEventListener("scroll", hideAura, true);
+      window.removeEventListener("blur", hideAura);
       document.documentElement.removeEventListener("mouseleave", hideAura);
+      document.removeEventListener("visibilitychange", hideWhenPageIsBackgrounded);
     };
   }, []);
 

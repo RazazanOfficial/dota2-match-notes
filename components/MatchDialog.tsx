@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { Check, CircleX, ImageIcon, Save, Trash2, X } from "lucide-react";
+import { Check, CircleX, ImageIcon, Save, Trash2, TriangleAlert, X } from "lucide-react";
+import { toast } from "react-toastify";
 import { heroById, heroImage } from "@/data/heroes";
 import { QUEUE_OPTIONS, ROLE_OPTIONS, queueLabel, roleLabel } from "@/lib/constants";
 import { newMatchId } from "@/lib/date";
@@ -17,6 +18,22 @@ import MatchAnalysisPanel from "./MatchAnalysisPanel";
 import ReviewListInput from "./ReviewListInput";
 
 type MatchTab = "overview" | "review" | "media";
+type RequiredMatchField = "number" | "role" | "queueType" | "hero";
+
+const REQUIRED_FIELD_LABELS: Record<RequiredMatchField, string> = {
+  number: "شماره بازی",
+  role: "رول",
+  queueType: "نوع صف",
+  hero: "هیرو",
+};
+
+function requiredFieldsMessage(fields: RequiredMatchField[]) {
+  if (!fields.length) return "";
+  const labels = fields.map((field) => REQUIRED_FIELD_LABELS[field]);
+  return fields.length === 1
+    ? `برای ثبت بازی، فیلد «${labels[0]}» را تکمیل کنید.`
+    : `برای ثبت بازی، فیلدهای اجباری زیر را تکمیل کنید: ${labels.join("، ")}.`;
+}
 
 interface MatchDialogProps {
   open: boolean;
@@ -58,14 +75,16 @@ export default function MatchDialog({
   onDelete,
 }: MatchDialogProps) {
   const [draft, setDraft] = useState<Match>(EMPTY_MATCH);
-  const [formError, setFormError] = useState("");
+  const [invalidFields, setInvalidFields] = useState<RequiredMatchField[]>([]);
   const [activeTab, setActiveTab] = useState<MatchTab>("overview");
   const [discardWarning, setDiscardWarning] = useState(false);
   const [deleteWarning, setDeleteWarning] = useState(false);
   const initializedSource = useRef("");
   const initialDraft = useRef("");
+  const formRef = useRef<HTMLFormElement>(null);
   const hero = draft.heroId ? heroById(draft.heroId) || null : null;
   const hasTeamDetails = Boolean(draft.participants?.length);
+  const formError = requiredFieldsMessage(invalidFields);
 
   useEffect(() => {
     if (!open) {
@@ -75,7 +94,7 @@ export default function MatchDialog({
     const source = match?.id || `new:${dateLabel}`;
     if (initializedSource.current === source) return;
     initializedSource.current = source;
-    setFormError("");
+    setInvalidFields([]);
     setActiveTab("overview");
     setDiscardWarning(false);
     setDeleteWarning(false);
@@ -91,12 +110,47 @@ export default function MatchDialog({
     initialDraft.current = JSON.stringify(nextDraft);
   }, [dateLabel, match, nextNumber, open]);
 
+  useEffect(() => {
+    if (invalidFields.length) return;
+    toast.dismiss("match-required-fields");
+  }, [invalidFields]);
+
   function requestClose() {
     if (JSON.stringify(draft) !== initialDraft.current) {
       setDiscardWarning(true);
       return;
     }
     onClose();
+  }
+
+  function clearInvalidField(field: RequiredMatchField) {
+    setInvalidFields((current) => current.filter((item) => item !== field));
+  }
+
+  function showRequiredFields(missingFields: RequiredMatchField[]) {
+    const message = requiredFieldsMessage(missingFields);
+
+    setInvalidFields(missingFields);
+    setActiveTab("overview");
+    if (toast.isActive("match-required-fields")) {
+      toast.update("match-required-fields", {
+        render: message,
+        type: "error",
+        autoClose: 3_600,
+      });
+    } else {
+      toast.error(message, { toastId: "match-required-fields" });
+    }
+
+    window.requestAnimationFrame(() => {
+      const firstInvalidField = formRef.current?.querySelector<HTMLElement>(
+        `[data-required-field="${missingFields[0]}"]`,
+      );
+      firstInvalidField?.scrollIntoView({ behavior: "smooth", block: "center" });
+      window.setTimeout(() => {
+        firstInvalidField?.querySelector<HTMLElement>("button, input")?.focus({ preventScroll: true });
+      }, 250);
+    });
   }
 
   if (!open) return null;
@@ -146,19 +200,23 @@ export default function MatchDialog({
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={requestClose}>
       <form
+        ref={formRef}
         className="modal match-modal"
+        noValidate
         onMouseDown={(event) => event.stopPropagation()}
         onSubmit={(event) => {
           event.preventDefault();
-          if (!hero) {
-            setFormError("یک هیرو از فهرست انتخاب کنید");
+          const missingFields: RequiredMatchField[] = [];
+          if (!Number.isFinite(draft.number) || draft.number < 1) missingFields.push("number");
+          if (!draft.role) missingFields.push("role");
+          if (!draft.queueType) missingFields.push("queueType");
+          if (!hero) missingFields.push("hero");
+          if (missingFields.length) {
+            showRequiredFields(missingFields);
             return;
           }
-          if (!draft.role || !draft.queueType) {
-            setFormError("رول و نوع صف را انتخاب کنید");
-            return;
-          }
-          setFormError("");
+          if (!hero) return;
+          setInvalidFields([]);
           onSave({ ...draft, heroId: hero.id, heroName: hero.name });
         }}
       >
@@ -174,6 +232,8 @@ export default function MatchDialog({
         <MatchPersonalEditor
           match={draft}
           formError={formError}
+          invalidFields={invalidFields}
+          onClearInvalid={clearInvalidField}
           onChange={setDraft}
         />
         <MatchTabs active={activeTab} onChange={setActiveTab} />
@@ -188,14 +248,17 @@ export default function MatchDialog({
                   label="هیرو"
                   value={hero}
                   required
+                  invalid={invalidFields.includes("hero")}
+                  validationKey="hero"
                   excludedIds={draft.bans.map((ban) => ban.id)}
-                  onChange={(nextHero) =>
+                  onChange={(nextHero) => {
+                    if (nextHero) clearInvalidField("hero");
                     setDraft((current) => ({
                       ...current,
                       heroId: nextHero?.id || null,
                       heroName: nextHero?.name || "",
-                    }))
-                  }
+                    }));
+                  }}
                 />
                 <BanPicker
                   value={draft.bans}
@@ -272,10 +335,14 @@ export default function MatchDialog({
 function MatchPersonalEditor({
   match,
   formError,
+  invalidFields,
+  onClearInvalid,
   onChange,
 }: {
   match: Match;
   formError: string;
+  invalidFields: RequiredMatchField[];
+  onClearInvalid: (field: RequiredMatchField) => void;
   onChange: Dispatch<SetStateAction<Match>>;
 }) {
   return (
@@ -283,7 +350,11 @@ function MatchPersonalEditor({
       <div className="form-grid">
         <MatchNumberField
           value={match.number}
-          onChange={(number) => onChange((current) => ({ ...current, number }))}
+          invalid={invalidFields.includes("number")}
+          onChange={(number) => {
+            if (Number.isFinite(number) && number >= 1) onClearInvalid("number");
+            onChange((current) => ({ ...current, number }));
+          }}
         />
         <DotaSelect<MatchRole>
           label="رول"
@@ -291,7 +362,12 @@ function MatchPersonalEditor({
           placeholder="انتخاب رول"
           options={ROLE_OPTIONS}
           required
-          onChange={(role) => onChange((current) => ({ ...current, role }))}
+          invalid={invalidFields.includes("role")}
+          validationKey="role"
+          onChange={(role) => {
+            onClearInvalid("role");
+            onChange((current) => ({ ...current, role }));
+          }}
         />
         <DotaSelect<QueueType>
           label="نوع صف"
@@ -299,14 +375,24 @@ function MatchPersonalEditor({
           placeholder="انتخاب نوع صف"
           options={QUEUE_OPTIONS}
           required
-          onChange={(queueType) => onChange((current) => ({ ...current, queueType }))}
+          invalid={invalidFields.includes("queueType")}
+          validationKey="queueType"
+          onChange={(queueType) => {
+            onClearInvalid("queueType");
+            onChange((current) => ({ ...current, queueType }));
+          }}
         />
         <ResultField
           value={match.result}
           onChange={(result) => onChange((current) => ({ ...current, result }))}
         />
       </div>
-      <p className="form-error" role="alert">{formError}</p>
+      {formError && (
+        <p className="form-error" id="match-required-error" role="alert">
+          <TriangleAlert aria-hidden="true" />
+          <span>{formError}</span>
+        </p>
+      )}
     </section>
   );
 }
@@ -325,11 +411,32 @@ function ReadonlyMatchContext({ match }: { match: Match }) {
   );
 }
 
-function MatchNumberField({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+function MatchNumberField({
+  value,
+  invalid,
+  onChange,
+}: {
+  value: number;
+  invalid: boolean;
+  onChange: (value: number) => void;
+}) {
   return (
-    <label className="field">
+    <label
+      className={`field${invalid ? " is-invalid" : ""}`}
+      data-required-field="number"
+    >
       <span>شماره بازی</span>
-      <input type="number" min="1" value={value} required onChange={(event) => onChange(Number(event.target.value))} />
+      <span className="required-field-control">
+        <input
+          type="number"
+          min="1"
+          value={value}
+          required
+          aria-invalid={invalid}
+          onChange={(event) => onChange(Number(event.target.value))}
+        />
+        {invalid && <TriangleAlert className="required-field-alert" aria-hidden="true" />}
+      </span>
     </label>
   );
 }
