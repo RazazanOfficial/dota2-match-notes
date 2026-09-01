@@ -6,7 +6,7 @@
 
 .match-modal-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin: 12px 0 18px;
   border: 1px solid var(--border);
   background: rgba(5, 7, 8, 0.42);

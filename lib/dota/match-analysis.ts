@@ -1,21 +1,22 @@
 import { heroById } from "../../data/heroes";
-import type { DotaTeam, MatchAnalysis, MatchBenchmarkMetric, MatchMinuteSnapshot, MatchPlayerAnalysis, PerformanceTone, TimelineState } from "../types";
+import type { DotaTeam, MatchAnalysis, MatchBenchmarkMetric, MatchMinuteSnapshot, MatchPlayerAnalysis, TimelineState } from "../types";
 import { openDotaMatchSchema } from "../opendota/validation";
 import type { StratzMatch } from "../stratz/validation";
+import { calculatePerformanceScore, metricScoreWeight, performanceTone } from "./performance-score";
 
 type UnknownRecord = Record<string, unknown>;
 
 const METRICS = [
-  { key: "gold_per_min", label: "درآمد طلا", field: "gold_per_min", unit: "number" },
-  { key: "xp_per_min", label: "کسب تجربه", field: "xp_per_min", unit: "number" },
-  { key: "kills_per_min", label: "کیل", field: "kills", unit: "perMinute" },
-  { key: "deaths_per_min", label: "مرگ", field: "deaths", unit: "perMinute", inverse: true },
-  { key: "assists_per_min", label: "اسیست", field: "assists", unit: "perMinute" },
-  { key: "last_hits_per_min", label: "لست‌هیت", field: "last_hits", unit: "perMinute" },
-  { key: "denies_per_min", label: "دِنای", field: "denies", unit: "perMinute" },
-  { key: "hero_damage_per_min", label: "دمیج هیرو", field: "hero_damage", unit: "perMinute" },
-  { key: "hero_healing_per_min", label: "هیل", field: "hero_healing", unit: "perMinute" },
-  { key: "tower_damage", label: "دمیج ساختمان", field: "tower_damage", unit: "number" },
+  { key: "gold_per_min", label: "GPM", description: "میزان Gold به‌دست‌آمده در هر دقیقه", direction: "higher", field: "gold_per_min", unit: "number" },
+  { key: "xp_per_min", label: "XPM", description: "میزان XP به‌دست‌آمده در هر دقیقه", direction: "higher", field: "xp_per_min", unit: "number" },
+  { key: "kills_per_min", label: "Kills / min", description: "میانگین Kill در هر دقیقه", direction: "higher", field: "kills", unit: "perMinute" },
+  { key: "deaths_per_min", label: "Deaths / min", description: "میانگین Death در هر دقیقه؛ مقدار کمتر بهتر است", direction: "lower", field: "deaths", unit: "perMinute", inverse: true },
+  { key: "assists_per_min", label: "Assists / min", description: "میانگین Assist در هر دقیقه", direction: "higher", field: "assists", unit: "perMinute" },
+  { key: "last_hits_per_min", label: "LH / min", description: "میانگین Last Hit در هر دقیقه", direction: "higher", field: "last_hits", unit: "perMinute" },
+  { key: "denies_per_min", label: "Denies / min", description: "میانگین Deny در هر دقیقه", direction: "higher", field: "denies", unit: "perMinute" },
+  { key: "hero_damage_per_min", label: "Hero DMG / min", description: "میانگین Damage واردشده به Heroها در هر دقیقه", direction: "higher", field: "hero_damage", unit: "perMinute" },
+  { key: "hero_healing_per_min", label: "Heal / min", description: "میانگین Heal ثبت‌شده در هر دقیقه", direction: "contextual", field: "hero_healing", unit: "perMinute" },
+  { key: "tower_damage", label: "Tower DMG", description: "مجموع Damage واردشده به Tower و ساختمان‌ها", direction: "higher", field: "tower_damage", unit: "number" },
 ] as const;
 
 const POSITION_LABELS: Record<number, string> = { 1: "Carry", 2: "Mid", 3: "Offlane", 4: "Soft Support", 5: "Hard Support" };
@@ -30,13 +31,6 @@ function numberArray(value: unknown): Array<number | null> {
   return Array.isArray(value) ? value.map(numeric) : [];
 }
 function clampPercent(value: number) { return Math.max(0, Math.min(100, Math.round(value * 100))); }
-function tone(percentile: number): PerformanceTone {
-  if (percentile >= 85) return "elite";
-  if (percentile >= 65) return "strong";
-  if (percentile >= 35) return "steady";
-  if (percentile >= 15) return "weak";
-  return "critical";
-}
 function metricValue(player: UnknownRecord, field: string, durationMinutes: number, unit: string) {
   const raw = numeric(player[field]);
   if (raw === null) return null;
@@ -45,6 +39,11 @@ function metricValue(player: UnknownRecord, field: string, durationMinutes: numb
 function formatMetric(value: number, unit: string) {
   if (unit === "perMinute") return value.toLocaleString("fa-IR", { maximumFractionDigits: 2 });
   return Math.round(value).toLocaleString("fa-IR");
+}
+
+function highlightEligible(key: string, value: number, durationMinutes: number) {
+  if (key !== "hero_healing_per_min") return true;
+  return value * durationMinutes > 1_500;
 }
 
 function embeddedBenchmarks(player: UnknownRecord, durationMinutes: number) {
@@ -57,7 +56,7 @@ function embeddedBenchmarks(player: UnknownRecord, durationMinutes: number) {
     if (rawPercentile === null || rawValue === null) return [];
     const percentile = clampPercent(rawPercentile);
     const qualityPercentile = "inverse" in definition && definition.inverse ? 100 - percentile : percentile;
-    return [{ key: definition.key, label: definition.label, value: rawValue, formattedValue: formatMetric(rawValue, definition.unit), percentile, qualityPercentile, tone: tone(qualityPercentile), source: "hero" }];
+    return [{ key: definition.key, label: definition.label, shortLabel: definition.label, description: definition.description, direction: definition.direction, highlightEligible: highlightEligible(definition.key, rawValue, durationMinutes), scoreWeight: metricScoreWeight({ key: definition.key, value: rawValue }, durationMinutes), value: rawValue, formattedValue: formatMetric(rawValue, definition.unit), percentile, qualityPercentile, tone: performanceTone(qualityPercentile), source: "hero" }];
   });
 }
 
@@ -69,7 +68,7 @@ function matchBenchmarks(players: UnknownRecord[], player: UnknownRecord, durati
     if (values.length < 5) return [];
     const percentile = Math.round((values.filter((candidate) => candidate <= value).length / values.length) * 100);
     const qualityPercentile = "inverse" in definition && definition.inverse ? 100 - percentile : percentile;
-    return [{ key: definition.key, label: definition.label, value, formattedValue: formatMetric(value, definition.unit), percentile, qualityPercentile, tone: tone(qualityPercentile), source: "match" }];
+    return [{ key: definition.key, label: definition.label, shortLabel: definition.label, description: definition.description, direction: definition.direction, highlightEligible: highlightEligible(definition.key, value, durationMinutes), scoreWeight: metricScoreWeight({ key: definition.key, value }, durationMinutes), value, formattedValue: formatMetric(value, definition.unit), percentile, qualityPercentile, tone: performanceTone(qualityPercentile), source: "match" }];
   });
 }
 
@@ -185,7 +184,8 @@ export function buildMatchAnalysis(params: { rawData: unknown; stratzRawData?: u
     const position = positions.get(playerSlot) ?? inferredPosition(player);
     const sorted = [...benchmarks].sort((a, b) => b.qualityPercentile - a.qualityPercentile);
     const stratzStats = record(stratzPlayers.get(playerSlot)?.stats);
-    return [{ playerSlot, accountId: numeric(player.account_id), heroId, heroName: hero.name, personName: typeof player.personaname === "string" && player.personaname.trim() ? player.personaname.trim() : "حساب خصوصی", team: playerSlot < 128 ? "radiant" as DotaTeam : "dire" as DotaTeam, position, positionLabel: position ? POSITION_LABELS[position] : "نامشخص", isProfilePlayer: playerSlot === profileSlot, benchmarks, strengths: sorted.filter((metric) => metric.qualityPercentile >= 65).slice(0, 3), weaknesses: sorted.filter((metric) => metric.qualityPercentile < 35).reverse().slice(0, 3), timeline: playerTimeline(player, durationMinutes, stratzStats), benchmarkSource: benchmarks.length ? benchmarks[0].source : "unavailable" }];
+    const highlightMetrics = sorted.filter((metric) => metric.highlightEligible !== false);
+    return [{ playerSlot, accountId: numeric(player.account_id), heroId, heroName: hero.name, personName: typeof player.personaname === "string" && player.personaname.trim() ? player.personaname.trim() : "حساب خصوصی", team: playerSlot < 128 ? "radiant" as DotaTeam : "dire" as DotaTeam, position, positionLabel: position ? POSITION_LABELS[position] : "نامشخص", isProfilePlayer: playerSlot === profileSlot, kills: numeric(player.kills), deaths: numeric(player.deaths), assists: numeric(player.assists), performanceScore: calculatePerformanceScore(benchmarks, durationMinutes), benchmarks, strengths: highlightMetrics.filter((metric) => metric.qualityPercentile >= 80).slice(0, 3), weaknesses: highlightMetrics.filter((metric) => metric.qualityPercentile < 40).reverse().slice(0, 3), timeline: playerTimeline(player, durationMinutes, stratzStats), benchmarkSource: benchmarks.length ? benchmarks[0].source : "unavailable" }];
   }).sort((a, b) => a.playerSlot - b.playerSlot);
   const benchmarkPlayers = players.filter((player) => player.benchmarks.length).length;
   const timelinePlayers = players.filter((player) => player.timeline.length > 1).length;

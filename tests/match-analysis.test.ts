@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildMatchAnalysis } from "../lib/dota/match-analysis";
+import { calculatePerformanceScore, metricScoreWeight, performanceTone } from "../lib/dota/performance-score";
 
 const heroIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -42,6 +43,32 @@ function player(index: number) {
 }
 
 describe("match performance analysis", () => {
+  it("uses the requested four percentile bands", () => {
+    expect(performanceTone(80)).toBe("elite");
+    expect(performanceTone(79.99)).toBe("strong");
+    expect(performanceTone(60)).toBe("strong");
+    expect(performanceTone(40)).toBe("steady");
+    expect(performanceTone(39.99)).toBe("critical");
+  });
+
+  it("reduces score weight for low-volume healing and tower damage", () => {
+    const lowHeal = { key: "hero_healing_per_min", value: 20 };
+    const relevantHeal = { key: "hero_healing_per_min", value: 180 };
+    const lowTower = { key: "tower_damage", value: 1_000 };
+    const relevantTower = { key: "tower_damage", value: 6_000 };
+    expect(metricScoreWeight(lowHeal, 40)).toBeLessThan(metricScoreWeight(relevantHeal, 40));
+    expect(metricScoreWeight(lowTower, 40)).toBeLessThan(metricScoreWeight(relevantTower, 40));
+
+    const metric = (key: string, value: number, qualityPercentile: number) => ({
+      key, label: key, value, formattedValue: String(value), percentile: qualityPercentile,
+      qualityPercentile, tone: performanceTone(qualityPercentile), source: "hero" as const,
+    });
+    const baseline = [metric("gold_per_min", 500, 50), metric("xp_per_min", 600, 50)];
+    const lowVolumeScore = calculatePerformanceScore([...baseline, metric("hero_healing_per_min", 20, 100)], 40);
+    const relevantScore = calculatePerformanceScore([...baseline, metric("hero_healing_per_min", 180, 100)], 40);
+    expect(lowVolumeScore).toBeLessThan(relevantScore);
+  });
+
   it("builds benchmark and minute timelines for all ten players", () => {
     const analysis = buildMatchAnalysis({
       profileAccountId: 1_000,
@@ -74,6 +101,27 @@ describe("match performance analysis", () => {
     const analysis = buildMatchAnalysis({ rawData: { match_id: 8971055324, start_time: 1_787_000_000, duration: 2_400, radiant_win: false, players } });
     expect(analysis?.players).toHaveLength(10);
     expect(analysis?.players.every((entry) => entry.benchmarkSource === "match")).toBe(true);
+  });
+
+  it("keeps low healing in benchmarks without promoting it to strengths", () => {
+    const players = heroIds.map((_, index) => player(index));
+    players[0].hero_healing = 1_000;
+    players[0].benchmarks.hero_healing_per_min = { raw: 25, pct: .98 };
+    const analysis = buildMatchAnalysis({
+      profileAccountId: 1_000,
+      rawData: {
+        match_id: 8971123844,
+        start_time: 1_787_000_000,
+        duration: 2_400,
+        radiant_win: true,
+        players,
+      },
+    });
+    const profile = analysis?.players[0];
+    const healing = profile?.benchmarks.find((metric) => metric.key === "hero_healing_per_min");
+    expect(healing?.qualityPercentile).toBe(98);
+    expect(healing?.highlightEligible).toBe(false);
+    expect(profile?.strengths.some((metric) => metric.key === "hero_healing_per_min")).toBe(false);
   });
 
   it("uses STRATZ minute stats when OpenDota replay arrays are unavailable", () => {
