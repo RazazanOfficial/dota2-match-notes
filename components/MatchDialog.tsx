@@ -17,7 +17,7 @@ import MatchScoreboard from "./MatchScoreboard";
 import MatchAnalysisPanel from "./MatchAnalysisPanel";
 import ReviewListInput from "./ReviewListInput";
 
-type MatchTab = "overview" | "review" | "media";
+type MatchTab = "overview" | "performance" | "journal" | "media";
 type RequiredMatchField = "number" | "role" | "queueType" | "hero";
 
 const REQUIRED_FIELD_LABELS: Record<RequiredMatchField, string> = {
@@ -181,13 +181,15 @@ export default function MatchDialog({
               ? <MatchScoreboard match={draft} />
               : <LegacyMatchOverview match={draft} hero={hero} />}
           </div>
-          <div className={`match-tab-panel${activeTab === "review" ? " is-active" : ""}`} data-match-tab="review">
-          <MatchAnalysisPanel match={draft} active={activeTab === "review"} />
-          <div className="detail-section">
-            <span>یادداشت بازی</span>
-            <p>{draft.notes || "—"}</p>
+          <div className={`match-tab-panel${activeTab === "performance" ? " is-active" : ""}`} data-match-tab="performance">
+          <MatchAnalysisPanel match={draft} active={activeTab === "performance"} />
           </div>
-          <ReadonlyReview match={draft} />
+          <div className={`match-tab-panel${activeTab === "journal" ? " is-active" : ""}`} data-match-tab="journal">
+            <div className="detail-section">
+              <span>یادداشت بازی</span>
+              <p>{draft.notes || "—"}</p>
+            </div>
+            <ReadonlyReview match={draft} />
           </div>
           <div className={`match-tab-panel${activeTab === "media" ? " is-active" : ""}`} data-match-tab="media">
           <GeneratedImages match={draft} />
@@ -273,8 +275,11 @@ export default function MatchDialog({
           )}
         </div>
 
-        <div className={`match-tab-panel${activeTab === "review" ? " is-active" : ""}`} data-match-tab="review">
-          <MatchAnalysisPanel match={draft} active={activeTab === "review"} />
+        <div className={`match-tab-panel${activeTab === "performance" ? " is-active" : ""}`} data-match-tab="performance">
+          <MatchAnalysisPanel match={draft} active={activeTab === "performance"} />
+        </div>
+
+        <div className={`match-tab-panel${activeTab === "journal" ? " is-active" : ""}`} data-match-tab="journal">
           <div className="match-review-layout">
             <label className="field match-general-notes">
               <span>یادداشت بازی</span>
@@ -508,7 +513,8 @@ function MatchTabs({ active, onChange }: { active: MatchTab; onChange: (tab: Mat
   return (
     <nav className="match-modal-tabs" aria-label="بخش‌های مچ">
       <button className={active === "overview" ? "is-active" : ""} type="button" onClick={() => onChange("overview")}>اطلاعات مچ</button>
-      <button className={active === "review" ? "is-active" : ""} type="button" onClick={() => onChange("review")}>مرور عملکرد</button>
+      <button className={active === "performance" ? "is-active" : ""} type="button" onClick={() => onChange("performance")}>مرور عملکرد</button>
+      <button className={active === "journal" ? "is-active" : ""} type="button" onClick={() => onChange("journal")}>یادداشت‌ها</button>
       <button className={active === "media" ? "is-active" : ""} type="button" onClick={() => onChange("media")}>تصاویر</button>
     </nav>
   );

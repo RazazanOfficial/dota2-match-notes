@@ -74,6 +74,11 @@ export type TimelineState = "surge" | "progress" | "steady" | "setback" | "out";
 export interface MatchBenchmarkMetric {
   key: string;
   label: string;
+  shortLabel?: string;
+  description?: string;
+  direction?: "higher" | "lower" | "contextual";
+  highlightEligible?: boolean;
+  scoreWeight?: number;
   value: number;
   formattedValue: string;
   percentile: number;
@@ -108,6 +113,10 @@ export interface MatchPlayerAnalysis {
   position: number | null;
   positionLabel: string;
   isProfilePlayer: boolean;
+  kills?: number | null;
+  deaths?: number | null;
+  assists?: number | null;
+  performanceScore?: number;
   benchmarks: MatchBenchmarkMetric[];
   strengths: MatchBenchmarkMetric[];
   weaknesses: MatchBenchmarkMetric[];
