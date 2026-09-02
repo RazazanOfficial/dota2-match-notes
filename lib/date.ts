@@ -267,6 +267,16 @@ export function sanitizeMatch(raw: Record<string, unknown>, fallback = 1): Match
   const source = ["manual", "steam", "opendota"].includes(String(raw.source))
     ? (raw.source as Match["source"])
     : "manual";
+  const rawPositionOverrides = raw.positionOverrides && typeof raw.positionOverrides === "object" && !Array.isArray(raw.positionOverrides)
+    ? raw.positionOverrides as Record<string, unknown>
+    : {};
+  const positionOverrides = Object.fromEntries(
+    Object.entries(rawPositionOverrides).flatMap(([slot, value]) =>
+      /^(?:[0-4]|12[89]|13[0-2])$/.test(slot) && Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 5
+        ? [[slot, Number(value)]]
+        : [],
+    ),
+  );
 
   return {
     id: String(raw.id || newMatchId()),
@@ -284,6 +294,7 @@ export function sanitizeMatch(raw: Record<string, unknown>, fallback = 1): Match
     roleSource: ["manual", "opendota", "stratz"].includes(String(raw.roleSource))
       ? (raw.roleSource as Match["roleSource"])
       : null,
+    positionOverrides,
     heroPoolEligible: Boolean(raw.heroPoolEligible),
     heroPoolMatch: typeof raw.heroPoolMatch === "boolean" ? raw.heroPoolMatch : null,
     heroPoolVersion: nullableNumber(raw.heroPoolVersion),

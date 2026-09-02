@@ -10,7 +10,7 @@ function parseRetryAfter(value: string | null) {
   return Number.isInteger(seconds) && seconds > 0 ? seconds : undefined;
 }
 
-async function fetchOpenDotaJson(
+export async function fetchOpenDotaJson(
   path: string,
   notFound: { code: string; message: string },
 ) {

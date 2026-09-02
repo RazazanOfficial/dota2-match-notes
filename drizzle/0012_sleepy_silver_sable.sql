@@ -1,0 +1,1 @@
+ALTER TABLE "journal_matches" ADD COLUMN "position_overrides" jsonb DEFAULT '{}'::jsonb NOT NULL;

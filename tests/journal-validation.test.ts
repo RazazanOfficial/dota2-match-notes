@@ -34,6 +34,13 @@ describe("journal validation", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts valid Position overrides and rejects invalid slots", () => {
+    const item = { ...match(), positionOverrides: { "0": 3, "128": 4 } };
+    expect(dayInputSchema.safeParse({ completed: false, matches: { [item.id]: item } }).success).toBe(true);
+    const invalid = { ...item, positionOverrides: { "5": 3 } };
+    expect(dayInputSchema.safeParse({ completed: false, matches: { [item.id]: invalid } }).success).toBe(false);
+  });
+
   it("rejects mismatched ids and duplicate game numbers", () => {
     const first = match();
     const second = { ...match("22222222-2222-4222-8222-222222222222") };

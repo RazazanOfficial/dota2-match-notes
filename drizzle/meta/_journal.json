@@ -85,6 +85,20 @@
       "when": 1787558451003,
       "tag": "0011_light_shiva",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1788353263873,
+      "tag": "0012_sleepy_silver_sable",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1788375063945,
+      "tag": "0013_foamy_gabe_jones",
+      "breakpoints": true
     }
   ]
 }

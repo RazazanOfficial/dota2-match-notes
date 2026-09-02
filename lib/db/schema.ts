@@ -10,6 +10,7 @@ import {
   pgEnum,
   pgTable,
   primaryKey,
+  real,
   smallint,
   text,
   timestamp,
@@ -162,6 +163,71 @@ export const dotaMatches = pgTable("dota_matches", {
     .notNull(),
 });
 
+export const performanceReferenceSnapshots = pgTable(
+  "performance_reference_snapshots",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    status: varchar("status", { length: 16 }).default("building").notNull(),
+    windowDays: smallint("window_days").default(7).notNull(),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }),
+    activatedAt: timestamp("activated_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    sourceSummary: varchar("source_summary", { length: 80 }).default("stratz+opendota").notNull(),
+    errorMessage: text("error_message"),
+    ...timestamps,
+  },
+  (table) => [
+    index("performance_reference_snapshots_status_activated_idx").on(table.status, table.activatedAt),
+    check("performance_reference_snapshots_status_check", sql`${table.status} in ('building','active','retired','failed')`),
+    check("performance_reference_snapshots_window_check", sql`${table.windowDays} between 1 and 30`),
+  ],
+);
+
+export const heroPositionMeta = pgTable(
+  "hero_position_meta",
+  {
+    snapshotId: uuid("snapshot_id").notNull().references(() => performanceReferenceSnapshots.id, { onDelete: "cascade" }),
+    heroId: integer("hero_id").notNull(),
+    position: smallint("position").notNull(),
+    rankBracket: varchar("rank_bracket", { length: 20 }).notNull(),
+    gameMode: integer("game_mode").notNull(),
+    matchCount: integer("match_count").notNull(),
+    winCount: integer("win_count").notNull(),
+    positionShare: real("position_share").notNull(),
+    metaPickRate: real("meta_pick_rate").notNull(),
+    winRate: real("win_rate").notNull(),
+  },
+  (table) => [
+    primaryKey({ name: "hero_position_meta_pkey", columns: [table.snapshotId, table.heroId, table.position, table.rankBracket, table.gameMode] }),
+    index("hero_position_meta_lookup_idx").on(table.heroId, table.position, table.rankBracket, table.gameMode),
+    check("hero_position_meta_position_check", sql`${table.position} between 1 and 5`),
+    check("hero_position_meta_counts_check", sql`${table.matchCount} >= 0 and ${table.winCount} >= 0 and ${table.winCount} <= ${table.matchCount}`),
+    check("hero_position_meta_rates_check", sql`${table.positionShare} between 0 and 100 and ${table.metaPickRate} between 0 and 100 and ${table.winRate} between 0 and 100`),
+  ],
+);
+
+export const heroBenchmarkDistributions = pgTable(
+  "hero_benchmark_distributions",
+  {
+    snapshotId: uuid("snapshot_id").notNull().references(() => performanceReferenceSnapshots.id, { onDelete: "cascade" }),
+    heroId: integer("hero_id").notNull(),
+    position: smallint("position").default(0).notNull(),
+    rankBracket: varchar("rank_bracket", { length: 20 }).default("ALL").notNull(),
+    gameMode: integer("game_mode").default(0).notNull(),
+    patch: varchar("patch", { length: 32 }).default("").notNull(),
+    metric: varchar("metric", { length: 64 }).notNull(),
+    provider: varchar("provider", { length: 20 }).notNull(),
+    sampleCount: integer("sample_count"),
+    quantiles: jsonb("quantiles").$type<Array<{ percentile: number; value: number }>>().default([]).notNull(),
+  },
+  (table) => [
+    primaryKey({ name: "hero_benchmark_distributions_pkey", columns: [table.snapshotId, table.heroId, table.position, table.rankBracket, table.gameMode, table.patch, table.metric, table.provider] }),
+    index("hero_benchmark_distributions_lookup_idx").on(table.heroId, table.position, table.rankBracket, table.gameMode, table.metric),
+    check("hero_benchmark_distributions_position_check", sql`${table.position} between 0 and 5`),
+    check("hero_benchmark_distributions_sample_check", sql`${table.sampleCount} is null or ${table.sampleCount} >= 0`),
+  ],
+);
+
 export const heroPoolVersions = pgTable(
   "hero_pool_versions",
   {
@@ -227,6 +293,7 @@ export const journalMatches = pgTable(
     heroName: varchar("hero_name", { length: 100 }).default("").notNull(),
     role: matchRoleEnum("role"),
     roleSource: matchRoleSourceEnum("role_source"),
+    positionOverrides: jsonb("position_overrides").$type<Record<string, number>>().default({}).notNull(),
     heroPoolVersionId: uuid("hero_pool_version_id").references(
       () => heroPoolVersions.id,
       { onDelete: "set null" },

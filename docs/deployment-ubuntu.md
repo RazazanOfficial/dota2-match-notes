@@ -144,6 +144,8 @@ sudo cp deploy/systemd/dota2notes-images.service /etc/systemd/system/
 sudo cp deploy/systemd/dota2notes-images.timer /etc/systemd/system/
 sudo cp deploy/systemd/dota2notes-stratz.service /etc/systemd/system/
 sudo cp deploy/systemd/dota2notes-stratz.timer /etc/systemd/system/
+sudo cp deploy/systemd/dota2notes-performance-reference.service /etc/systemd/system/
+sudo cp deploy/systemd/dota2notes-performance-reference.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now dota2notes.service
 ```
@@ -160,6 +162,7 @@ sudo -u dota2notes -H bash deploy/scripts/health-check.sh
 ```bash
 sudo systemctl enable --now dota2notes-images.timer
 sudo systemctl enable --now dota2notes-stratz.timer
+sudo systemctl enable --now dota2notes-performance-reference.timer
 systemctl list-timers 'dota2notes-*'
 ```
 
@@ -172,6 +175,7 @@ Sync کاربران فقط با دکمه داخل سایت انجام می‌ش�
 ```bash
 sudo systemctl start dota2notes-images.service
 sudo systemctl start dota2notes-stratz.service
+sudo systemctl start dota2notes-performance-reference.service
 ```
 
 برای دیدن Logها:
@@ -180,6 +184,7 @@ sudo systemctl start dota2notes-stratz.service
 sudo journalctl -u dota2notes.service -n 100 --no-pager
 sudo journalctl -u dota2notes-images.service -n 100 --no-pager
 sudo journalctl -u dota2notes-stratz.service -n 100 --no-pager
+sudo journalctl -u dota2notes-performance-reference.service -n 100 --no-pager
 ```
 
 ## ۹. فعال‌کردن Nginx
@@ -198,12 +203,13 @@ sudo systemctl reload nginx
 curl --fail --show-error http://dota2notes.ir/api/health
 ```
 
-سه endpoint داخلی عمداً از طریق دامنه مسدود شده‌اند و باید `404` بدهند:
+چهار endpoint داخلی عمداً از طریق دامنه مسدود شده‌اند و باید `404` بدهند:
 
 ```bash
 curl -i -X POST http://dota2notes.ir/api/internal/sync/tick
 curl -i -X POST http://dota2notes.ir/api/internal/images/tick
 curl -i -X POST http://dota2notes.ir/api/internal/stratz/tick
+curl -i -X POST http://dota2notes.ir/api/internal/performance-reference/tick
 ```
 
 ## ۱۰. Firewall بدون قطع‌شدن SSH
@@ -258,7 +264,7 @@ sudo certbot renew --dry-run
 
 ```bash
 cd /var/www/dota2notes
-sudo systemctl stop dota2notes-images.timer dota2notes-stratz.timer
+sudo systemctl stop dota2notes-images.timer dota2notes-stratz.timer dota2notes-performance-reference.timer
 sudo systemctl stop dota2notes.service
 sudo -u dota2notes -H git pull --ff-only origin main
 sudo -u dota2notes -H npm ci
@@ -268,7 +274,7 @@ sudo -u dota2notes -H npm run typecheck
 sudo -u dota2notes -H npm run build
 sudo systemctl start dota2notes.service
 sudo -u dota2notes -H bash deploy/scripts/health-check.sh
-sudo systemctl start dota2notes-images.timer dota2notes-stratz.timer
+sudo systemctl start dota2notes-images.timer dota2notes-stratz.timer dota2notes-performance-reference.timer
 ```
 
 اگر هر فرمان قبل از `systemctl start` شکست خورد، ادامه ندهید و Log همان فرمان را بررسی

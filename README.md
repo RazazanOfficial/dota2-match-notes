@@ -195,6 +195,16 @@ UTC سرور VPS تاریخ دفتر را جابه‌جا نمی‌کند. وض�
 فقط تصمیم حذف کاربر را نگه می‌دارد و شامل آمار یا اطلاعات خصوصی نیست. اتصال صریح همان Match
 ID از مسیر همگام‌سازی تکی، این علامت حذف را برمی‌دارد و مچ را دوباره فعال می‌کند.
 
+## Worker مرجع آماری Performance
+
+- `POST /api/internal/performance-reference/tick`
+- Header اجباری: `Authorization: Bearer SYNC_WORKER_SECRET`
+
+این Worker هر ۷۲ ساعت Pick Rate و Win Rate تفکیک‌شده براساس Hero، Position، Rank و Mode
+را از STRATZ و منحنی‌های Benchmark همان Hero را از OpenDota در یک Snapshot اتمیک ذخیره
+می‌کند. مچ‌های کاربران سایت هیچ‌وقت جمعیت آماری Benchmark نیستند. اگر Refresh شکست بخورد،
+آخرین Snapshot سالم فعال می‌ماند.
+
 ## Worker همگام‌سازی زمان‌بندی‌شده
 
 - `POST /api/internal/sync/tick`

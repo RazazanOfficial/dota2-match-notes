@@ -1,0 +1,12 @@
+[Unit]
+Description=Refresh Dota2 Notes external performance reference every 72 hours
+
+[Timer]
+OnBootSec=10m
+OnUnitActiveSec=72h
+RandomizedDelaySec=20m
+Persistent=true
+Unit=dota2notes-performance-reference.service
+
+[Install]
+WantedBy=timers.target

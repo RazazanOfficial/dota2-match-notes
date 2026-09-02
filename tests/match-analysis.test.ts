@@ -22,6 +22,7 @@ function player(index: number) {
     hero_damage: 12_000 + index * 500,
     tower_damage: 800 + index * 100,
     hero_healing: index * 50,
+    lane_efficiency_pct: 72 - index,
     times: [0, 60, 120, 180],
     gold_t: [600, 1_000, 1_520, 2_120],
     xp_t: [0, 450, 980, 1_600],
@@ -34,7 +35,6 @@ function player(index: number) {
       deaths_per_min: metric(.1, .9),
       assists_per_min: metric(.3, .75),
       last_hits_per_min: metric(5, .6),
-      denies_per_min: metric(.1, .55),
       hero_damage_per_min: metric(450, .72),
       hero_healing_per_min: metric(0, .5),
       tower_damage: metric(800, .68),
@@ -88,9 +88,13 @@ describe("match performance analysis", () => {
     expect(analysis?.players).toHaveLength(10);
     expect(analysis?.coverage).toEqual({ benchmarkPlayers: 10, timelinePlayers: 10, totalPlayers: 10 });
     expect(analysis?.players[0].isProfilePlayer).toBe(true);
-    expect(analysis?.players[0].benchmarks).toHaveLength(10);
+    expect(analysis?.players[0].benchmarks).toHaveLength(12);
+    expect(analysis?.players[0].benchmarks.find((metric) => metric.key === "fight_participation")?.value).toBeCloseTo(37.1, 0);
+    expect(analysis?.players[0].benchmarks.find((metric) => metric.key === "lane_efficiency_pct")?.value).toBe(72);
     expect(analysis?.players[0].timeline.map((point) => point.minute)).toEqual([0, 1, 2, 3]);
-    expect(analysis?.players[0].benchmarks.find((metric) => metric.key === "deaths_per_min")?.qualityPercentile).toBe(10);
+    expect(analysis?.players[0].benchmarks.find((metric) => metric.key === "deaths_per_min")?.qualityPercentile).toBe(90);
+    expect(analysis?.players[0].benchmarks.some((metric) => metric.key === "denies_per_min")).toBe(false);
+    expect(analysis?.players[0].benchmarks.find((metric) => metric.key === "denies_at_10")?.value).toBe(1);
   });
 
   it("falls back to comparison inside the match when hero benchmarks are absent", () => {
@@ -101,6 +105,8 @@ describe("match performance analysis", () => {
     const analysis = buildMatchAnalysis({ rawData: { match_id: 8971055324, start_time: 1_787_000_000, duration: 2_400, radiant_win: false, players } });
     expect(analysis?.players).toHaveLength(10);
     expect(analysis?.players.every((entry) => entry.benchmarkSource === "match")).toBe(true);
+    const safestPlayer = analysis?.players.reduce((best, entry) => (entry.deaths ?? Infinity) < (best.deaths ?? Infinity) ? entry : best);
+    expect(safestPlayer?.benchmarks.find((metric) => metric.key === "deaths_per_min")?.qualityPercentile).toBe(100);
   });
 
   it("keeps low healing in benchmarks without promoting it to strengths", () => {
@@ -153,5 +159,32 @@ describe("match performance analysis", () => {
     expect(analysis?.players[0].timeline).toHaveLength(3);
     expect(analysis?.players[0].timeline[2].state).toBe("out");
     expect(analysis?.players[1].positionLabel).toBe("Mid");
+  });
+
+  it("detects the agreed role swap case without changing the assigned journal role", () => {
+    const players = heroIds.map((_, index) => player(index));
+    players[0].hero_id = 85;
+    const stratzPlayers = players.map((entry, index) => ({
+      steamAccountId: entry.account_id,
+      playerSlot: entry.player_slot,
+      heroId: entry.hero_id,
+      position: `POSITION_${index === 0 ? 3 : (index % 5) + 1}`,
+      stats: {},
+    }));
+    const analysis = buildMatchAnalysis({
+      profileAccountId: 1_000,
+      profileAssignedRole: "soft_support",
+      rawData: { match_id: 8978303598, start_time: 1_787_000_000, duration: 2_400, radiant_win: true, players },
+      stratzRawData: { id: 8978303598, players: stratzPlayers },
+    });
+    const profile = analysis?.players.find((entry) => entry.isProfilePlayer);
+    expect(profile?.heroName).toBe("Undying");
+    expect(profile?.positionResolution).toMatchObject({
+      assignedPosition: 4,
+      detectedPosition: 3,
+      confirmedPosition: 3,
+      source: "stratz",
+      roleSwapDetected: true,
+    });
   });
 });
