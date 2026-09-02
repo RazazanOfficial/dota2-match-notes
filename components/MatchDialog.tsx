@@ -157,26 +157,23 @@ export default function MatchDialog({
 
   if (readonly) {
     return (
-      <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
+      <div className="match-workspace-shell">
         <section
-          className="modal match-modal"
-          role="dialog"
-          aria-modal="true"
+          className="match-workspace match-modal"
           aria-labelledby="match-read-title"
-          onMouseDown={(event) => event.stopPropagation()}
         >
-          <header className="modal-header">
+          <header className="match-workspace-header">
             <div>
-              <p className="modal-kicker">{dateLabel}</p>
+              <p className="modal-kicker">MATCH WORKSPACE · {dateLabel}</p>
               <h2 id="match-read-title">جزئیات بازی</h2>
             </div>
             <button className="close-button" type="button" onClick={onClose} aria-label="بستن">
               <X aria-hidden="true" />
             </button>
           </header>
-          <ReadonlyMatchContext match={draft} />
           <MatchTabs active={activeTab} onChange={setActiveTab} />
           <div className={`match-tab-panel${activeTab === "overview" ? " is-active" : ""}`} data-match-tab="overview">
+            <ReadonlyMatchContext match={draft} />
             {hasTeamDetails
               ? <MatchScoreboard match={draft} />
               : <LegacyMatchOverview match={draft} hero={hero} />}
@@ -200,12 +197,11 @@ export default function MatchDialog({
   }
 
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={requestClose}>
+    <div className="match-workspace-shell">
       <form
         ref={formRef}
-        className="modal match-modal"
+        className="match-workspace match-modal"
         noValidate
-        onMouseDown={(event) => event.stopPropagation()}
         onSubmit={(event) => {
           event.preventDefault();
           const missingFields: RequiredMatchField[] = [];
@@ -222,25 +218,25 @@ export default function MatchDialog({
           onSave({ ...draft, heroId: hero.id, heroName: hero.name });
         }}
       >
-        <header className="modal-header">
+        <header className="match-workspace-header">
           <div>
-            <p className="modal-kicker">{dateLabel}</p>
+            <p className="modal-kicker">MATCH WORKSPACE · {dateLabel}</p>
             <h2>{match ? "ویرایش بازی" : "ثبت بازی"}</h2>
           </div>
           <button className="close-button" type="button" onClick={requestClose} aria-label="بستن">
             <X aria-hidden="true" />
           </button>
         </header>
-        <MatchPersonalEditor
-          match={draft}
-          formError={formError}
-          invalidFields={invalidFields}
-          onClearInvalid={clearInvalidField}
-          onChange={setDraft}
-        />
         <MatchTabs active={activeTab} onChange={setActiveTab} />
 
         <div className={`match-tab-panel${activeTab === "overview" ? " is-active" : ""}`} data-match-tab="overview">
+          <MatchPersonalEditor
+            match={draft}
+            formError={formError}
+            invalidFields={invalidFields}
+            onClearInvalid={clearInvalidField}
+            onChange={setDraft}
+          />
           {hasTeamDetails ? (
             <MatchScoreboard match={draft} />
           ) : (
@@ -276,7 +272,7 @@ export default function MatchDialog({
         </div>
 
         <div className={`match-tab-panel${activeTab === "performance" ? " is-active" : ""}`} data-match-tab="performance">
-          <MatchAnalysisPanel match={draft} active={activeTab === "performance"} />
+          <MatchAnalysisPanel match={draft} active={activeTab === "performance"} onPositionOverrides={(updates) => setDraft((current) => ({ ...current, positionOverrides: { ...(current.positionOverrides || {}), ...updates } }))} />
         </div>
 
         <div className={`match-tab-panel${activeTab === "journal" ? " is-active" : ""}`} data-match-tab="journal">
@@ -512,8 +508,8 @@ function LegacyMatchOverview({ match, hero }: { match: Match; hero: Hero | null 
 function MatchTabs({ active, onChange }: { active: MatchTab; onChange: (tab: MatchTab) => void }) {
   return (
     <nav className="match-modal-tabs" aria-label="بخش‌های مچ">
-      <button className={active === "overview" ? "is-active" : ""} type="button" onClick={() => onChange("overview")}>اطلاعات مچ</button>
-      <button className={active === "performance" ? "is-active" : ""} type="button" onClick={() => onChange("performance")}>مرور عملکرد</button>
+      <button className={active === "overview" ? "is-active" : ""} type="button" onClick={() => onChange("overview")}><span lang="en">Overview</span><small>اطلاعات مچ</small></button>
+      <button className={active === "performance" ? "is-active" : ""} type="button" onClick={() => onChange("performance")}><span lang="en">Performance</span><small>مرور عملکرد</small></button>
       <button className={active === "journal" ? "is-active" : ""} type="button" onClick={() => onChange("journal")}>یادداشت‌ها</button>
       <button className={active === "media" ? "is-active" : ""} type="button" onClick={() => onChange("media")}>تصاویر</button>
     </nav>

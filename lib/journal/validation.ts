@@ -40,6 +40,13 @@ const matchSchema = z
         "hard_support",
       ]),
     ]),
+    positionOverrides: z
+      .record(
+        z.string().regex(/^(?:[0-4]|12[89]|13[0-2])$/),
+        z.number().int().min(1).max(5),
+      )
+      .optional()
+      .default({}),
     queueType: z.union([
       z.literal(""),
       z.enum(["role_selected", "earn_role_queue"]),

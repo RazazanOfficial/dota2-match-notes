@@ -69,6 +69,17 @@ describe("profile migration", () => {
     expect(match.bans.map((hero) => hero.name)).toEqual(["Axe", "Bane"]);
   });
 
+  it("keeps only valid manual Position overrides", () => {
+    const match = sanitizeMatch({
+      number: 2,
+      heroId: 14,
+      heroName: "Pudge",
+      result: "loss",
+      positionOverrides: { "0": 3, "128": 4, "5": 2, "129": 9, unsafe: 1 },
+    });
+    expect(match.positionOverrides).toEqual({ "0": 3, "128": 4 });
+  });
+
   it("preserves read-only OpenDota fields for future UI rendering", () => {
     const match = sanitizeMatch({
       id: "11111111-1111-4111-8111-111111111111",

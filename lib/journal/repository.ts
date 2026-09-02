@@ -280,6 +280,7 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
                 legacyBans: match.legacyBans,
                 role: match.role || "",
                 roleSource: match.roleSource,
+                positionOverrides: match.positionOverrides || {},
                 heroPoolEligible: match.heroPoolEligible,
                 heroPoolMatch:
                   match.heroPoolEligible && match.heroPoolVersionId && match.role && match.heroId
@@ -428,6 +429,7 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
             ? existing.roleSource || "manual" as const
             : "manual" as const
           : null,
+        positionOverrides: match.positionOverrides || {},
         queueType: match.queueType || null,
         notes: match.notes,
         positivePoints: match.positivePoints,

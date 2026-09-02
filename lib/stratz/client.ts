@@ -166,12 +166,12 @@ function throwForUpstreamError(
   );
 }
 
-export async function fetchStratzMatchOnce(
-  matchId: number,
+export async function fetchStratzGraphqlOnce(
+  query: string,
+  operationName: string,
   transport: typeof fetchWithDirectIp = fetchWithDirectIp,
-) {
+) : Promise<unknown> {
   const config = getStratzConfig();
-  const query = `query MatchEnrichment {${matchSelection(matchId)}\n}`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
   try {
@@ -183,7 +183,7 @@ export async function fetchStratzMatchOnce(
         "Content-Type": "application/json",
         "User-Agent": "STRATZ_API",
       },
-      body: JSON.stringify({ operationName: "MatchEnrichment", query }),
+      body: JSON.stringify({ operationName, query }),
       cache: "no-store",
       signal: controller.signal,
     };
@@ -215,7 +215,11 @@ export async function fetchStratzMatchOnce(
     } catch {
       throw new StratzError(502, "invalid_stratz_json", "STRATZ پاسخ JSON معتبر نداد");
     }
-    return parseStratzResponse(raw, [matchId])[0];
+    const graphqlErrors = raw && typeof raw === "object" ? (raw as { errors?: unknown }).errors : undefined;
+    if (Array.isArray(graphqlErrors) && graphqlErrors.length > 0) {
+      throw new StratzError(502, "stratz_graphql_error", "STRATZ پاسخ GraphQL قابل استفاده‌ای نداد");
+    }
+    return raw;
   } catch (error) {
     if (error instanceof StratzError) throw error;
     if (error instanceof Error && error.name === "AbortError") {
@@ -225,4 +229,13 @@ export async function fetchStratzMatchOnce(
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function fetchStratzMatchOnce(
+  matchId: number,
+  transport: typeof fetchWithDirectIp = fetchWithDirectIp,
+) {
+  const query = `query MatchEnrichment {${matchSelection(matchId)}\n}`;
+  const raw = await fetchStratzGraphqlOnce(query, "MatchEnrichment", transport);
+  return parseStratzResponse(raw, [matchId])[0];
 }

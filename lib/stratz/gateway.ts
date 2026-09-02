@@ -1,4 +1,4 @@
-import { fetchStratzMatchOnce } from "./client";
+import { fetchStratzGraphqlOnce, fetchStratzMatchOnce } from "./client";
 import { getStratzConfig } from "./config";
 import { StratzError } from "./errors";
 import { reserveStratzRequestSlot } from "./rate-limit";
@@ -37,6 +37,22 @@ export async function fetchStratzMatch(matchId: number) {
     }
   }
 
+  throw lastError;
+}
+
+export async function fetchStratzGraphql(query: string, operationName: string) {
+  const config = getStratzConfig();
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= config.maxAttempts; attempt += 1) {
+    await reserveStratzRequestSlot(config.minRequestIntervalMs);
+    try {
+      return await fetchStratzGraphqlOnce(query, operationName);
+    } catch (error) {
+      lastError = error;
+      if (attempt >= config.maxAttempts || !shouldImmediatelyRetryStratz(error)) throw error;
+      await sleep(config.retryDelayMs);
+    }
+  }
   throw lastError;
 }
 

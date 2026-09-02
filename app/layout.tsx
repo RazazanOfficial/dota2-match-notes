@@ -7,6 +7,7 @@ import "./globals.css";
 import "./dota-theme.css";
 import "./match-details.css";
 import "./match-analysis.css";
+import "./match-analysis-v3.css";
 import "./cursor-themes.css";
 
 export const metadata: Metadata = {

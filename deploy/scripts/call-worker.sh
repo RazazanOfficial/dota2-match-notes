@@ -11,8 +11,11 @@ case "${1:-}" in
   stratz)
     endpoint="/api/internal/stratz/tick"
     ;;
+  performance-reference)
+    endpoint="/api/internal/performance-reference/tick"
+    ;;
   *)
-    echo "usage: call-worker.sh sync|images|stratz" >&2
+    echo "usage: call-worker.sh sync|images|stratz|performance-reference" >&2
     exit 64
     ;;
 esac

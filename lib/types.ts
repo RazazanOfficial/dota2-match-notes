@@ -70,6 +70,51 @@ export interface MatchParticipant {
 
 export type PerformanceTone = "elite" | "strong" | "steady" | "weak" | "critical";
 export type TimelineState = "surge" | "progress" | "steady" | "setback" | "out";
+export type AnalysisAvailability = "ready" | "partial" | "unavailable";
+export interface MatchPositionEvidence { key:string; label:string; weight:number; supports:number[]; }
+export interface MatchPositionResolution {
+  assignedPosition:number|null;
+  detectedPosition:number|null;
+  confirmedPosition:number|null;
+  confidence:number;
+  source:"manual"|"stratz"|"opendota"|"heuristic"|"unknown";
+  roleSwapDetected:boolean;
+  swapWithPlayerSlot?:number|null;
+  evidence?:MatchPositionEvidence[];
+}
+export interface MatchAnalysisEvent { id:string; minute:number; second:number; type:"kill"|"death"|"item"|"objective"|"buyback"|"ward"|"sentry"|"smoke"|"dust"; label:string; detail?:string; x?:number|null; y?:number|null; positive?:boolean|null; }
+export interface MatchMapPoint { x:number; y:number; minute:number|null; weight:number; type:"movement"|"farm"|"vision"|"combat"|"objective"; label?:string; }
+export interface MatchFarmWindow { from:number; to:number; lastHits:number|null; netWorth:number|null; xp:number|null; farmGain:number|null; deaths:number; state:TimelineState; note:string; }
+export interface MatchObjectiveEvent { type:"tower"|"roshan"|"barracks"|"other"; minute:number; label:string; playerPresent:boolean|null; delayAfterFightSeconds:number|null; convertedFromFight:boolean|null; }
+export interface MatchItemTiming { key:string; label:string; minute:number; second:number; category:"core"|"utility"|"detection"|"other"; relativeToReference:"early"|"on_time"|"late"|"unavailable"; deltaMinutes:number|null; referenceMinute:number|null; note:string; }
+export interface MatchMapAnalysis {
+  availability:AnalysisAvailability; coordinateSource:"timed"|"aggregate"|"unavailable"; points:MatchMapPoint[];
+  trail:MatchMapPoint[];
+  farm:{availability:AnalysisAvailability;laneCreeps:number|null;neutralCreeps:number|null;ancientCreeps:number|null;stackedCamps:number|null;farmUptimePercent:number|null;recoveryRate:number|null;deathCost:number|null;emptyTravelMinutes:number|null;farmToImpact:number|null;sourceMix:{lane:number|null;neutral:number|null;ancient:number|null};windows:MatchFarmWindow[];note:string};
+  objectives:{availability:AnalysisAvailability;towerDamage:number|null;roshanKills:number|null;towerKills:number|null;barracksKills:number|null;conversionCount:number|null;missedConversionCount:number|null;averageConversionDelaySeconds:number|null;events:MatchObjectiveEvent[];note:string};
+  utility:{availability:AnalysisAvailability;observersPlaced:number|null;sentriesPlaced:number|null;observersDestroyed:number|null;sentriesDestroyed:number|null;averageObserverLifetimeSeconds:number|null;observersDewardedEarly:number|null;visionValue:number|null;objectiveWardCoverage:number|null;campsStacked:number|null;smokeUses:number|null;successfulSmokes:number|null;dustUses:number|null;gemPurchases:number|null;invisThreat:"none"|"possible"|"active"|"unknown";invisThreats:string[];naturalReveal:string[];firstThreatMinute:number|null;firstDetectionMinute:number|null;preparedBeforeThreat:boolean|null;coverageGapMinutes:number|null;teamDetectionScore:number|null;individualContribution:number|null;responsibilityScore:number|null;note:string};
+  movement:{availability:AnalysisAvailability;safeTerritoryPercent:number|null;enemyTerritoryPercent:number|null;combatPoints:number;objectivePoints:number;timedTrailPoints:number;note:string};
+}
+
+export interface MatchCohortProfile {
+  label:string;
+  heroPositionSamples:number;
+  positionSamples:number;
+  heroPositionWeight:number;
+  positionPickRate:number|null;
+  metaPickRate?:number|null;
+  winRate?:number|null;
+  rankTier:number|null;
+  patch:string|null;
+  gameMode:number|null;
+  confidence:"high"|"medium"|"low";
+  limitations:string[];
+  milestones:Array<{minute:number;gold:number|null;xp:number|null;lastHits:number|null;sampleSize:number}>;
+  metaSource?:"stratz"|"unavailable";
+  benchmarkSource?:"opendota"|"unavailable";
+  snapshotFetchedAt?:string|null;
+  stale?:boolean;
+}
 
 export interface MatchBenchmarkMetric {
   key: string;
@@ -84,7 +129,13 @@ export interface MatchBenchmarkMetric {
   percentile: number;
   qualityPercentile: number;
   tone: PerformanceTone;
-  source: "hero" | "match";
+  source: "hero" | "match" | "cohort";
+  cohortLabel?: string;
+  confidence?: "high" | "medium" | "low";
+  sampleSize?: number | null;
+  effectiveSampleSize?:number|null;
+  heroPositionWeight?:number|null;
+  scoreOnly?:boolean;
 }
 
 export interface MatchMinuteSnapshot {
@@ -112,16 +163,22 @@ export interface MatchPlayerAnalysis {
   team: DotaTeam;
   position: number | null;
   positionLabel: string;
+  positionResolution?: MatchPositionResolution;
   isProfilePlayer: boolean;
   kills?: number | null;
   deaths?: number | null;
   assists?: number | null;
   performanceScore?: number;
   benchmarks: MatchBenchmarkMetric[];
+  scoreMetrics?:MatchBenchmarkMetric[];
   strengths: MatchBenchmarkMetric[];
   weaknesses: MatchBenchmarkMetric[];
   timeline: MatchMinuteSnapshot[];
-  benchmarkSource: "hero" | "match" | "unavailable";
+  events?: MatchAnalysisEvent[];
+  map?: MatchMapAnalysis;
+  itemTimings?:MatchItemTiming[];
+  cohort?:MatchCohortProfile;
+  benchmarkSource: "hero" | "match" | "cohort" | "unavailable";
 }
 
 export interface MatchTeamMinute {
@@ -154,6 +211,7 @@ export interface Match {
   legacyBans?: string;
   role: MatchRole | "";
   roleSource?: "manual" | "opendota" | "stratz" | null;
+  positionOverrides?: Record<string, number>;
   heroPoolEligible?: boolean;
   heroPoolMatch?: boolean | null;
   heroPoolVersion?: number | null;
