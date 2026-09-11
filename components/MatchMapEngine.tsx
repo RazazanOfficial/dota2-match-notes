@@ -1,49 +1,105 @@
 "use client";
 
-import { useMemo,useState,type CSSProperties,type ReactNode } from "react";
-import { Activity,AlertTriangle,ArrowDown,ArrowUp,Castle,Eye,Layers3,MapPinned,Minus,Route,ScanSearch,ShieldCheck,Sparkles,Trees,UsersRound,Wheat } from "lucide-react";
-import { DOTA_741_LANDMARKS,DOTA_MAP_LAYER_LABELS,type DotaMapLayer } from "@/lib/dota/map-landmarks";
-import type { MatchMapAnalysis,MatchMapPoint,MatchPlayerAnalysis } from "@/lib/types";
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { AlertTriangle, Castle, Eye, Info, Layers3, MapPinned, ShieldCheck, Wheat } from "lucide-react";
+import { DOTA_741_LANDMARKS, DOTA_MAP_LAYER_LABELS, type DotaMapLayer } from "@/lib/dota/map-landmarks";
+import type { MatchMapPoint, MatchPlayerAnalysis } from "@/lib/types";
 
-type MapView="farm"|"objectives"|"utility"|"movement";
-type TimePreset="0-5"|"5-10"|"10-20"|"20-30"|"30-40"|"custom"|"all";
-type CompareMode="solo"|"role";
-const VIEWS:Array<{key:MapView;en:string;fa:string;icon:ReactNode}>=[{key:"farm",en:"Farm Quality",fa:"کیفیت فارم",icon:<Wheat/>},{key:"objectives",en:"Objectives",fa:"اهداف مپ",icon:<Castle/>},{key:"utility",en:"Vision & Utility",fa:"دید و ابزار تیمی",icon:<Eye/>},{key:"movement",en:"Movement",fa:"حرکت روی مپ",icon:<Route/>}];
-const PRESETS:Record<Exclude<TimePreset,"custom">,[number,number]|null>={"0-5":[0,5],"5-10":[5,10],"10-20":[10,20],"20-30":[20,30],"30-40":[30,40],all:null};
+type MapView = "farm" | "objectives" | "utility";
+const VIEWS: Array<{ key: MapView; en: string; fa: string; icon: ReactNode }> = [
+  { key: "farm", en: "Farm & Presence", fa: "فارم و پوشش کل مچ", icon: <Wheat /> },
+  { key: "objectives", en: "Objectives", fa: "اهداف ثبت‌شده", icon: <Castle /> },
+  { key: "utility", en: "Vision & Utility", fa: "دید و ابزار تیمی", icon: <Eye /> },
+];
 
-export default function MatchMapEngine({player,players,duration}:{player:MatchPlayerAnalysis;players:MatchPlayerAnalysis[];duration:number}){
-  const[view,setView]=useState<MapView>("farm"),[preset,setPreset]=useState<TimePreset>("all"),[customRange,setCustomRange]=useState<[number,number]>([0,Math.min(10,duration)]),[layers,setLayers]=useState(new Set<DotaMapLayer>(["towers","camps","roshan"])),[compare,setCompare]=useState<CompareMode>("solo");
-  const opponent=players.find((entry)=>entry.team!==player.team&&player.position!==null&&entry.position===player.position),time=preset==="custom"?customRange:PRESETS[preset],series=compare==="role"&&opponent?[player,opponent]:[player];
-  const pointSeries=useMemo(()=>series.map((entry)=>({player:entry,points:filterPoints(entry.map?.points||[],time),trail:filterPoints(entry.map?.trail||[],time)})),[series,time]);
-  const toggle=(layer:DotaMapLayer)=>setLayers((current)=>{const next=new Set(current);next.has(layer)?next.delete(layer):next.add(layer);return next;});
-  const setRange=(index:0|1,value:number)=>setCustomRange((current)=>{const next:[number,number]=[...current];next[index]=Math.max(0,Math.min(duration,value));if(next[1]<=next[0])index===0?next[1]=Math.min(duration,next[0]+1):next[0]=Math.max(0,next[1]-1);return next;});
-  const hasPoints=pointSeries.some((entry)=>entry.points.length);
-  return <section className={`map-analysis-workbench is-${view}`}>
-    <header className="map-analysis-heading"><div><span><MapPinned/></span><div><p>MATCH MAP ENGINE · 7.41</p><h4>تحلیل مکانی {player.heroName}</h4><small>Farm، Objective، Vision و Movement روی یک Map Engine مشترک</small></div></div><div className="map-compare-switch"><button type="button" className={compare==="solo"?"is-active":""} onClick={()=>setCompare("solo")}>فقط {player.heroName}</button><button type="button" className={compare==="role"?"is-active":""} disabled={!opponent} onClick={()=>setCompare("role")}><UsersRound/>مقایسه Pos {player.position??"?"}</button></div><Status map={player.map}/></header>
-    <nav className="map-analysis-tabs">{VIEWS.map((item)=><button key={item.key} className={view===item.key?"is-active":""} type="button" onClick={()=>setView(item.key)}>{item.icon}<span lang="en">{item.en}</span><small>{item.fa}</small></button>)}</nav>
-    <div className="map-analysis-layout"><div className="dota-map-column">
-      <div className="map-layer-toolbar"><span><Layers3/>لایه‌های مپ</span><div>{(Object.keys(DOTA_MAP_LAYER_LABELS) as DotaMapLayer[]).map((layer)=><button key={layer} type="button" className={layers.has(layer)?"is-active":""} onClick={()=>toggle(layer)}><i/>{DOTA_MAP_LAYER_LABELS[layer].en}<small>{DOTA_MAP_LAYER_LABELS[layer].fa}</small></button>)}</div></div>
-      <div className={`dota-map-stage is-${view}`}><img src="/maps/dota-7.41.webp" alt="نقشه Dota 2 نسخه 7.41"/><div className="dota-map-vignette"/>{DOTA_741_LANDMARKS.filter((item)=>layers.has(item.layer)).map((item)=><span key={item.id} className={`map-landmark is-${item.layer} is-${item.side||"neutral"} is-${item.size||"default"}`} style={{left:`${item.x}%`,top:`${item.y}%`}} title={item.label}><i/></span>)}<Heat series={pointSeries} view={view}/><Trails series={pointSeries}/>{!hasPoints&&<div className="map-telemetry-empty"><ScanSearch/><strong>Telemetry مکانی در این بازه موجود نیست</strong><p>Landmarkها واقعی‌اند؛ تحلیل‌های آماری پایین همچنان از Timeline استفاده می‌کنند.</p></div>}<div className="map-series-key">{pointSeries.map((entry,index)=><span key={entry.player.playerSlot} className={`is-series-${index}`}><i/>{entry.player.heroName} · Pos {entry.player.position??"?"}</span>)}</div></div>
-      <div className="map-time-presets" dir="ltr"><span>TIME WINDOW</span>{(Object.keys(PRESETS) as Array<Exclude<TimePreset,"custom">>).map((key)=><button key={key} type="button" className={preset===key?"is-active":""} onClick={()=>setPreset(key)}>{key==="all"?`0–${duration}m`:`${key}m`}</button>)}<button type="button" className={preset==="custom"?"is-active":""} onClick={()=>setPreset("custom")}>CUSTOM</button>{preset==="custom"&&<label className="map-custom-range"><input type="number" min="0" max={duration} value={customRange[0]} onChange={(event)=>setRange(0,Number(event.target.value))}/><span>to</span><input type="number" min="1" max={duration} value={customRange[1]} onChange={(event)=>setRange(1,Number(event.target.value))}/><small>min</small></label>}</div>
-    </div><Insights view={view} player={player} opponent={compare==="role"?opponent:undefined}/></div>
+export default function MatchMapEngine({ player }: { player: MatchPlayerAnalysis; players: MatchPlayerAnalysis[]; duration: number }) {
+  const [view, setView] = useState<MapView>("farm");
+  const [layers, setLayers] = useState(new Set<DotaMapLayer>(["towers", "camps", "roshan"]));
+  const map = player.map;
+  const points = useMemo(() => {
+    if (!map) return [];
+    return map.points.filter((point) => view === "utility" ? point.type === "vision" : point.type === "movement");
+  }, [map, view]);
+  const toggle = (layer: DotaMapLayer) => setLayers((current) => {
+    const next = new Set(current);
+    next.has(layer) ? next.delete(layer) : next.add(layer);
+    return next;
+  });
+
+  return (
+    <section className={`map-analysis-workbench is-${view}`}>
+      <header className="map-analysis-heading">
+        <div><span><MapPinned /></span><div><p>MATCH MAP · 7.41</p><h4>تحلیل مکانی {player.heroName}</h4><small>فقط داده‌ای نمایش داده می‌شود که در Match ثبت شده است.</small></div></div>
+        <DataBadge source={map?.coordinateSource} />
+      </header>
+      <nav className="map-analysis-tabs">
+        {VIEWS.map((item) => <button key={item.key} className={view === item.key ? "is-active" : ""} type="button" onClick={() => setView(item.key)}>{item.icon}<span lang="en">{item.en}</span><small>{item.fa}</small></button>)}
+      </nav>
+      {view === "objectives" ? <ObjectiveView player={player} /> : (
+        <div className="map-analysis-layout">
+          <div className="dota-map-column">
+            <div className="map-layer-toolbar"><span><Layers3 />لایه‌های مپ</span><div>{(Object.keys(DOTA_MAP_LAYER_LABELS) as DotaMapLayer[]).map((layer) => <button key={layer} type="button" className={layers.has(layer) ? "is-active" : ""} onClick={() => toggle(layer)}><i />{DOTA_MAP_LAYER_LABELS[layer].en}</button>)}</div></div>
+            {points.length ? <MapStage points={points} layers={layers} view={view} /> : <MapUnavailable view={view} />}
+          </div>
+          {view === "farm" ? <FarmFacts player={player} /> : <UtilityFacts player={player} />}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function DataBadge({ source }: { source?: "timed" | "aggregate" | "unavailable" }) {
+  return <span className={`map-data-status is-${source === "unavailable" || !source ? "unavailable" : "partial"}`}><Info /><b>{source === "aggregate" ? "پوشش کل Match" : source === "timed" ? "مختصات زمان‌دار" : "بدون مختصات"}</b><small>{source === "aggregate" ? "بدون Time Window" : "No synthetic route"}</small></span>;
+}
+
+function MapStage({ points, layers, view }: { points: MatchMapPoint[]; layers: Set<DotaMapLayer>; view: MapView }) {
+  const max = Math.max(1, ...points.map((point) => point.weight));
+  return <div className={`dota-map-stage is-${view}`}>
+    <img src="/maps/dota-7.41.webp" alt="نقشه Dota 2 نسخه 7.41" />
+    <div className="dota-map-vignette" />
+    {DOTA_741_LANDMARKS.filter((item) => layers.has(item.layer)).map((item) => <span key={item.id} className={`map-landmark is-${item.layer} is-${item.side || "neutral"} is-${item.size || "default"}`} style={{ left:`${item.x}%`, top:`${item.y}%` }} title={item.label}><i /></span>)}
+    <div className="map-heat-layer">{points.slice(0, 500).map((point, index) => { const ratio = point.weight / max; const level = ratio > .72 ? 4 : ratio > .42 ? 3 : ratio > .18 ? 2 : 1; return <span key={`${point.x}-${point.y}-${index}`} className={`map-heat-point is-${point.type} level-${level}`} style={{ left:`${point.x}%`, top:`${point.y}%`, "--heat-scale": .72 + ratio * 1.7 } as CSSProperties} title={point.label} />; })}</div>
+    <div className="map-series-key"><span><i />{view === "utility" ? "Ward / Sentry ثبت‌شده" : "پوشش تجمعی کل Match"}</span></div>
+  </div>;
+}
+
+function MapUnavailable({ view }: { view: MapView }) {
+  return <div className="map-compact-empty"><AlertTriangle /><div><strong>مختصات قابل اتکا موجود نیست</strong><p>{view === "utility" ? "آمار خرید و تعداد Ward در کنار نقشه باقی می‌ماند؛ نقطه‌ای روی نقشه ساخته نمی‌شود." : "برای Match بدون lane_pos، Heatmap حدسی نمایش داده نمی‌شود."}</p></div></div>;
+}
+
+function FarmFacts({ player }: { player: MatchPlayerAnalysis }) {
+  const data = player.map?.farm;
+  return <aside className="map-insight-panel is-wide">
+    <Title icon={<Wheat />} en="Farm Checkpoints" fa="اعداد واقعی در بازه‌های بازی" />
+    <div className="farm-source-mix"><Mix label="Lane" value={data?.sourceMix.lane} /><Mix label="Neutral" value={data?.sourceMix.neutral} /><Mix label="Ancient" value={data?.sourceMix.ancient} /></div>
+    <div className="farm-window-list">{data?.windows.map((window) => <article className={`is-${window.state}`} key={`${window.from}-${window.to}`}><span>{window.from}–{window.to}m</span><b>LH +{window.lastHits ?? "—"}</b><small>NW {window.netWorth?.toLocaleString("en-US") ?? "—"} · XP {window.xp?.toLocaleString("en-US") ?? "—"}</small><p>{window.deaths ? `${window.deaths} Death در این بازه` : "بدون Death ثبت‌شده"}</p></article>)}</div>
+    <div className="map-fact-grid"><Metric label="Lane Creeps" value={data?.laneCreeps} /><Metric label="Neutral Creeps" value={data?.neutralCreeps} /><Metric label="Ancient Creeps" value={data?.ancientCreeps} /><Metric label="Stacks" value={data?.stackedCamps} /><Metric label="Estimated dead-time cost" value={data?.deathCost} /></div>
+    <Note text={data?.note} />
+  </aside>;
+}
+
+function ObjectiveView({ player }: { player: MatchPlayerAnalysis }) {
+  const data = player.map?.objectives;
+  return <section className="objective-facts-view">
+    <div className="objective-summary"><Metric label="Tower DMG" value={data?.towerDamage} /><Metric label="Towers" value={data?.towerKills} /><Metric label="Barracks" value={data?.barracksKills} /><Metric label="Roshan" value={data?.roshanKills} /></div>
+    {data?.events.length ? <div className="objective-timeline" dir="ltr">{data.events.map((event,index) => <article key={`${event.minute}-${event.label}-${index}`}><time>{event.minute}m</time><span className={`is-${event.type}`}><Castle /></span><div><strong>{objectiveLabel(event.type)}</strong><small>{event.playerPresent === true ? "Last hit by selected hero" : "Team objective"}</small></div></article>)}</div> : <div className="map-compact-empty"><AlertTriangle /><div><strong>Objective log موجود نیست</strong><p>Tower DMG نهایی همچنان نمایش داده می‌شود؛ رویداد ساختگی ساخته نشده است.</p></div></div>}
+    <Note text={data?.note} />
   </section>;
 }
 
-function filterPoints(points:MatchMapPoint[],time:[number,number]|null){if(!time)return points;return points.filter((point)=>point.minute!==null&&point.minute>=time[0]&&point.minute<time[1]);}
-function Status({map}:{map?:MatchMapAnalysis}){const status=map?.availability||"unavailable";return <span className={`map-data-status is-${status}`}>{status==="unavailable"?<AlertTriangle/>:<Activity/>}<b>{status==="ready"?"داده کامل":status==="partial"?"داده محدود":"بدون Telemetry"}</b><small>{map?.coordinateSource==="timed"?"Timed coordinates":map?.coordinateSource==="aggregate"?"Aggregate coverage":"Landmarks only"}</small></span>}
-function allowed(view:MapView){return view==="movement"?["movement"]:view==="farm"?["farm","movement"]:view==="utility"?["vision"]:["objective","combat"];}
-function Heat({series,view}:{series:Array<{player:MatchPlayerAnalysis;points:MatchMapPoint[]}>;view:MapView}){const types=allowed(view),all=series.flatMap((entry)=>entry.points.filter((point)=>types.includes(point.type))),max=Math.max(1,...all.map((point)=>point.weight));return <div className="map-heat-layer">{series.flatMap((entry,seriesIndex)=>entry.points.filter((point)=>types.includes(point.type)).slice(0,500).map((point,index)=>{const ratio=point.weight/max,level=ratio>.72?4:ratio>.42?3:ratio>.18?2:1;return <span key={`${entry.player.playerSlot}-${point.x}-${point.y}-${index}`} className={`map-heat-point is-${point.type} is-series-${seriesIndex} level-${level}`} style={{left:`${point.x}%`,top:`${point.y}%`,"--heat-scale":.72+ratio*1.7} as CSSProperties}/>;}))}</div>}
-function Trails({series}:{series:Array<{player:MatchPlayerAnalysis;trail:MatchMapPoint[]}>}){return <svg className="map-movement-trails" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">{series.map((entry,index)=>entry.trail.length<2?null:<polyline className={`is-series-${index}`} key={entry.player.playerSlot} points={entry.trail.map((point)=>`${point.x},${point.y}`).join(" ")}/>)}</svg>}
+function UtilityFacts({ player }: { player: MatchPlayerAnalysis }) {
+  const data = player.map?.utility;
+  return <aside className="map-insight-panel is-wide">
+    <Title icon={<ShieldCheck />} en="Vision & Utility" fa="خریدها و رخدادهای ثبت‌شده" />
+    <div className="map-fact-grid"><Metric label="Observer placed" value={data?.observersPlaced} /><Metric label="Sentry placed" value={data?.sentriesPlaced} /><Metric label="Observer deward" value={data?.observersDestroyed} /><Metric label="Sentry deward" value={data?.sentriesDestroyed} /><Metric label="Average ward life" value={data?.averageObserverLifetimeSeconds} suffix="s" /><Metric label="Dust" value={data?.dustUses} /><Metric label="Smoke" value={data?.smokeUses} /><Metric label="Kills under Smoke" value={data?.smokeKillParticipations} /><Metric label="Gem" value={data?.gemPurchases} /><Metric label="Stacks" value={data?.campsStacked} /></div>
+    <div className={`invis-threat is-${data?.invisThreat || "unknown"}`}><Eye /><span><b>Invis Threat</b><small>{data?.invisThreat === "active" ? `تهدید قطعی از حدود دقیقه ${data.firstThreatMinute ?? "?"}` : data?.invisThreat === "possible" ? "Build intent محتمل" : "تهدید قطعی ثبت نشد"}</small></span></div>
+    <div className="invis-threat-list">{data?.invisThreats.map((item) => <span key={item}>{item}</span>)}{data?.naturalReveal.map((item) => <span className="is-reveal" key={item}>Natural Reveal: {item}</span>)}</div>
+    <Note text={data?.note} />
+  </aside>;
+}
 
-function Insights({view,player,opponent}:{view:MapView;player:MatchPlayerAnalysis;opponent?:MatchPlayerAnalysis}){if(view==="farm")return <FarmInsights player={player} opponent={opponent}/>;if(view==="objectives")return <ObjectiveInsights player={player} opponent={opponent}/>;if(view==="utility")return <UtilityInsights player={player} opponent={opponent}/>;return <MovementInsights player={player} opponent={opponent}/>;}
-function FarmInsights({player,opponent}:{player:MatchPlayerAnalysis;opponent?:MatchPlayerAnalysis}){const d=player.map?.farm,r=opponent?.map?.farm;return <aside className="map-insight-panel is-wide"><Title icon={<Wheat/>} en="Farm Quality" fa="کیفیت و ریتم فارم"/><div className="farm-source-mix"><Mix label="Lane" value={d?.sourceMix.lane}/><Mix label="Neutral" value={d?.sourceMix.neutral}/><Mix label="Ancient" value={d?.sourceMix.ancient}/></div><CompareMetric label="Farm Uptime" value={d?.farmUptimePercent} rival={r?.farmUptimePercent} suffix="%"/><CompareMetric label="Recovery Rate" value={d?.recoveryRate} rival={r?.recoveryRate} suffix="%"/><CompareMetric label="Empty Travel" value={d?.emptyTravelMinutes} rival={r?.emptyTravelMinutes} suffix="m" lower/><CompareMetric label="Death Cost" value={d?.deathCost} rival={r?.deathCost} lower/><CompareMetric label="Farm → Impact" value={d?.farmToImpact} rival={r?.farmToImpact} suffix="%"/><div className="farm-window-list">{d?.windows.map((window)=><article className={`is-${window.state}`} key={`${window.from}-${window.to}`}><span>{window.from}–{window.to}m</span><b>{window.farmGain===null?"—":`${window.farmGain.toLocaleString("en-US")} Gold`}</b><small>LH +{window.lastHits??"—"} · {window.deaths} Death</small><p>{window.note}</p></article>)}</div><Note text={d?.note}/><Foot>این گزارش retrospective است و با Farm Pattern planner آینده تفاوت دارد.</Foot></aside>}
-function ObjectiveInsights({player,opponent}:{player:MatchPlayerAnalysis;opponent?:MatchPlayerAnalysis}){const d=player.map?.objectives,r=opponent?.map?.objectives;return <aside className="map-insight-panel is-wide"><Title icon={<Castle/>} en="Objective Conversion" fa="تبدیل برتری به هدف"/><CompareMetric label="Tower DMG" value={d?.towerDamage} rival={r?.towerDamage}/><CompareMetric label="Fight → Objective" value={d?.conversionCount} rival={r?.conversionCount}/><CompareMetric label="Missed Window" value={d?.missedConversionCount} rival={r?.missedConversionCount} lower/><Metric label="Average Delay" value={d?.averageConversionDelaySeconds} suffix="s"/><div className="objective-event-list">{d?.events.map((event,index)=><article className={event.convertedFromFight===true?"is-positive":event.convertedFromFight===false?"is-negative":"is-neutral"} key={`${event.minute}-${event.label}-${index}`}><span>{event.minute}m</span><b>{event.label}</b><small>{event.playerPresent===true?"Player present":event.playerPresent===false?"Player absent":"Presence unknown"}</small><em>{event.delayAfterFightSeconds===null?"بدون Fight مرجع":`${event.delayAfterFightSeconds}s after fight`}</em></article>)}</div><Note text={d?.note}/></aside>}
-function UtilityInsights({player,opponent}:{player:MatchPlayerAnalysis;opponent?:MatchPlayerAnalysis}){const d=player.map?.utility,r=opponent?.map?.utility;return <aside className="map-insight-panel is-wide"><Title icon={<ShieldCheck/>} en="Vision & Detection" fa="کیفیت دید و مقابله با Invis"/><div className={`invis-threat is-${d?.invisThreat||"unknown"}`}><Eye/><span><b>Invis Threat</b><small>{d?.invisThreat==="active"?`از دقیقه ${d.firstThreatMinute??"?"} · ${d.preparedBeforeThreat?"آمادگی به‌موقع":"Detection دیر یا ثبت‌نشده"}`:d?.invisThreat==="possible"?"Item build محتمل شناسایی شد":"تهدید قطعی دیده نشد"}</small></span></div><div className="invis-threat-list">{d?.invisThreats.map((item)=><span key={item}>{item}</span>)}{d?.naturalReveal.map((item)=><span className="is-reveal" key={item}>Natural Reveal: {item}</span>)}</div><CompareMetric label="Vision Value" value={d?.visionValue} rival={r?.visionValue} suffix="%"/><CompareMetric label="Objective Coverage" value={d?.objectiveWardCoverage} rival={r?.objectiveWardCoverage} suffix="%"/><CompareMetric label="Average Ward Life" value={d?.averageObserverLifetimeSeconds} rival={r?.averageObserverLifetimeSeconds} suffix="s"/><CompareMetric label="Successful Smoke" value={d?.successfulSmokes} rival={r?.successfulSmokes}/><CompareMetric label="Coverage Gap" value={d?.coverageGapMinutes} rival={r?.coverageGapMinutes} suffix="m" lower/><Metric label="Responsibility" value={d?.responsibilityScore} suffix="%"/><Metric label="Individual Contribution" value={d?.individualContribution} suffix="%"/><Note text={d?.note}/></aside>}
-function MovementInsights({player,opponent}:{player:MatchPlayerAnalysis;opponent?:MatchPlayerAnalysis}){const d=player.map?.movement,r=opponent?.map?.movement,fallback=player.map?.coordinateSource==="timed"?"Trail از نقاط زمان‌دار رسم شده و با Time Window فیلتر می‌شود.":player.map?.coordinateSource==="aggregate"?"این Replay فقط پوشش تجمعی Lane را دارد؛ مسیر زمانی قطعی نیست.":"Timeline موقعیت بازیکن موجود نیست.";return <aside className="map-insight-panel"><Title icon={<Route/>} en="Movement Heatmap" fa="حرکت و مسیر زمانی"/><div className="heat-scale"><span>کم</span><i/><i/><i/><i/><span>زیاد</span></div>{opponent&&<div className="map-compare-legend"><span className="is-series-0"><i/>{player.heroName}</span><span className="is-series-1"><i/>{opponent.heroName}</span></div>}<CompareMetric label="Safe Territory" value={d?.safeTerritoryPercent} rival={r?.safeTerritoryPercent} suffix="%"/><CompareMetric label="Enemy Territory" value={d?.enemyTerritoryPercent} rival={r?.enemyTerritoryPercent} suffix="%"/><CompareMetric label="Combat Points" value={d?.combatPoints} rival={r?.combatPoints}/><CompareMetric label="Objective Points" value={d?.objectivePoints} rival={r?.objectivePoints}/><Metric label="Timed Trail Points" value={d?.timedTrailPoints}/><Note text={d?.note||fallback}/><Foot>Territory بر پایه نیمه مپ است و حکم قطعی درباره امن یا خطرناک‌بودن لحظه نیست.</Foot></aside>}
-
-function Title({icon,en,fa}:{icon:ReactNode;en:string;fa:string}){return <header><span>{icon}</span><div><h5 lang="en">{en}</h5><p>{fa}</p></div><Sparkles/></header>}
-function Metric({label,value,suffix=""}:{label:string;value:string|number|null|undefined;suffix?:string}){return <div className="map-insight-metric"><span lang="en">{label}</span><strong lang="en" dir="ltr">{value==null?"—":typeof value==="number"?value.toLocaleString("en-US"):value}{value!=null?suffix:""}</strong></div>}
-function CompareMetric({label,value,rival,suffix="",lower=false}:{label:string;value:number|null|undefined;rival?:number|null;suffix?:string;lower?:boolean}){const delta=value!=null&&rival!=null?value-rival:null,positive=delta===null?null:lower?delta<0:delta>0;return <div className="map-insight-metric has-comparison"><span lang="en">{label}</span><strong lang="en" dir="ltr">{value==null?"—":value.toLocaleString("en-US")}{value!=null?suffix:""}</strong>{rival!=null&&<small className={positive===true?"is-positive":positive===false?"is-negative":""}>{delta===0?<Minus/>:positive?<ArrowUp/>:<ArrowDown/>}{Math.abs(delta??0).toLocaleString("en-US")}{suffix} vs rival</small>}</div>}
-function Mix({label,value}:{label:string;value:number|null|undefined}){return <span style={{"--mix":`${value??0}%`} as CSSProperties}><b>{label}</b><i><em/></i><strong>{value??"—"}%</strong></span>}
-function Note({text}:{text?:string}){return <p className="map-insight-note">{text||"برای این بخش داده کافی ثبت نشده است."}</p>}
-function Foot({children}:{children:ReactNode}){return <div className="map-insight-footnote"><Trees/>{children}</div>}
+function objectiveLabel(type: "tower" | "roshan" | "barracks" | "other") { return type === "tower" ? "Tower" : type === "barracks" ? "Barracks" : type === "roshan" ? "Roshan" : "Tormentor / Objective"; }
+function Title({ icon,en,fa }: { icon:ReactNode;en:string;fa:string }) { return <header><span>{icon}</span><div><h5 lang="en">{en}</h5><p>{fa}</p></div></header>; }
+function Metric({ label,value,suffix="" }: { label:string;value:string|number|null|undefined;suffix?:string }) { return <div className="map-insight-metric"><span lang="en">{label}</span><strong lang="en" dir="ltr">{value == null ? "—" : typeof value === "number" ? value.toLocaleString("en-US") : value}{value != null ? suffix : ""}</strong></div>; }
+function Mix({ label,value }: { label:string;value:number|null|undefined }) { return <span style={{ "--mix":`${value ?? 0}%` } as CSSProperties}><b>{label}</b><i><em /></i><strong>{value ?? "—"}%</strong></span>; }
+function Note({ text }: { text?:string }) { return <p className="map-insight-note">{text || "برای این بخش داده کافی ثبت نشده است."}</p>; }

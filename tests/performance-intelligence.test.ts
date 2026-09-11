@@ -36,15 +36,16 @@ describe("performance intelligence",()=>{
     expect(result.get(3)).toMatchObject({detectedPosition:4,assignedPosition:3,roleSwapDetected:true,swapWithPlayerSlot:0});
   });
 
-  it("derives farm windows, objective conversion and contextual invis readiness",()=>{
+  it("keeps farm, objective and invis analysis factual instead of scoring heuristics",()=>{
     const players=Array.from({length:10},(_,index)=>({account_id:1_000+index,player_slot:index<5?index:128+index-5,hero_id:index===5?32:index+1,kills:5,deaths:2,assists:8,last_hits:120,denies:4,gold_per_min:500,xp_per_min:600,net_worth:18_000,hero_damage:20_000,hero_healing:0,tower_damage:1_500,position_est:(index%5)+1,lane_kills:90,neutral_kills:30,ancient_kills:10,life_state_dead:80,times:Array.from({length:21},(_,minute)=>minute*60),gold_t:Array.from({length:21},(_,minute)=>600+minute*450),xp_t:Array.from({length:21},(_,minute)=>minute*500),lh_t:Array.from({length:21},(_,minute)=>minute*6),dn_t:Array.from({length:21},(_,minute)=>Math.floor(minute/3)),kills_log:index===0?[{time:600,key:"npc_dota_hero_riki"},{time:630,key:"npc_dota_hero_riki"}]:[],deaths_log:index===0?[{time:720}]:[],purchase_log:index===0?[{time:280,key:"dust"},{time:900,key:"mekansm"}]:[],obs_placed:index===0?2:0,sen_placed:index===0?2:0,obs_log:index===0?[{time:500,ehandle:1,x:120,y:130}]:[],obs_left_log:index===0?[{time:800,ehandle:1}]:[]}));
     const analysis=buildMatchAnalysis({profileAccountId:1_000,rawData:{match_id:8978303598,start_time:1_787_000_000,duration:1_200,radiant_win:true,radiant_score:25,dire_score:14,objectives:[{time:700,type:"CHAT_MESSAGE_TOWER_KILL",player_slot:0}],players}});
     const profile=analysis?.players[0];
     expect(profile?.map?.farm.windows.length).toBeGreaterThan(2);
     expect(profile?.map?.farm.sourceMix).toEqual({lane:69,neutral:23,ancient:8});
-    expect(profile?.map?.objectives.conversionCount).toBe(1);
-    expect(profile?.map?.utility).toMatchObject({invisThreat:"active",firstThreatMinute:5,firstDetectionMinute:4,preparedBeforeThreat:true,successfulSmokes:0});
+    expect(profile?.map?.objectives).toMatchObject({conversionCount:null,missedConversionCount:null,towerKills:1});
+    expect(profile?.map?.utility).toMatchObject({invisThreat:"active",firstThreatMinute:5,firstDetectionMinute:4,preparedBeforeThreat:true,successfulSmokes:null,visionValue:null});
     expect(profile?.map?.movement).toMatchObject({safeTerritoryPercent:null,enemyTerritoryPercent:null});
-    expect(profile?.itemTimings?.some((item)=>item.key==="mekansm")).toBe(true);
+    expect(profile?.itemTimings).toEqual([]);
+    expect(profile?.scoreMetrics).toEqual([]);
   });
 });

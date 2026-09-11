@@ -164,8 +164,8 @@ export default function MatchDialog({
         >
           <header className="match-workspace-header">
             <div>
-              <p className="modal-kicker">MATCH WORKSPACE · {dateLabel}</p>
-              <h2 id="match-read-title">جزئیات بازی</h2>
+              <p className="modal-kicker">MATCH #{draft.dotaMatchId || draft.number} · {dateLabel}</p>
+              <h2 id="match-read-title">جزئیات Match</h2>
             </div>
             <button className="close-button" type="button" onClick={onClose} aria-label="بستن">
               <X aria-hidden="true" />
@@ -220,8 +220,8 @@ export default function MatchDialog({
       >
         <header className="match-workspace-header">
           <div>
-            <p className="modal-kicker">MATCH WORKSPACE · {dateLabel}</p>
-            <h2>{match ? "ویرایش بازی" : "ثبت بازی"}</h2>
+            <p className="modal-kicker">{match ? `MATCH #${draft.dotaMatchId || draft.number}` : "NEW MATCH"} · {dateLabel}</p>
+            {!match && <h2>ثبت بازی</h2>}
           </div>
           <button className="close-button" type="button" onClick={requestClose} aria-label="بستن">
             <X aria-hidden="true" />
@@ -510,8 +510,8 @@ function MatchTabs({ active, onChange }: { active: MatchTab; onChange: (tab: Mat
     <nav className="match-modal-tabs" aria-label="بخش‌های مچ">
       <button className={active === "overview" ? "is-active" : ""} type="button" onClick={() => onChange("overview")}><span lang="en">Overview</span><small>اطلاعات مچ</small></button>
       <button className={active === "performance" ? "is-active" : ""} type="button" onClick={() => onChange("performance")}><span lang="en">Performance</span><small>مرور عملکرد</small></button>
-      <button className={active === "journal" ? "is-active" : ""} type="button" onClick={() => onChange("journal")}>یادداشت‌ها</button>
-      <button className={active === "media" ? "is-active" : ""} type="button" onClick={() => onChange("media")}>تصاویر</button>
+      <button className={active === "journal" ? "is-active" : ""} type="button" onClick={() => onChange("journal")}><span lang="en">Journal</span><small>یادداشت‌ها</small></button>
+      <button className={active === "media" ? "is-active" : ""} type="button" onClick={() => onChange("media")}><span lang="en">Media</span><small>تصاویر</small></button>
     </nav>
   );
 }

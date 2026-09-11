@@ -92,7 +92,7 @@ export interface MatchMapAnalysis {
   trail:MatchMapPoint[];
   farm:{availability:AnalysisAvailability;laneCreeps:number|null;neutralCreeps:number|null;ancientCreeps:number|null;stackedCamps:number|null;farmUptimePercent:number|null;recoveryRate:number|null;deathCost:number|null;emptyTravelMinutes:number|null;farmToImpact:number|null;sourceMix:{lane:number|null;neutral:number|null;ancient:number|null};windows:MatchFarmWindow[];note:string};
   objectives:{availability:AnalysisAvailability;towerDamage:number|null;roshanKills:number|null;towerKills:number|null;barracksKills:number|null;conversionCount:number|null;missedConversionCount:number|null;averageConversionDelaySeconds:number|null;events:MatchObjectiveEvent[];note:string};
-  utility:{availability:AnalysisAvailability;observersPlaced:number|null;sentriesPlaced:number|null;observersDestroyed:number|null;sentriesDestroyed:number|null;averageObserverLifetimeSeconds:number|null;observersDewardedEarly:number|null;visionValue:number|null;objectiveWardCoverage:number|null;campsStacked:number|null;smokeUses:number|null;successfulSmokes:number|null;dustUses:number|null;gemPurchases:number|null;invisThreat:"none"|"possible"|"active"|"unknown";invisThreats:string[];naturalReveal:string[];firstThreatMinute:number|null;firstDetectionMinute:number|null;preparedBeforeThreat:boolean|null;coverageGapMinutes:number|null;teamDetectionScore:number|null;individualContribution:number|null;responsibilityScore:number|null;note:string};
+  utility:{availability:AnalysisAvailability;observersPlaced:number|null;sentriesPlaced:number|null;observersDestroyed:number|null;sentriesDestroyed:number|null;averageObserverLifetimeSeconds:number|null;observersDewardedEarly:number|null;visionValue:number|null;objectiveWardCoverage:number|null;campsStacked:number|null;smokeUses:number|null;successfulSmokes:number|null;smokeKillParticipations?:number|null;dustUses:number|null;gemPurchases:number|null;invisThreat:"none"|"possible"|"active"|"unknown";invisThreats:string[];naturalReveal:string[];firstThreatMinute:number|null;firstDetectionMinute:number|null;preparedBeforeThreat:boolean|null;coverageGapMinutes:number|null;teamDetectionScore:number|null;individualContribution:number|null;responsibilityScore:number|null;note:string};
   movement:{availability:AnalysisAvailability;safeTerritoryPercent:number|null;enemyTerritoryPercent:number|null;combatPoints:number;objectivePoints:number;timedTrailPoints:number;note:string};
 }
 
@@ -174,6 +174,7 @@ export interface MatchPlayerAnalysis {
   strengths: MatchBenchmarkMetric[];
   weaknesses: MatchBenchmarkMetric[];
   timeline: MatchMinuteSnapshot[];
+  timelineSource?: "opendota" | "stratz" | "unavailable";
   events?: MatchAnalysisEvent[];
   map?: MatchMapAnalysis;
   itemTimings?:MatchItemTiming[];

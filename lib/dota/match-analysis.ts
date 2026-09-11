@@ -6,7 +6,6 @@ import { calculatePerformanceScore, metricScoreWeight, performanceTone } from ".
 import { buildPlayerMapAnalysis, playerEvents } from "./match-map-analysis";
 import { buildCohortAnalysis, type CohortMetricKey, type PerformanceReferenceData } from "./performance-cohort";
 import { resolveMatchPositions } from "./position-resolver";
-import { buildItemTimings } from "./item-timing-analysis";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -54,12 +53,6 @@ function highlightEligible(key: string, value: number, durationMinutes: number) 
   return value * durationMinutes > 1_500;
 }
 
-function scoreMetric(key:string,label:string,value:number|null,qualityPercentile:number|null,description:string,confidence:"high"|"medium"|"low"="medium",highlightEligible=false):MatchBenchmarkMetric|null{
-  if(value===null||qualityPercentile===null||!Number.isFinite(value)||!Number.isFinite(qualityPercentile))return null;
-  const quality=Math.max(0,Math.min(100,Math.round(qualityPercentile)));
-  return{key,label,description,direction:"higher",highlightEligible,scoreOnly:true,value,formattedValue:Math.round(value).toLocaleString("fa-IR"),percentile:quality,qualityPercentile:quality,tone:performanceTone(quality),source:"match",cohortLabel:"Context همین Match",confidence};
-}
-
 function embeddedBenchmarks(player: UnknownRecord, durationMinutes: number) {
   const source = record(player.benchmarks);
   if (!source) return [];
@@ -92,29 +85,26 @@ function median(values: number[]) {
   return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
 }
 function valueAt(values: Array<number | null>, index: number) { return values[index] ?? null; }
-function timelineState(params: { minute: number; goldDelta: number | null; xpDelta: number | null; lastHitDelta: number | null; impact: number | null; typicalImpact: number; typicalGold: number; typicalXp: number; previousState: TimelineState | null }): TimelineState {
-  const { minute, goldDelta, xpDelta, lastHitDelta, impact, typicalImpact, typicalGold, typicalXp, previousState } = params;
-  if (impact !== null) {
-    const threshold = Math.max(1, typicalImpact);
-    if (impact <= -threshold * 1.1 && (previousState === "setback" || previousState === "out")) return "out";
-    if (impact < -threshold * .35) return "setback";
-    if (impact >= threshold * 1.4) return "surge";
-    if (impact > threshold * .2) return "progress";
-    return "steady";
-  }
+function timelineState(params: { minute: number; goldDelta: number | null; xpDelta: number | null; lastHitDelta: number | null; typicalGold: number; typicalXp: number; previousState: TimelineState | null }): TimelineState {
+  const { minute, goldDelta, xpDelta, lastHitDelta, typicalGold, typicalXp, previousState } = params;
   if (goldDelta === null && xpDelta === null) return "steady";
   const goldRatio = typicalGold > 0 ? (goldDelta ?? 0) / typicalGold : 1;
   const xpRatio = typicalXp > 0 ? (xpDelta ?? 0) / typicalXp : 1;
   const pace = goldRatio * .5 + xpRatio * .35 + Math.min(2, (lastHitDelta ?? 0) / 6) * .15;
-  const stalled = minute >= 6 && (goldDelta ?? 999) < 120 && (xpDelta ?? 999) < 90;
+  const stalled = minute >= 6 && (goldDelta ?? 999) < 70 && (xpDelta ?? 999) < 60;
   if (stalled && (previousState === "setback" || previousState === "out")) return "out";
-  if (stalled || pace < .48) return "setback";
-  if (pace >= 1.55) return "surge";
-  if (pace >= .92) return "progress";
+  if (stalled || pace < .3) return "setback";
+  if (pace >= 1.35) return "surge";
+  if (pace >= .72) return "progress";
   return "steady";
 }
 function stateLabel(state: TimelineState) {
-  return state === "surge" ? "جهش عملکرد" : state === "progress" ? "روند مثبت" : state === "setback" ? "افت ریتم" : state === "out" ? "دور از جریان مچ" : "ریتم ثابت";
+  return state === "surge" ? "رشد سریع" : state === "progress" ? "رشد معمول" : state === "setback" ? "رشد کم" : state === "out" ? "توقف رشد" : "ریتم ثابت";
+}
+
+function cumulative(values: Array<number | null>) {
+  let total = 0;
+  return values.map((value) => value === null ? null : (total += value));
 }
 
 function playerTimeline(player: UnknownRecord, durationMinutes: number, stratzStats?: UnknownRecord | null): MatchMinuteSnapshot[] {
@@ -125,16 +115,18 @@ function playerTimeline(player: UnknownRecord, durationMinutes: number, stratzSt
   const openDenies = numberArray(player.dn_t);
   const openDamage = numberArray(player.hero_damage_t);
   const openHealing = numberArray(player.hero_healing_t);
-  const gold = openGold.length ? openGold : numberArray(stratzStats?.networthPerMinute);
-  const xp = openXp.length ? openXp : numberArray(stratzStats?.experiencePerMinute);
-  const lastHits = openLastHits.length ? openLastHits : numberArray(stratzStats?.lastHitsPerMinute);
-  const denies = openDenies.length ? openDenies : numberArray(stratzStats?.deniesPerMinute);
-  const damage = openDamage.length ? openDamage : numberArray(stratzStats?.heroDamagePerMinute);
-  const healing = openHealing.length ? openHealing : numberArray(stratzStats?.healPerMinute);
+  const stratzNetWorth = numberArray(stratzStats?.networthPerMinute);
+  const usingOpenTimeline = [openGold, openXp, openLastHits, openDenies].some((values) => values.length > 1);
+  const gold = stratzNetWorth.length ? (usingOpenTimeline ? [null, ...stratzNetWorth] : stratzNetWorth) : openGold;
+  const xp = openXp.length ? openXp : cumulative(numberArray(stratzStats?.experiencePerMinute));
+  const lastHits = openLastHits.length ? openLastHits : cumulative(numberArray(stratzStats?.lastHitsPerMinute));
+  const denies = openDenies.length ? openDenies : cumulative(numberArray(stratzStats?.deniesPerMinute));
+  const damage = openDamage.length ? openDamage : cumulative(numberArray(stratzStats?.heroDamagePerMinute));
+  const healing = openHealing.length ? openHealing : cumulative(numberArray(stratzStats?.healPerMinute));
   const impact = numberArray(stratzStats?.impPerMinute);
   const length = Math.max(times.length, gold.length, xp.length, lastHits.length, impact.length);
   if (length < 2) return [];
-  const candidates = Array.from({ length }, (_, index) => ({ index, minute: Math.max(0, Math.round((times[index] ?? index * 60) / 60)) })).filter((entry) => entry.minute <= durationMinutes + 1);
+  const candidates = Array.from({ length }, (_, index) => ({ index, minute: usingOpenTimeline ? Math.max(0, Math.round((times[index] ?? index * 60) / 60)) : index + 1 })).filter((entry) => entry.minute <= durationMinutes + 1);
   const byMinute = new Map<number, number>();
   candidates.forEach((entry) => byMinute.set(entry.minute, entry.index));
   const ordered = [...byMinute.entries()].sort((a, b) => a[0] - b[0]);
@@ -142,14 +134,13 @@ function playerTimeline(player: UnknownRecord, durationMinutes: number, stratzSt
   const xpDeltas = ordered.slice(1).map(([_, index], i) => (valueAt(xp, index) ?? 0) - (valueAt(xp, ordered[i][1]) ?? 0)).filter((value) => value > 0);
   const typicalGold = median(goldDeltas);
   const typicalXp = median(xpDeltas);
-  const typicalImpact = median(impact.filter((value): value is number => value !== null).map(Math.abs));
   let previousState: TimelineState | null = null;
   return ordered.map(([minute, index], i) => {
     const previousIndex = i ? ordered[i - 1][1] : null;
     const delta = (values: Array<number | null>) => previousIndex === null || valueAt(values, index) === null || valueAt(values, previousIndex) === null ? null : (valueAt(values, index) as number) - (valueAt(values, previousIndex) as number);
     const goldDelta = delta(gold); const xpDelta = delta(xp); const lastHitDelta = delta(lastHits);
     const impactValue = valueAt(impact, index);
-    const state = timelineState({ minute, goldDelta, xpDelta, lastHitDelta, impact: impactValue, typicalImpact, typicalGold, typicalXp, previousState });
+    const state = timelineState({ minute, goldDelta, xpDelta, lastHitDelta, typicalGold, typicalXp, previousState });
     previousState = state;
     return { minute, gold: valueAt(gold, index), xp: valueAt(xp, index), lastHits: valueAt(lastHits, index), denies: valueAt(denies, index), heroDamage: valueAt(damage, index), heroHealing: valueAt(healing, index), impact: impactValue, goldDelta, xpDelta, lastHitDelta, state, label: stateLabel(state) };
   });
@@ -190,17 +181,18 @@ export function buildMatchAnalysis(params: { rawData: unknown; stratzRawData?: u
     const baseBenchmarks=cohortAnalysis.metrics.map((metric)=>({...metric,highlightEligible:highlightEligible(metric.key,metric.value,durationMinutes)}));
     const stratzStats = record(stratzPlayers.get(playerSlot)?.stats);
     const team=playerSlot<128?"radiant" as DotaTeam:"dire" as DotaTeam;const timeline=playerTimeline(player,durationMinutes,stratzStats);const events=playerEvents(player,standardPlayers,heroId,team);
-    const map=buildPlayerMapAnalysis({player,allPlayers:standardPlayers,rawMatch,timeline,events,team,position}),itemTimings=buildItemTimings({player,heroId,position,gameMode,samples:[]});
-    const timingRated=itemTimings.filter((item)=>item.relativeToReference!=="unavailable"),timingScore=timingRated.length?Math.round(timingRated.reduce((sum,item)=>sum+(item.relativeToReference==="early"?90:item.relativeToReference==="on_time"?70:35),0)/timingRated.length):null;
-    const farmParts=[map.farm.farmUptimePercent,map.farm.recoveryRate,map.farm.farmToImpact].filter((value):value is number=>value!==null),farmScore=farmParts.length?farmParts.reduce((sum,value)=>sum+value,0)/farmParts.length:null;
-    const objectiveScore=map.objectives.conversionCount===null?null:Math.max(0,Math.min(100,50+map.objectives.conversionCount*15-(map.objectives.missedConversionCount??0)*12));
-    const ownPrepared=map.utility.firstThreatMinute!==null&&map.utility.firstDetectionMinute!==null&&map.utility.firstDetectionMinute<=map.utility.firstThreatMinute,detectionAction=map.utility.invisThreat==="none"?null:ownPrepared?(position&&position<=3?96:88):map.utility.individualContribution;
-    const contextual=[scoreMetric("farm_quality","Farm Quality",farmScore,farmScore,"ترکیب Farm Uptime، Recovery و Farm-to-Impact","medium",farmScore!==null),scoreMetric("item_timing","Item Timing",timingScore,timingScore,"زمان‌بندی Itemهای اصلی نسبت به cohort","medium",timingScore!==null),scoreMetric("objective_conversion","Objective Conversion",objectiveScore,objectiveScore,"تبدیل Fight موفق به Objective در ۱۲۰ ثانیه","medium",objectiveScore!==null),scoreMetric("vision_value","Vision Value",map.utility.visionValue,map.utility.visionValue,"کیفیت Ward براساس عمر، Deward و پوشش Objective","medium",map.utility.visionValue!==null),scoreMetric("detection_readiness","Detection Readiness",detectionAction,detectionAction,"خرید Detection متناسب با زمان تهدید و مسئولیت Position","medium",detectionAction!==null)].filter((metric):metric is MatchBenchmarkMetric=>Boolean(metric));
-    const benchmarks=baseBenchmarks,sorted=[...benchmarks,...contextual].sort((a,b)=>b.qualityPercentile-a.qualityPercentile),highlightMetrics=sorted.filter((metric)=>metric.highlightEligible!==false);
-    return [{ playerSlot, accountId: numeric(player.account_id), heroId, heroName: hero.name, personName: typeof player.personaname === "string" && player.personaname.trim() ? player.personaname.trim() : "حساب خصوصی", team, position, positionLabel: position ? POSITION_LABELS[position] : "نامشخص", positionResolution, isProfilePlayer: playerSlot === profileSlot, kills: numeric(player.kills), deaths: numeric(player.deaths), assists: numeric(player.assists), performanceScore: calculatePerformanceScore([...benchmarks,...contextual], durationMinutes,position), benchmarks,scoreMetrics:contextual, strengths: highlightMetrics.filter((metric) => metric.qualityPercentile >= 80).slice(0, 3), weaknesses: highlightMetrics.filter((metric) => metric.qualityPercentile < 40).reverse().slice(0, 3), timeline,events,map,itemTimings,cohort:cohortAnalysis.profile, benchmarkSource: benchmarks.length ? benchmarks[0].source : "unavailable" }];
+    const map=buildPlayerMapAnalysis({player,allPlayers:standardPlayers,rawMatch,timeline,events,team,position});
+    const benchmarks=baseBenchmarks,sorted=[...benchmarks].sort((a,b)=>b.qualityPercentile-a.qualityPercentile),highlightMetrics=sorted.filter((metric)=>metric.highlightEligible!==false);
+    const timelineSource = timeline.length < 2 ? "unavailable" as const : [openXpForPlayer(player), numberArray(player.lh_t)].some((values)=>values.length>1) ? "opendota" as const : "stratz" as const;
+    return [{ playerSlot, accountId: numeric(player.account_id), heroId, heroName: hero.name, personName: typeof player.personaname === "string" && player.personaname.trim() ? player.personaname.trim() : "حساب خصوصی", team, position, positionLabel: position ? POSITION_LABELS[position] : "نامشخص", positionResolution, isProfilePlayer: playerSlot === profileSlot, kills: numeric(player.kills), deaths: numeric(player.deaths), assists: numeric(player.assists), performanceScore: calculatePerformanceScore(benchmarks, durationMinutes,position), benchmarks,scoreMetrics:[], strengths: highlightMetrics.filter((metric) => metric.qualityPercentile >= 80).slice(0, 3), weaknesses: highlightMetrics.filter((metric) => metric.qualityPercentile < 40).reverse().slice(0, 3), timeline,timelineSource,events,map,itemTimings:[],cohort:cohortAnalysis.profile, benchmarkSource: benchmarks.length ? benchmarks[0].source : "unavailable" }];
   }).sort((a, b) => a.playerSlot - b.playerSlot);
   const benchmarkPlayers = players.filter((player) => player.benchmarks.length).length;
   const timelinePlayers = players.filter((player) => player.timeline.length > 1).length;
   const status = !players.length ? "unavailable" : benchmarkPlayers === players.length && timelinePlayers === players.length ? "ready" : "partial";
-  return { status, dotaMatchId: String(parsed.data.match_id), durationMinutes, parsed: timelinePlayers > 0, coverage: { benchmarkPlayers, timelinePlayers, totalPlayers: players.length }, players, teamTimeline: teamTimeline(rawMatch, durationMinutes) };
+  const replayParsed = standardPlayers.some((player) => numberArray(player.times).length > 1 && numberArray(player.lh_t).length > 1)
+    || (recordsCount(rawMatch.objectives) > 0 && standardPlayers.some((player) => record(player.lane_pos) !== null));
+  return { status, dotaMatchId: String(parsed.data.match_id), durationMinutes, parsed: replayParsed, coverage: { benchmarkPlayers, timelinePlayers, totalPlayers: players.length }, players, teamTimeline: teamTimeline(rawMatch, durationMinutes) };
 }
+
+function openXpForPlayer(player: UnknownRecord) { return numberArray(player.xp_t); }
+function recordsCount(value: unknown) { return Array.isArray(value) ? value.length : 0; }
