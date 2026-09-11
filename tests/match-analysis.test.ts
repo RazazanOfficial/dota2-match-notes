@@ -157,7 +157,11 @@ describe("match performance analysis", () => {
     });
     expect(analysis?.coverage.timelinePlayers).toBe(10);
     expect(analysis?.players[0].timeline).toHaveLength(3);
-    expect(analysis?.players[0].timeline[2].state).toBe("out");
+    expect(analysis?.players[0].timeline.map((point) => point.minute)).toEqual([1, 2, 3]);
+    expect(analysis?.players[0].timeline[2]).toMatchObject({ gold: 1_500, xp: 1_370, lastHits: 17 });
+    expect(analysis?.players[0].timeline[2].state).toBe("progress");
+    expect(analysis?.players[0].timelineSource).toBe("stratz");
+    expect(analysis?.parsed).toBe(false);
     expect(analysis?.players[1].positionLabel).toBe("Mid");
   });
 

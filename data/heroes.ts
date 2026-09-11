@@ -137,3 +137,4 @@ export const heroById = (id: number) => ID_MAP.get(id);
 export const heroByName = (name: string) => NAME_MAP.get(name.trim().toLowerCase());
 export const heroPortraitFileName = (hero: Hero) => `${hero.slug}.png`;
 export const heroImage = (hero: Hero) => `/heroes/${heroPortraitFileName(hero)}`;
+export const heroIcon = (hero: Hero) => `/icons/${heroPortraitFileName(hero)}`;

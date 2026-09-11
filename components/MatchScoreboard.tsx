@@ -110,12 +110,14 @@ export default function MatchScoreboard({ match }: MatchScoreboardProps) {
           team="radiant"
           participants={radiant}
           selectedSlot={selected?.playerSlot ?? null}
+          profileSlot={profilePlayer?.playerSlot ?? null}
           onSelect={setSelectedSlot}
         />
         <TeamPanel
           team="dire"
           participants={dire}
           selectedSlot={selected?.playerSlot ?? null}
+          profileSlot={profilePlayer?.playerSlot ?? null}
           onSelect={setSelectedSlot}
         />
       </div>
@@ -145,11 +147,13 @@ function TeamPanel({
   team,
   participants,
   selectedSlot,
+  profileSlot,
   onSelect,
 }: {
   team: DotaTeam;
   participants: MatchParticipant[];
   selectedSlot: number | null;
+  profileSlot: number | null;
   onSelect: (slot: number) => void;
 }) {
   return (
@@ -173,7 +177,7 @@ function TeamPanel({
               className={[
                 "match-player-row",
                 selectedSlot === participant.playerSlot ? "is-selected" : "",
-                participant.isProfilePlayer ? "is-profile" : "",
+                participant.playerSlot === profileSlot ? "is-profile" : "",
                 participant.inRolePool ? "is-pool-priority" : "",
               ].filter(Boolean).join(" ")}
               type="button"

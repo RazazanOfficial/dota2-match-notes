@@ -13,16 +13,11 @@ const BASE_WEIGHTS: Record<string, number> = {
   hero_damage_per_min: 0.9,
   hero_healing_per_min: 0.34,
   tower_damage: 0.58,
-  farm_quality: 0.82,
-  item_timing: 0.72,
-  objective_conversion: 0.82,
-  vision_value: 0.78,
-  detection_readiness: 0.72,
 };
 type ScoreDomain="laning"|"economy"|"fighting"|"survival"|"objectives"|"utility";
 export interface PerformanceDomainResult{key:ScoreDomain;label:string;score:number|null;weight:number;metricCount:number}
 const DOMAIN_LABEL:Record<ScoreDomain,string>={laning:"Laning",economy:"Economy",fighting:"Fighting",survival:"Survival",objectives:"Objectives",utility:"Utility"};
-const METRIC_DOMAIN:Record<string,ScoreDomain>={gold_per_min:"economy",xp_per_min:"economy",last_hits_per_min:"economy",farm_quality:"economy",denies_at_10:"laning",lane_efficiency_pct:"laning",kills_per_min:"fighting",assists_per_min:"fighting",fight_participation:"fighting",hero_damage_per_min:"fighting",deaths_per_min:"survival",tower_damage:"objectives",objective_conversion:"objectives",item_timing:"objectives",hero_healing_per_min:"utility",vision_value:"utility",detection_readiness:"utility"};
+const METRIC_DOMAIN:Record<string,ScoreDomain>={gold_per_min:"economy",xp_per_min:"economy",last_hits_per_min:"economy",denies_at_10:"laning",lane_efficiency_pct:"laning",kills_per_min:"fighting",assists_per_min:"fighting",fight_participation:"fighting",hero_damage_per_min:"fighting",deaths_per_min:"survival",tower_damage:"objectives",hero_healing_per_min:"utility"};
 const POSITION_WEIGHTS:Record<number,Record<ScoreDomain,number>>={1:{laning:20,economy:25,fighting:20,survival:15,objectives:15,utility:5},2:{laning:20,economy:20,fighting:25,survival:15,objectives:15,utility:5},3:{laning:20,economy:15,fighting:25,survival:15,objectives:20,utility:5},4:{laning:15,economy:10,fighting:25,survival:15,objectives:10,utility:25},5:{laning:15,economy:5,fighting:20,survival:15,objectives:10,utility:35}};
 
 function clamp(value: number, min = 0, max = 1) {

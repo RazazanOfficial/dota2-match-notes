@@ -4,11 +4,21 @@ import { loadPublicMatchAnalysis } from "@/lib/dota/match-analysis-repository";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 interface RouteContext { params: Promise<{ matchId: string }> }
-export async function GET(_request: Request, context: RouteContext) {
+const positionOverridesSchema=z.record(z.string().regex(/^(?:[0-4]|12[89]|13[0-2])$/),z.number().int().min(1).max(5));
+export async function GET(request: Request, context: RouteContext) {
   const parsedId = z.string().uuid().safeParse((await context.params).matchId);
   if (!parsedId.success) return Response.json({ ok: false, error: { code: "invalid_match_id", message: "شناسه مچ معتبر نیست" } }, { status: 400 });
   try {
-    const result = await loadPublicMatchAnalysis(parsedId.data);
+    const rawPositions=new URL(request.url).searchParams.get("positions");
+    let positionOverrides:Record<string,number>|undefined;
+    if(rawPositions){
+      let decoded:unknown;
+      try{decoded=JSON.parse(rawPositions);}catch{return Response.json({ok:false,error:{code:"invalid_positions",message:"Positionهای انتخاب‌شده معتبر نیستند"}},{status:400});}
+      const parsedPositions=positionOverridesSchema.safeParse(decoded);
+      if(!parsedPositions.success)return Response.json({ok:false,error:{code:"invalid_positions",message:"Positionهای انتخاب‌شده معتبر نیستند"}},{status:400});
+      positionOverrides=parsedPositions.data;
+    }
+    const result = await loadPublicMatchAnalysis(parsedId.data,positionOverrides);
     if (!result.found) return Response.json({ ok: false, error: { code: "match_not_found", message: "مچ پیدا نشد" } }, { status: 404 });
     return Response.json({ ok: true, analysis: result.analysis }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
