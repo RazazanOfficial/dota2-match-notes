@@ -101,7 +101,11 @@ function mockAnalysis(): MatchAnalysis {
         team: playerSlot < 128 ? "radiant" as const : "dire" as const,
         position: playerIndex === 0 ? 3 : (playerIndex % 5) + 1,
         positionLabel: playerIndex === 0 ? "Offlane" : ["Carry", "Mid", "Offlane", "Soft Support", "Hard Support"][playerIndex % 5],
-        positionResolution: playerIndex === 0 ? { assignedPosition: 4, detectedPosition: 3, confirmedPosition: 3, confidence: 86, source: "stratz" as const, roleSwapDetected: true, swapWithPlayerSlot: 3 } : undefined,
+        positionResolution: playerIndex === 0
+          ? { assignedPosition: 4, detectedPosition: 3, confirmedPosition: 3, confidence: 86, source: "stratz" as const, roleSwapDetected: true, swapWithPlayerSlot: 3 }
+          : playerIndex === 3
+            ? { assignedPosition: 3, detectedPosition: 4, confirmedPosition: 4, confidence: 82, source: "stratz" as const, roleSwapDetected: true, swapWithPlayerSlot: 0 }
+            : undefined,
         isProfilePlayer: playerIndex === 0,
         kills: 12 - Math.floor(playerIndex / 2), deaths: 2 + playerIndex % 5, assists: 9 + playerIndex,
         performanceScore: calculatePerformanceScore(benchmarks, 51, playerIndex === 0 ? 3 : (playerIndex % 5) + 1), benchmarks, strengths: sorted.filter((metric) => metric.qualityPercentile >= 80).slice(0, 3), weaknesses: sorted.filter((metric) => metric.qualityPercentile < 40).reverse().slice(0, 3), benchmarkSource: "hero" as const,

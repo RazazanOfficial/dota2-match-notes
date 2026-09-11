@@ -2,6 +2,7 @@ import { describe,expect,it } from "vitest";
 import { buildCohortAnalysis,type PerformanceReferenceData } from "../lib/dota/performance-cohort";
 import { resolveMatchPositions } from "../lib/dota/position-resolver";
 import { buildMatchAnalysis } from "../lib/dota/match-analysis";
+import { DOTA_741_LANDMARKS,DOTA_MAP_LAYER_ICONS,DOTA_MAP_LAYER_LABELS } from "../lib/dota/map-landmarks";
 import { parseHeroMetaResponse,parseOpenDotaBenchmarks } from "../lib/performance-reference/providers";
 
 const reference:PerformanceReferenceData={snapshot:{id:"test",fetchedAt:"2026-09-02T00:00:00.000Z",expiresAt:"2026-09-05T00:00:00.000Z",windowDays:7,stale:false},meta:[{heroId:85,position:3,rankBracket:"LEGEND",gameMode:22,matchCount:30,winCount:17,positionShare:12.5,metaPickRate:1.8,winRate:56.7,positionSampleCount:20_000}],benchmarks:[{heroId:85,position:0,rankBracket:"ALL",gameMode:0,patch:"",metric:"gold_per_min",provider:"opendota",sampleCount:null,quantiles:[{percentile:.1,value:300},{percentile:.5,value:450},{percentile:.9,value:600}]}]};
@@ -47,5 +48,11 @@ describe("performance intelligence",()=>{
     expect(profile?.map?.movement).toMatchObject({safeTerritoryPercent:null,enemyTerritoryPercent:null});
     expect(profile?.itemTimings).toEqual([]);
     expect(profile?.scoreMetrics).toEqual([]);
+  });
+
+  it("keeps every visible map layer paired with an icon and landmark data",()=>{
+    expect(Object.keys(DOTA_MAP_LAYER_ICONS)).toEqual(Object.keys(DOTA_MAP_LAYER_LABELS));
+    expect(DOTA_741_LANDMARKS.some((entry)=>entry.layer==="outposts")).toBe(true);
+    expect(Object.values(DOTA_MAP_LAYER_ICONS).every((path)=>path.startsWith("/assets/map-analysis/"))).toBe(true);
   });
 });

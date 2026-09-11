@@ -95,7 +95,7 @@ async function loadPerformanceReference(heroIds: number[]): Promise<PerformanceR
   };
 }
 
-export async function loadPublicMatchAnalysis(journalMatchId: string) {
+export async function loadPublicMatchAnalysis(journalMatchId: string, requestedPositionOverrides?:Record<string,number>) {
   const [source] = await getDb()
     .select({
       dotaMatchId: journalMatches.dotaMatchId,
@@ -133,7 +133,9 @@ export async function loadPublicMatchAnalysis(journalMatchId: string) {
       profileAccountId: source.profileAccountId,
       profileHeroId: source.profileHeroId,
       profileAssignedRole: source.profileAssignedRole,
-      positionOverrides: source.positionOverrides,
+      positionOverrides: requestedPositionOverrides
+        ? { ...(source.positionOverrides || {}), ...requestedPositionOverrides }
+        : source.positionOverrides,
       performanceReference,
     }),
   };

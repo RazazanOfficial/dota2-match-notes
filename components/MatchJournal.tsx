@@ -17,10 +17,12 @@ import {
   Settings,
   Share2,
   Shield,
+  SlidersHorizontal,
   UserRound,
+  X,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import { heroById, heroImage } from "@/data/heroes";
+import { HEROES, heroById, heroIcon, heroImage } from "@/data/heroes";
 import {
   getHeroPool,
   logout,
@@ -47,10 +49,9 @@ import {
   mergeProfiles,
   normalizePublicPlayerIdentifier,
   summarizeMatches,
-  summarizeWeek,
   toDateKey,
 } from "@/lib/date";
-import type { Day, HeroPoolData, Match, Profile, Session } from "@/lib/types";
+import type { Day, HeroPoolData, Match, MatchRole, Profile, Session } from "@/lib/types";
 import MatchDialog from "./MatchDialog";
 import ReportDialog from "./ReportDialog";
 import SyncPanel from "./SyncPanel";
@@ -63,6 +64,15 @@ import LoginDialog from "./LoginDialog";
 import PlayerSearchDialog from "./PlayerSearchDialog";
 
 type AccessView = "roles" | "coach";
+type MatchFilterMode = "all" | `mode:${number}` | `lobby:${number}`;
+
+const POSITION_FILTERS: Array<{ value:MatchRole; label:string; icon:string }> = [
+  { value:"safe_lane", label:"Carry", icon:"Safelane.png" },
+  { value:"mid_lane", label:"Mid", icon:"MidLane.png" },
+  { value:"off_lane", label:"Offlane", icon:"OffLane.png" },
+  { value:"soft_support", label:"Soft Support", icon:"SoftSupport.png" },
+  { value:"hard_support", label:"Hard Support", icon:"HardSupport.png" },
+];
 
 const EMPTY_PROFILE: Profile = { username: "", days: {} };
 
@@ -117,6 +127,9 @@ export default function MatchJournal({
   const [heroPoolOpen, setHeroPoolOpen] = useState(false);
   const [heroPool, setHeroPool] = useState<HeroPoolData | null>(null);
   const [refreshVersion, setRefreshVersion] = useState(0);
+  const [modeFilter, setModeFilter] = useState<MatchFilterMode>("all");
+  const [positionFilter, setPositionFilter] = useState<MatchRole | "all">("all");
+  const [heroFilter, setHeroFilter] = useState<number | "all">("all");
   const [editing, setEditing] = useState<{ dateKey: string; matchId: string | null } | null>(
     null,
   );
@@ -281,10 +294,34 @@ export default function MatchJournal({
     }
   }
 
-  const weekSummary = useMemo(
-    () => summarizeWeek(profile.days, dates),
-    [dates, profile.days],
-  );
+  const weekMatches = useMemo(() => dates.flatMap((date) => profile.days[toDateKey(date)]?.matches || []), [dates, profile.days]);
+  const modeOptions = useMemo(() => {
+    const options = new Map<MatchFilterMode,string>();
+    weekMatches.forEach((match) => {
+      if(match.gameModeId!==null&&match.gameModeId!==undefined)options.set(`mode:${match.gameModeId}`,match.gameModeName||`Mode ${match.gameModeId}`);
+      if(match.lobbyTypeId!==null&&match.lobbyTypeId!==undefined&&match.lobbyTypeName)options.set(`lobby:${match.lobbyTypeId}`,match.lobbyTypeName);
+    });
+    return [...options.entries()].map(([value,label])=>({value,label}));
+  },[weekMatches]);
+  const heroOptions = useMemo(() => {
+    const ids=new Set(weekMatches.flatMap((match)=>match.heroId?[match.heroId]:[]));
+    return HEROES.filter((hero)=>ids.has(hero.id));
+  },[weekMatches]);
+  useEffect(()=>{
+    if(modeFilter!=="all"&&!modeOptions.some((option)=>option.value===modeFilter))setModeFilter("all");
+    if(heroFilter!=="all"&&!heroOptions.some((hero)=>hero.id===heroFilter))setHeroFilter("all");
+  },[heroFilter,heroOptions,modeFilter,modeOptions]);
+  const matchesFilter = (match:Match) => {
+    const modeMatches=modeFilter==="all"||(modeFilter.startsWith("mode:")?match.gameModeId===Number(modeFilter.slice(5)):match.lobbyTypeId===Number(modeFilter.slice(6)));
+    return modeMatches&&(positionFilter==="all"||match.role===positionFilter)&&(heroFilter==="all"||match.heroId===heroFilter);
+  };
+  const filteredWeekMatches=weekMatches.filter(matchesFilter);
+  const weekSummary = summarizeMatches(filteredWeekMatches);
+  const filtersActive=modeFilter!=="all"||positionFilter!=="all"||heroFilter!=="all";
+  const reportProfile=filtersActive?{
+    ...profile,
+    days:Object.fromEntries(Object.entries(profile.days).map(([dateKey,day])=>[dateKey,{...day,matches:day.matches.filter(matchesFilter)}])),
+  }:profile;
   const editedDay = editing
     ? profile.days[editing.dateKey] || { completed: false, matches: [] }
     : null;
@@ -506,6 +543,13 @@ export default function MatchJournal({
                 </button>
               </div>
             </div>
+            <section className="week-match-filters" aria-label="فیلتر مچ‌های هفته">
+              <header><SlidersHorizontal/><span><strong>فیلتر مچ‌ها</strong><small>{filtersActive?`${faNumber.format(filteredWeekMatches.length)} مچ از ${faNumber.format(weekMatches.length)} مچ این هفته`:"نمایش همه مچ‌های این هفته"}</small></span></header>
+              <label><span>نوع بازی</span><select value={modeFilter} onChange={(event)=>setModeFilter(event.target.value as MatchFilterMode)}><option value="all">همه Game Modeها</option>{modeOptions.map((option)=><option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+              <label><span>Position</span><div className="journal-filter-options"> <button type="button" className={positionFilter==="all"?"is-active":""} onClick={()=>setPositionFilter("all")}>همه</button>{POSITION_FILTERS.map((option)=><button type="button" className={positionFilter===option.value?"is-active":""} onClick={()=>setPositionFilter(option.value)} key={option.value}><img src={`/positions/${option.icon}`} alt=""/><span lang="en">{option.label}</span></button>)}</div></label>
+              <label><span>Hero</span><div className="journal-filter-options is-heroes"><button type="button" className={heroFilter==="all"?"is-active":""} onClick={()=>setHeroFilter("all")}>همه</button>{heroOptions.map((option)=><button type="button" className={heroFilter===option.id?"is-active":""} onClick={()=>setHeroFilter(option.id)} key={option.id}><img src={heroIcon(option)} alt=""/><span lang="en">{option.name}</span></button>)}</div></label>
+              {filtersActive&&<button className="journal-filter-reset" type="button" onClick={()=>{setModeFilter("all");setPositionFilter("all");setHeroFilter("all");}}><X/>حذف فیلترها</button>}
+            </section>
             <div className="week-stats">
               <Stat label="کل بازی‌ها" value={faNumber.format(weekSummary.games)} />
               <Stat label="برد" value={faNumber.format(weekSummary.wins)} tone="win" />
@@ -521,7 +565,8 @@ export default function MatchJournal({
             {dates.map((date) => {
               const dateKey = toDateKey(date);
               const day = profile.days[dateKey] || { completed: false, matches: [] };
-              const summary = summarizeMatches(day.matches);
+              const visibleMatches=day.matches.filter(matchesFilter);
+              const summary = summarizeMatches(visibleMatches);
               const today = toDateKey(new Date()) === dateKey;
               const disabled = activeWeek === 0 && dateKey < registrationDate;
               return (
@@ -550,8 +595,8 @@ export default function MatchJournal({
                     )}
                   </header>
                   <div className="matches">
-                    {day.matches.length ? (
-                      day.matches
+                    {visibleMatches.length ? (
+                      visibleMatches
                         .slice()
                         .sort((a, b) => a.number - b.number)
                         .map((match) => (
@@ -562,7 +607,7 @@ export default function MatchJournal({
                           />
                         ))
                     ) : (
-                      <div className="empty-day">{disabled ? "پیش از شروع دفتر" : "هنوز مچی ثبت نشده"}</div>
+                      <div className="empty-day">{disabled ? "پیش از شروع دفتر" : filtersActive&&day.matches.length ? "مچی مطابق فیلتر نیست" : "هنوز مچی ثبت نشده"}</div>
                     )}
                   </div>
                   <footer className="day-summary">
@@ -600,7 +645,7 @@ export default function MatchJournal({
       />
       <ReportDialog
         open={reportOpen}
-        profile={profile}
+        profile={reportProfile}
         anchorDate={anchorDate}
         weekIndex={activeWeek}
         onClose={() => setReportOpen(false)}

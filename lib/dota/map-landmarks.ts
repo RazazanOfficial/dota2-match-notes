@@ -1,4 +1,4 @@
-export type DotaMapLayer = "towers" | "camps" | "lotus" | "gates" | "tormentors" | "bounty" | "power" | "wisdom" | "watchers" | "roshan";
+export type DotaMapLayer = "towers" | "camps" | "lotus" | "gates" | "tormentors" | "bounty" | "power" | "wisdom" | "outposts" | "watchers" | "roshan";
 
 export interface DotaMapLandmark {
   id: string;
@@ -28,6 +28,7 @@ export const DOTA_741_LANDMARKS: DotaMapLandmark[] = [
   ...points("bounty", [[45.1,27.2],[53.05,70.8]], "Bounty Rune"),
   ...points("power", [[41.88,43.12],[55.98,54.28]], "Power Rune"),
   ...points("wisdom", [[9.63,44.77],[90.91,53.93]], "Wisdom Shrine"),
+  ...points("outposts", [[29.59,50.6],[67.04,50.6]], "Outpost"),
   ...points("watchers", [[89.67,55.76],[17.75,16.53],[63.67,51.6],[32.66,48.29],[55.24,68.88],[82.72,80.07],[53.92,85.13],[46.72,14.25],[42.44,29.62],[11.03,43.39]], "Watcher"),
   ...points("roshan", [[64.23,61.59],[34.1,36.96]], "Roshan Pit"),
 ];
@@ -41,6 +42,21 @@ export const DOTA_MAP_LAYER_LABELS: Record<DotaMapLayer, { en: string; fa: strin
   bounty: { en: "Bounty", fa: "رون Bounty" },
   power: { en: "Power Runes", fa: "رون Power" },
   wisdom: { en: "Wisdom", fa: "رون Wisdom" },
+  outposts: { en: "Outposts", fa: "پایگاه‌ها" },
   watchers: { en: "Watchers", fa: "واچرها" },
   roshan: { en: "Roshan", fa: "روشان" },
+};
+
+export const DOTA_MAP_LAYER_ICONS: Record<DotaMapLayer, string> = {
+  towers: "/assets/map-analysis/towers.png",
+  camps: "/assets/map-analysis/camp.png",
+  lotus: "/assets/map-analysis/lotus.png",
+  gates: "/assets/map-analysis/twin-gates.png",
+  tormentors: "/assets/map-analysis/tormentors.png",
+  bounty: "/assets/map-analysis/bounty-runes.png",
+  power: "/assets/map-analysis/power-runes.png",
+  wisdom: "/assets/map-analysis/wisdom-runes.png",
+  outposts: "/assets/map-analysis/outposts.png",
+  watchers: "/assets/map-analysis/watchers.png",
+  roshan: "/assets/map-analysis/roshan.png",
 };
