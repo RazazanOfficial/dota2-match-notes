@@ -48,15 +48,15 @@ export const DOTA_MAP_LAYER_LABELS: Record<DotaMapLayer, { en: string; fa: strin
 };
 
 export const DOTA_MAP_LAYER_ICONS: Record<DotaMapLayer, string> = {
-  towers: "/assets/map-analysis/towers.png",
-  camps: "/assets/map-analysis/camp.png",
-  lotus: "/assets/map-analysis/lotus.png",
-  gates: "/assets/map-analysis/twin-gates.png",
-  tormentors: "/assets/map-analysis/tormentors.png",
-  bounty: "/assets/map-analysis/bounty-runes.png",
-  power: "/assets/map-analysis/power-runes.png",
-  wisdom: "/assets/map-analysis/wisdom-runes.png",
-  outposts: "/assets/map-analysis/outposts.png",
-  watchers: "/assets/map-analysis/watchers.png",
-  roshan: "/assets/map-analysis/roshan.png",
+  towers: "/map-analysis/towers.png",
+  camps: "/map-analysis/camp.png",
+  lotus: "/map-analysis/lotus.png",
+  gates: "/map-analysis/twin-gates.png",
+  tormentors: "/map-analysis/tormentors.png",
+  bounty: "/map-analysis/bounty-runes.png",
+  power: "/map-analysis/power-runes.png",
+  wisdom: "/map-analysis/wisdom-runes.png",
+  outposts: "/map-analysis/outposts.png",
+  watchers: "/map-analysis/watchers.png",
+  roshan: "/map-analysis/roshan.png",
 };

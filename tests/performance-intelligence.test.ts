@@ -53,6 +53,6 @@ describe("performance intelligence",()=>{
   it("keeps every visible map layer paired with an icon and landmark data",()=>{
     expect(Object.keys(DOTA_MAP_LAYER_ICONS)).toEqual(Object.keys(DOTA_MAP_LAYER_LABELS));
     expect(DOTA_741_LANDMARKS.some((entry)=>entry.layer==="outposts")).toBe(true);
-    expect(Object.values(DOTA_MAP_LAYER_ICONS).every((path)=>path.startsWith("/assets/map-analysis/"))).toBe(true);
+    expect(Object.values(DOTA_MAP_LAYER_ICONS).every((path)=>path.startsWith("/map-analysis/"))).toBe(true);
   });
 });
