@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { loadPublicMatchAnalysis } from "@/lib/dota/match-analysis-repository";
+import { enqueueOpenDotaParseIfNeeded } from "@/lib/opendota-parse/repository";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +21,11 @@ export async function GET(request: Request, context: RouteContext) {
     }
     const result = await loadPublicMatchAnalysis(parsedId.data,positionOverrides);
     if (!result.found) return Response.json({ ok: false, error: { code: "match_not_found", message: "مچ پیدا نشد" } }, { status: 404 });
+    if (!result.replayParsed) {
+      const parseState = await enqueueOpenDotaParseIfNeeded(parsedId.data);
+      if (parseState === "failed") return Response.json({ ok: false, error: { code: "opendota_parse_failed", message: "آماده‌سازی Replay این مچ کامل نشد؛ وضعیت Worker را بررسی کنید" } }, { status: 503, headers: { "Cache-Control": "private, no-store" } });
+      return Response.json({ ok: true, analysis: null, preparation: { replay: "queued" } }, { status: 202, headers: { "Cache-Control": "private, no-store" } });
+    }
     return Response.json({ ok: true, analysis: result.analysis }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("Unable to build match analysis", { matchId: parsedId.data, error });

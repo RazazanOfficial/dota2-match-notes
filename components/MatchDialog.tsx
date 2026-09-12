@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 import { heroById, heroImage } from "@/data/heroes";
 import { QUEUE_OPTIONS, ROLE_OPTIONS, queueLabel, roleLabel } from "@/lib/constants";
 import { newMatchId } from "@/lib/date";
-import type { Hero, Match, MatchImage, MatchResult, MatchRole, QueueType } from "@/lib/types";
+import type { Hero, Match, MatchImage, MatchPreparationProgress, MatchResult, MatchRole, QueueType } from "@/lib/types";
 import BanPicker from "./BanPicker";
 import ConfirmDialog from "./ConfirmDialog";
 import DotaSelect from "./DotaSelect";
@@ -585,10 +585,11 @@ function DotaMetric({
 
 function GeneratedImages({ match }: { match: Match }) {
   const [images, setImages] = useState<MatchImage[]>(match.images || []);
+  const [preparation, setPreparation] = useState<MatchPreparationProgress | null>(null);
 
   useEffect(() => {
     setImages(match.images || []);
-    if (!match.dotaMatchId || (match.images?.length || 0) >= 3) return;
+    if (!match.dotaMatchId) return;
     let cancelled = false;
     async function refresh() {
       try {
@@ -596,11 +597,12 @@ function GeneratedImages({ match }: { match: Match }) {
           cache: "no-store",
         });
         if (!response.ok) return;
-        const body = await response.json() as { images?: MatchImage[] };
-        if (!cancelled && body.images?.length) setImages(body.images);
-      } catch {
-        // Queue polling in the main page remains the source of truth on failure.
-      }
+        const body = await response.json() as { images?: MatchImage[]; preparation?: MatchPreparationProgress };
+        if (!cancelled) {
+          if (body.images) setImages(body.images);
+          if (body.preparation) setPreparation(body.preparation);
+        }
+      } catch { /* The next poll retries without replacing already loaded images. */ }
     }
     void refresh();
     const timer = window.setInterval(refresh, 3_000);
@@ -612,24 +614,32 @@ function GeneratedImages({ match }: { match: Match }) {
 
   if (!match.dotaMatchId) return null;
 
-  if (!images.length) {
-    const label = match.imageJobStatus === "failed"
-      ? "تصاویر این مچ هنوز آماده نشده‌اند."
-      : match.imageJobStatus === "processing"
-        ? "تصاویر این مچ در حال آماده‌شدن هستند."
-        : "تصاویر این مچ به‌زودی آماده می‌شوند.";
-    return (
-      <section className={`generated-images-empty is-${match.imageJobStatus || "pending"}`}>
-        <span className="image-build-icon"><ImageIcon aria-hidden="true" /></span>
-        <div><strong>تصاویر گزارش</strong><p>{label}</p></div>
-      </section>
-    );
-  }
+  const done = images.length >= 3 || preparation?.status === "ready";
 
   return (
     <section className="generated-images" aria-label="تصاویر گزارش مچ">
-      <header><span>تصاویر گزارش</span><strong>{images.length.toLocaleString("fa-IR")} تصویر آماده</strong></header>
-      <GeneratedImageGallery images={images} matchId={match.dotaMatchId} />
+      <header><span>تصاویر گزارش</span><strong>{images.length.toLocaleString("fa-IR")} از ۳ تصویر آماده</strong></header>
+      {!done && <PreparationSteps preparation={preparation} fallbackStatus={match.imageJobStatus} />}
+      {images.length > 0 ? <GeneratedImageGallery images={images} matchId={match.dotaMatchId} /> : <div className="generated-images-waiting"><span className="image-build-icon"><ImageIcon aria-hidden="true" /></span><p>تصویر آماده‌ای برای نمایش وجود ندارد؛ وضعیت صف همین‌جا به‌روز می‌شود.</p></div>}
     </section>
   );
+}
+
+function etaLabel(seconds: number | null | undefined, sampleSize = 0) {
+  if (!seconds || sampleSize < 1) return "زمان تقریبی پس از اولین نمونه واقعی مشخص می‌شود";
+  if (seconds < 60) return `حدود ${seconds.toLocaleString("fa-IR")} ثانیه`;
+  return `حدود ${Math.ceil(seconds / 60).toLocaleString("fa-IR")} دقیقه`;
+}
+
+function PreparationSteps({ preparation, fallbackStatus }: { preparation: MatchPreparationProgress | null; fallbackStatus?: Match["imageJobStatus"] }) {
+  const analysisActive = preparation?.status === "analysis";
+  const image = preparation?.images;
+  const completed = image?.completedImages || 0;
+  const current = image?.currentImage || 0;
+  const names = ["Match Overview", "Team Scoreboard", "Player Performance"];
+  const failed = preparation?.status === "failed" || image?.status === "failed" || fallbackStatus === "failed";
+  return <div className={`match-preparation${failed ? " is-failed" : ""}`}>
+    <div className="match-preparation-summary"><span className="image-build-icon"><ImageIcon aria-hidden="true" /></span><div><strong>{failed ? "آماده‌سازی این مچ کامل نشد" : analysisActive ? "در حال آماده‌سازی داده Analysis" : image?.status === "processing" ? "در حال ساخت تصاویر" : "در صف آماده‌سازی"}</strong><p>{failed ? "جزئیات خطا در Worker ثبت شده است." : `${preparation?.position ? `جایگاه فعلی: نوبت ${preparation.position.toLocaleString("fa-IR")} در صف` : "وضعیت صف در حال دریافت است"} · ${etaLabel(image?.estimatedSeconds, image?.sampleSize)}`}</p></div></div>
+    <div className="match-preparation-steps">{names.map((name,index)=>{const number=index+1;const state=completed>=number?"done":current===number&&image?.status==="processing"?"active":"waiting";return <article className={`is-${state}`} key={name}><i>{state==="done"?<Check/>:number.toLocaleString("fa-IR")}</i><span><b lang="en" dir="ltr">{name}</b><small>{state==="done"?"آماده":state==="active"?image?.stage==="uploading"?"در حال انتشار":"در حال ساخت":"در انتظار"}</small></span></article>;})}</div>
+  </div>;
 }

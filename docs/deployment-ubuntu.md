@@ -146,6 +146,8 @@ sudo cp deploy/systemd/dota2notes-stratz.service /etc/systemd/system/
 sudo cp deploy/systemd/dota2notes-stratz.timer /etc/systemd/system/
 sudo cp deploy/systemd/dota2notes-performance-reference.service /etc/systemd/system/
 sudo cp deploy/systemd/dota2notes-performance-reference.timer /etc/systemd/system/
+sudo cp deploy/systemd/dota2notes-opendota-parse.service /etc/systemd/system/
+sudo cp deploy/systemd/dota2notes-opendota-parse.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now dota2notes.service
 ```
@@ -163,6 +165,7 @@ sudo -u dota2notes -H bash deploy/scripts/health-check.sh
 sudo systemctl enable --now dota2notes-images.timer
 sudo systemctl enable --now dota2notes-stratz.timer
 sudo systemctl enable --now dota2notes-performance-reference.timer
+sudo systemctl enable --now dota2notes-opendota-parse.timer
 systemctl list-timers 'dota2notes-*'
 ```
 
@@ -176,6 +179,7 @@ Sync کاربران فقط با دکمه داخل سایت انجام می‌ش�
 sudo systemctl start dota2notes-images.service
 sudo systemctl start dota2notes-stratz.service
 sudo systemctl start dota2notes-performance-reference.service
+sudo systemctl start dota2notes-opendota-parse.service
 ```
 
 برای دیدن Logها:
@@ -185,6 +189,7 @@ sudo journalctl -u dota2notes.service -n 100 --no-pager
 sudo journalctl -u dota2notes-images.service -n 100 --no-pager
 sudo journalctl -u dota2notes-stratz.service -n 100 --no-pager
 sudo journalctl -u dota2notes-performance-reference.service -n 100 --no-pager
+sudo journalctl -u dota2notes-opendota-parse.service -n 100 --no-pager
 ```
 
 ## ۹. فعال‌کردن Nginx
@@ -264,7 +269,7 @@ sudo certbot renew --dry-run
 
 ```bash
 cd /var/www/dota2notes
-sudo systemctl stop dota2notes-images.timer dota2notes-stratz.timer dota2notes-performance-reference.timer
+sudo systemctl stop dota2notes-images.timer dota2notes-stratz.timer dota2notes-performance-reference.timer dota2notes-opendota-parse.timer
 sudo systemctl stop dota2notes.service
 sudo -u dota2notes -H git pull --ff-only origin main
 sudo -u dota2notes -H npm ci
@@ -274,7 +279,7 @@ sudo -u dota2notes -H npm run typecheck
 sudo -u dota2notes -H npm run build
 sudo systemctl start dota2notes.service
 sudo -u dota2notes -H bash deploy/scripts/health-check.sh
-sudo systemctl start dota2notes-images.timer dota2notes-stratz.timer dota2notes-performance-reference.timer
+sudo systemctl start dota2notes-images.timer dota2notes-stratz.timer dota2notes-performance-reference.timer dota2notes-opendota-parse.timer
 ```
 
 اگر هر فرمان قبل از `systemctl start` شکست خورد، ادامه ندهید و Log همان فرمان را بررسی

@@ -12,12 +12,13 @@ import {
   journalMatches,
   matchBans,
   matchImageJobs,
+  openDotaParseJobs,
   stratzEnrichmentJobs,
   users,
 } from "@/lib/db/schema";
 import { isHeroPoolEligibleMode } from "@/lib/hero-pool/rules";
 import { OpenDotaError } from "./errors";
-import type { OpenDotaMatch, OpenDotaPlayer } from "./validation";
+import { hasParsedOpenDotaReplay, type OpenDotaMatch, type OpenDotaPlayer } from "./validation";
 
 export async function findOpenDotaSyncTarget(userId: string, matchId: string) {
   const [target] = await getDb()
@@ -109,8 +110,10 @@ interface RateWindow {
 export async function claimOpenDotaRequestQuota(params: {
   minuteRequestLimit: number;
   dailyRequestLimit: number;
+  units?: number;
 }) {
   const now = new Date();
+  const units = Math.max(1, Math.min(10, Math.trunc(params.units || 1)));
   const utcDay = now.toISOString().slice(0, 10);
   const windows: RateWindow[] = [
     {
@@ -147,21 +150,21 @@ export async function claimOpenDotaRequestQuota(params: {
           .values({
             key: window.key,
             windowStartedAt: now,
-            requestCount: 1,
+            requestCount: units,
             updatedAt: now,
           })
           .onConflictDoUpdate({
             target: externalApiRateLimits.key,
             set: {
               windowStartedAt: now,
-              requestCount: 1,
+              requestCount: units,
               updatedAt: now,
             },
           });
         continue;
       }
 
-      if (current.requestCount >= window.limit) {
+      if (current.requestCount + units > window.limit) {
         const retryAfterSeconds = Math.max(
           1,
           Math.ceil((durationMs - elapsedMs) / 1_000),
@@ -177,7 +180,7 @@ export async function claimOpenDotaRequestQuota(params: {
       await tx
         .update(externalApiRateLimits)
         .set({
-          requestCount: sql`${externalApiRateLimits.requestCount} + 1`,
+          requestCount: sql`${externalApiRateLimits.requestCount} + ${units}`,
           updatedAt: now,
         })
         .where(eq(externalApiRateLimits.key, window.key));
@@ -188,13 +191,13 @@ export async function claimOpenDotaRequestQuota(params: {
       .values({
         provider: "opendota",
         day: utcDay,
-        requestCount: 1,
+        requestCount: units,
         updatedAt: now,
       })
       .onConflictDoUpdate({
         target: [externalApiDailyUsage.provider, externalApiDailyUsage.day],
         set: {
-          requestCount: sql`${externalApiDailyUsage.requestCount} + 1`,
+          requestCount: sql`${externalApiDailyUsage.requestCount} + ${units}`,
           updatedAt: now,
         },
       });
@@ -396,23 +399,15 @@ export async function saveDiscoveredOpenDotaMatch(params: {
       .values({ matchId: saved.id, runAfter: now, updatedAt: now })
       .onConflictDoNothing({ target: stratzEnrichmentJobs.matchId });
 
-    await tx
-      .insert(matchImageJobs)
-      .values({ matchId: saved.id, runAfter: now, updatedAt: now })
-      .onConflictDoUpdate({
+    if (hasParsedOpenDotaReplay(match)) {
+      await tx.insert(matchImageJobs).values({ matchId: saved.id, runAfter: now, updatedAt: now }).onConflictDoUpdate({
         target: matchImageJobs.matchId,
-        set: {
-          status: "pending",
-          attempts: 0,
-          runAfter: now,
-          lockedAt: null,
-          finishedAt: null,
-          errorCode: null,
-          errorMessage: null,
-          updatedAt: now,
-        },
+        set: { status: "pending", attempts: 0, runAfter: now, startedAt: null, lockedAt: null, finishedAt: null, errorCode: null, errorMessage: null, progressStage: "queued", currentImage: 0, completedImages: 0, updatedAt: now },
         setWhere: ne(matchImageJobs.status, "processing"),
       });
+    } else {
+      await tx.insert(openDotaParseJobs).values({ matchId: saved.id, dotaMatchId: match.match_id, runAfter: now, updatedAt: now }).onConflictDoNothing({ target: openDotaParseJobs.matchId });
+    }
 
     await tx.update(users).set({ updatedAt: now }).where(eq(users.id, userId));
     return {
@@ -584,7 +579,7 @@ export async function saveOpenDotaMatch(params: {
         setWhere: ne(stratzEnrichmentJobs.status, "processing"),
       });
 
-    if (params.queueImages !== false) {
+    if (params.queueImages !== false && hasParsedOpenDotaReplay(match)) {
       await tx
         .insert(matchImageJobs)
         .values({ matchId: saved.id, runAfter: now, updatedAt: now })
@@ -594,14 +589,20 @@ export async function saveOpenDotaMatch(params: {
             status: "pending",
             attempts: 0,
             runAfter: now,
+            startedAt: null,
             lockedAt: null,
             finishedAt: null,
             errorCode: null,
             errorMessage: null,
+            progressStage: "queued",
+            currentImage: 0,
+            completedImages: 0,
             updatedAt: now,
           },
           setWhere: ne(matchImageJobs.status, "processing"),
         });
+    } else if (params.queueImages !== false) {
+      await tx.insert(openDotaParseJobs).values({ matchId: saved.id, dotaMatchId: match.match_id, runAfter: now, updatedAt: now }).onConflictDoNothing({ target: openDotaParseJobs.matchId });
     }
 
     await tx

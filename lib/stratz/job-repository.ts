@@ -21,6 +21,7 @@ import {
 import type { StratzConfig } from "./config";
 import { StratzError } from "./errors";
 import type { StratzMatch } from "./validation";
+import { hasParsedOpenDotaReplay } from "../opendota/validation";
 
 export interface ClaimedStratzJob {
   id: string;
@@ -253,8 +254,10 @@ export async function saveStratzEnrichment(params: {
         role: journalMatches.role,
         roleSource: journalMatches.roleSource,
         heroPoolEligible: journalMatches.heroPoolEligible,
+        openDotaRawData: dotaMatches.rawData,
       })
       .from(journalMatches)
+      .innerJoin(dotaMatches, eq(journalMatches.dotaMatchId, dotaMatches.matchId))
       .where(eq(journalMatches.id, params.journalMatchId))
       .limit(1);
     if (!current) throw new Error("STRATZ enrichment target no longer exists");
@@ -325,23 +328,13 @@ export async function saveStratzEnrichment(params: {
       );
     }
 
-    await tx
-      .insert(matchImageJobs)
-      .values({ matchId: params.journalMatchId, runAfter: now, updatedAt: now })
-      .onConflictDoUpdate({
+    if (hasParsedOpenDotaReplay(current.openDotaRawData as Record<string, unknown>)) {
+      await tx.insert(matchImageJobs).values({ matchId: params.journalMatchId, runAfter: now, updatedAt: now }).onConflictDoUpdate({
         target: matchImageJobs.matchId,
-        set: {
-          status: "pending",
-          attempts: 0,
-          runAfter: now,
-          lockedAt: null,
-          finishedAt: null,
-          errorCode: null,
-          errorMessage: null,
-          updatedAt: now,
-        },
+        set: { status: "pending", attempts: 0, runAfter: now, startedAt: null, lockedAt: null, finishedAt: null, errorCode: null, errorMessage: null, progressStage: "queued", currentImage: 0, completedImages: 0, updatedAt: now },
         setWhere: ne(matchImageJobs.status, "processing"),
       });
+    }
   });
 }
 

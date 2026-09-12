@@ -12,7 +12,7 @@ import MatchMapEngine from "./MatchMapEngine";
 type View = "summary" | "timeline" | "map" | "players";
 type TimelineMetric = "gold" | "xp" | "lastHits";
 type TimelineScope = "solo" | "role" | "all";
-type RequestState = "idle" | "loading" | "ready" | "empty" | "error";
+type RequestState = "idle" | "loading" | "preparing" | "ready" | "empty" | "error";
 type Trend = "positive" | "steady" | "negative";
 type PendingPositionChange = { updates: Record<string, number>; players: MatchPlayerAnalysis[] };
 
@@ -70,12 +70,13 @@ export default function MatchAnalysisPanel({ match, active, onPositionOverrides 
     setRequestState("loading"); setError("");
     void fetch(`/api/matches/${match.id}/analysis`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
-        const body = await response.json().catch(() => null) as { analysis?: MatchAnalysis | null; error?: { message?: string } } | null;
+        const body = await response.json().catch(() => null) as { analysis?: MatchAnalysis | null; preparation?: { replay?: string }; error?: { message?: string } } | null;
         if (!response.ok) throw new Error(body?.error?.message || "تحلیل مچ آماده نشد");
-        return body?.analysis || null;
+        return { analysis: body?.analysis || null, preparing: body?.preparation?.replay === "queued" };
       })
-      .then((value) => {
+      .then(({ analysis: value, preparing }) => {
         if (controller.signal.aborted || currentMatchId.current !== requestedMatchId) return;
+        if (preparing) { setRequestState("preparing"); return; }
         analysisCache.set(requestedMatchId,value);
         setAnalysis(value); setSlot(initialSlot(value)); setMinute(value?.durationMinutes || 0); setRequestState(value ? "ready" : "empty");
       })
@@ -86,6 +87,12 @@ export default function MatchAnalysisPanel({ match, active, onPositionOverrides 
       }).finally(() => window.clearTimeout(timeout));
     return () => { window.clearTimeout(timeout); controller.abort(); };
   }, [active, analysis, cacheKey, match.dotaMatchId, match.id, retryToken]);
+
+  useEffect(() => {
+    if (!active || requestState !== "preparing") return;
+    const timer = window.setTimeout(() => setRetryToken((current) => current + 1), 5_000);
+    return () => window.clearTimeout(timer);
+  }, [active, requestState, retryToken]);
 
   useEffect(() => {
     if (!active || !analysis) return;
@@ -127,7 +134,7 @@ export default function MatchAnalysisPanel({ match, active, onPositionOverrides 
   };
   const retry = () => { setAnalysis(null); setRequestState("idle"); setError(""); setRetryToken((current) => current + 1); };
   if (!match.dotaMatchId) return null;
-  if (requestState === "loading") return <section className="analysis-loading"><AppLogo size={48} alt="" /><div><strong>در حال آماده‌سازی Match Analysis</strong><p>Benchmark و Timeline هر ۱۰ بازیکن در حال پردازش است.</p></div></section>;
+  if (requestState === "loading" || requestState === "preparing") return <section className="analysis-loading"><AppLogo size={48} alt="" /><div><strong>{requestState === "preparing" ? "Replay در حال تکمیل است" : "در حال آماده‌سازی Match Analysis"}</strong><p>{requestState === "preparing" ? "پس از پایان Parse، تحلیل کامل به‌صورت خودکار نمایش داده می‌شود." : "Benchmark و Timeline هر ۱۰ بازیکن در حال پردازش است."}</p></div></section>;
   if (requestState === "error") return <Empty icon={<AlertTriangle />} title="تحلیل مچ آماده نشد" text={error} actionLabel="تلاش دوباره" onAction={retry} />;
   if (active && !analysis) return <Empty icon={<CircleGauge />} title="داده کافی برای تحلیل نیست" text="پس از آماده‌شدن Replay، تحلیل کامل این مچ نمایش داده می‌شود." actionLabel="بررسی دوباره" onAction={retry} />;
   if (!analysis || !player) return null;
@@ -187,16 +194,16 @@ function Summary({ player,players,duration,confirmPositions }: { player: MatchPl
 }
 
 function detectedSwapPlayers(player:MatchPlayerAnalysis,players:MatchPlayerAnalysis[]){
-  if(!player.positionResolution?.roleSwapDetected)return[];
+  if(!player.positionResolution?.roleSwapDetected||player.positionResolution.source==="manual")return[];
   const related=new Set<number>([player.playerSlot]);
   if(player.positionResolution.swapWithPlayerSlot!=null)related.add(player.positionResolution.swapWithPlayerSlot);
-  players.filter((entry)=>entry.team===player.team&&entry.positionResolution?.roleSwapDetected).forEach((entry)=>related.add(entry.playerSlot));
-  return players.filter((entry)=>related.has(entry.playerSlot)&&entry.positionResolution?.detectedPosition!==null);
+  players.filter((entry)=>entry.team===player.team&&entry.positionResolution?.roleSwapDetected&&entry.positionResolution.source!=="manual").forEach((entry)=>related.add(entry.playerSlot));
+  return players.filter((entry)=>related.has(entry.playerSlot)&&entry.positionResolution?.detectedPosition!=null&&entry.positionResolution.source!=="manual");
 }
 
 function RoleSwapReview({players,confirm}:{players:MatchPlayerAnalysis[];confirm?: (updates:Record<string,number>)=>void}){
   const updates=Object.fromEntries(players.flatMap((entry)=>entry.positionResolution?.detectedPosition?[ [String(entry.playerSlot),entry.positionResolution.detectedPosition] ]:[]));
-  return <section className="position-resolution-alert"><header><span><ArrowRightLeft/></span><div><small>ROLE SWAP CHECK</small><strong>جابه‌جایی Position شناسایی شد</strong><p>اگر تشخیص سیستم با بازی واقعی مطابقت دارد، Positionهای زیر را یک‌جا تأیید کنید.</p></div></header><div className="position-resolution-list">{players.map((entry)=><article key={entry.playerSlot}><p>سیستم تشخیص داده Hero <b lang="en" dir="ltr">{entry.heroName}</b><img className="role-swap-inline-icon" src={portrait(entry)} alt=""/> در <b lang="en" dir="ltr">Position {entry.positionResolution?.detectedPosition??"?"}</b><img className="role-swap-inline-icon is-position" src={positionIcon(entry.positionResolution?.detectedPosition??null)} alt=""/> بازی کرده.</p>{confirm&&<button type="button" onClick={()=>confirm(updates)}><Check/>تأیید Positionها</button>}</article>)}</div></section>;
+  return <section className="position-resolution-alert"><header><span><ArrowRightLeft/></span><div><small>ROLE SWAP CHECK</small><strong>احتمال جابه‌جایی Role شناسایی شد</strong><p>اگر این تشخیص با اتفاقات واقعی Match مطابقت دارد، جابه‌جایی را تأیید کنید.</p></div></header><div className="position-resolution-list">{players.map((entry)=>{const resolution=entry.positionResolution;const position=resolution?.detectedPosition??null;const confidence=Math.max(0,Math.min(100,Math.round(resolution?.confidence??0)));return <article key={entry.playerSlot}><p>طبق آنالیز و بررسی، سیستم با احتمال <b className="latin-numerals" lang="en" dir="ltr">{confidence}%</b> حدس می‌زند که هیرو <b lang="en" dir="ltr">{entry.heroName}</b><img className="role-swap-inline-icon" src={portrait(entry)} alt=""/> در Role <b lang="en" dir="ltr">{position?POSITION_LABELS[position]:"Unknown"}</b><img className="role-swap-inline-icon is-position" src={positionIcon(position)} alt=""/> بازی کرده است.</p>{confirm&&<button type="button" onClick={()=>confirm(updates)}><Check/>تأیید جابه‌جایی</button>}</article>;})}</div></section>;
 }
 
 function PositionConfirmation({player,players,confirm}:{player:MatchPlayerAnalysis;players:MatchPlayerAnalysis[];confirm:(updates:Record<string,number>)=>void}){

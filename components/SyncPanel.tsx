@@ -18,7 +18,6 @@ function formatTime(value: string | null) {
 }
 
 function queueLabel(job: ImageQueueJob) {
-  if (job.status === "processing") return "در حال آماده‌سازی";
   return `نوبت ${faNumber.format(job.position || 1)} در صف`;
 }
 
@@ -138,18 +137,7 @@ export default function SyncPanel({
       </div>
 
       {visibleJobs.length > 0 && (
-        <div className="image-queue" aria-live="polite">
-          <div className="image-queue-heading">
-            <div>
-              <span>در حال آماده‌سازی</span>
-              <strong>
-                {faNumber.format(
-                  (status?.imageQueue.counts.pending || 0) +
-                    (status?.imageQueue.counts.processing || 0),
-                )} مچ
-              </strong>
-            </div>
-          </div>
+        <div className="image-queue is-compact" aria-label="صف آماده‌سازی مچ‌ها" aria-live="polite">
           <div className="image-queue-list">
             {visibleJobs.map((job) => {
               const hero = job.heroId ? heroById(job.heroId) : undefined;
@@ -159,8 +147,7 @@ export default function SyncPanel({
                     {hero ? <img src={heroImage(hero)} alt="" /> : <span aria-hidden="true">?</span>}
                   </span>
                   <div className="queue-job-copy">
-                    <strong lang="en" dir="ltr">{job.heroName || "Dota 2 Match"}</strong>
-                    <span lang="en" dir="ltr">Match #{job.dotaMatchId || "—"}</span>
+                    <strong lang="en" dir="ltr">Match #{job.dotaMatchId || "—"}</strong>
                   </div>
                   <span className="queue-job-position">{queueLabel(job)}</span>
                 </article>

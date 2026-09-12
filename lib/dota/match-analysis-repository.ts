@@ -10,6 +10,7 @@ import {
 } from "@/lib/db/schema";
 import { buildMatchAnalysis } from "./match-analysis";
 import type { PerformanceReferenceData } from "./performance-cohort";
+import { hasParsedOpenDotaReplay } from "@/lib/opendota/validation";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -111,8 +112,9 @@ export async function loadPublicMatchAnalysis(journalMatchId: string, requestedP
     .leftJoin(dotaMatches, eq(journalMatches.dotaMatchId, dotaMatches.matchId))
     .where(eq(journalMatches.id, journalMatchId))
     .limit(1);
-  if (!source) return { found: false as const, analysis: null };
-  if (!source.dotaMatchId || !source.rawData) return { found: true as const, analysis: null };
+  if (!source) return { found: false as const, analysis: null, replayParsed: false };
+  if (!source.dotaMatchId || !source.rawData) return { found: true as const, analysis: null, replayParsed: false };
+  const replayParsed = hasParsedOpenDotaReplay(source.rawData as Record<string, unknown>);
 
   const rawPlayers = Array.isArray(source.rawData.players) ? source.rawData.players : [];
   const heroIds = [...new Set(rawPlayers.flatMap((value) => {
@@ -127,6 +129,7 @@ export async function loadPublicMatchAnalysis(journalMatchId: string, requestedP
   }
   return {
     found: true as const,
+    replayParsed,
     analysis: buildMatchAnalysis({
       rawData: source.rawData,
       stratzRawData: source.stratzRawData,

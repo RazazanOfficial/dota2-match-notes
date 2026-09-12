@@ -14,8 +14,11 @@ case "${1:-}" in
   performance-reference)
     endpoint="/api/internal/performance-reference/tick"
     ;;
+  opendota-parse)
+    endpoint="/api/internal/opendota-parse/tick"
+    ;;
   *)
-    echo "usage: call-worker.sh sync|images|stratz|performance-reference" >&2
+    echo "usage: call-worker.sh sync|images|stratz|performance-reference|opendota-parse" >&2
     exit 64
     ;;
 esac

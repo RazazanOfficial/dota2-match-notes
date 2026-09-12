@@ -2,15 +2,18 @@ import { MatchImageError } from "../match-image/errors";
 import { buildMatchImageModel } from "../match-image/model";
 import { renderGeneratedMatchImages } from "../match-image/renderer";
 import { publishGeneratedMatchImages } from "../media/service";
-import { parseOpenDotaMatch } from "../opendota/validation";
+import { enqueueOpenDotaParseIfNeeded } from "../opendota-parse/repository";
+import { hasParsedOpenDotaReplay, parseOpenDotaMatch } from "../opendota/validation";
 import { getMatchImageJobConfig } from "./config";
 import { describeMatchImageJobError } from "./policy";
 import {
   claimNextMatchImageJob,
   completeMatchImageJob,
+  deferMatchImageJobUntilReplayParsed,
   getMatchImageJobSource,
   recoverStaleMatchImageJobs,
   rescheduleOrFailMatchImageJob,
+  updateMatchImageJobProgress,
 } from "./repository";
 
 export async function runMatchImageJobTick() {
@@ -30,10 +33,22 @@ export async function runMatchImageJobTick() {
           "داده معتبر OpenDota برای تولید تصویر پیدا نشد",
         );
       }
+      if (!hasParsedOpenDotaReplay(source.rawData as Record<string, unknown>)) {
+        const parseState = await enqueueOpenDotaParseIfNeeded(job.matchId);
+        if (parseState === "failed") {
+          const outcome = await rescheduleOrFailMatchImageJob({ job, config, errorCode: "opendota_parse_failed", errorMessage: "OpenDota replay parse did not complete", permanent: true });
+          jobs.push({ id: job.id, matchId: job.matchId, dotaMatchId: String(source.dotaMatchId), status: outcome.status, attempts: job.attempts, errorCode: "opendota_parse_failed" });
+          continue;
+        }
+        await deferMatchImageJobUntilReplayParsed(job);
+        jobs.push({ id: job.id, matchId: job.matchId, dotaMatchId: String(source.dotaMatchId), status: "waiting_for_parse", attempts: job.attempts });
+        continue;
+      }
       const match = parseOpenDotaMatch(source.rawData, source.dotaMatchId);
       const model = buildMatchImageModel(match, source.steamAccountId);
-      const artifacts = await renderGeneratedMatchImages(model);
-      const images = await publishGeneratedMatchImages(job.matchId, artifacts);
+      const artifacts = await renderGeneratedMatchImages(model, { onProgress: (progress) => updateMatchImageJobProgress(job, { stage: "rendering", ...progress }) });
+      await updateMatchImageJobProgress(job, { stage: "uploading", currentImage: 1, completedImages: 0 });
+      const images = await publishGeneratedMatchImages(job.matchId, artifacts, (progress) => updateMatchImageJobProgress(job, { stage: "uploading", ...progress }));
       await completeMatchImageJob(job);
       jobs.push({
         id: job.id,

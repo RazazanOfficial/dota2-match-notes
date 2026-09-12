@@ -38,6 +38,10 @@ OPENDOTA_MANUAL_SYNC_LOOKBACK_SECONDS=21600
 OPENDOTA_MINUTE_REQUEST_LIMIT=50
 OPENDOTA_DAILY_REQUEST_LIMIT=2900
 OPENDOTA_MAX_NEW_MATCHES_PER_SYNC=20
+OPENDOTA_PARSE_ENABLED=true
+OPENDOTA_PARSE_PROCESS_BATCH_SIZE=2
+OPENDOTA_PARSE_POLL_INTERVAL_SECONDS=45
+OPENDOTA_PARSE_MAX_POLL_ATTEMPTS=40
 
 SYNC_WORKER_SECRET=GENERATE_A_RANDOM_32_PLUS_CHARACTER_SECRET
 SCHEDULED_SYNC_ENABLED=off
@@ -190,6 +194,11 @@ Cooldown پنج‌دقیقه‌ای و سهمیه‌های سراسری OpenDota
 UTC سرور VPS تاریخ دفتر را جابه‌جا نمی‌کند. وضعیت Cooldown و صف ساخت تصاویر با
 `GET /api/sync/me` برای رابط کاربری خوانده می‌شود.
 
+اگر Replay یک مچ هنوز Parse نشده باشد، همان مچ در صف مستقل OpenDota Parse قرار می‌گیرد.
+ارسال درخواست Parse فقط یک‌بار انجام می‌شود و ۱۰ واحد از سهمیه OpenDota مصرف می‌کند؛ هر
+بررسی بعدی یک واحد است. تا کامل‌شدن Replay، Worker تصاویر مچ را کنار می‌گذارد و Attempt
+ساخت تصویر مصرف نمی‌شود. برای مچ‌های قدیمی Backfill خودکار و انبوه انجام نمی‌شود.
+
 اگر کاربر یک مچ متصل به OpenDota را از دفتر حذف کند، شناسه آن در جدول
 `dismissed_dota_matches` ثبت می‌شود و Syncهای بعدی آن را دوباره وارد نمی‌کنند. داده این جدول
 فقط تصمیم حذف کاربر را نگه می‌دارد و شامل آمار یا اطلاعات خصوصی نیست. اتصال صریح همان Match
@@ -204,6 +213,14 @@ ID از مسیر همگام‌سازی تکی، این علامت حذف را ب
 را از STRATZ و منحنی‌های Benchmark همان Hero را از OpenDota در یک Snapshot اتمیک ذخیره
 می‌کند. مچ‌های کاربران سایت هیچ‌وقت جمعیت آماری Benchmark نیستند. اگر Refresh شکست بخورد،
 آخرین Snapshot سالم فعال می‌ماند.
+
+## Worker آماده‌سازی Replay در OpenDota
+
+- `POST /api/internal/opendota-parse/tick`
+- Header اجباری: `Authorization: Bearer SYNC_WORKER_SECRET`
+
+این Worker فقط مچ ناقصی را که هنگام آماده‌سازی به Replay نیاز دارد Parse می‌کند. درخواست
+تکراری برای یک مچ ساخته نمی‌شود و Pollها با صف، قفل دیتابیس و محدودکننده OpenDota کنترل می‌شوند.
 
 ## Worker همگام‌سازی زمان‌بندی‌شده
 
