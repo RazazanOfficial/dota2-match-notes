@@ -59,6 +59,7 @@ export async function recoverStaleMatchImageJobs(
             finishedAt: now,
             errorCode: "image_job_stale_lock",
             errorMessage: "maximum attempts reached after a stale lock",
+            progressStage: "failed",
             updatedAt: now,
           })
           .where(eq(matchImageJobs.id, job.id));
@@ -72,6 +73,9 @@ export async function recoverStaleMatchImageJobs(
             runAfter: now,
             errorCode: "image_job_stale_lock",
             errorMessage: "stale lock recovered",
+            progressStage: "queued",
+            currentImage: 0,
+            completedImages: 0,
             updatedAt: now,
           })
           .where(eq(matchImageJobs.id, job.id));
@@ -115,8 +119,12 @@ export async function claimNextMatchImageJob() {
       .set({
         status: "processing",
         attempts: sql`${matchImageJobs.attempts} + 1`,
+        startedAt: now,
         lockedAt: now,
         finishedAt: null,
+        progressStage: "preparing",
+        currentImage: 0,
+        completedImages: 0,
         updatedAt: now,
       })
       .where(
@@ -166,6 +174,9 @@ export async function completeMatchImageJob(job: ClaimedMatchImageJob) {
       finishedAt,
       errorCode: null,
       errorMessage: null,
+      progressStage: "completed",
+      currentImage: 3,
+      completedImages: 3,
       updatedAt: finishedAt,
     })
     .where(
@@ -201,6 +212,7 @@ export async function rescheduleOrFailMatchImageJob(params: {
         finishedAt: now,
         errorCode,
         errorMessage,
+        progressStage: "failed",
         updatedAt: now,
       })
       .where(
@@ -225,9 +237,13 @@ export async function rescheduleOrFailMatchImageJob(params: {
     .set({
       status: "pending",
       lockedAt: null,
+      startedAt: null,
       runAfter,
       errorCode,
       errorMessage,
+      progressStage: "queued",
+      currentImage: 0,
+      completedImages: 0,
       updatedAt: now,
     })
     .where(
@@ -240,4 +256,29 @@ export async function rescheduleOrFailMatchImageJob(params: {
     .returning({ id: matchImageJobs.id });
   if (!rescheduled) throw new Error("Match image job lease was lost");
   return { status: "pending" as const, runAfter };
+}
+
+export async function updateMatchImageJobProgress(job: ClaimedMatchImageJob, progress: { stage: "preparing" | "rendering" | "uploading"; currentImage: number; completedImages: number }) {
+  const [updated] = await getDb().update(matchImageJobs).set({ progressStage: progress.stage, currentImage: Math.max(0, Math.min(3, progress.currentImage)), completedImages: Math.max(0, Math.min(3, progress.completedImages)), updatedAt: new Date() })
+    .where(and(eq(matchImageJobs.id, job.id), eq(matchImageJobs.status, "processing"), eq(matchImageJobs.lockedAt, job.lockedAt))).returning({ id: matchImageJobs.id });
+  if (!updated) throw new Error("Match image job lease was lost");
+}
+
+export async function deferMatchImageJobUntilReplayParsed(job: ClaimedMatchImageJob, retryAfterSeconds = 60) {
+  const now = new Date();
+  const [deferred] = await getDb().update(matchImageJobs).set({
+    status: "pending",
+    attempts: sql`greatest(${matchImageJobs.attempts} - 1, 0)`,
+    startedAt: null,
+    lockedAt: null,
+    runAfter: new Date(now.getTime() + retryAfterSeconds * 1_000),
+    finishedAt: null,
+    progressStage: "queued",
+    currentImage: 0,
+    completedImages: 0,
+    errorCode: "waiting_for_opendota_parse",
+    errorMessage: "waiting for parsed OpenDota replay data",
+    updatedAt: now,
+  }).where(and(eq(matchImageJobs.id, job.id), eq(matchImageJobs.status, "processing"), eq(matchImageJobs.lockedAt, job.lockedAt))).returning({ id: matchImageJobs.id });
+  if (!deferred) throw new Error("Match image job lease was lost");
 }

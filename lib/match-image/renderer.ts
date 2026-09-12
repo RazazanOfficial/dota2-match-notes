@@ -21,6 +21,7 @@ import {
 interface RenderMatchImagesOptions {
   config?: MatchImageConfig;
   portraitLoader?: HeroPortraitLoader;
+  onProgress?: (progress: { currentImage: number; completedImages: number }) => void | Promise<void>;
 }
 
 async function loadPortraits(
@@ -109,7 +110,8 @@ export async function renderGeneratedMatchImages(
   ];
 
   const artifacts: GeneratedMatchImageArtifact[] = [];
-  for (const template of templates) {
+  for (const [index, template] of templates.entries()) {
+    await options.onProgress?.({ currentImage: index + 1, completedImages: index });
     artifacts.push(
       await renderWebp(
         template.svg,
@@ -119,6 +121,7 @@ export async function renderGeneratedMatchImages(
         template.headerSvg,
       ),
     );
+    await options.onProgress?.({ currentImage: index + 1, completedImages: index + 1 });
   }
   return artifacts;
 }

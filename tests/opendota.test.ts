@@ -3,11 +3,13 @@ import {
   fetchOpenDotaMatch,
   fetchOpenDotaPlayerMatchesSince,
   fetchOpenDotaRecentMatches,
+  requestOpenDotaParse,
 } from "../lib/opendota/client";
 import { getOpenDotaConfig } from "../lib/opendota/config";
 import { OpenDotaError } from "../lib/opendota/errors";
 import {
   openDotaSyncInputSchema,
+  hasParsedOpenDotaReplay,
   parseOpenDotaMatch,
   parseOpenDotaRecentMatches,
 } from "../lib/opendota/validation";
@@ -144,6 +146,12 @@ describe("OpenDota input and response validation", () => {
       older.match_id,
     ]);
   });
+
+  it("distinguishes parsed replay data from a basic match payload", () => {
+    expect(hasParsedOpenDotaReplay(matchPayload)).toBe(false);
+    expect(hasParsedOpenDotaReplay({ ...matchPayload, version: 21 })).toBe(true);
+    expect(hasParsedOpenDotaReplay({ ...matchPayload, players: [{ ...matchPayload.players[0], times: [0, 60], gold_t: [600, 1_200] }] })).toBe(true);
+  });
 });
 
 describe("OpenDota HTTP client", () => {
@@ -179,6 +187,20 @@ describe("OpenDota HTTP client", () => {
       code: "opendota_rate_limited",
       retryAfterSeconds: 45,
     });
+  });
+
+  it("submits one parse request with POST and validates the queue job", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ job: { jobId: 12345 } }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(requestOpenDotaParse(matchPayload.match_id)).resolves.toEqual({ jobId: "12345" });
+    const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(url.pathname).toBe(`/api/request/${matchPayload.match_id}`);
+    expect(init).toMatchObject({ method: "POST", cache: "no-store" });
+  });
+
+  it("rejects a malformed parse queue response", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ job: {} })));
+    await expect(requestOpenDotaParse(matchPayload.match_id)).rejects.toMatchObject({ code: "invalid_opendota_parse_response" });
   });
 
   it("fetches recent matches for one Steam account id", async () => {

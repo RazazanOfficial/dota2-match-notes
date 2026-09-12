@@ -629,10 +629,15 @@ export const matchImageJobs = pgTable(
     runAfter: timestamp("run_after", { withTimezone: true })
       .defaultNow()
       .notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }),
     lockedAt: timestamp("locked_at", { withTimezone: true }),
     finishedAt: timestamp("finished_at", { withTimezone: true }),
     errorCode: varchar("error_code", { length: 64 }),
     errorMessage: text("error_message"),
+    progressStage: varchar("progress_stage", { length: 24 }).default("queued").notNull(),
+    currentImage: smallint("current_image").default(0).notNull(),
+    completedImages: smallint("completed_images").default(0).notNull(),
+    expectedImages: smallint("expected_images").default(3).notNull(),
     ...timestamps,
   },
   (table) => [
@@ -642,6 +647,32 @@ export const matchImageJobs = pgTable(
       table.runAfter,
     ),
     check("match_image_jobs_attempts_check", sql`${table.attempts} >= 0`),
+    check("match_image_jobs_progress_stage_check", sql`${table.progressStage} in ('queued','preparing','rendering','uploading','completed','failed')`),
+    check("match_image_jobs_progress_check", sql`${table.currentImage} between 0 and ${table.expectedImages} and ${table.completedImages} between 0 and ${table.expectedImages} and ${table.expectedImages} between 1 and 10`),
+  ],
+);
+
+export const openDotaParseJobs = pgTable(
+  "open_dota_parse_jobs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    matchId: uuid("match_id").notNull().references(() => journalMatches.id, { onDelete: "cascade" }),
+    dotaMatchId: bigint("dota_match_id", { mode: "number" }).notNull(),
+    status: syncJobStatusEnum("status").default("pending").notNull(),
+    providerJobId: varchar("provider_job_id", { length: 32 }),
+    attempts: smallint("attempts").default(0).notNull(),
+    pollAttempts: smallint("poll_attempts").default(0).notNull(),
+    runAfter: timestamp("run_after", { withTimezone: true }).defaultNow().notNull(),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    errorCode: varchar("error_code", { length: 64 }),
+    errorMessage: text("error_message"),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("open_dota_parse_jobs_match_id_uidx").on(table.matchId),
+    index("open_dota_parse_jobs_status_run_after_idx").on(table.status, table.runAfter),
+    check("open_dota_parse_jobs_attempts_check", sql`${table.attempts} >= 0 and ${table.pollAttempts} >= 0`),
   ],
 );
 
@@ -741,6 +772,10 @@ export const journalMatchesRelations = relations(
     picks: many(matchPicks),
     images: many(matchImages),
     imageJobs: many(matchImageJobs),
+    openDotaParseJob: one(openDotaParseJobs, {
+      fields: [journalMatches.id],
+      references: [openDotaParseJobs.matchId],
+    }),
     stratzEnrichmentJob: one(stratzEnrichmentJobs, {
       fields: [journalMatches.id],
       references: [stratzEnrichmentJobs.matchId],
@@ -808,6 +843,13 @@ export const matchImageJobsRelations = relations(
     }),
   }),
 );
+
+export const openDotaParseJobsRelations = relations(openDotaParseJobs, ({ one }) => ({
+  match: one(journalMatches, {
+    fields: [openDotaParseJobs.matchId],
+    references: [journalMatches.id],
+  }),
+}));
 
 export const stratzEnrichmentJobsRelations = relations(
   stratzEnrichmentJobs,

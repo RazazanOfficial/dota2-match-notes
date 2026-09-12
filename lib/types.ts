@@ -301,6 +301,14 @@ export interface ImageQueueJob {
   finishedAt: string | null;
   errorCode: string | null;
   updatedAt: string;
+  kind?: "analysis" | "images";
+}
+
+export interface MatchPreparationProgress {
+  status: "idle" | "analysis" | "images" | "ready" | "failed";
+  position: number | null;
+  analysis: { status: ImageJobStatus; pollAttempts: number; updatedAt: string; errorCode: string | null } | null;
+  images: { status: ImageJobStatus; stage: string; currentImage: number; completedImages: number; expectedImages: number; estimatedSeconds: number | null; sampleSize: number; updatedAt: string; errorCode: string | null } | null;
 }
 
 export interface PlayerSyncStatus {

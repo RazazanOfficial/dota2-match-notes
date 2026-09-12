@@ -147,6 +147,19 @@ export function parseOpenDotaRecentMatches(input: unknown) {
   return [...unique.values()].sort((left, right) => right.start_time - left.start_time);
 }
 
+export function hasParsedOpenDotaReplay(match: OpenDotaMatch | Record<string, unknown>) {
+  const version = Number(match.version);
+  if (Number.isInteger(version) && version > 0) return true;
+  const players = Array.isArray(match.players) ? match.players : [];
+  return players.some((player) => {
+    if (!player || typeof player !== "object") return false;
+    const source = player as Record<string, unknown>;
+    return Array.isArray(source.times) && source.times.length > 1 && (
+      Array.isArray(source.gold_t) || Array.isArray(source.xp_t) || Array.isArray(source.lh_t)
+    );
+  });
+}
+
 export type OpenDotaMatch = z.infer<typeof openDotaMatchSchema>;
 export type OpenDotaPlayer = z.infer<typeof openDotaPlayerSchema>;
 export type OpenDotaRecentMatch = z.infer<typeof openDotaRecentMatchSchema>;

@@ -62,6 +62,7 @@ async function bestEffortDelete(objectKey: string) {
 export async function publishGeneratedMatchImages(
   matchId: string,
   artifacts: GeneratedMatchImageArtifact[],
+  onProgress?: (progress: { currentImage: number; completedImages: number }) => void | Promise<void>,
 ) {
   const config = getStorageConfig();
   const generated = validateGeneratedMatchImages(
@@ -84,6 +85,7 @@ export async function publishGeneratedMatchImages(
       );
       await uploadStoredObject(objectKey, artifact.mimeType, artifact.bytes);
       uploaded.push({ objectKey, artifact, sortOrder });
+      await onProgress?.({ currentImage: sortOrder, completedImages: sortOrder });
     }
   } catch {
     await Promise.allSettled(

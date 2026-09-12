@@ -17,12 +17,11 @@ import {
   Settings,
   Share2,
   Shield,
-  SlidersHorizontal,
   UserRound,
   X,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import { HEROES, heroById, heroIcon, heroImage } from "@/data/heroes";
+import { HEROES, heroById, heroImage } from "@/data/heroes";
 import {
   getHeroPool,
   logout,
@@ -62,18 +61,9 @@ import ReleaseNotes from "./ReleaseNotes";
 import AccountSettingsDialog from "./AccountSettingsDialog";
 import LoginDialog from "./LoginDialog";
 import PlayerSearchDialog from "./PlayerSearchDialog";
+import MatchFilters, { type JournalModeFilter } from "./MatchFilters";
 
 type AccessView = "roles" | "coach";
-type MatchFilterMode = "all" | `mode:${number}` | `lobby:${number}`;
-
-const POSITION_FILTERS: Array<{ value:MatchRole; label:string; icon:string }> = [
-  { value:"safe_lane", label:"Carry", icon:"Safelane.png" },
-  { value:"mid_lane", label:"Mid", icon:"MidLane.png" },
-  { value:"off_lane", label:"Offlane", icon:"OffLane.png" },
-  { value:"soft_support", label:"Soft Support", icon:"SoftSupport.png" },
-  { value:"hard_support", label:"Hard Support", icon:"HardSupport.png" },
-];
-
 const EMPTY_PROFILE: Profile = { username: "", days: {} };
 
 function sessionMatchesIdentifier(session: Session, identifier: string) {
@@ -127,9 +117,9 @@ export default function MatchJournal({
   const [heroPoolOpen, setHeroPoolOpen] = useState(false);
   const [heroPool, setHeroPool] = useState<HeroPoolData | null>(null);
   const [refreshVersion, setRefreshVersion] = useState(0);
-  const [modeFilter, setModeFilter] = useState<MatchFilterMode>("all");
-  const [positionFilter, setPositionFilter] = useState<MatchRole | "all">("all");
-  const [heroFilter, setHeroFilter] = useState<number | "all">("all");
+  const [modeFilters, setModeFilters] = useState<JournalModeFilter[]>([]);
+  const [positionFilters, setPositionFilters] = useState<MatchRole[]>([]);
+  const [heroFilters, setHeroFilters] = useState<number[]>([]);
   const [editing, setEditing] = useState<{ dateKey: string; matchId: string | null } | null>(
     null,
   );
@@ -296,7 +286,7 @@ export default function MatchJournal({
 
   const weekMatches = useMemo(() => dates.flatMap((date) => profile.days[toDateKey(date)]?.matches || []), [dates, profile.days]);
   const modeOptions = useMemo(() => {
-    const options = new Map<MatchFilterMode,string>();
+    const options = new Map<JournalModeFilter,string>();
     weekMatches.forEach((match) => {
       if(match.gameModeId!==null&&match.gameModeId!==undefined)options.set(`mode:${match.gameModeId}`,match.gameModeName||`Mode ${match.gameModeId}`);
       if(match.lobbyTypeId!==null&&match.lobbyTypeId!==undefined&&match.lobbyTypeName)options.set(`lobby:${match.lobbyTypeId}`,match.lobbyTypeName);
@@ -308,16 +298,16 @@ export default function MatchJournal({
     return HEROES.filter((hero)=>ids.has(hero.id));
   },[weekMatches]);
   useEffect(()=>{
-    if(modeFilter!=="all"&&!modeOptions.some((option)=>option.value===modeFilter))setModeFilter("all");
-    if(heroFilter!=="all"&&!heroOptions.some((hero)=>hero.id===heroFilter))setHeroFilter("all");
-  },[heroFilter,heroOptions,modeFilter,modeOptions]);
+    setModeFilters((current)=>current.filter((value)=>modeOptions.some((option)=>option.value===value)));
+    setHeroFilters((current)=>current.filter((id)=>heroOptions.some((hero)=>hero.id===id)));
+  },[heroOptions,modeOptions]);
   const matchesFilter = (match:Match) => {
-    const modeMatches=modeFilter==="all"||(modeFilter.startsWith("mode:")?match.gameModeId===Number(modeFilter.slice(5)):match.lobbyTypeId===Number(modeFilter.slice(6)));
-    return modeMatches&&(positionFilter==="all"||match.role===positionFilter)&&(heroFilter==="all"||match.heroId===heroFilter);
+    const modeMatches=!modeFilters.length||modeFilters.some((filter)=>filter.startsWith("mode:")?match.gameModeId===Number(filter.slice(5)):match.lobbyTypeId===Number(filter.slice(6)));
+    return modeMatches&&(!positionFilters.length||(match.role!==""&&positionFilters.includes(match.role)))&&(!heroFilters.length||(match.heroId!==null&&heroFilters.includes(match.heroId)));
   };
   const filteredWeekMatches=weekMatches.filter(matchesFilter);
   const weekSummary = summarizeMatches(filteredWeekMatches);
-  const filtersActive=modeFilter!=="all"||positionFilter!=="all"||heroFilter!=="all";
+  const filtersActive=modeFilters.length>0||positionFilters.length>0||heroFilters.length>0;
   const reportProfile=filtersActive?{
     ...profile,
     days:Object.fromEntries(Object.entries(profile.days).map(([dateKey,day])=>[dateKey,{...day,matches:day.matches.filter(matchesFilter)}])),
@@ -543,13 +533,7 @@ export default function MatchJournal({
                 </button>
               </div>
             </div>
-            <section className="week-match-filters" aria-label="فیلتر مچ‌های هفته">
-              <header><SlidersHorizontal/><span><strong>فیلتر مچ‌ها</strong><small>{filtersActive?`${faNumber.format(filteredWeekMatches.length)} مچ از ${faNumber.format(weekMatches.length)} مچ این هفته`:"نمایش همه مچ‌های این هفته"}</small></span></header>
-              <label><span>نوع بازی</span><select value={modeFilter} onChange={(event)=>setModeFilter(event.target.value as MatchFilterMode)}><option value="all">همه Game Modeها</option>{modeOptions.map((option)=><option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-              <label><span>Position</span><div className="journal-filter-options"> <button type="button" className={positionFilter==="all"?"is-active":""} onClick={()=>setPositionFilter("all")}>همه</button>{POSITION_FILTERS.map((option)=><button type="button" className={positionFilter===option.value?"is-active":""} onClick={()=>setPositionFilter(option.value)} key={option.value}><img src={`/positions/${option.icon}`} alt=""/><span lang="en">{option.label}</span></button>)}</div></label>
-              <label><span>Hero</span><div className="journal-filter-options is-heroes"><button type="button" className={heroFilter==="all"?"is-active":""} onClick={()=>setHeroFilter("all")}>همه</button>{heroOptions.map((option)=><button type="button" className={heroFilter===option.id?"is-active":""} onClick={()=>setHeroFilter(option.id)} key={option.id}><img src={heroIcon(option)} alt=""/><span lang="en">{option.name}</span></button>)}</div></label>
-              {filtersActive&&<button className="journal-filter-reset" type="button" onClick={()=>{setModeFilter("all");setPositionFilter("all");setHeroFilter("all");}}><X/>حذف فیلترها</button>}
-            </section>
+            <MatchFilters modeOptions={modeOptions} heroOptions={heroOptions} selectedModes={modeFilters} selectedPositions={positionFilters} selectedHeroes={heroFilters} visibleCount={filteredWeekMatches.length} totalCount={weekMatches.length} onModesChange={setModeFilters} onPositionsChange={setPositionFilters} onHeroesChange={setHeroFilters} onReset={()=>{setModeFilters([]);setPositionFilters([]);setHeroFilters([]);}} />
             <div className="week-stats">
               <Stat label="کل بازی‌ها" value={faNumber.format(weekSummary.games)} />
               <Stat label="برد" value={faNumber.format(weekSummary.wins)} tone="win" />
@@ -882,15 +866,6 @@ function MatchCard({ match, onClick }: { match: Match; onClick: () => void }) {
       {match.dotaMatchId && (
         <div className="match-auto-meta">
           <span lang="en" dir="ltr">#{match.dotaMatchId}</span>
-          <span className={`match-image-state is-${match.images?.length ? "ready" : match.imageJobStatus || "pending"}`}>
-            {match.images?.length
-              ? `${faNumber.format(match.images.length)} تصویر`
-              : match.imageJobStatus === "processing"
-                ? "در حال آماده‌سازی"
-                : match.imageJobStatus === "failed"
-                  ? "تصاویر آماده نیست"
-                  : "در حال آماده‌سازی"}
-          </span>
         </div>
       )}
     </button>
