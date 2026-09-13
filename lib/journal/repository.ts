@@ -23,8 +23,11 @@ import {
   matchPicks,
   matchImageJobs,
   matchImages,
+  openDotaParseJobs,
   users,
 } from "@/lib/db/schema";
+import { matchAnalysisStatus } from "@/lib/opendota/analysis-policy";
+import { hasParsedOpenDotaReplay } from "@/lib/opendota/validation";
 import {
   deleteStoredObject,
   isStorageNotFound,
@@ -131,11 +134,17 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
           lobbyTypeId: dotaMatches.lobbyType,
           radiantWin: dotaMatches.radiantWin,
           rawData: dotaMatches.rawData,
+          parseStatus: openDotaParseJobs.status,
+          parseErrorCode: openDotaParseJobs.errorCode,
         })
         .from(journalMatches)
         .leftJoin(
           dotaMatches,
           eq(journalMatches.dotaMatchId, dotaMatches.matchId),
+        )
+        .leftJoin(
+          openDotaParseJobs,
+          eq(journalMatches.id, openDotaParseJobs.matchId),
         )
         .where(inArray(journalMatches.dayId, dayIds))
         .orderBy(asc(journalMatches.number))
@@ -322,6 +331,12 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
                 })),
                 images: imagesByMatch.get(match.id) || [],
                 imageJobStatus: imageJobByMatch.get(match.id) || null,
+                analysisStatus: matchAnalysisStatus({
+                  replayParsed: Boolean(match.rawData && hasParsedOpenDotaReplay(match.rawData as Record<string, unknown>)),
+                  parseStatus: match.parseStatus,
+                  startedAt: match.startedAt,
+                }),
+                analysisErrorCode: match.parseErrorCode,
                 createdAt: match.createdAt.toISOString(),
                 updatedAt: match.updatedAt.toISOString(),
                 },

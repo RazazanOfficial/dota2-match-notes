@@ -1,6 +1,7 @@
-import { and, asc, eq, isNotNull, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gte, isNotNull, lte, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { dotaMatches, journalMatches, openDotaParseJobs, users } from "@/lib/db/schema";
+import { dotaMatches, journalDays, journalMatches, matchImageJobs, openDotaParseJobs, users } from "@/lib/db/schema";
+import { ANALYSIS_TOKEN_COST, matchAnalysisStatus } from "@/lib/opendota/analysis-policy";
 import { hasParsedOpenDotaReplay } from "@/lib/opendota/validation";
 import type { OpenDotaParseConfig } from "./config";
 
@@ -14,16 +15,90 @@ export interface ClaimedOpenDotaParseJob {
   lockedAt: Date;
 }
 
-export async function enqueueOpenDotaParseIfNeeded(matchId: string) {
+export async function getOpenDotaAnalysisState(matchId: string) {
+  const [source] = await getDb().select({
+    startedAt: journalMatches.startedAt,
+    rawData: dotaMatches.rawData,
+    parseStatus: openDotaParseJobs.status,
+    errorCode: openDotaParseJobs.errorCode,
+  })
+    .from(journalMatches)
+    .leftJoin(dotaMatches, eq(journalMatches.dotaMatchId, dotaMatches.matchId))
+    .leftJoin(openDotaParseJobs, eq(journalMatches.id, openDotaParseJobs.matchId))
+    .where(eq(journalMatches.id, matchId))
+    .limit(1);
+  if (!source) return null;
+  const replayParsed = Boolean(source.rawData && hasParsedOpenDotaReplay(source.rawData as Record<string, unknown>));
+  return {
+    status: matchAnalysisStatus({ replayParsed, parseStatus: source.parseStatus, startedAt: source.startedAt }),
+    errorCode: source.errorCode,
+  };
+}
+
+async function queueImagesIfNeeded(matchId: string) {
+  const now = new Date();
+  await getDb().insert(matchImageJobs).values({ matchId, runAfter: now, updatedAt: now }).onConflictDoUpdate({
+    target: matchImageJobs.matchId,
+    set: { status: "pending", attempts: 0, runAfter: now, startedAt: null, lockedAt: null, finishedAt: null, errorCode: null, errorMessage: null, progressStage: "queued", currentImage: 0, completedImages: 0, updatedAt: now },
+    setWhere: eq(matchImageJobs.status, "failed"),
+  });
+}
+
+export async function requestOpenDotaAnalysis(matchId: string, userId?: string) {
   const db = getDb();
-  const [source] = await db.select({ dotaMatchId: journalMatches.dotaMatchId, rawData: dotaMatches.rawData, parseStatus: openDotaParseJobs.status })
+  const [source] = await db.select({
+    userId: journalMatches.userId,
+    dotaMatchId: journalMatches.dotaMatchId,
+    startedAt: journalMatches.startedAt,
+    rawData: dotaMatches.rawData,
+    parseStatus: openDotaParseJobs.status,
+  })
     .from(journalMatches).leftJoin(dotaMatches, eq(journalMatches.dotaMatchId, dotaMatches.matchId)).leftJoin(openDotaParseJobs, eq(journalMatches.id, openDotaParseJobs.matchId))
     .where(eq(journalMatches.id, matchId)).limit(1);
-  if (!source?.dotaMatchId || (source.rawData && hasParsedOpenDotaReplay(source.rawData as Record<string, unknown>))) return "ready" as const;
-  if (source.parseStatus === "failed") return "failed" as const;
+  if (!source?.dotaMatchId || (userId && source.userId !== userId)) return "not_found" as const;
+  const replayParsed = Boolean(source.rawData && hasParsedOpenDotaReplay(source.rawData as Record<string, unknown>));
+  const state = matchAnalysisStatus({ replayParsed, parseStatus: source.parseStatus, startedAt: source.startedAt });
+  if (state === "ready") {
+    await queueImagesIfNeeded(matchId);
+    return "ready" as const;
+  }
+  if (state === "expired") return "expired" as const;
+  if (state === "pending" || state === "processing") return "already_queued" as const;
   const now = new Date();
-  await db.insert(openDotaParseJobs).values({ matchId, dotaMatchId: source.dotaMatchId, runAfter: now, updatedAt: now }).onConflictDoNothing({ target: openDotaParseJobs.matchId });
+  await db.insert(openDotaParseJobs).values({ matchId, dotaMatchId: source.dotaMatchId, runAfter: now, updatedAt: now }).onConflictDoUpdate({
+    target: openDotaParseJobs.matchId,
+    set: { status: "pending", providerJobId: null, attempts: 0, pollAttempts: 0, runAfter: now, lockedAt: null, finishedAt: null, errorCode: null, errorMessage: null, updatedAt: now },
+  });
   return "queued" as const;
+}
+
+export async function requestOpenDotaAnalysisRange(userId: string, from: string, to: string) {
+  const rows = await getDb().select({ id: journalMatches.id, day: journalDays.day })
+    .from(journalMatches)
+    .innerJoin(journalDays, eq(journalMatches.dayId, journalDays.id))
+    .where(and(eq(journalMatches.userId, userId), isNotNull(journalMatches.dotaMatchId), gte(journalDays.day, from), lte(journalDays.day, to)));
+  const summary = {
+    tokenCostPerMatch: ANALYSIS_TOKEN_COST,
+    totalTokenCost: 0,
+    queued: 0,
+    alreadyReady: 0,
+    alreadyQueued: 0,
+    failed: 0,
+    skippedOld: 0,
+    skippedOldDays: [] as string[],
+  };
+  const oldDays = new Set<string>();
+  for (const row of rows) {
+    const result = await requestOpenDotaAnalysis(row.id, userId);
+    if (result === "queued") summary.queued += 1;
+    else if (result === "ready") summary.alreadyReady += 1;
+    else if (result === "already_queued") summary.alreadyQueued += 1;
+    else if (result === "expired") { summary.skippedOld += 1; oldDays.add(row.day); }
+    else summary.failed += 1;
+  }
+  summary.totalTokenCost = summary.queued * ANALYSIS_TOKEN_COST;
+  summary.skippedOldDays = [...oldDays].sort();
+  return summary;
 }
 
 export async function recoverStaleOpenDotaParseJobs(config: OpenDotaParseConfig) {
@@ -57,7 +132,7 @@ export async function claimNextOpenDotaParseJob() {
 }
 
 export async function getOpenDotaParseJobSource(job: ClaimedOpenDotaParseJob) {
-  const [source] = await getDb().select({ userId: journalMatches.userId, journalMatchId: journalMatches.id, dotaMatchId: journalMatches.dotaMatchId, steamAccountId: users.steamAccountId })
+  const [source] = await getDb().select({ userId: journalMatches.userId, journalMatchId: journalMatches.id, dotaMatchId: journalMatches.dotaMatchId, startedAt: journalMatches.startedAt, steamAccountId: users.steamAccountId })
     .from(journalMatches).innerJoin(users, eq(journalMatches.userId, users.id))
     .where(and(eq(journalMatches.id, job.matchId), eq(journalMatches.dotaMatchId, job.dotaMatchId))).limit(1);
   return source || null;

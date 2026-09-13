@@ -12,7 +12,6 @@ import {
   journalMatches,
   matchBans,
   matchImageJobs,
-  openDotaParseJobs,
   stratzEnrichmentJobs,
   users,
 } from "@/lib/db/schema";
@@ -399,16 +398,6 @@ export async function saveDiscoveredOpenDotaMatch(params: {
       .values({ matchId: saved.id, runAfter: now, updatedAt: now })
       .onConflictDoNothing({ target: stratzEnrichmentJobs.matchId });
 
-    if (hasParsedOpenDotaReplay(match)) {
-      await tx.insert(matchImageJobs).values({ matchId: saved.id, runAfter: now, updatedAt: now }).onConflictDoUpdate({
-        target: matchImageJobs.matchId,
-        set: { status: "pending", attempts: 0, runAfter: now, startedAt: null, lockedAt: null, finishedAt: null, errorCode: null, errorMessage: null, progressStage: "queued", currentImage: 0, completedImages: 0, updatedAt: now },
-        setWhere: ne(matchImageJobs.status, "processing"),
-      });
-    } else {
-      await tx.insert(openDotaParseJobs).values({ matchId: saved.id, dotaMatchId: match.match_id, runAfter: now, updatedAt: now }).onConflictDoNothing({ target: openDotaParseJobs.matchId });
-    }
-
     await tx.update(users).set({ updatedAt: now }).where(eq(users.id, userId));
     return {
       created: true as const,
@@ -601,8 +590,6 @@ export async function saveOpenDotaMatch(params: {
           },
           setWhere: ne(matchImageJobs.status, "processing"),
         });
-    } else if (params.queueImages !== false) {
-      await tx.insert(openDotaParseJobs).values({ matchId: saved.id, dotaMatchId: match.match_id, runAfter: now, updatedAt: now }).onConflictDoNothing({ target: openDotaParseJobs.matchId });
     }
 
     await tx

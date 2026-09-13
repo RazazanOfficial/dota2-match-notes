@@ -4,8 +4,13 @@ import { runStratzEnrichmentTick } from "@/lib/stratz/job-service";
 import { enqueueStratzBackfillForUser } from "@/lib/stratz/job-repository";
 import {
   fetchOpenDotaMatch,
+  fetchOpenDotaPlayerMatchesSince,
   fetchOpenDotaRecentMatches,
 } from "./client";
+import { ANALYSIS_TOKEN_COST } from "./analysis-policy";
+import type { ManualMatchSyncInput } from "./sync-request";
+import { requestOpenDotaAnalysisRange } from "@/lib/opendota-parse/repository";
+import { toJournalDateKey } from "@/lib/journal/timezone";
 import { getOpenDotaConfig } from "./config";
 import { OpenDotaError } from "./errors";
 import {
@@ -13,7 +18,6 @@ import {
   selectRecentSyncMatches,
 } from "./recent";
 import {
-  advanceManualOpenDotaSyncCursor,
   claimManualOpenDotaSync,
   claimOpenDotaRequestQuota,
   findKnownOpenDotaMatchIds,
@@ -64,6 +68,7 @@ interface RecentSyncOptions {
   initialMatches?: number;
   throwOnRetryableError?: boolean;
   onExternalRequestClaimed?: () => void;
+  range?: { from: string; to: string };
 }
 
 async function discoverRecentMatches(
@@ -73,10 +78,21 @@ async function discoverRecentMatches(
   const config = getOpenDotaConfig();
   await claimOpenDotaRequestQuota(quotaConfig(config));
   options.onExternalRequestClaimed?.();
-  // OpenDota's recentMatches feed is updated before the general player-history
-  // query for some newly finished matches (including Turbo). Always discover
-  // from the freshest feed, then apply the registration/cursor cutoff locally.
-  const recentMatches = await fetchOpenDotaRecentMatches(user.steamAccountId);
+  // The compact recent feed is best for the scheduled cursor. An explicit
+  // day/week request uses player history so the user can retrieve an older week.
+  const historySince = options.range
+    ? new Date(`${options.range.from}T00:00:00.000Z`)
+    : null;
+  if (historySince) historySince.setUTCDate(historySince.getUTCDate() - 1);
+  const fetchedMatches = options.range
+    ? await fetchOpenDotaPlayerMatchesSince(user.steamAccountId, historySince as Date)
+    : await fetchOpenDotaRecentMatches(user.steamAccountId);
+  const recentMatches = options.range
+    ? fetchedMatches.filter((match) => {
+        const day = toJournalDateKey(new Date(match.start_time * 1_000));
+        return day >= options.range!.from && day <= options.range!.to;
+      })
+    : fetchedMatches;
   const { importedIds, dismissedIds } = await findKnownOpenDotaMatchIds(
     user.id,
     recentMatches.map((match) => match.match_id),
@@ -86,7 +102,12 @@ async function discoverRecentMatches(
     importedIds,
     dismissedIds,
   );
-  const selection = selectRecentSyncMatches(newMatches, options);
+  const selection = selectRecentSyncMatches(
+    newMatches,
+    options.range
+      ? { maxNewMatches: options.maxNewMatches }
+      : options,
+  );
   const imported: Array<{
     journalMatchId: string;
     dotaMatchId: number;
@@ -220,7 +241,23 @@ export async function syncJournalMatchFromOpenDota(
   }
 }
 
-export async function syncRecentMatchesFromOpenDota(user: SessionUser) {
+function emptyAnalysisSummary() {
+  return {
+    tokenCostPerMatch: ANALYSIS_TOKEN_COST,
+    totalTokenCost: 0,
+    queued: 0,
+    alreadyReady: 0,
+    alreadyQueued: 0,
+    failed: 0,
+    skippedOld: 0,
+    skippedOldDays: [] as string[],
+  };
+}
+
+export async function syncRecentMatchesFromOpenDota(
+  user: SessionUser,
+  request: ManualMatchSyncInput,
+) {
   const config = getOpenDotaConfig();
   const stratzConfig = getStratzConfig();
   const claimedAt = await claimManualOpenDotaSync(
@@ -230,23 +267,17 @@ export async function syncRecentMatchesFromOpenDota(user: SessionUser) {
   let externalRequestClaimed = false;
 
   try {
-    const cursor = user.manualSyncCursorAt || user.createdAt;
-    const fetchSince = new Date(
-      Math.max(
-        user.createdAt.getTime(),
-        cursor.getTime() - config.manualSyncLookbackSeconds * 1_000,
-      ),
-    );
+    const fetchSince = new Date(`${request.from}T00:00:00.000Z`);
     const sync = await discoverRecentMatches(user, {
       maxNewMatches: config.maxNewMatchesPerSync,
-      since: fetchSince,
+      range: { from: request.from, to: request.to },
       onExternalRequestClaimed: () => {
         externalRequestClaimed = true;
       },
     });
-    if (!sync.deferred && !sync.failed.length) {
-      await advanceManualOpenDotaSyncCursor(user.id, claimedAt);
-    }
+    const analysis = request.mode === "analysis"
+      ? await requestOpenDotaAnalysisRange(user.id, request.from, request.to)
+      : emptyAnalysisSummary();
     const backfillQueued = stratzConfig.backfillOnManualSync
       ? await enqueueStratzBackfillForUser(user.id)
       : 0;
@@ -265,6 +296,8 @@ export async function syncRecentMatchesFromOpenDota(user: SessionUser) {
       },
       registeredAt: user.createdAt.toISOString(),
       trackedFrom: fetchSince.toISOString(),
+      request,
+      analysis,
       nextAllowedAt: new Date(
         claimedAt.getTime() + config.manualSyncCooldownSeconds * 1_000,
       ).toISOString(),
