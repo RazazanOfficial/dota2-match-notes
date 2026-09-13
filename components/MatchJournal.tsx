@@ -8,6 +8,9 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleX,
+  CircleGauge,
+  ClockAlert,
+  Database,
   Copy,
   LogOut,
   Menu,
@@ -490,12 +493,13 @@ export default function MatchJournal({
         <main>
           {canEdit && (
             <SyncPanel
+              rangeFrom={rangeFrom}
+              rangeTo={rangeTo}
               onMatchesImported={(result) => {
                 const enriched = result.stratz?.jobs.some(
                   (job) => job.status === "completed",
                 );
                 if (result.imported.length || enriched) {
-                  setActiveWeek(getCurrentWeekIndex(anchorDate));
                   setRefreshVersion((version) => version + 1);
                 }
               }}
@@ -832,8 +836,18 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: str
 
 function MatchCard({ match, onClick }: { match: Match; onClick: () => void }) {
   const hero = match.heroId ? heroById(match.heroId) : null;
+  const analysisStatus=match.analysisStatus||"basic";
+  const analysisBadge=analysisStatus==="ready"
+    ? {label:"تحلیل آماده",icon:<Check/>}
+    : analysisStatus==="pending"||analysisStatus==="processing"
+      ? {label:analysisStatus==="processing"?"در حال تحلیل":"در صف تحلیل",icon:<CircleGauge/>}
+      : analysisStatus==="failed"
+        ? {label:"تحلیل ناموفق",icon:<ClockAlert/>}
+        : analysisStatus==="expired"
+          ? {label:"Replay قدیمی",icon:<ClockAlert/>}
+          : {label:"داده پایه",icon:<Database/>};
   return (
-    <button className={`match-card is-${match.result}`} type="button" onClick={onClick}>
+    <button className={`match-card is-${match.result} analysis-${analysisStatus}`} type="button" onClick={onClick}>
       <div className="match-topline">
         <span className="match-number">بازی {faNumber.format(match.number)}</span>
         <span className={`result-badge is-${match.result}`}>
@@ -866,6 +880,7 @@ function MatchCard({ match, onClick }: { match: Match; onClick: () => void }) {
       {match.dotaMatchId && (
         <div className="match-auto-meta">
           <span lang="en" dir="ltr">#{match.dotaMatchId}</span>
+          <span className="match-analysis-badge">{analysisBadge.icon}{analysisBadge.label}</span>
         </div>
       )}
     </button>

@@ -10,6 +10,16 @@ export type MatchRole =
   | "hard_support";
 export type QueueType = "role_selected" | "earn_role_queue";
 export type ImageJobStatus = "pending" | "processing" | "completed" | "failed";
+export type MatchAnalysisStatus = "basic" | "pending" | "processing" | "ready" | "failed" | "expired";
+export type MatchSyncScope = "day" | "week";
+export type MatchSyncMode = "basic" | "analysis";
+
+export interface MatchSyncRequest {
+  scope: MatchSyncScope;
+  from: string;
+  to: string;
+  mode: MatchSyncMode;
+}
 
 export interface MatchImage {
   id: string;
@@ -245,6 +255,8 @@ export interface Match {
   participants?: MatchParticipant[];
   images?: MatchImage[];
   imageJobStatus?: ImageJobStatus | null;
+  analysisStatus?: MatchAnalysisStatus;
+  analysisErrorCode?: string | null;
   analysis?: MatchAnalysis;
 }
 
@@ -342,6 +354,17 @@ export interface ManualSyncResult {
   registeredAt: string;
   trackedFrom: string;
   nextAllowedAt: string;
+  request: MatchSyncRequest;
+  analysis: {
+    tokenCostPerMatch: number;
+    totalTokenCost: number;
+    queued: number;
+    alreadyReady: number;
+    alreadyQueued: number;
+    failed: number;
+    skippedOld: number;
+    skippedOldDays: string[];
+  };
   stratz?: {
     backfillEnabled: boolean;
     backfillQueued: number;

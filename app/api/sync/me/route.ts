@@ -3,6 +3,7 @@ import { getRequestUser, hasValidRequestOrigin } from "@/lib/auth/request";
 import { OpenDotaError, openDotaErrorResponse } from "@/lib/opendota/errors";
 import { syncRecentMatchesFromOpenDota } from "@/lib/opendota/service";
 import { getOpenDotaConfig } from "@/lib/opendota/config";
+import { manualMatchSyncInputSchema } from "@/lib/opendota/sync-request";
 import {
   getPlayerSyncSnapshot,
   serializePlayerSyncSnapshot,
@@ -52,7 +53,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const sync = await syncRecentMatchesFromOpenDota(user);
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      throw new OpenDotaError(400, "invalid_json", "بدنه درخواست JSON معتبر نیست");
+    }
+    const parsed = manualMatchSyncInputSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      throw new OpenDotaError(
+        400,
+        "invalid_sync_range",
+        parsed.error.issues[0]?.message || "بازه دریافت مچ معتبر نیست",
+      );
+    }
+
+    const sync = await syncRecentMatchesFromOpenDota(user, parsed.data);
     return Response.json(
       { ok: true, sync },
       { headers: { "Cache-Control": "no-store" } },

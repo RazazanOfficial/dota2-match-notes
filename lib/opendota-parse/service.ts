@@ -3,6 +3,7 @@ import { getOpenDotaConfig } from "@/lib/opendota/config";
 import { OpenDotaError } from "@/lib/opendota/errors";
 import { claimOpenDotaRequestQuota, saveOpenDotaMatch } from "@/lib/opendota/repository";
 import { hasParsedOpenDotaReplay } from "@/lib/opendota/validation";
+import { canRequestReplayAnalysis } from "@/lib/opendota/analysis-policy";
 import { getOpenDotaParseConfig } from "./config";
 import { claimNextOpenDotaParseJob, completeOpenDotaParseJob, failOrRetryOpenDotaParseJob, getOpenDotaParseJobSource, markOpenDotaParseRequested, recoverStaleOpenDotaParseJobs, rescheduleOpenDotaParsePoll } from "./repository";
 
@@ -24,6 +25,7 @@ export async function runOpenDotaParseTick() {
       const source = await getOpenDotaParseJobSource(job);
       if (!source?.dotaMatchId || !source.steamAccountId) throw new OpenDotaError(422, "opendota_parse_source_not_found", "مچ یا بازیکن مربوط به Parse پیدا نشد");
       if (!job.providerJobId) {
+        if (!canRequestReplayAnalysis(source.startedAt)) throw new OpenDotaError(410, "opendota_replay_too_old", "Replay این مچ برای درخواست جدید بیش از حد قدیمی است");
         await quota(10);
         submissionAttempted = true;
         const requested = await requestOpenDotaParse(source.dotaMatchId);

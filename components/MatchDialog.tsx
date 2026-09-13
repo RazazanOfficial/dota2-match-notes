@@ -179,7 +179,7 @@ export default function MatchDialog({
               : <LegacyMatchOverview match={draft} hero={hero} />}
           </div>
           <div className={`match-tab-panel${activeTab === "performance" ? " is-active" : ""}`} data-match-tab="performance">
-          <MatchAnalysisPanel match={draft} active={activeTab === "performance"} />
+          <MatchAnalysisPanel match={draft} active={activeTab === "performance"} canRequestAnalysis={false} />
           </div>
           <div className={`match-tab-panel${activeTab === "journal" ? " is-active" : ""}`} data-match-tab="journal">
             <div className="detail-section">
@@ -272,7 +272,7 @@ export default function MatchDialog({
         </div>
 
         <div className={`match-tab-panel${activeTab === "performance" ? " is-active" : ""}`} data-match-tab="performance">
-          <MatchAnalysisPanel match={draft} active={activeTab === "performance"} onPositionOverrides={(updates) => setDraft((current) => ({ ...current, positionOverrides: { ...(current.positionOverrides || {}), ...updates } }))} />
+          <MatchAnalysisPanel match={draft} active={activeTab === "performance"} canRequestAnalysis onPositionOverrides={(updates) => setDraft((current) => ({ ...current, positionOverrides: { ...(current.positionOverrides || {}), ...updates } }))} />
         </div>
 
         <div className={`match-tab-panel${activeTab === "journal" ? " is-active" : ""}`} data-match-tab="journal">
@@ -619,8 +619,9 @@ function GeneratedImages({ match }: { match: Match }) {
   return (
     <section className="generated-images" aria-label="تصاویر گزارش مچ">
       <header><span>تصاویر گزارش</span><strong>{images.length.toLocaleString("fa-IR")} از ۳ تصویر آماده</strong></header>
-      {!done && <PreparationSteps preparation={preparation} fallbackStatus={match.imageJobStatus} />}
+      {!done && preparation?.status !== "idle" && <PreparationSteps preparation={preparation} fallbackStatus={match.imageJobStatus} />}
       {images.length > 0 ? <GeneratedImageGallery images={images} matchId={match.dotaMatchId} /> : <div className="generated-images-waiting"><span className="image-build-icon"><ImageIcon aria-hidden="true" /></span><p>تصویر آماده‌ای برای نمایش وجود ندارد؛ وضعیت صف همین‌جا به‌روز می‌شود.</p></div>}
+      {!done && preparation?.status === "idle" && <p className="generated-images-analysis-note">برای ساخت تصاویر، ابتدا تحلیل Replay را از تب Performance درخواست کنید.</p>}
     </section>
   );
 }

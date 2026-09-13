@@ -363,6 +363,14 @@ export function sanitizeMatch(raw: Record<string, unknown>, fallback = 1): Match
     )
       ? (raw.imageJobStatus as Match["imageJobStatus"])
       : null,
+    analysisStatus: ["basic", "pending", "processing", "ready", "failed", "expired"].includes(
+      String(raw.analysisStatus),
+    )
+      ? (raw.analysisStatus as Match["analysisStatus"])
+      : "basic",
+    analysisErrorCode: typeof raw.analysisErrorCode === "string"
+      ? raw.analysisErrorCode.slice(0, 64)
+      : null,
   };
 }
 

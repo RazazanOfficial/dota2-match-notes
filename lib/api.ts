@@ -5,6 +5,7 @@ import type {
   Day,
   HeroPoolData,
   ManualSyncResult,
+  MatchSyncRequest,
   PlayerSearchResult,
   PlayerSyncStatus,
   Profile,
@@ -169,10 +170,10 @@ export async function getPlayerSyncStatus() {
   return response.status;
 }
 
-export async function syncPlayerMatches() {
+export async function syncPlayerMatches(input: MatchSyncRequest) {
   const response = await requestJson<{ ok: boolean; sync: ManualSyncResult }>(
     "/api/sync/me",
-    { method: "POST" },
+    { method: "POST", body: JSON.stringify(input) },
   );
   return response.sync;
 }

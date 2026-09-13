@@ -5,6 +5,7 @@ import { Activity, AlertTriangle, ArrowDown, ArrowRightLeft, ArrowUp, BarChart3,
 import { heroById, heroIcon, heroImage } from "@/data/heroes";
 import { calculatePerformanceDomains, calculatePerformanceScore, performanceTone } from "@/lib/dota/performance-score";
 import { applyAnalysisPositionOverrides, buildPositionSwapUpdates } from "@/lib/dota/analysis-position-overrides";
+import { replayAgeState } from "@/lib/opendota/analysis-policy";
 import type { DotaTeam, Match, MatchAnalysis, MatchBenchmarkMetric, MatchMinuteSnapshot, MatchPlayerAnalysis, PerformanceTone } from "@/lib/types";
 import AppLogo from "./AppLogo";
 import MatchMapEngine from "./MatchMapEngine";
@@ -12,7 +13,7 @@ import MatchMapEngine from "./MatchMapEngine";
 type View = "summary" | "timeline" | "map" | "players";
 type TimelineMetric = "gold" | "xp" | "lastHits";
 type TimelineScope = "solo" | "role" | "all";
-type RequestState = "idle" | "loading" | "preparing" | "ready" | "empty" | "error";
+type RequestState = "idle" | "loading" | "needs_request" | "preparing" | "expired" | "ready" | "empty" | "error";
 type Trend = "positive" | "steady" | "negative";
 type PendingPositionChange = { updates: Record<string, number>; players: MatchPlayerAnalysis[] };
 
@@ -44,7 +45,7 @@ const TIMELINE: Record<TimelineMetric, { label: string; description: string; cla
   lastHits: { label: "Last Hits", description: "روند Last Hit بازیکن", className: "is-last-hits" },
 };
 
-export default function MatchAnalysisPanel({ match, active, onPositionOverrides }: { match: Match; active: boolean; onPositionOverrides?: (updates:Record<string,number>) => void }) {
+export default function MatchAnalysisPanel({ match, active, canRequestAnalysis = false, onPositionOverrides }: { match: Match; active: boolean; canRequestAnalysis?: boolean; onPositionOverrides?: (updates:Record<string,number>) => void }) {
   const cacheKey=analysisKey(match);
   const cached=analysisCache.get(cacheKey)??match.analysis??null;
   const [analysis, setAnalysis] = useState<MatchAnalysis | null>(cached);
@@ -55,6 +56,7 @@ export default function MatchAnalysisPanel({ match, active, onPositionOverrides 
   const [minute, setMinute] = useState(match.analysis?.durationMinutes || 0);
   const [retryToken, setRetryToken] = useState(0);
   const [pendingPositionChange, setPendingPositionChange] = useState<PendingPositionChange | null>(null);
+  const [analysisConfirmation, setAnalysisConfirmation] = useState(false);
   const currentMatchId = useRef(cacheKey);
 
   useEffect(() => {
@@ -70,13 +72,15 @@ export default function MatchAnalysisPanel({ match, active, onPositionOverrides 
     setRequestState("loading"); setError("");
     void fetch(`/api/matches/${match.id}/analysis`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
-        const body = await response.json().catch(() => null) as { analysis?: MatchAnalysis | null; preparation?: { replay?: string }; error?: { message?: string } } | null;
+        const body = await response.json().catch(() => null) as { analysis?: MatchAnalysis | null; preparation?: { replay?: string; errorCode?: string | null }; error?: { message?: string } } | null;
         if (!response.ok) throw new Error(body?.error?.message || "تحلیل مچ آماده نشد");
-        return { analysis: body?.analysis || null, preparing: body?.preparation?.replay === "queued" };
+        return { analysis: body?.analysis || null, replay: body?.preparation?.replay || "ready" };
       })
-      .then(({ analysis: value, preparing }) => {
+      .then(({ analysis: value, replay }) => {
         if (controller.signal.aborted || currentMatchId.current !== requestedMatchId) return;
-        if (preparing) { setRequestState("preparing"); return; }
+        if (replay === "pending" || replay === "processing" || replay === "queued") { setRequestState("preparing"); return; }
+        if (replay === "expired") { setRequestState("expired"); return; }
+        if (replay === "basic" || replay === "failed") { setRequestState("needs_request"); return; }
         analysisCache.set(requestedMatchId,value);
         setAnalysis(value); setSlot(initialSlot(value)); setMinute(value?.durationMinutes || 0); setRequestState(value ? "ready" : "empty");
       })
@@ -133,10 +137,22 @@ export default function MatchAnalysisPanel({ match, active, onPositionOverrides 
     setPendingPositionChange({ updates, players: changed });
   };
   const retry = () => { setAnalysis(null); setRequestState("idle"); setError(""); setRetryToken((current) => current + 1); };
+  const requestAnalysis = async () => {
+    setAnalysisConfirmation(false); setRequestState("loading"); setError("");
+    try {
+      const response=await fetch(`/api/matches/${match.id}/analysis`,{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
+      const body=await response.json().catch(()=>null) as {preparation?:{replay?:string};error?:{message?:string}}|null;
+      if(!response.ok)throw new Error(body?.error?.message||"درخواست تحلیل ثبت نشد");
+      if(body?.preparation?.replay==="ready")retry();
+      else setRequestState("preparing");
+    }catch(reason){setError(reason instanceof Error?reason.message:"درخواست تحلیل ثبت نشد");setRequestState("error");}
+  };
   if (!match.dotaMatchId) return null;
   if (requestState === "loading" || requestState === "preparing") return <section className="analysis-loading"><AppLogo size={48} alt="" /><div><strong>{requestState === "preparing" ? "Replay در حال تکمیل است" : "در حال آماده‌سازی Match Analysis"}</strong><p>{requestState === "preparing" ? "پس از پایان Parse، تحلیل کامل به‌صورت خودکار نمایش داده می‌شود." : "Benchmark و Timeline هر ۱۰ بازیکن در حال پردازش است."}</p></div></section>;
-  if (requestState === "error") return <Empty icon={<AlertTriangle />} title="تحلیل مچ آماده نشد" text={error} actionLabel="تلاش دوباره" onAction={retry} />;
-  if (active && !analysis) return <Empty icon={<CircleGauge />} title="داده کافی برای تحلیل نیست" text="پس از آماده‌شدن Replay، تحلیل کامل این مچ نمایش داده می‌شود." actionLabel="بررسی دوباره" onAction={retry} />;
+  if (requestState === "error") return <Empty icon={<AlertTriangle />} title="تحلیل مچ آماده نشد" text={error} actionLabel="بررسی دوباره" onAction={retry} />;
+  if (requestState === "expired") return <Empty icon={<AlertTriangle />} title="Replay این مچ قدیمی است" text="بیش از ۲۰ روز از این بازی گذشته و دیتای کامل در سرورهای valve احتمالا دیگر موجود نیست." />;
+  if (requestState === "needs_request") return <><Empty icon={<CircleGauge />} title="تحلیل Replay هنوز درخواست نشده" text={canRequestAnalysis ? "داده پایه مچ آماده است. Parse فقط با تأیید شما وارد صف می‌شود." : "صاحب دفتر هنوز تحلیل Replay این مچ را درخواست نکرده است."} actionLabel={canRequestAnalysis ? "درخواست تحلیل · 10 Token" : undefined} onAction={canRequestAnalysis ? ()=>setAnalysisConfirmation(true) : undefined} />{analysisConfirmation&&<AnalysisRequestDialog match={match} aging={replayAgeState(match.startedAt)==="warning"} cancel={()=>setAnalysisConfirmation(false)} confirm={requestAnalysis}/>}</>;
+  if (active && !analysis) return <Empty icon={<CircleGauge />} title="داده کافی برای تحلیل نیست" text="Replay آماده است، اما داده کافی برای ساخت این تحلیل وجود ندارد." actionLabel="بررسی دوباره" onAction={retry} />;
   if (!analysis || !player) return null;
 
   return <section className="match-analysis">
@@ -150,6 +166,8 @@ export default function MatchAnalysisPanel({ match, active, onPositionOverrides 
     {pendingPositionChange && <PositionChangeDialog change={pendingPositionChange} onCancel={() => setPendingPositionChange(null)} onConfirm={() => applyPositions(pendingPositionChange.updates)} />}
   </section>;
 }
+
+function AnalysisRequestDialog({match,aging,cancel,confirm}:{match:Match;aging:boolean;cancel:()=>void;confirm:()=>void}){return <div className="analysis-request-backdrop" role="presentation" onMouseDown={cancel}><section className="analysis-request-dialog" role="alertdialog" aria-modal="true" aria-labelledby="analysis-request-title" onMouseDown={(event)=>event.stopPropagation()}><header><CircleGauge/><div><small>REPLAY ANALYSIS</small><strong id="analysis-request-title">درخواست تحلیل این مچ</strong></div><button type="button" onClick={cancel} aria-label="بستن"><X/></button></header><p>برای آماده‌کردن Timeline، Benchmark و تحلیل ۱۰ بازیکن، Replay مچ <b lang="en" dir="ltr">#{match.dotaMatchId}</b> وارد صف بررسی می‌شود.</p>{aging&&<p className="is-warning"><AlertTriangle/>بیش از ۱۰ روز از مچ گذشته و ممکن است Replay دیگر در دسترس نباشد.</p>}<div><span>هزینه نمایشی</span><strong className="latin-numerals" lang="en" dir="ltr">10 Token</strong></div><footer><button className="secondary-button" type="button" onClick={cancel}>انصراف</button><button className="primary-button" type="button" onClick={confirm}>تأیید و ارسال به صف</button></footer></section></div>}
 
 function initialSlot(analysis: MatchAnalysis | null | undefined) { return analysis?.players.find((entry) => entry.isProfilePlayer)?.playerSlot ?? analysis?.players[0]?.playerSlot ?? null; }
 function Empty({ icon, title, text, actionLabel, onAction }: { icon: ReactNode; title: string; text: string; actionLabel?: string; onAction?: () => void }) { return <section className="analysis-state"><span>{icon}</span><div><strong>{title}</strong><p>{text}</p></div>{actionLabel && onAction && <button type="button" onClick={onAction}><RefreshCw />{actionLabel}</button>}</section>; }

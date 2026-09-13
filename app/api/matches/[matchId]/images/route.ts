@@ -3,7 +3,6 @@ import { MediaError, mediaErrorResponse } from "@/lib/media/errors";
 import { getPublicMatchImages } from "@/lib/media/service";
 import { parseUuid } from "@/lib/media/validation";
 import { getMatchPreparationProgress } from "@/lib/match-preparation/repository";
-import { enqueueOpenDotaParseIfNeeded } from "@/lib/opendota-parse/repository";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,7 +18,6 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       throw new MediaError(400, "invalid_match_id", "شناسه مچ نامعتبر است");
     }
 
-    await enqueueOpenDotaParseIfNeeded(matchId.data);
     const [images, preparation] = await Promise.all([
       getPublicMatchImages(matchId.data),
       getMatchPreparationProgress(matchId.data),
