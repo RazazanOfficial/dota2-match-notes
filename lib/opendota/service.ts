@@ -9,6 +9,7 @@ import {
 } from "./client";
 import { ANALYSIS_TOKEN_COST } from "./analysis-policy";
 import type { ManualMatchSyncInput } from "./sync-request";
+import { saturdayWeekStart } from "./sync-request";
 import { requestOpenDotaAnalysisRange } from "@/lib/opendota-parse/repository";
 import { toJournalDateKey } from "@/lib/journal/timezone";
 import { getOpenDotaConfig } from "./config";
@@ -22,6 +23,7 @@ import {
   claimOpenDotaRequestQuota,
   findKnownOpenDotaMatchIds,
   findOpenDotaSyncTarget,
+  markJournalRangeCompleted,
   releaseManualOpenDotaSyncClaim,
   saveDiscoveredOpenDotaMatch,
   saveOpenDotaMatch,
@@ -260,6 +262,14 @@ export async function syncRecentMatchesFromOpenDota(
 ) {
   const config = getOpenDotaConfig();
   const stratzConfig = getStratzConfig();
+  const trackedFrom = saturdayWeekStart(toJournalDateKey(user.createdAt));
+  if (request.from < trackedFrom) {
+    throw new OpenDotaError(
+      400,
+      "before_tracking_window",
+      "دریافت مچ فقط از ابتدای هفته ثبت‌نام امکان‌پذیر است",
+    );
+  }
   const claimedAt = await claimManualOpenDotaSync(
     user.id,
     config.manualSyncCooldownSeconds,
@@ -267,7 +277,6 @@ export async function syncRecentMatchesFromOpenDota(
   let externalRequestClaimed = false;
 
   try {
-    const fetchSince = new Date(`${request.from}T00:00:00.000Z`);
     const sync = await discoverRecentMatches(user, {
       maxNewMatches: config.maxNewMatchesPerSync,
       range: { from: request.from, to: request.to },
@@ -275,6 +284,9 @@ export async function syncRecentMatchesFromOpenDota(
         externalRequestClaimed = true;
       },
     });
+    if (!sync.failed.length && sync.deferred === 0) {
+      await markJournalRangeCompleted(user.id, request.from, request.to);
+    }
     const analysis = request.mode === "analysis"
       ? await requestOpenDotaAnalysisRange(user.id, request.from, request.to)
       : emptyAnalysisSummary();
@@ -295,7 +307,7 @@ export async function syncRecentMatchesFromOpenDota(
         ...stratz,
       },
       registeredAt: user.createdAt.toISOString(),
-      trackedFrom: fetchSince.toISOString(),
+      trackedFrom: `${trackedFrom}T00:00:00.000Z`,
       request,
       analysis,
       nextAllowedAt: new Date(

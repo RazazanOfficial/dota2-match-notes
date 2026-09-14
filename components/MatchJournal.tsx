@@ -6,7 +6,6 @@ import {
   Check,
   ChevronDown,
   ChevronLeft,
-  ChevronRight,
   CircleX,
   CircleGauge,
   ClockAlert,
@@ -14,14 +13,12 @@ import {
   Copy,
   LogOut,
   Menu,
-  Plus,
   RotateCcw,
   Search,
   Settings,
   Share2,
   Shield,
   UserRound,
-  X,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { HEROES, heroById, heroImage } from "@/data/heroes";
@@ -52,6 +49,7 @@ import {
   normalizePublicPlayerIdentifier,
   summarizeMatches,
   toDateKey,
+  toJournalDateKey,
 } from "@/lib/date";
 import type { Day, HeroPoolData, Match, MatchRole, Profile, Session } from "@/lib/types";
 import MatchDialog from "./MatchDialog";
@@ -68,6 +66,13 @@ import MatchFilters, { type JournalModeFilter } from "./MatchFilters";
 
 type AccessView = "roles" | "coach";
 const EMPTY_PROFILE: Profile = { username: "", days: {} };
+const ROLE_ICONS: Partial<Record<MatchRole, string>> = {
+  safe_lane: "Safelane.png",
+  mid_lane: "MidLane.png",
+  off_lane: "OffLane.png",
+  soft_support: "SoftSupport.png",
+  hard_support: "HardSupport.png",
+};
 
 function sessionMatchesIdentifier(session: Session, identifier: string) {
   const normalized = identifier.normalize("NFKC").trim().toLowerCase();
@@ -131,14 +136,15 @@ export default function MatchJournal({
     ? profile.registeredDate || profile.createdAt
     : session?.registeredDate || profile.registeredDate || session?.createdAt || profile.createdAt;
   const anchorDate = useMemo(
-    () => getWeekAnchorDate(membershipDate || toDateKey(new Date())),
+    () => getWeekAnchorDate(membershipDate || toJournalDateKey(new Date())),
     [membershipDate],
   );
-  const registrationDate = membershipDate?.slice(0, 10) || toDateKey(new Date());
+  const trackingStartDate = anchorDate;
   const canEdit = session?.mode === "player" && !viewingHandle;
   const dates = useMemo(() => getWeekDates(anchorDate, activeWeek), [activeWeek, anchorDate]);
   const rangeFrom = toDateKey(dates[0]);
   const rangeTo = toDateKey(dates[dates.length - 1]);
+  const currentWeekIndex = getCurrentWeekIndex(anchorDate);
 
   useEffect(() => {
     let cancelled = false;
@@ -172,8 +178,8 @@ export default function MatchJournal({
   }, [initialIdentifier]);
 
   useEffect(() => {
-    setActiveWeek(getCurrentWeekIndex(anchorDate));
-  }, [anchorDate, session?.username, viewingHandle]);
+    setActiveWeek(currentWeekIndex);
+  }, [anchorDate, currentWeekIndex, session?.username, viewingHandle]);
 
   useEffect(() => {
     if (!accountMenuOpen) return;
@@ -354,7 +360,6 @@ export default function MatchJournal({
       const index = day.matches.findIndex((item) => item.id === match.id);
       if (index >= 0) day.matches[index] = match;
       else day.matches.push(match);
-      day.completed = false;
       return day;
     });
     setBusy(false);
@@ -369,27 +374,12 @@ export default function MatchJournal({
     setBusy(true);
     const saved = await mutateDay(editing.dateKey, (day) => ({
       ...day,
-      completed: false,
       matches: day.matches.filter((match) => match.id !== matchId),
     }));
     setBusy(false);
     if (saved) {
       setEditing(null);
       showToast("بازی حذف شد");
-    }
-  }
-
-  async function toggleDay(dateKey: string) {
-    const day = profile.days[dateKey] || { completed: false, matches: [] };
-    if (!day.matches.length && !day.completed) {
-      toast.info("بازی‌ای برای این روز ثبت نشده");
-      return;
-    }
-    const completed = !day.completed;
-    const saved = await mutateDay(dateKey, (current) => ({ ...current, completed }));
-    if (saved && completed) {
-      const summary = summarizeMatches(day.matches);
-      showToast(`${faNumber.format(summary.wins)} برد و ${faNumber.format(summary.losses)} باخت`);
     }
   }
 
@@ -493,58 +483,40 @@ export default function MatchJournal({
         <main>
           {canEdit && (
             <SyncPanel
-              registrationDate={registrationDate}
-              onMatchesImported={(result) => {
-                const enriched = result.stratz?.jobs.some(
-                  (job) => job.status === "completed",
-                );
-                if (result.imported.length || enriched) {
-                  setRefreshVersion((version) => version + 1);
-                }
-              }}
+              registrationDate={trackingStartDate}
+              weekLabel={getWeekLabel(activeWeek)}
+              weekRangeLabel={formatWeekRange(dates)}
+              canGoPreviousWeek={activeWeek > 0}
+              canGoNextWeek={activeWeek < currentWeekIndex}
+              onPreviousWeek={() => setActiveWeek((week) => Math.max(0, week - 1))}
+              onCurrentWeek={() => setActiveWeek(currentWeekIndex)}
+              onNextWeek={() => setActiveWeek((week) => Math.min(currentWeekIndex, week + 1))}
+              onReport={() => setReportOpen(true)}
+              onMatchesImported={() => setRefreshVersion((version) => version + 1)}
             />
           )}
           <section className="week-overview">
-            <div className="week-heading">
-              <div>
-                <p className="week-kicker"><span aria-hidden="true" />{getWeekLabel(activeWeek)}</p>
-                <h2>{formatWeekRange(dates)}</h2>
-                <p className="week-subtitle">هر مچ را ببین، الگوی بازیت را پیدا کن</p>
+            {!canEdit && (
+              <div className="week-heading is-readonly">
+                <div>
+                  <p className="week-kicker"><span aria-hidden="true" />{getWeekLabel(activeWeek)}</p>
+                  <h2>{formatWeekRange(dates)}</h2>
+                </div>
+                <div className="week-navigation" aria-label="پیمایش هفته‌ها">
+                  <button className="nav-button" type="button" disabled={activeWeek <= 0} onClick={() => setActiveWeek((week) => Math.max(0, week - 1))}>هفته قبل</button>
+                  <button className="today-button" type="button" onClick={() => setActiveWeek(currentWeekIndex)}>هفته جاری</button>
+                  <button className="nav-button" type="button" disabled={activeWeek >= currentWeekIndex} onClick={() => setActiveWeek((week) => Math.min(currentWeekIndex, week + 1))}>هفته بعد</button>
+                </div>
               </div>
-              <div className="week-navigation" aria-label="پیمایش هفته‌ها">
-                <button
-                  className="nav-button"
-                  type="button"
-                  disabled={activeWeek === 0}
-                  onClick={() => setActiveWeek((week) => Math.max(0, week - 1))}
-                >
-                  <ChevronRight aria-hidden="true" /> هفته قبل
-                </button>
-                <button
-                  className="today-button"
-                  type="button"
-                  onClick={() => setActiveWeek(getCurrentWeekIndex(anchorDate))}
-                >
-                  هفته جاری
-                </button>
-                <button
-                  className="nav-button"
-                  type="button"
-                  onClick={() => setActiveWeek((week) => week + 1)}
-                >
-                  هفته بعد <ChevronLeft aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-            <MatchFilters modeOptions={modeOptions} heroOptions={heroOptions} selectedModes={modeFilters} selectedPositions={positionFilters} selectedHeroes={heroFilters} visibleCount={filteredWeekMatches.length} totalCount={weekMatches.length} onModesChange={setModeFilters} onPositionsChange={setPositionFilters} onHeroesChange={setHeroFilters} onReset={()=>{setModeFilters([]);setPositionFilters([]);setHeroFilters([]);}} />
+            )}
             <div className="week-stats">
-              <Stat label="کل بازی‌ها" value={faNumber.format(weekSummary.games)} />
-              <Stat label="برد" value={faNumber.format(weekSummary.wins)} tone="win" />
-              <Stat label="باخت" value={faNumber.format(weekSummary.losses)} tone="loss" />
-              <Stat label="نرخ برد" value={faPercent.format(weekSummary.winRate)} />
-              <button className="report-button" type="button" onClick={() => setReportOpen(true)}>
-                <GameIcon name="report" /> گزارش هفته
-              </button>
+              <div className="week-cards">
+                <Stat label="کل بازی‌ها" value={faNumber.format(weekSummary.games)} />
+                <Stat label="برد" value={faNumber.format(weekSummary.wins)} tone="win" />
+                <Stat label="باخت" value={faNumber.format(weekSummary.losses)} tone="loss" />
+                <Stat label="نرخ برد" value={faPercent.format(weekSummary.winRate)} />
+              </div>
+              <MatchFilters modeOptions={modeOptions} heroOptions={heroOptions} selectedModes={modeFilters} selectedPositions={positionFilters} selectedHeroes={heroFilters} visibleCount={filteredWeekMatches.length} totalCount={weekMatches.length} onModesChange={setModeFilters} onPositionsChange={setPositionFilters} onHeroesChange={setHeroFilters} onReset={()=>{setModeFilters([]);setPositionFilters([]);setHeroFilters([]);}} />
             </div>
           </section>
 
@@ -554,8 +526,8 @@ export default function MatchJournal({
               const day = profile.days[dateKey] || { completed: false, matches: [] };
               const visibleMatches=day.matches.filter(matchesFilter);
               const summary = summarizeMatches(visibleMatches);
-              const today = toDateKey(new Date()) === dateKey;
-              const disabled = activeWeek === 0 && dateKey < registrationDate;
+              const today = toJournalDateKey(new Date()) === dateKey;
+              const disabled = dateKey < trackingStartDate;
               return (
                 <article
                   className={`day-card${today ? " is-today" : ""}${day.completed ? " is-complete" : ""}${disabled ? " is-disabled" : ""}`}
@@ -570,16 +542,6 @@ export default function MatchJournal({
                       </p>
                       <h3 className="day-date">{formatDayDate(date)}</h3>
                     </div>
-                    {canEdit && !disabled && (
-                      <button
-                        className="add-match-button"
-                        type="button"
-                        aria-label="افزودن بازی"
-                        onClick={() => setEditing({ dateKey, matchId: null })}
-                      >
-                        <Plus aria-hidden="true" />
-                      </button>
-                    )}
                   </header>
                   <div className="matches">
                     {visibleMatches.length ? (
@@ -600,15 +562,9 @@ export default function MatchJournal({
                   <footer className="day-summary">
                     <div className="day-stat"><span>برد</span><strong>{faNumber.format(summary.wins)}</strong></div>
                     <div className="day-stat"><span>باخت</span><strong>{faNumber.format(summary.losses)}</strong></div>
-                    {canEdit && !disabled ? (
-                      <button className="day-complete-button" type="button" onClick={() => toggleDay(dateKey)}>
-                        {day.completed ? "روز جمع‌بندی شد" : "جمع‌بندی روز"}
-                      </button>
-                    ) : (
-                      <span className="day-complete-readonly">
-                        {disabled ? "پیش از عضویت" : day.completed ? "روز جمع‌بندی شد" : "هنوز جمع‌بندی نشده"}
-                      </span>
-                    )}
+                    <span className="day-complete-readonly">
+                      {disabled ? "پیش از شروع پیگیری" : day.completed ? "روز جمع‌بندی شد" : "در انتظار دریافت"}
+                    </span>
                   </footer>
                 </article>
               );
@@ -842,46 +798,56 @@ function MatchCard({ match, onClick }: { match: Match; onClick: () => void }) {
       ? {label:analysisStatus==="processing"?"در حال تحلیل":"در صف تحلیل",icon:<CircleGauge/>}
       : analysisStatus==="failed"
         ? {label:"تحلیل ناموفق",icon:<ClockAlert/>}
-        : analysisStatus==="expired"
+      : analysisStatus==="expired"
           ? {label:"Replay قدیمی",icon:<ClockAlert/>}
           : {label:"داده پایه",icon:<Database/>};
+  async function copyMatchId() {
+    if (!match.dotaMatchId) return;
+    try {
+      await copyText(String(match.dotaMatchId));
+      toast.success("Match ID کپی شد");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "کپی Match ID انجام نشد");
+    }
+  }
   return (
-    <button className={`match-card is-${match.result} analysis-${analysisStatus}`} type="button" onClick={onClick}>
-      <div className="match-topline">
-        <span className="match-number">بازی {faNumber.format(match.number)}</span>
-        <span className={`result-badge is-${match.result}`}>
-          {match.result === "win" ? "برد" : "باخت"}
-        </span>
-      </div>
-      <div className={`match-hero-row${match.heroPoolEligible ? match.heroPoolMatch ? " is-in-pool" : " is-outside-pool" : ""}`}>
-        {hero && <span className="match-hero-portrait"><img src={heroImage(hero)} alt="" /></span>}
-        <div>
-          <h4 className="match-hero" lang="en">{match.heroName || "بدون هیرو"}</h4>
-          <span className="match-meta" lang="en">
-            {roleLabel(match.role)} · {queueLabel(match.queueType)}
+    <article className={`match-card is-${match.result} analysis-${analysisStatus}`}>
+      <button className="match-card-open" type="button" onClick={onClick}>
+        <div className="match-topline">
+          <span className="match-number">بازی {faNumber.format(match.number)}</span>
+          <span className={`result-badge is-${match.result}`}>
+            {match.result === "win" ? "برد" : "باخت"}
           </span>
         </div>
-      </div>
-      {match.dotaMatchId && (
-        <div className="match-combat-stats" aria-label="خلاصه آمار مچ">
-          <span title="Game mode"><GameIcon name="mode" /><b lang="en" dir="ltr">{match.gameModeName || "—"}</b></span>
-          <span title="K / D / A"><GameIcon name="kda" /><b lang="en" dir="ltr">{match.kills ?? "—"}/{match.deaths ?? "—"}/{match.assists ?? "—"}</b></span>
-          <span className="is-gold" title="Gold per minute"><GameIcon name="gold" /><b lang="en" dir="ltr">{match.goldPerMinute ?? "—"}</b></span>
-          <span className="is-networth" title="Net worth"><GameIcon name="gold" /><b lang="en" dir="ltr">{match.netWorth?.toLocaleString("en-US") ?? "—"}</b></span>
+        <div className={`match-hero-row${match.heroPoolEligible ? match.heroPoolMatch ? " is-in-pool" : " is-outside-pool" : ""}`}>
+          {hero && <span className="match-hero-portrait"><img src={heroImage(hero)} alt="" /></span>}
+          <div>
+            <h4 className="match-hero" lang="en">{match.heroName || "بدون هیرو"}</h4>
+            <div className="match-role-tags">
+              <span className="match-role-tag" lang="en">
+                {match.role && ROLE_ICONS[match.role] && <img src={`/positions/${ROLE_ICONS[match.role]}`} alt="" />}
+                {roleLabel(match.role)}
+              </span>
+              <span className="match-queue-tag" lang="en">{queueLabel(match.queueType)}</span>
+            </div>
+          </div>
         </div>
-      )}
-      {(match.bans.length > 0 || match.legacyBans) && (
-        <p className="match-bans">
-          بن‌ها: {match.bans.map((ban) => ban.name).join("، ") || match.legacyBans}
-        </p>
-      )}
-      {match.notes && <p className="match-notes">{match.notes}</p>}
+        <div className="match-game-mode">
+          <GameIcon name="mode" />
+          <span>حالت بازی</span>
+          <strong lang="en" dir="ltr">{match.gameModeName || "نامشخص"}</strong>
+        </div>
+        {match.notes && <p className="match-notes">{match.notes}</p>}
+      </button>
       {match.dotaMatchId && (
-        <div className="match-auto-meta">
-          <span lang="en" dir="ltr">#{match.dotaMatchId}</span>
+        <footer className="match-card-footer">
           <span className="match-analysis-badge">{analysisBadge.icon}{analysisBadge.label}</span>
-        </div>
+          <button className="match-id-copy" type="button" onClick={() => void copyMatchId()} title="کپی Match ID">
+            <span><small>Match ID</small><b lang="en" dir="ltr">{match.dotaMatchId}</b></span>
+            <Copy aria-hidden="true" />
+          </button>
+        </footer>
       )}
-    </button>
+    </article>
   );
 }

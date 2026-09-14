@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import AppToastContainer from "@/components/AppToastContainer";
+import AmbientBackdrop from "@/components/AmbientBackdrop";
 import CursorThemeProvider from "@/components/CursorThemeProvider";
 import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
   return (
     <html lang="fa" dir="rtl" data-cursor-pack="acid-hydra" data-cursor-effect="none">
       <body>
+        <AmbientBackdrop />
         <CursorThemeProvider>{children}</CursorThemeProvider>
         <AppToastContainer />
       </body>

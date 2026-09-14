@@ -246,6 +246,29 @@ export async function findKnownOpenDotaMatchIds(
   };
 }
 
+export async function markJournalRangeCompleted(
+  userId: string,
+  from: string,
+  to: string,
+) {
+  const start = new Date(`${from}T00:00:00.000Z`);
+  const end = new Date(`${to}T00:00:00.000Z`);
+  const days: string[] = [];
+  for (let date = start; date <= end && days.length < 7; date = new Date(date.getTime() + 86_400_000)) {
+    days.push(date.toISOString().slice(0, 10));
+  }
+  if (!days.length) return;
+
+  const now = new Date();
+  await getDb()
+    .insert(journalDays)
+    .values(days.map((day) => ({ userId, day, completed: true, updatedAt: now })))
+    .onConflictDoUpdate({
+      target: [journalDays.userId, journalDays.day],
+      set: { completed: true, updatedAt: now },
+    });
+}
+
 export async function saveDiscoveredOpenDotaMatch(params: {
   userId: string;
   match: OpenDotaMatch;
