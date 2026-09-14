@@ -493,8 +493,6 @@ export default function MatchJournal({
         <main>
           {canEdit && (
             <SyncPanel
-              rangeFrom={rangeFrom}
-              rangeTo={rangeTo}
               registrationDate={registrationDate}
               onMatchesImported={(result) => {
                 const enriched = result.stratz?.jobs.some(
