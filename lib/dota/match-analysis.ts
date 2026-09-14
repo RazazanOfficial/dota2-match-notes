@@ -2,10 +2,12 @@ import { heroById } from "../../data/heroes";
 import type { DotaTeam, MatchAnalysis, MatchAnalysisEvent, MatchBenchmarkMetric, MatchMapAnalysis, MatchMapPoint, MatchMinuteSnapshot, MatchPlayerAnalysis, MatchRole, TimelineState } from "../types";
 import { openDotaMatchSchema } from "../opendota/validation";
 import type { StratzMatch } from "../stratz/validation";
-import { calculatePerformanceScore, metricScoreWeight, performanceTone } from "./performance-score";
+import { calculatePerformanceScoreOrNull, metricScoreWeight, performanceTone } from "./performance-score";
 import { buildPlayerMapAnalysis, playerEvents } from "./match-map-analysis";
 import { buildCohortAnalysis, type CohortMetricKey, type PerformanceReferenceData } from "./performance-cohort";
 import { resolveMatchPositions } from "./position-resolver";
+import { buildLaneImpact } from "./lane-impact-analysis";
+import { buildItemOwnershipAnalysis } from "./item-ownership-analysis";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -64,17 +66,6 @@ function embeddedBenchmarks(player: UnknownRecord, durationMinutes: number) {
     const percentile = clampPercent(rawPercentile);
     const qualityPercentile = percentile;
     return [{ key: definition.key, label: definition.label, shortLabel: definition.label, description: definition.description, direction: definition.direction, highlightEligible: highlightEligible(definition.key, rawValue, durationMinutes), scoreWeight: metricScoreWeight({ key: definition.key, value: rawValue }, durationMinutes), value: rawValue, formattedValue: formatMetric(rawValue, definition.unit), percentile, qualityPercentile, tone: performanceTone(qualityPercentile), source: "hero",cohortLabel:"همان Hero · OpenDota",confidence:"medium" }];
-  });
-}
-
-function matchBenchmarks(players: UnknownRecord[], player: UnknownRecord, durationMinutes: number) {
-  return METRICS.flatMap((definition): MatchBenchmarkMetric[] => {
-    const value = metricValue(player, definition.field, durationMinutes, definition.unit);
-    if (value === null) return [];
-    const values = players.map((candidate) => metricValue(candidate, definition.field, durationMinutes, definition.unit)).filter((candidate): candidate is number => candidate !== null).sort((a, b) => a - b);
-    if (values.length < 5) return [];
-    const qualityPercentile = Math.round((values.filter((candidate) => definition.direction === "lower" ? candidate >= value : candidate <= value).length / values.length) * 100);
-    return [{ key: definition.key, label: definition.label, shortLabel: definition.label, description: definition.description, direction: definition.direction, highlightEligible: highlightEligible(definition.key, value, durationMinutes), scoreWeight: metricScoreWeight({ key: definition.key, value }, durationMinutes), value, formattedValue: formatMetric(value, definition.unit), percentile:qualityPercentile, qualityPercentile, tone: performanceTone(qualityPercentile), source: "match",cohortLabel:"۱۰ بازیکن همین Match",confidence:"low",sampleSize:values.length }];
   });
 }
 
@@ -168,13 +159,15 @@ export function buildMatchAnalysis(params: { rawData: unknown; stratzRawData?: u
   const assignedPosition=params.profileAssignedRole?ROLE_POSITION[params.profileAssignedRole]:null;
   const positionResolutions=resolveMatchPositions({players:standardPlayers,stratzRawData:params.stratzRawData,positionOverrides:params.positionOverrides,profileSlot:typeof profileSlot==="number"?profileSlot:null,profileAssignedPosition:assignedPosition});
   const patch=rawMatch.patch==null?null:String(rawMatch.patch),gameMode=numeric(rawMatch.game_mode);
-  const players = standardPlayers.flatMap((player): MatchPlayerAnalysis[] => {
+  const ownershipEvents=buildItemOwnershipAnalysis(standardPlayers);
+  const positionBySlot=new Map<number,number|null>(standardPlayers.flatMap((player)=>{const slot=numeric(player.player_slot);return slot===null?[]:[[slot,positionResolutions.get(slot)?.detectedPosition??null] as const];}));
+  const initialPlayers = standardPlayers.flatMap((player): MatchPlayerAnalysis[] => {
     const playerSlot = numeric(player.player_slot); const heroId = numeric(player.hero_id);
     if (playerSlot === null || heroId === null) return [];
     const hero = heroById(heroId); if (!hero) return [];
     const heroMetrics = embeddedBenchmarks(player, durationMinutes);
-    const localMetrics=matchBenchmarks(standardPlayers,player,durationMinutes);const heroKeys=new Set(heroMetrics.map((metric)=>metric.key));
-    const fallbackMetrics = [...heroMetrics,...localMetrics.filter((metric)=>!heroKeys.has(metric.key))];
+    // The ten players in this match provide context, never a statistical baseline.
+    const fallbackMetrics = heroMetrics;
     const positionResolution=positionResolutions.get(playerSlot);const position=positionResolution?.detectedPosition??null;
     const currentValues=Object.fromEntries(METRICS.flatMap((definition)=>{const value=metricValue(player,definition.field,durationMinutes,definition.unit);return value===null?[]:[[definition.key,value]];})) as Partial<Record<CohortMetricKey,number>>;
     const cohortAnalysis=buildCohortAnalysis({reference:params.performanceReference,heroId,position,rankTier:numeric(player.rank_tier),patch,gameMode,durationMinutes,currentValues,fallbackMetrics});
@@ -182,16 +175,20 @@ export function buildMatchAnalysis(params: { rawData: unknown; stratzRawData?: u
     const stratzStats = record(stratzPlayers.get(playerSlot)?.stats);
     const team=playerSlot<128?"radiant" as DotaTeam:"dire" as DotaTeam;const timeline=playerTimeline(player,durationMinutes,stratzStats);const events=playerEvents(player,standardPlayers,heroId,team);
     const map=buildPlayerMapAnalysis({player,allPlayers:standardPlayers,rawMatch,timeline,events,team,position});
-    const benchmarks=baseBenchmarks,sorted=[...benchmarks].sort((a,b)=>b.qualityPercentile-a.qualityPercentile),highlightMetrics=sorted.filter((metric)=>metric.highlightEligible!==false);
+    const benchmarks=baseBenchmarks,scoreMetrics=benchmarks.filter((metric)=>metric.source!=="match"),sorted=[...benchmarks].sort((a,b)=>b.qualityPercentile-a.qualityPercentile),highlightMetrics=sorted.filter((metric)=>metric.highlightEligible!==false);
+    const performanceScore=calculatePerformanceScoreOrNull(scoreMetrics,durationMinutes,position);
     const timelineSource = timeline.length < 2 ? "unavailable" as const : [openXpForPlayer(player), numberArray(player.lh_t)].some((values)=>values.length>1) ? "opendota" as const : "stratz" as const;
-    return [{ playerSlot, accountId: numeric(player.account_id), heroId, heroName: hero.name, personName: typeof player.personaname === "string" && player.personaname.trim() ? player.personaname.trim() : "حساب خصوصی", team, position, positionLabel: position ? POSITION_LABELS[position] : "نامشخص", positionResolution, isProfilePlayer: playerSlot === profileSlot, kills: numeric(player.kills), deaths: numeric(player.deaths), assists: numeric(player.assists), performanceScore: calculatePerformanceScore(benchmarks, durationMinutes,position), benchmarks,scoreMetrics:[], strengths: highlightMetrics.filter((metric) => metric.qualityPercentile >= 80).slice(0, 3), weaknesses: highlightMetrics.filter((metric) => metric.qualityPercentile < 40).reverse().slice(0, 3), timeline,timelineSource,events,map,itemTimings:[],cohort:cohortAnalysis.profile, benchmarkSource: benchmarks.length ? benchmarks[0].source : "unavailable" }];
+    return [{ playerSlot, accountId: numeric(player.account_id), heroId, heroName: hero.name, personName: typeof player.personaname === "string" && player.personaname.trim() ? player.personaname.trim() : "حساب خصوصی", team, position, positionLabel: position ? POSITION_LABELS[position] : "نامشخص", positionResolution, isProfilePlayer: playerSlot === profileSlot, kills: numeric(player.kills), deaths: numeric(player.deaths), assists: numeric(player.assists), ...(performanceScore===null?{}:{performanceScore}), benchmarks,scoreMetrics, strengths: highlightMetrics.filter((metric) => metric.qualityPercentile >= 80).slice(0, 3), weaknesses: highlightMetrics.filter((metric) => metric.qualityPercentile < 40).reverse().slice(0, 3), timeline,timelineSource,events,map,itemTimings:[],cohort:cohortAnalysis.profile,ownershipEvents:ownershipEvents.filter((event)=>event.purchaserPlayerSlot===playerSlot||event.holderPlayerSlot===playerSlot), benchmarkSource: benchmarks.length ? benchmarks[0].source : "unavailable" }];
   }).sort((a, b) => a.playerSlot - b.playerSlot);
+  const rawBySlot=new Map(standardPlayers.flatMap((player)=>{const slot=numeric(player.player_slot);return slot===null?[]:[[slot,player] as const];}));
+  const timelinesBySlot=new Map(initialPlayers.map((entry)=>[entry.playerSlot,entry.timeline]));
+  const players=initialPlayers.map((entry)=>{const raw=rawBySlot.get(entry.playerSlot);return raw?{...entry,laneImpact:buildLaneImpact({player:raw,playerPosition:entry.position,players:standardPlayers,positions:positionBySlot,timeline:entry.timeline,timelines:timelinesBySlot,events:entry.events??[]})}:entry;});
   const benchmarkPlayers = players.filter((player) => player.benchmarks.length).length;
   const timelinePlayers = players.filter((player) => player.timeline.length > 1).length;
   const status = !players.length ? "unavailable" : benchmarkPlayers === players.length && timelinePlayers === players.length ? "ready" : "partial";
   const replayParsed = standardPlayers.some((player) => numberArray(player.times).length > 1 && numberArray(player.lh_t).length > 1)
     || (recordsCount(rawMatch.objectives) > 0 && standardPlayers.some((player) => record(player.lane_pos) !== null));
-  return { status, dotaMatchId: String(parsed.data.match_id), durationMinutes, parsed: replayParsed, coverage: { benchmarkPlayers, timelinePlayers, totalPlayers: players.length }, players, teamTimeline: teamTimeline(rawMatch, durationMinutes) };
+  return { status, dotaMatchId: String(parsed.data.match_id), durationMinutes, parsed: replayParsed, coverage: { benchmarkPlayers, timelinePlayers, totalPlayers: players.length }, players,ownershipEvents, teamTimeline: teamTimeline(rawMatch, durationMinutes) };
 }
 
 function openXpForPlayer(player: UnknownRecord) { return numberArray(player.xp_t); }
