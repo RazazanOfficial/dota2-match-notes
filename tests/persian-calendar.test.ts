@@ -14,6 +14,7 @@ describe("Persian calendar month", () => {
       key: "2025-10-23",
       persianDay: 1,
       gregorianDay: 23,
+      gregorianMonth: "Oct",
     });
     expect(month.gregorianTitle).toBe("Oct – Nov 2025");
   });

@@ -4,7 +4,7 @@ import {
   matchAnalysisStatus,
   replayAgeState,
 } from "../lib/opendota/analysis-policy";
-import { manualMatchSyncInputSchema } from "../lib/opendota/sync-request";
+import { manualMatchSyncInputSchema, saturdayWeekStart } from "../lib/opendota/sync-request";
 
 describe("controlled replay analysis policy", () => {
   const now = new Date("2026-09-13T12:00:00.000Z");
@@ -27,13 +27,20 @@ describe("controlled replay analysis policy", () => {
 });
 
 describe("manual match range validation", () => {
-  it("accepts one day or exactly seven days", () => {
+  it("starts tracking at Saturday 00:00 of the registration week", () => {
+    expect(saturdayWeekStart("2026-09-15")).toBe("2026-09-12");
+    expect(saturdayWeekStart("2026-09-12")).toBe("2026-09-12");
+  });
+
+  it("accepts one day, a full week, or the elapsed part of the current week", () => {
     expect(manualMatchSyncInputSchema.safeParse({ scope: "day", from: "2026-09-13", to: "2026-09-13", mode: "basic" }).success).toBe(true);
-    expect(manualMatchSyncInputSchema.safeParse({ scope: "week", from: "2026-09-07", to: "2026-09-13", mode: "analysis" }).success).toBe(true);
+    expect(manualMatchSyncInputSchema.safeParse({ scope: "week", from: "2026-09-12", to: "2026-09-18", mode: "analysis" }).success).toBe(true);
+    expect(manualMatchSyncInputSchema.safeParse({ scope: "week", from: "2026-09-12", to: "2026-09-16", mode: "analysis" }).success).toBe(true);
   });
 
   it("rejects a mismatched scope and range", () => {
     expect(manualMatchSyncInputSchema.safeParse({ scope: "day", from: "2026-09-12", to: "2026-09-13", mode: "basic" }).success).toBe(false);
-    expect(manualMatchSyncInputSchema.safeParse({ scope: "week", from: "2026-09-08", to: "2026-09-13", mode: "analysis" }).success).toBe(false);
+    expect(manualMatchSyncInputSchema.safeParse({ scope: "week", from: "2026-09-11", to: "2026-09-13", mode: "analysis" }).success).toBe(false);
+    expect(manualMatchSyncInputSchema.safeParse({ scope: "week", from: "2026-09-12", to: "2026-09-19", mode: "analysis" }).success).toBe(false);
   });
 });

@@ -36,6 +36,7 @@ export type PersianCalendarDay = {
   key: string;
   persianDay: number;
   gregorianDay: number;
+  gregorianMonth: string;
 };
 
 export type PersianCalendarMonth = {
@@ -95,6 +96,7 @@ export function buildPersianCalendarMonth(cursorKey: string): PersianCalendarMon
         key: toDateKey(date),
         persianDay: index + 1,
         gregorianDay: date.getUTCDate(),
+        gregorianMonth: GREGORIAN_MONTH.format(date),
       };
     }),
   };

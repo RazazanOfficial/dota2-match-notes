@@ -227,7 +227,8 @@ select:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .report-button,
 .sync-button { border-radius: 2px; }
 .today-button { color: var(--gold); background: var(--gold-soft); }
-.week-stats { grid-template-columns: repeat(4, minmax(120px, 170px)) minmax(170px, 1fr); }
+.week-stats { display: flex; justify-content: space-between; }
+.week-cards{ display: flex; gap: 12px; }
 .stat-card { position: relative; min-height: 72px; overflow: hidden; border-radius: 2px; background: linear-gradient(145deg, rgba(255,255,255,.025), transparent 50%), rgba(16, 20, 22, 0.9); clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px); }
 .stat-card::after { position: absolute; right: 0; bottom: 0; width: 45%; height: 2px; content: ""; background: var(--gold); opacity: .36; }
 .stat-card strong { font: 700 1.45rem "Segoe UI", Arial, sans-serif; }

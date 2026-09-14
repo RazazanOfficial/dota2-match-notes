@@ -22,6 +22,12 @@ const PERSIAN_WEEKDAY = new Intl.DateTimeFormat("fa-IR", {
   weekday: "long",
   timeZone: "UTC",
 });
+const JOURNAL_DATE = new Intl.DateTimeFormat("en", {
+  timeZone: "Asia/Tehran",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
 
 export const faNumber = PERSIAN_NUMBER;
 export const faPercent = PERSIAN_PERCENT;
@@ -32,6 +38,13 @@ export function parseDateKey(dateKey: string) {
 
 export function toDateKey(date: Date) {
   return date.toISOString().slice(0, 10);
+}
+
+export function toJournalDateKey(date: Date) {
+  const values = Object.fromEntries(
+    JOURNAL_DATE.formatToParts(date).map((part) => [part.type, part.value]),
+  );
+  return `${values.year}-${values.month}-${values.day}`;
 }
 
 export function addDays(date: Date, amount: number) {
@@ -55,7 +68,7 @@ export function getWeekDates(anchorDate: string, weekIndex: number) {
 
 export function getCurrentWeekIndex(anchorDate: string) {
   const anchor = parseDateKey(anchorDate).getTime();
-  const today = parseDateKey(toDateKey(new Date())).getTime();
+  const today = parseDateKey(toJournalDateKey(new Date())).getTime();
   return Math.max(0, Math.floor((today - anchor) / 604_800_000));
 }
 
