@@ -88,25 +88,25 @@ describe("match performance analysis", () => {
     expect(analysis?.players).toHaveLength(10);
     expect(analysis?.coverage).toEqual({ benchmarkPlayers: 10, timelinePlayers: 10, totalPlayers: 10 });
     expect(analysis?.players[0].isProfilePlayer).toBe(true);
-    expect(analysis?.players[0].benchmarks).toHaveLength(12);
-    expect(analysis?.players[0].benchmarks.find((metric) => metric.key === "fight_participation")?.value).toBeCloseTo(37.1, 0);
-    expect(analysis?.players[0].benchmarks.find((metric) => metric.key === "lane_efficiency_pct")?.value).toBe(72);
+    expect(analysis?.players[0].benchmarks).toHaveLength(9);
+    expect(analysis?.players[0].benchmarks.every((metric) => metric.source === "hero")).toBe(true);
+    expect(analysis?.players[0].laneImpact?.laneEfficiency).toBe(72);
     expect(analysis?.players[0].timeline.map((point) => point.minute)).toEqual([0, 1, 2, 3]);
     expect(analysis?.players[0].benchmarks.find((metric) => metric.key === "deaths_per_min")?.qualityPercentile).toBe(90);
     expect(analysis?.players[0].benchmarks.some((metric) => metric.key === "denies_per_min")).toBe(false);
-    expect(analysis?.players[0].benchmarks.find((metric) => metric.key === "denies_at_10")?.value).toBe(1);
+    expect(analysis?.players[0].laneImpact?.deniesAt10).toBe(1);
   });
 
-  it("falls back to comparison inside the match when hero benchmarks are absent", () => {
+  it("does not invent a score from the ten-player lobby when global benchmarks are absent", () => {
     const players = heroIds.map((_, index) => {
       const { benchmarks: _benchmarks, ...withoutBenchmarks } = player(index);
       return withoutBenchmarks;
     });
     const analysis = buildMatchAnalysis({ rawData: { match_id: 8971055324, start_time: 1_787_000_000, duration: 2_400, radiant_win: false, players } });
     expect(analysis?.players).toHaveLength(10);
-    expect(analysis?.players.every((entry) => entry.benchmarkSource === "match")).toBe(true);
-    const safestPlayer = analysis?.players.reduce((best, entry) => (entry.deaths ?? Infinity) < (best.deaths ?? Infinity) ? entry : best);
-    expect(safestPlayer?.benchmarks.find((metric) => metric.key === "deaths_per_min")?.qualityPercentile).toBe(100);
+    expect(analysis?.players.every((entry) => entry.benchmarkSource === "unavailable")).toBe(true);
+    expect(analysis?.players.every((entry) => entry.benchmarks.length === 0)).toBe(true);
+    expect(analysis?.players.every((entry) => entry.performanceScore === undefined)).toBe(true);
   });
 
   it("keeps low healing in benchmarks without promoting it to strengths", () => {

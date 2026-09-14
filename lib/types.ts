@@ -102,7 +102,7 @@ export interface MatchMapAnalysis {
   trail:MatchMapPoint[];
   farm:{availability:AnalysisAvailability;laneCreeps:number|null;neutralCreeps:number|null;ancientCreeps:number|null;stackedCamps:number|null;farmUptimePercent:number|null;recoveryRate:number|null;deathCost:number|null;emptyTravelMinutes:number|null;farmToImpact:number|null;sourceMix:{lane:number|null;neutral:number|null;ancient:number|null};windows:MatchFarmWindow[];note:string};
   objectives:{availability:AnalysisAvailability;towerDamage:number|null;roshanKills:number|null;towerKills:number|null;barracksKills:number|null;conversionCount:number|null;missedConversionCount:number|null;averageConversionDelaySeconds:number|null;events:MatchObjectiveEvent[];note:string};
-  utility:{availability:AnalysisAvailability;observersPlaced:number|null;sentriesPlaced:number|null;observersDestroyed:number|null;sentriesDestroyed:number|null;averageObserverLifetimeSeconds:number|null;observersDewardedEarly:number|null;visionValue:number|null;objectiveWardCoverage:number|null;campsStacked:number|null;smokeUses:number|null;successfulSmokes:number|null;smokeKillParticipations?:number|null;dustUses:number|null;gemPurchases:number|null;invisThreat:"none"|"possible"|"active"|"unknown";invisThreats:string[];naturalReveal:string[];firstThreatMinute:number|null;firstDetectionMinute:number|null;preparedBeforeThreat:boolean|null;coverageGapMinutes:number|null;teamDetectionScore:number|null;individualContribution:number|null;responsibilityScore:number|null;note:string};
+  utility:{availability:AnalysisAvailability;observersPlaced:number|null;sentriesPlaced:number|null;observersDestroyed:number|null;sentriesDestroyed:number|null;averageObserverLifetimeSeconds:number|null;averageSentryLifetimeSeconds:number|null;observersLastingAtLeast300Seconds:number|null;sentriesLastingAtLeast360Seconds:number|null;observersDewardedEarly:number|null;sentriesDewardedEarly:number|null;productiveSentriesEstimate:number|null;laneResourcePurchases:number|null;laneObserverPlacements:number|null;laneSentryPlacements:number|null;visionValue:number|null;objectiveWardCoverage:number|null;campsStacked:number|null;smokeUses:number|null;successfulSmokes:number|null;smokeKillParticipations?:number|null;dustUses:number|null;gemPurchases:number|null;invisThreat:"none"|"possible"|"active"|"unknown";invisThreats:string[];naturalReveal:string[];firstThreatMinute:number|null;firstDetectionMinute:number|null;preparedBeforeThreat:boolean|null;coverageGapMinutes:number|null;teamDetectionScore:number|null;individualContribution:number|null;responsibilityScore:number|null;note:string};
   movement:{availability:AnalysisAvailability;safeTerritoryPercent:number|null;enemyTerritoryPercent:number|null;combatPoints:number;objectivePoints:number;timedTrailPoints:number;note:string};
 }
 
@@ -112,6 +112,10 @@ export interface MatchCohortProfile {
   positionSamples:number;
   heroPositionWeight:number;
   positionPickRate:number|null;
+  positionTier?:"main"|"sub"|"rare"|"unknown";
+  mainPosition?:number|null;
+  positionShares?:Array<{position:number;share:number;matches:number}>;
+  benchmarkApplicability?:number;
   metaPickRate?:number|null;
   winRate?:number|null;
   rankTier:number|null;
@@ -146,6 +150,42 @@ export interface MatchBenchmarkMetric {
   effectiveSampleSize?:number|null;
   heroPositionWeight?:number|null;
   scoreOnly?:boolean;
+}
+
+export interface MatchLaneImpact {
+  availability:AnalysisAvailability;
+  roleGroup:"core"|"support"|"unknown";
+  laneRole:number|null;
+  opponentPlayerSlot:number|null;
+  lastHitsAt10:number|null;
+  deniesAt10:number|null;
+  netWorthAt10:number|null;
+  xpAt10:number|null;
+  killsAt10:number|null;
+  deathsAt10:number|null;
+  laneEfficiency:number|null;
+  resourcePurchasesAt10:number;
+  observerPlacementsAt10:number;
+  sentryPlacementsAt10:number;
+  netWorthDelta:number|null;
+  xpDelta:number|null;
+  lastHitDelta:number|null;
+  assessment:"ahead"|"even"|"behind"|"unknown";
+  confidence:"high"|"medium"|"low";
+  evidence:string[];
+  note:string;
+}
+
+export interface MatchItemOwnershipEvent {
+  item:"gem"|"divine_rapier";
+  purchaserPlayerSlot:number|null;
+  holderPlayerSlot:number|null;
+  purchasedAtSecond:number|null;
+  transferAtSecond:number|null;
+  transfer:"none"|"ally"|"enemy"|"unknown";
+  confidence:"high"|"medium"|"low";
+  evidence:string[];
+  limitation:string;
 }
 
 export interface MatchMinuteSnapshot {
@@ -189,6 +229,8 @@ export interface MatchPlayerAnalysis {
   map?: MatchMapAnalysis;
   itemTimings?:MatchItemTiming[];
   cohort?:MatchCohortProfile;
+  laneImpact?:MatchLaneImpact;
+  ownershipEvents?:MatchItemOwnershipEvent[];
   benchmarkSource: "hero" | "match" | "cohort" | "unavailable";
 }
 
@@ -209,6 +251,7 @@ export interface MatchAnalysis {
     totalPlayers: number;
   };
   players: MatchPlayerAnalysis[];
+  ownershipEvents?:MatchItemOwnershipEvent[];
   teamTimeline: MatchTeamMinute[];
 }
 

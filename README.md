@@ -214,6 +214,9 @@ ID از مسیر همگام‌سازی تکی، این علامت حذف را ب
 می‌کند. مچ‌های کاربران سایت هیچ‌وقت جمعیت آماری Benchmark نیستند. اگر Refresh شکست بخورد،
 آخرین Snapshot سالم فعال می‌ماند.
 
+جزئیات قواعد Score، وزن Position، Lane Impact و محدودیت Timeline آیتم‌ها در
+[`docs/performance-scoring-phase2.md`](docs/performance-scoring-phase2.md) ثبت شده است.
+
 ## Worker آماده‌سازی Replay در OpenDota
 
 - `POST /api/internal/opendota-parse/tick`

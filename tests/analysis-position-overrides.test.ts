@@ -8,9 +8,12 @@ function player(playerSlot:number,position:number):MatchPlayerAnalysis {
     personName:"Player", team:"radiant", position, positionLabel:"", isProfilePlayer:playerSlot===0,
     kills:1,deaths:1,assists:1,performanceScore:0,benchmarks:[{
       key:"gold_per_min",label:"GPM",value:500,formattedValue:"500",percentile:80,
-      qualityPercentile:80,tone:"elite",source:"match",
-    }],scoreMetrics:[],strengths:[],weaknesses:[],timeline:[],timelineSource:"unavailable",
-    events:[],benchmarkSource:"match",
+      qualityPercentile:80,tone:"elite",source:"hero",
+    }],scoreMetrics:[{
+      key:"gold_per_min",label:"GPM",value:500,formattedValue:"500",percentile:80,
+      qualityPercentile:80,tone:"elite",source:"hero",
+    }],strengths:[],weaknesses:[],timeline:[],timelineSource:"unavailable",
+    events:[],benchmarkSource:"hero",
   };
 }
 

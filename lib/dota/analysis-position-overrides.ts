@@ -1,5 +1,5 @@
 import type { MatchAnalysis, MatchPlayerAnalysis } from "../types";
-import { calculatePerformanceScore } from "./performance-score";
+import { calculatePerformanceScoreOrNull } from "./performance-score";
 
 const POSITION_LABELS = ["", "Carry", "Mid", "Offlane", "Soft Support", "Hard Support"];
 
@@ -48,14 +48,10 @@ export function applyAnalysisPositionOverrides(
         evidence: entry.positionResolution?.evidence,
       },
     };
-  }).map((entry) => ({
-    ...entry,
-    performanceScore: calculatePerformanceScore(
-      entry.benchmarks,
-      analysis.durationMinutes,
-      entry.position,
-    ),
-  }));
+  }).map((entry) => {
+    const score=calculatePerformanceScoreOrNull((entry.scoreMetrics??entry.benchmarks).filter((metric)=>metric.source!=="match"),analysis.durationMinutes,entry.position);
+    return{...entry,...(score===null?{performanceScore:undefined}:{performanceScore:score})};
+  });
 
   return { ...analysis, players };
 }

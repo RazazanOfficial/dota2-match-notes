@@ -495,6 +495,7 @@ export default function MatchJournal({
             <SyncPanel
               rangeFrom={rangeFrom}
               rangeTo={rangeTo}
+              registrationDate={registrationDate}
               onMatchesImported={(result) => {
                 const enriched = result.stratz?.jobs.some(
                   (job) => job.status === "completed",
