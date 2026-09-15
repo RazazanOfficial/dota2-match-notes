@@ -9,7 +9,7 @@ import {
 } from "./client";
 import { ANALYSIS_TOKEN_COST } from "./analysis-policy";
 import type { ManualMatchSyncInput } from "./sync-request";
-import { saturdayWeekStart } from "./sync-request";
+import { MATCH_SYNC_GAME_MODES, matchesSyncGameMode, saturdayWeekStart } from "./sync-request";
 import { requestOpenDotaAnalysisRange } from "@/lib/opendota-parse/repository";
 import { toJournalDateKey } from "@/lib/journal/timezone";
 import { getOpenDotaConfig } from "./config";
@@ -71,6 +71,7 @@ interface RecentSyncOptions {
   throwOnRetryableError?: boolean;
   onExternalRequestClaimed?: () => void;
   range?: { from: string; to: string };
+  gameModes?: ManualMatchSyncInput["gameModes"];
 }
 
 async function discoverRecentMatches(
@@ -92,7 +93,9 @@ async function discoverRecentMatches(
   const recentMatches = options.range
     ? fetchedMatches.filter((match) => {
         const day = toJournalDateKey(new Date(match.start_time * 1_000));
-        return day >= options.range!.from && day <= options.range!.to;
+        return day >= options.range!.from &&
+          day <= options.range!.to &&
+          matchesSyncGameMode(options.gameModes, match.game_mode, match.lobby_type);
       })
     : fetchedMatches;
   const { importedIds, dismissedIds } = await findKnownOpenDotaMatchIds(
@@ -280,15 +283,17 @@ export async function syncRecentMatchesFromOpenDota(
     const sync = await discoverRecentMatches(user, {
       maxNewMatches: config.maxNewMatchesPerSync,
       range: { from: request.from, to: request.to },
+      gameModes: request.gameModes,
       onExternalRequestClaimed: () => {
         externalRequestClaimed = true;
       },
     });
-    if (!sync.failed.length && sync.deferred === 0) {
+    const checkedEveryGameMode = !request.gameModes || new Set(request.gameModes).size === MATCH_SYNC_GAME_MODES.length;
+    if (!sync.failed.length && sync.deferred === 0 && checkedEveryGameMode) {
       await markJournalRangeCompleted(user.id, request.from, request.to);
     }
     const analysis = request.mode === "analysis"
-      ? await requestOpenDotaAnalysisRange(user.id, request.from, request.to)
+      ? await requestOpenDotaAnalysisRange(user.id, request.from, request.to, request.gameModes)
       : emptyAnalysisSummary();
     const backfillQueued = stratzConfig.backfillOnManualSync
       ? await enqueueStratzBackfillForUser(user.id)

@@ -10,6 +10,7 @@ import {
   CircleGauge,
   ClockAlert,
   Database,
+  Gamepad2,
   Copy,
   LogOut,
   Menu,
@@ -33,6 +34,7 @@ import {
   viewPlayer,
 } from "@/lib/api";
 import { queueLabel, roleLabel } from "@/lib/constants";
+import { matchCardGameModeName } from "@/lib/dota/modes";
 import {
   faNumber,
   faPercent,
@@ -789,7 +791,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: str
   );
 }
 
-function MatchCard({ match, onClick }: { match: Match; onClick: () => void }) {
+export function MatchCard({ match, onClick }: { match: Match; onClick: () => void }) {
   const hero = match.heroId ? heroById(match.heroId) : null;
   const analysisStatus=match.analysisStatus||"basic";
   const analysisBadge=analysisStatus==="ready"
@@ -801,6 +803,11 @@ function MatchCard({ match, onClick }: { match: Match; onClick: () => void }) {
       : analysisStatus==="expired"
           ? {label:"Replay قدیمی",icon:<ClockAlert/>}
           : {label:"داده پایه",icon:<Database/>};
+  const visibleGameMode = matchCardGameModeName(
+    match.gameModeId,
+    match.lobbyTypeId,
+    match.gameModeName,
+  );
   async function copyMatchId() {
     if (!match.dotaMatchId) return;
     try {
@@ -812,30 +819,30 @@ function MatchCard({ match, onClick }: { match: Match; onClick: () => void }) {
   }
   return (
     <article className={`match-card is-${match.result} analysis-${analysisStatus}`}>
+      <header className="match-card-header">
+        <span className="match-number"><Gamepad2 aria-hidden="true" /> بازی {faNumber.format(match.number)}</span>
+        <span className={`result-badge is-${match.result}`}>
+          {match.result === "win" ? "برد" : "باخت"}
+        </span>
+      </header>
       <button className="match-card-open" type="button" onClick={onClick}>
-        <div className="match-topline">
-          <span className="match-number">بازی {faNumber.format(match.number)}</span>
-          <span className={`result-badge is-${match.result}`}>
-            {match.result === "win" ? "برد" : "باخت"}
-          </span>
-        </div>
-        <div className={`match-hero-row${match.heroPoolEligible ? match.heroPoolMatch ? " is-in-pool" : " is-outside-pool" : ""}`}>
-          {hero && <span className="match-hero-portrait"><img src={heroImage(hero)} alt="" /></span>}
-          <div>
+        <div className="match-card-identity">
+          <div className={`match-hero-row${match.heroPoolEligible ? match.heroPoolMatch ? " is-in-pool" : " is-outside-pool" : ""}`}>
+            {hero && <span className="match-hero-portrait"><img src={heroImage(hero)} alt="" /></span>}
             <h4 className="match-hero" lang="en">{match.heroName || "بدون هیرو"}</h4>
-            <div className="match-role-tags">
-              <span className="match-role-tag" lang="en">
-                {match.role && ROLE_ICONS[match.role] && <img src={`/positions/${ROLE_ICONS[match.role]}`} alt="" />}
-                {roleLabel(match.role)}
-              </span>
-              <span className="match-queue-tag" lang="en">{queueLabel(match.queueType)}</span>
-            </div>
+          </div>
+          <div className="match-role-tags">
+            <span className="match-role-tag" lang="en">
+              {match.role && ROLE_ICONS[match.role] && <img src={`/positions/${ROLE_ICONS[match.role]}`} alt="" />}
+              {roleLabel(match.role)}
+            </span>
+            <span className="match-role-tag" lang="en">{queueLabel(match.queueType)}</span>
           </div>
         </div>
         <div className="match-game-mode">
           <GameIcon name="mode" />
-          <span>حالت بازی</span>
-          <strong lang="en" dir="ltr">{match.gameModeName || "نامشخص"}</strong>
+          <span lang="en" dir="ltr">Game Mode</span>
+          <strong lang="en" dir="ltr">{visibleGameMode}</strong>
         </div>
         {match.notes && <p className="match-notes">{match.notes}</p>}
       </button>

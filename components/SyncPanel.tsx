@@ -9,9 +9,14 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleGauge,
+  Crown,
   Database,
+  LayoutGrid,
   RefreshCw,
+  Shapes,
+  Trophy,
   TriangleAlert,
+  Zap,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { heroById, heroImage } from "@/data/heroes";
@@ -32,6 +37,7 @@ import type {
   ImageQueueJob,
   ManualSyncResult,
   MatchSyncMode,
+  MatchSyncGameMode,
   MatchSyncRequest,
   MatchSyncScope,
   PlayerSyncStatus,
@@ -43,6 +49,18 @@ const faDateTime = new Intl.DateTimeFormat("fa-IR", {
   timeStyle: "short",
 });
 const DAY_MS = 86_400_000;
+const ALL_SYNC_GAME_MODES: MatchSyncGameMode[] = ["ranked", "turbo", "all_pick", "captains", "other"];
+const SYNC_GAME_MODE_OPTIONS: Array<{
+  value: MatchSyncGameMode;
+  label: string;
+  icon: typeof Trophy;
+}> = [
+  { value: "ranked", label: "Ranked", icon: Trophy },
+  { value: "turbo", label: "Turbo", icon: Zap },
+  { value: "all_pick", label: "All Pick", icon: LayoutGrid },
+  { value: "captains", label: "Captains", icon: Crown },
+  { value: "other", label: "Other", icon: Shapes },
+];
 
 function formatTime(value: string | null) {
   return value ? faDateTime.format(new Date(value)) : "هنوز انجام نشده";
@@ -78,6 +96,7 @@ interface SyncPanelProps {
   onNextWeek: () => void;
   onReport: () => void;
   onMatchesImported: (result: ManualSyncResult) => void;
+  previewMode?: boolean;
 }
 
 export default function SyncPanel({
@@ -91,13 +110,16 @@ export default function SyncPanel({
   onNextWeek,
   onReport,
   onMatchesImported,
+  previewMode = false,
 }: SyncPanelProps) {
   const [status, setStatus] = useState<PlayerSyncStatus | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [open, setOpen] = useState(false);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [scope, setScope] = useState<MatchSyncScope>("day");
   const [mode, setMode] = useState<MatchSyncMode>("basic");
+  const [gameModes, setGameModes] = useState<MatchSyncGameMode[]>(ALL_SYNC_GAME_MODES);
   const [selectedDay, setSelectedDay] = useState(() => toJournalDateKey(new Date()));
   const [calendarCursor, setCalendarCursor] = useState(() => toJournalDateKey(new Date()));
   const [confirming, setConfirming] = useState(false);
@@ -141,6 +163,7 @@ export default function SyncPanel({
   }, [open]);
 
   const loadStatus = useCallback(async (notify = false) => {
+    if (previewMode) return;
     try {
       setStatus(await getPlayerSyncStatus());
     } catch (reason) {
@@ -148,13 +171,15 @@ export default function SyncPanel({
         toast.error(reason instanceof Error ? reason.message : "وضعیت مچ‌ها دریافت نشد");
       }
     }
-  }, []);
+  }, [previewMode]);
 
   useEffect(() => {
+    if (previewMode) return;
     void loadStatus(true);
-  }, [loadStatus]);
+  }, [loadStatus, previewMode]);
 
   useEffect(() => {
+    if (previewMode) return;
     const active = Boolean(
       status?.imageQueue.jobs.some(
         (job) => job.kind === "analysis" && (job.status === "pending" || job.status === "processing"),
@@ -162,7 +187,7 @@ export default function SyncPanel({
     );
     const timer = window.setInterval(() => void loadStatus(), active ? 3_000 : 15_000);
     return () => window.clearInterval(timer);
-  }, [loadStatus, status]);
+  }, [loadStatus, previewMode, status]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1_000);
@@ -185,8 +210,8 @@ export default function SyncPanel({
     [status],
   );
   const request: MatchSyncRequest = scope === "day"
-    ? { scope, from: selectedDay, to: selectedDay, mode }
-    : { scope, from: weekRange.from, to: weekRange.to, mode };
+    ? { scope, from: selectedDay, to: selectedDay, mode, gameModes }
+    : { scope, from: weekRange.from, to: weekRange.to, mode, gameModes };
   const requestDays = dateKeys(request.from, request.to);
   const warningDays = requestDays.filter(
     (key) => replayAgeState(`${key}T12:00:00.000Z`) === "warning",
@@ -194,11 +219,24 @@ export default function SyncPanel({
   const expiredDays = requestDays.filter(
     (key) => replayAgeState(`${key}T12:00:00.000Z`) === "expired",
   );
-  const selectionDisabled = !selectedDay || request.from > request.to;
+  const selectionDisabled = !gameModes.length || !selectedDay || request.from > request.to;
+
+  function toggleGameMode(value: MatchSyncGameMode) {
+    setGameModes((current) => current.includes(value)
+      ? current.filter((item) => item !== value)
+      : [...current, value]);
+  }
 
   async function handleSync() {
     setSyncing(true);
     setConfirming(false);
+    if (previewMode) {
+      toast.success("این دریافت فقط در حالت پیش‌نمایش شبیه‌سازی شد.");
+      setOpen(false);
+      setStep(1);
+      setSyncing(false);
+      return;
+    }
     try {
       const result = await syncPlayerMatches(request);
       onMatchesImported(result);
@@ -223,6 +261,7 @@ export default function SyncPanel({
       }
       toast.success(messages.join(" "));
       setOpen(false);
+      setStep(1);
       await loadStatus();
     } catch (reason) {
       toast.error(reason instanceof Error ? reason.message : "مچ‌ها دریافت نشدند");
@@ -233,7 +272,7 @@ export default function SyncPanel({
   }
 
   return (
-    <section className="sync-panel" aria-labelledby="sync-panel-title">
+    <section className={`sync-panel${open ? " is-picker-open" : ""}`} aria-labelledby="sync-panel-title">
       <div className="sync-panel-copy">
         <p className="week-kicker"><span aria-hidden="true" />{weekLabel}</p>
         <h2 id="sync-panel-title">{weekRangeLabel}</h2>
@@ -253,7 +292,10 @@ export default function SyncPanel({
           className="sync-button"
           type="button"
           disabled={syncing || cooldownSeconds > 0}
-          onClick={() => setOpen((value) => !value)}
+          onClick={() => setOpen((value) => {
+            if (!value) setStep(1);
+            return !value;
+          })}
         >
           <span>
             {syncing
@@ -269,84 +311,93 @@ export default function SyncPanel({
         </button>
 
         {open && (
-          <div className="sync-picker" role="dialog" aria-label="تقویم شمسی انتخاب بازه دریافت مچ">
-            <header className="sync-calendar-header">
-              <div className="sync-calendar-persian-title">
-                <CalendarDays />
-                <strong>{calendar.persianTitle}</strong>
-              </div>
-              <div className="sync-scope-switch" aria-label="نوع بازه">
-                <button className={scope === "day" ? "is-active" : ""} type="button" onClick={() => setScope("day")}>یک روز</button>
-                <button className={scope === "week" ? "is-active" : ""} type="button" onClick={() => setScope("week")}>کل هفته</button>
-              </div>
-              <span className="sync-calendar-gregorian-title" lang="en" dir="ltr">{calendar.gregorianTitle}</span>
+          <div className="sync-picker sync-wizard" role="dialog" aria-label="انتخاب و دریافت مچ">
+            <header className="sync-wizard-header">
+              <div className="sync-wizard-title"><CalendarDays /><strong>دریافت اطلاعات مچ</strong></div>
+              <ol aria-label="مراحل دریافت">
+                {[{ number: 1, label: "Game Mode" }, { number: 2, label: "بازه زمانی" }, { number: 3, label: "نوع دریافت" }].map((item) => (
+                  <li className={`${step === item.number ? "is-active" : ""}${step > item.number ? " is-complete" : ""}`} key={item.number}>
+                    <b lang="en">{item.number}</b><span>{item.label}</span>
+                  </li>
+                ))}
+              </ol>
             </header>
 
-            <div className="sync-calendar-toolbar">
-              <nav className="sync-calendar-month-nav" aria-label="جابجایی ماه تقویم">
-                <button type="button" disabled={calendar.firstKey >= currentMonth.firstKey} onClick={() => setCalendarCursor(calendar.nextCursor)}>
-                  <ChevronLeft /> ماه بعد
-                </button>
-                <button type="button" disabled={calendar.firstKey <= registrationMonth.firstKey} onClick={() => setCalendarCursor(calendar.previousCursor)}>
-                  ماه قبل <ChevronRight />
-                </button>
-              </nav>
-            </div>
-
-            <div className="sync-calendar-weekdays" aria-hidden="true">
-              {PERSIAN_WEEKDAYS.map((weekday) => <span key={weekday}>{weekday}</span>)}
-            </div>
-            <div className="sync-day-grid">
-              {Array.from(
-                { length: calendar.leadingBlankDays },
-                (_, index) => <span className="sync-calendar-empty" key={`empty-${index}`} aria-hidden="true" />,
+            <div className="sync-wizard-body">
+              {step === 1 && (
+                <section className="sync-game-mode-step" aria-labelledby="sync-game-mode-title">
+                  <div className="sync-step-copy"><small lang="en">STEP 01</small><strong id="sync-game-mode-title">کدام Game Modeها دریافت شوند؟</strong></div>
+                  <div className="sync-game-mode-options">
+                    {SYNC_GAME_MODE_OPTIONS.map((option) => {
+                      const selected = gameModes.includes(option.value);
+                      const Icon = option.icon;
+                      return (
+                        <button className={selected ? "is-active" : ""} type="button" aria-pressed={selected} onClick={() => toggleGameMode(option.value)} key={option.value}>
+                          <Icon /><span><b lang="en">{option.label}</b></span><i>{selected && <Check />}</i>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {!gameModes.length && <p className="sync-selection-error">حداقل یک Game Mode را انتخاب کن.</p>}
+                </section>
               )}
-              {calendar.days.map((day) => {
-                const disabled = day.key < registrationDate || day.key > today;
-                const inSelectedWeek = scope === "week" && day.key >= weekRange.from && day.key <= weekRange.to;
-                const selectedDate = scope === "day" && selectedDay === day.key;
-                return (
-                  <button
-                    className={`${selectedDate ? "is-active " : ""}${inSelectedWeek ? "is-in-week " : ""}${day.key === today ? "is-today " : ""}${disabled ? "is-disabled" : ""}`}
-                    type="button"
-                    key={day.key}
-                    disabled={disabled}
-                    onClick={() => setSelectedDay(day.key)}
-                    aria-label={`${dateLabel(day.key)}، ${day.gregorianDay} ${day.gregorianMonth}`}
-                    aria-current={day.key === today ? "date" : undefined}
-                  >
-                    <strong>{faNumber.format(day.persianDay)}</strong>
-                    <small lang="en" dir="ltr"><span>{day.gregorianDay}</span><em>{day.gregorianMonth}</em></small>
-                  </button>
-                );
-              })}
+
+              {step === 2 && (
+                <section className="sync-calendar-step" aria-label="انتخاب روز یا هفته">
+                  <header className="sync-calendar-header">
+                    <div className="sync-calendar-persian-title"><CalendarDays /><strong>{calendar.persianTitle}</strong></div>
+                    <div className="sync-scope-switch" aria-label="نوع بازه">
+                      <button className={scope === "day" ? "is-active" : ""} type="button" onClick={() => setScope("day")}>یک روز</button>
+                      <button className={scope === "week" ? "is-active" : ""} type="button" onClick={() => setScope("week")}>کل هفته</button>
+                    </div>
+                    <span className="sync-calendar-gregorian-title" lang="en" dir="ltr">{calendar.gregorianTitle}</span>
+                  </header>
+                  <div className="sync-calendar-toolbar">
+                    <nav className="sync-calendar-month-nav" aria-label="جابجایی ماه تقویم">
+                      <button type="button" disabled={calendar.firstKey >= currentMonth.firstKey} onClick={() => setCalendarCursor(calendar.nextCursor)}>ماه بعد<ChevronLeft /></button>
+                      <button type="button" disabled={calendar.firstKey <= registrationMonth.firstKey} onClick={() => setCalendarCursor(calendar.previousCursor)}><ChevronRight />ماه قبل</button>
+                    </nav>
+                  </div>
+                  <div className="sync-calendar-weekdays" aria-hidden="true">{PERSIAN_WEEKDAYS.map((weekday) => <span key={weekday}>{weekday}</span>)}</div>
+                  <div className="sync-day-grid">
+                    {Array.from({ length: calendar.leadingBlankDays }, (_, index) => <span className="sync-calendar-empty" key={`empty-${index}`} aria-hidden="true" />)}
+                    {calendar.days.map((day) => {
+                      const disabled = day.key < registrationDate || day.key > today;
+                      const inSelectedWeek = scope === "week" && day.key >= weekRange.from && day.key <= weekRange.to;
+                      const selectedDate = scope === "day" && selectedDay === day.key;
+                      return (
+                        <button className={`${selectedDate ? "is-active " : ""}${inSelectedWeek ? "is-in-week " : ""}${day.key === today ? "is-today " : ""}${disabled ? "is-disabled" : ""}`} type="button" key={day.key} disabled={disabled} onClick={() => setSelectedDay(day.key)} aria-label={`${dateLabel(day.key)}، ${day.gregorianDay} ${day.gregorianMonth}`} aria-current={day.key === today ? "date" : undefined}>
+                          <strong>{faNumber.format(day.persianDay)}</strong><small lang="en" dir="ltr"><span>{day.gregorianDay}</span><em>{day.gregorianMonth}</em></small>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+
+              {step === 3 && (
+                <section className="sync-delivery-step" aria-labelledby="sync-delivery-title">
+                  <div className="sync-step-copy"><small lang="en">STEP 03</small><strong id="sync-delivery-title">نوع دریافت را انتخاب کن</strong><p>دریافت ساده فقط اطلاعات پایه را می‌گیرد. <br/> تحلیل، Replay قابل‌دسترسی را هم وارد صف می‌کند و سپس آنالیز بازی را تحویل میدهد.</p></div>
+                  <div className="sync-mode-grid" aria-label="نوع دریافت">
+                    <button className={mode === "basic" ? "is-active" : ""} type="button" onClick={() => setMode("basic")}><Database /><span><b>دریافت ساده</b></span>{mode === "basic" && <Check />}</button>
+                    <button className={mode === "analysis" ? "is-active" : ""} type="button" onClick={() => setMode("analysis")}><CircleGauge /><span><b>دریافت + تحلیل</b></span>{mode === "analysis" && <Check />}</button>
+                  </div>
+                  {mode === "analysis" && (warningDays.length > 0 || expiredDays.length > 0) && (
+                    <div className="sync-age-warning"><TriangleAlert /><div><strong>احتمال ناقص‌بودن Replay</strong>{warningDays.length > 0 && <p>روزهای {warningDays.map(dateLabel).join("، ")} بیش از {REPLAY_WARNING_AFTER_DAYS.toLocaleString("en-US")} روز قدمت دارند و ممکن است Replay در دسترس نباشد.</p>}{expiredDays.length > 0 && <p>برای روزهای {expiredDays.map(dateLabel).join("، ")} بیش از {REPLAY_REQUEST_MAX_AGE_DAYS.toLocaleString("en-US")} روز گذشته؛ مچ‌ها دریافت می‌شوند اما Parse جدید برایشان ارسال نمی‌شود.</p>}</div></div>
+                  )}
+                </section>
+              )}
             </div>
 
-            <div className="sync-mode-grid" aria-label="نوع دریافت">
-              <button className={mode === "basic" ? "is-active" : ""} type="button" onClick={() => setMode("basic")}>
-                <Database /><b>دریافت ساده</b>{mode === "basic" && <Check />}
-              </button>
-              <button className={mode === "analysis" ? "is-active" : ""} type="button" onClick={() => setMode("analysis")}>
-                <CircleGauge /><b>دریافت + تحلیل</b>{mode === "analysis" && <Check />}
-              </button>
-            </div>
+            <nav className="sync-wizard-navigation" aria-label="جابجایی مراحل">
+              <button type="button" disabled={step === 1} onClick={() => setStep(step === 3 ? 2 : 1)}><ChevronRight /> مرحله قبل</button>
+              <span lang="en" dir="ltr">{step} / 3</span>
+              <button type="button" disabled={step === 3 || (step === 1 && !gameModes.length)} onClick={() => setStep(step === 1 ? 2 : 3)}>مرحله بعد <ChevronLeft /></button>
+            </nav>
 
-            {mode === "analysis" && (warningDays.length > 0 || expiredDays.length > 0) && (
-              <div className="sync-age-warning">
-                <TriangleAlert />
-                <div>
-                  <strong>احتمال ناقص‌بودن Replay</strong>
-                  {warningDays.length > 0 && <p>روزهای {warningDays.map(dateLabel).join("، ")} بیش از {REPLAY_WARNING_AFTER_DAYS.toLocaleString("en-US")} روز قدمت دارند و ممکن است Replay در دسترس نباشد.</p>}
-                  {expiredDays.length > 0 && <p>برای روزهای {expiredDays.map(dateLabel).join("، ")} بیش از {REPLAY_REQUEST_MAX_AGE_DAYS.toLocaleString("en-US")} روز گذشته؛ مچ‌ها دریافت می‌شوند اما Parse جدید برایشان ارسال نمی‌شود.</p>}
-                </div>
-              </div>
-            )}
-
-            <footer>
-              <span>{scope === "day" ? (selectedDay ? dateLabel(selectedDay) : "روز قابل دریافت نیست") : `هفتهٔ ${dateLabel(weekRange.from)} تا ${dateLabel(weekRange.to)}`}</span>
-              <button className="primary-button" type="button" disabled={selectionDisabled} onClick={() => mode === "analysis" ? setConfirming(true) : void handleSync()}>
-                {mode === "analysis" ? "ادامه" : "دریافت"}
-              </button>
+            <footer className="sync-wizard-footer">
+              <span>{step === 1 ? `${gameModes.length.toLocaleString("fa-IR")} حالت انتخاب شده` : scope === "day" ? (selectedDay ? dateLabel(selectedDay) : "روز قابل دریافت نیست") : `هفتهٔ ${dateLabel(weekRange.from)} تا ${dateLabel(weekRange.to)}`}</span>
+              {step === 3 && <button className="primary-button" type="button" disabled={selectionDisabled} onClick={() => mode === "analysis" ? setConfirming(true) : void handleSync()}>{mode === "analysis" ? "شروع دریافت" : "شروع دریافت"}</button>}
             </footer>
           </div>
         )}

@@ -13,12 +13,14 @@ export type ImageJobStatus = "pending" | "processing" | "completed" | "failed";
 export type MatchAnalysisStatus = "basic" | "pending" | "processing" | "ready" | "failed" | "expired";
 export type MatchSyncScope = "day" | "week";
 export type MatchSyncMode = "basic" | "analysis";
+export type MatchSyncGameMode = "ranked" | "turbo" | "all_pick" | "captains" | "other";
 
 export interface MatchSyncRequest {
   scope: MatchSyncScope;
   from: string;
   to: string;
   mode: MatchSyncMode;
+  gameModes?: MatchSyncGameMode[];
 }
 
 export interface MatchImage {

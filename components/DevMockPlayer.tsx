@@ -1,6 +1,11 @@
 "use client";
 
+import { useState } from "react";
+import { FlaskConical, Gauge } from "lucide-react";
+import { toast } from "react-toastify";
 import MatchDialog from "./MatchDialog";
+import { MatchCard } from "./MatchJournal";
+import SyncPanel from "./SyncPanel";
 import { calculatePerformanceScore, metricScoreWeight, performanceTone } from "@/lib/dota/performance-score";
 import type { DotaTeam, Match, MatchAnalysis, MatchParticipant } from "@/lib/types";
 
@@ -46,8 +51,52 @@ const MOCK_MATCH: Match = {
     participant(132, "Doc", 30, "Witch Doctor", "dire", { level: 21 }),
   ],
   images: [],
+  analysisStatus: "ready",
   analysis: mockAnalysis(),
 };
+
+const MOCK_JOURNAL_MATCHES: Match[] = [
+  {
+    ...MOCK_MATCH,
+    id: "dev-card-dark-seer",
+    number: 1,
+    heroId: 55,
+    heroName: "Dark Seer",
+    role: "off_lane",
+    queueType: "role_selected",
+    result: "win",
+    dotaMatchId: "8996016011",
+    notes: "",
+    analysisStatus: "ready",
+  },
+  {
+    ...MOCK_MATCH,
+    id: "dev-card-necrophos",
+    number: 2,
+    heroId: 36,
+    heroName: "Necrophos",
+    role: "off_lane",
+    queueType: "role_selected",
+    result: "loss",
+    dotaMatchId: "8993295425",
+    gameModeId: 23,
+    gameModeName: "Turbo",
+    lobbyTypeId: 0,
+    lobbyTypeName: "Normal",
+    notes: "",
+    analysisStatus: "basic",
+  },
+];
+
+const MOCK_DAYS = [
+  { name: "شنبه", date: "۲۱ شهریور", completed: true, today: false, matches: MOCK_JOURNAL_MATCHES },
+  { name: "یک‌شنبه", date: "۲۲ شهریور", completed: true, today: false, matches: [] as Match[] },
+  { name: "دوشنبه", date: "۲۳ شهریور", completed: true, today: false, matches: [] as Match[] },
+  { name: "سه‌شنبه", date: "۲۴ شهریور", completed: false, today: true, matches: [] as Match[] },
+  { name: "چهارشنبه", date: "۲۵ شهریور", completed: false, today: false, matches: [] as Match[] },
+  { name: "پنج‌شنبه", date: "۲۶ شهریور", completed: false, today: false, matches: [] as Match[] },
+  { name: "جمعه", date: "۲۷ شهریور", completed: false, today: false, matches: [] as Match[] },
+];
 
 function mockAnalysis(): MatchAnalysis {
   const heroes = [
@@ -202,16 +251,86 @@ function participant(
 }
 
 export default function DevMockPlayer() {
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+
+  if (!selectedMatch) {
+    return (
+      <main className="dev-journal-preview app-shell">
+        <header className="dev-preview-header">
+          <div>
+            <span><FlaskConical aria-hidden="true" /> DEV MOCK</span>
+            <h1>پیش‌نمایش صفحه اصلی</h1>
+            <p>این صفحه بدون ورود، دیتابیس یا فایل <code>.env</code> اجرا می‌شود.</p>
+          </div>
+          <button className="secondary-button" type="button" onClick={() => setSelectedMatch(MOCK_MATCH)}>
+            <Gauge aria-hidden="true" /> مشاهده تحلیل کامل
+          </button>
+        </header>
+
+        <SyncPanel
+          previewMode
+          registrationDate="2026-09-01"
+          weekLabel="هفته آزمایشی"
+          weekRangeLabel="۲۱ شهریور تا ۲۷ شهریور ۱۴۰۵"
+          canGoPreviousWeek
+          canGoNextWeek={false}
+          onPreviousWeek={() => toast.info("پیمایش هفته در Dev Mock شبیه‌سازی شده است.")}
+          onCurrentWeek={() => toast.info("همین هفته در حال نمایش است.")}
+          onNextWeek={() => undefined}
+          onReport={() => toast.info("گزارش هفتگی در این پیش‌نمایش به API متصل نیست.")}
+          onMatchesImported={() => undefined}
+        />
+
+        <section className="dev-preview-summary" aria-label="خلاصه هفته آزمایشی">
+          <article><span>کل بازی</span><strong lang="en">2</strong></article>
+          <article><span>برد</span><strong className="is-win" lang="en">1</strong></article>
+          <article><span>باخت</span><strong className="is-loss" lang="en">1</strong></article>
+          <article><span>نرخ برد</span><strong lang="en">50%</strong></article>
+        </section>
+
+        <section className="calendar dev-preview-calendar" aria-label="تقویم هفتگی آزمایشی">
+          {MOCK_DAYS.map((day) => {
+            const wins = day.matches.filter((match) => match.result === "win").length;
+            const losses = day.matches.filter((match) => match.result === "loss").length;
+            return (
+              <article className={`day-card${day.today ? " is-today" : ""}${day.completed ? " is-complete" : ""}`} key={day.name}>
+                <header className="day-header">
+                  <div>
+                    <p className="day-name">{day.name}{day.today && <span className="today-badge">امروز</span>}</p>
+                    <h3 className="day-date">{day.date}</h3>
+                  </div>
+                </header>
+                <div className="matches">
+                  {day.matches.length ? day.matches.map((match) => (
+                    <MatchCard key={match.id} match={match} onClick={() => setSelectedMatch(match)} />
+                  )) : <div className="empty-day">هنوز مچی ثبت نشده</div>}
+                </div>
+                <footer className="day-summary">
+                  <div className="day-stat"><span>برد</span><strong>{wins.toLocaleString("fa-IR")}</strong></div>
+                  <div className="day-stat"><span>باخت</span><strong>{losses.toLocaleString("fa-IR")}</strong></div>
+                  <span className="day-complete-readonly">{day.completed ? "روز جمع‌بندی شد" : "در انتظار دریافت"}</span>
+                </footer>
+              </article>
+            );
+          })}
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="dev-mock-player">
       <MatchDialog
         open
         readonly={false}
         dateLabel="پنج‌شنبه ۶ شهریور"
-        match={MOCK_MATCH}
+        match={selectedMatch}
         nextNumber={19}
-        onClose={() => undefined}
-        onSave={() => undefined}
+        onClose={() => setSelectedMatch(null)}
+        onSave={() => {
+          toast.success("ذخیره در Dev Mock شبیه‌سازی شد.");
+          setSelectedMatch(null);
+        }}
         onDelete={() => undefined}
       />
     </main>

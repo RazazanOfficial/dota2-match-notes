@@ -61,3 +61,18 @@ export function gameModeName(id: number | null) {
 export function lobbyTypeName(id: number | null) {
   return resolveName(LOBBY_TYPES, id);
 }
+
+export function matchCardGameModeName(
+  gameModeId: number | null | undefined,
+  lobbyTypeId: number | null | undefined,
+  fallback?: string | null,
+) {
+  if (gameModeId === 23) return "Turbo";
+  if (lobbyTypeId !== null && lobbyTypeId !== undefined && [5, 6, 7].includes(lobbyTypeId)) {
+    return "Ranked";
+  }
+  if (gameModeId === 1 || gameModeId === 22) return "All Pick";
+  if (gameModeId === 2) return "Captains Mode";
+  if (gameModeId === 16) return "Captains Draft";
+  return fallback || gameModeName(gameModeId ?? null) || "Unknown";
+}
