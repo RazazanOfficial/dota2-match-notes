@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { Check, CircleX, ImageIcon, Save, Trash2, TriangleAlert, X } from "lucide-react";
+import { ArrowRight, Check, CircleX, ImageIcon, Save, Trash2, TriangleAlert, X } from "lucide-react";
 import { toast } from "react-toastify";
 import { heroById, heroImage } from "@/data/heroes";
 import { QUEUE_OPTIONS, ROLE_OPTIONS, queueLabel, roleLabel } from "@/lib/constants";
@@ -37,6 +37,7 @@ function requiredFieldsMessage(fields: RequiredMatchField[]) {
 
 interface MatchDialogProps {
   open: boolean;
+  presentation?: "overlay" | "page";
   readonly: boolean;
   dateLabel: string;
   match: Match | null;
@@ -65,6 +66,7 @@ const EMPTY_MATCH: Match = {
 
 export default function MatchDialog({
   open,
+  presentation = "overlay",
   readonly,
   dateLabel,
   match,
@@ -157,7 +159,7 @@ export default function MatchDialog({
 
   if (readonly) {
     return (
-      <div className="match-workspace-shell">
+      <div className={`match-workspace-shell${presentation === "page" ? " is-page" : ""}`}>
         <section
           className="match-workspace match-modal"
           aria-labelledby="match-read-title"
@@ -167,8 +169,8 @@ export default function MatchDialog({
               <p className="modal-kicker">MATCH #{draft.dotaMatchId || draft.number} · {dateLabel}</p>
               <h2 id="match-read-title">جزئیات Match</h2>
             </div>
-            <button className="close-button" type="button" onClick={onClose} aria-label="بستن">
-              <X aria-hidden="true" />
+            <button className="close-button" type="button" onClick={onClose} aria-label={presentation === "page" ? "بازگشت" : "بستن"}>
+              {presentation === "page" ? <ArrowRight aria-hidden="true" /> : <X aria-hidden="true" />}
             </button>
           </header>
           <MatchTabs active={activeTab} onChange={setActiveTab} />
@@ -197,7 +199,7 @@ export default function MatchDialog({
   }
 
   return (
-    <div className="match-workspace-shell">
+    <div className={`match-workspace-shell${presentation === "page" ? " is-page" : ""}`}>
       <form
         ref={formRef}
         className="match-workspace match-modal"
@@ -221,10 +223,10 @@ export default function MatchDialog({
         <header className="match-workspace-header">
           <div>
             <p className="modal-kicker">{match ? `MATCH #${draft.dotaMatchId || draft.number}` : "NEW MATCH"} · {dateLabel}</p>
-            {!match && <h2>ثبت بازی</h2>}
+            {match && presentation === "page" ? <h2>جزئیات Match</h2> : !match ? <h2>ثبت بازی</h2> : null}
           </div>
-          <button className="close-button" type="button" onClick={requestClose} aria-label="بستن">
-            <X aria-hidden="true" />
+          <button className="close-button" type="button" onClick={requestClose} aria-label={presentation === "page" ? "بازگشت" : "بستن"}>
+            {presentation === "page" ? <ArrowRight aria-hidden="true" /> : <X aria-hidden="true" />}
           </button>
         </header>
         <MatchTabs active={activeTab} onChange={setActiveTab} />

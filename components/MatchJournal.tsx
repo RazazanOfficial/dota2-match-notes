@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Check,
@@ -28,7 +29,6 @@ import {
   logout,
   purgeLegacyBrowserCache,
   restorePlayer,
-  saveDay,
   updateHeroPool,
   viewCoach,
   viewPlayer,
@@ -39,7 +39,6 @@ import {
   faNumber,
   faPercent,
   formatDayDate,
-  formatFullDate,
   formatWeekRange,
   formatWeekday,
   getCurrentWeekIndex,
@@ -53,8 +52,7 @@ import {
   toDateKey,
   toJournalDateKey,
 } from "@/lib/date";
-import type { Day, HeroPoolData, Match, MatchRole, Profile, Session } from "@/lib/types";
-import MatchDialog from "./MatchDialog";
+import type { HeroPoolData, Match, MatchRole, Profile, Session } from "@/lib/types";
 import ReportDialog from "./ReportDialog";
 import SyncPanel from "./SyncPanel";
 import AppLogo from "./AppLogo";
@@ -130,9 +128,6 @@ export default function MatchJournal({
   const [modeFilters, setModeFilters] = useState<JournalModeFilter[]>([]);
   const [positionFilters, setPositionFilters] = useState<MatchRole[]>([]);
   const [heroFilters, setHeroFilters] = useState<number[]>([]);
-  const [editing, setEditing] = useState<{ dateKey: string; matchId: string | null } | null>(
-    null,
-  );
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const membershipDate = viewingHandle
     ? profile.registeredDate || profile.createdAt
@@ -202,7 +197,7 @@ export default function MatchJournal({
   }, [session]);
 
   useEffect(() => {
-    if (!session || editing) return;
+    if (!session) return;
 
     const activeSession = session;
     let cancelled = false;
@@ -231,7 +226,7 @@ export default function MatchJournal({
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [editing, rangeFrom, rangeTo, session, refreshVersion, viewingHandle]);
+  }, [rangeFrom, rangeTo, session, refreshVersion, viewingHandle]);
 
   function showToast(message: string) {
     toast.success(message);
@@ -290,7 +285,6 @@ export default function MatchJournal({
       }
       setProfile(EMPTY_PROFILE);
       setAccessView("roles");
-      setEditing(null);
       setBusy(false);
     }
   }
@@ -323,67 +317,6 @@ export default function MatchJournal({
     ...profile,
     days:Object.fromEntries(Object.entries(profile.days).map(([dateKey,day])=>[dateKey,{...day,matches:day.matches.filter(matchesFilter)}])),
   }:profile;
-  const editedDay = editing
-    ? profile.days[editing.dateKey] || { completed: false, matches: [] }
-    : null;
-  const editedMatch =
-    editing?.matchId && editedDay
-      ? editedDay.matches.find((match) => match.id === editing.matchId) || null
-      : null;
-
-  async function mutateDay(dateKey: string, mutate: (day: Day) => Day) {
-    if (!session || !canEdit) return false;
-    const previous = profile;
-    const baseDay = profile.days[dateKey] || { completed: false, matches: [] };
-    const nextDay = mutate(structuredClone(baseDay));
-    const optimistic = {
-      ...profile,
-      days: { ...profile.days, [dateKey]: nextDay },
-    };
-    setProfile(optimistic);
-    setSyncState("syncing");
-    try {
-      const saved = await saveDay(session, dateKey, nextDay);
-      setProfile((current) => mergeProfiles(current, saved));
-      setSyncState("synced");
-      return true;
-    } catch (error) {
-      setProfile(previous);
-      setSyncState("error");
-      toast.error(error instanceof Error ? error.message : "ثبت اطلاعات انجام نشد");
-      return false;
-    }
-  }
-
-  async function handleSaveMatch(match: Match) {
-    if (!editing) return;
-    setBusy(true);
-    const saved = await mutateDay(editing.dateKey, (day) => {
-      const index = day.matches.findIndex((item) => item.id === match.id);
-      if (index >= 0) day.matches[index] = match;
-      else day.matches.push(match);
-      return day;
-    });
-    setBusy(false);
-    if (saved) {
-      setEditing(null);
-      showToast(editedMatch ? "بازی ویرایش شد" : "بازی ثبت شد");
-    }
-  }
-
-  async function handleDeleteMatch(matchId: string) {
-    if (!editing) return;
-    setBusy(true);
-    const saved = await mutateDay(editing.dateKey, (day) => ({
-      ...day,
-      matches: day.matches.filter((match) => match.id !== matchId),
-    }));
-    setBusy(false);
-    if (saved) {
-      setEditing(null);
-      showToast("بازی حذف شد");
-    }
-  }
 
   if (loading) {
     return (
@@ -554,7 +487,7 @@ export default function MatchJournal({
                           <MatchCard
                             key={match.id}
                             match={match}
-                            onClick={() => { if (!disabled) setEditing({ dateKey, matchId: match.id }); }}
+                            href={disabled ? undefined : `/match/${encodeURIComponent(match.dotaMatchId || match.id)}${viewingHandle ? `?player=${encodeURIComponent(viewingHandle)}` : ""}`}
                           />
                         ))
                     ) : (
@@ -575,19 +508,6 @@ export default function MatchJournal({
         </main>
       </div>
 
-      <MatchDialog
-        open={Boolean(editing)}
-        readonly={!canEdit}
-        dateLabel={editing ? formatFullDate(new Date(`${editing.dateKey}T00:00:00Z`)) : ""}
-        match={editedMatch}
-        nextNumber={
-          editedDay ? editedDay.matches.reduce((max, match) => Math.max(max, match.number), 0) + 1 : 1
-        }
-        busy={busy}
-        onClose={() => setEditing(null)}
-        onSave={handleSaveMatch}
-        onDelete={handleDeleteMatch}
-      />
       <ReportDialog
         open={reportOpen}
         profile={reportProfile}
@@ -791,7 +711,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: str
   );
 }
 
-export function MatchCard({ match, onClick }: { match: Match; onClick: () => void }) {
+export function MatchCard({ match, href, onClick }: { match: Match; href?: string; onClick?: () => void }) {
   const hero = match.heroId ? heroById(match.heroId) : null;
   const analysisStatus=match.analysisStatus||"basic";
   const analysisBadge=analysisStatus==="ready"
@@ -817,6 +737,29 @@ export function MatchCard({ match, onClick }: { match: Match; onClick: () => voi
       toast.error(error instanceof Error ? error.message : "کپی Match ID انجام نشد");
     }
   }
+  const cardBody = (
+    <>
+      <div className="match-card-identity">
+        <div className={`match-hero-row${match.heroPoolEligible ? match.heroPoolMatch ? " is-in-pool" : " is-outside-pool" : ""}`}>
+          {hero && <span className="match-hero-portrait"><img src={heroImage(hero)} alt="" /></span>}
+          <h4 className="match-hero" lang="en">{match.heroName || "بدون هیرو"}</h4>
+        </div>
+        <div className="match-role-tags">
+          <span className="match-role-tag" lang="en">
+            {match.role && ROLE_ICONS[match.role] && <img src={`/positions/${ROLE_ICONS[match.role]}`} alt="" />}
+            {roleLabel(match.role)}
+          </span>
+          <span className="match-role-tag" lang="en">{queueLabel(match.queueType)}</span>
+        </div>
+      </div>
+      <div className="match-game-mode">
+        <GameIcon name="mode" />
+        <span lang="en" dir="ltr">Game Mode</span>
+        <strong lang="en" dir="ltr">{visibleGameMode}</strong>
+      </div>
+      {match.notes && <p className="match-notes">{match.notes}</p>}
+    </>
+  );
   return (
     <article className={`match-card is-${match.result} analysis-${analysisStatus}`}>
       <header className="match-card-header">
@@ -825,27 +768,11 @@ export function MatchCard({ match, onClick }: { match: Match; onClick: () => voi
           {match.result === "win" ? "برد" : "باخت"}
         </span>
       </header>
-      <button className="match-card-open" type="button" onClick={onClick}>
-        <div className="match-card-identity">
-          <div className={`match-hero-row${match.heroPoolEligible ? match.heroPoolMatch ? " is-in-pool" : " is-outside-pool" : ""}`}>
-            {hero && <span className="match-hero-portrait"><img src={heroImage(hero)} alt="" /></span>}
-            <h4 className="match-hero" lang="en">{match.heroName || "بدون هیرو"}</h4>
-          </div>
-          <div className="match-role-tags">
-            <span className="match-role-tag" lang="en">
-              {match.role && ROLE_ICONS[match.role] && <img src={`/positions/${ROLE_ICONS[match.role]}`} alt="" />}
-              {roleLabel(match.role)}
-            </span>
-            <span className="match-role-tag" lang="en">{queueLabel(match.queueType)}</span>
-          </div>
-        </div>
-        <div className="match-game-mode">
-          <GameIcon name="mode" />
-          <span lang="en" dir="ltr">Game Mode</span>
-          <strong lang="en" dir="ltr">{visibleGameMode}</strong>
-        </div>
-        {match.notes && <p className="match-notes">{match.notes}</p>}
-      </button>
+      {href ? (
+        <Link className="match-card-open" href={href}>{cardBody}</Link>
+      ) : (
+        <button className="match-card-open" type="button" onClick={onClick}>{cardBody}</button>
+      )}
       {match.dotaMatchId && (
         <footer className="match-card-footer">
           <span className="match-analysis-badge">{analysisBadge.icon}{analysisBadge.label}</span>
