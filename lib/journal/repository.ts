@@ -10,6 +10,7 @@ import {
 } from "drizzle-orm";
 import { heroById } from "@/data/heroes";
 import { getDb } from "@/lib/db";
+import { normalizeProfile } from "@/lib/date";
 import { extractMatchDetails } from "@/lib/dota/match-details";
 import { gameModeName, lobbyTypeName } from "@/lib/dota/modes";
 import {
@@ -36,8 +37,9 @@ import { collectDismissedDotaMatchIds } from "./dismissed";
 import { makePublicImageUrl } from "@/lib/storage/media";
 import type { DayInput, PublicPlayerIdentifier } from "./validation";
 import { toJournalDateKey } from "./timezone";
+import type { Day, Match } from "@/lib/types";
 
-interface JournalOwner {
+export interface JournalOwner {
   id: string;
   handle: string;
   steamId?: string;
@@ -46,6 +48,13 @@ interface JournalOwner {
   avatarUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface JournalMatchPageData {
+  owner: JournalOwner;
+  dateKey: string;
+  day: Day;
+  match: Match;
 }
 
 interface DateRange {
@@ -347,6 +356,81 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
       ]),
     ),
   };
+}
+
+/**
+ * Resolve one journal entry for the standalone match page. Imported matches use
+ * their public Dota match id; legacy/manual entries can still use their UUID.
+ * Numeric Dota ids always require an owner because the same match may exist in
+ * more than one player's journal.
+ */
+export async function loadJournalMatchPage(
+  reference: string,
+  ownerId?: string,
+): Promise<JournalMatchPageData | null> {
+  const normalized = reference.trim();
+  const isDotaMatchId = /^\d{1,20}$/.test(normalized);
+  const isJournalMatchId =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      normalized,
+    );
+
+  if (!isDotaMatchId && !isJournalMatchId) return null;
+  if (isDotaMatchId && !ownerId) return null;
+
+  const dotaMatchId = isDotaMatchId ? Number(normalized) : null;
+  if (isDotaMatchId && (!Number.isSafeInteger(dotaMatchId) || dotaMatchId! <= 0)) {
+    return null;
+  }
+
+  const conditions = isDotaMatchId
+    ? and(
+        eq(journalMatches.userId, ownerId!),
+        eq(journalMatches.dotaMatchId, dotaMatchId!),
+      )
+    : eq(journalMatches.id, normalized);
+
+  const [target] = await getDb()
+    .select({
+      matchId: journalMatches.id,
+      dateKey: journalDays.day,
+      ownerId: users.id,
+      handle: users.handle,
+      steamId: users.steamId,
+      steamAccountId: users.steamAccountId,
+      displayName: users.displayName,
+      avatarUrl: users.avatarUrl,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+    })
+    .from(journalMatches)
+    .innerJoin(journalDays, eq(journalMatches.dayId, journalDays.id))
+    .innerJoin(users, eq(journalMatches.userId, users.id))
+    .where(conditions)
+    .limit(1);
+
+  if (!target) return null;
+
+  const owner: JournalOwner = {
+    id: target.ownerId,
+    handle: target.handle,
+    steamId: target.steamId,
+    steamAccountId: target.steamAccountId,
+    displayName: target.displayName,
+    avatarUrl: target.avatarUrl,
+    createdAt: target.createdAt,
+    updatedAt: target.updatedAt,
+  };
+  const rawProfile = await loadJournalProfile(owner, {
+    from: target.dateKey,
+    to: target.dateKey,
+  });
+  const profile = normalizeProfile(rawProfile, owner.handle);
+  const day = profile.days[target.dateKey];
+  const match = day?.matches.find((candidate) => candidate.id === target.matchId);
+
+  if (!day || !match) return null;
+  return { owner, dateKey: target.dateKey, day, match };
 }
 
 export async function saveJournalDay(userId: string, dateKey: string, input: DayInput) {
