@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { gameModeName, lobbyTypeName } from "../lib/dota/modes";
+import { gameModeName, lobbyTypeName, matchCardGameModeName } from "../lib/dota/modes";
 import { collectDismissedDotaMatchIds } from "../lib/journal/dismissed";
 import { excludeKnownRecentMatches } from "../lib/opendota/recent";
 
@@ -15,6 +15,13 @@ describe("Dota match metadata", () => {
   it("keeps unknown future identifiers visible", () => {
     expect(gameModeName(99)).toBe("Unknown (99)");
     expect(lobbyTypeName(null)).toBeNull();
+  });
+
+  it("shows the player-facing mode instead of All Draft on match cards", () => {
+    expect(matchCardGameModeName(22, 7, "All Draft")).toBe("Ranked");
+    expect(matchCardGameModeName(22, 0, "All Draft")).toBe("All Pick");
+    expect(matchCardGameModeName(23, 0, "Turbo")).toBe("Turbo");
+    expect(matchCardGameModeName(2, 2, "Captains Mode")).toBe("Captains Mode");
   });
 });
 

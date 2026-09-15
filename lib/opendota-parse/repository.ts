@@ -3,6 +3,8 @@ import { getDb } from "@/lib/db";
 import { dotaMatches, journalDays, journalMatches, matchImageJobs, openDotaParseJobs, users } from "@/lib/db/schema";
 import { ANALYSIS_TOKEN_COST, matchAnalysisStatus } from "@/lib/opendota/analysis-policy";
 import { hasParsedOpenDotaReplay } from "@/lib/opendota/validation";
+import { matchesSyncGameMode } from "@/lib/opendota/sync-request";
+import type { MatchSyncGameMode } from "@/lib/types";
 import type { OpenDotaParseConfig } from "./config";
 
 export interface ClaimedOpenDotaParseJob {
@@ -72,10 +74,21 @@ export async function requestOpenDotaAnalysis(matchId: string, userId?: string) 
   return "queued" as const;
 }
 
-export async function requestOpenDotaAnalysisRange(userId: string, from: string, to: string) {
-  const rows = await getDb().select({ id: journalMatches.id, day: journalDays.day })
+export async function requestOpenDotaAnalysisRange(
+  userId: string,
+  from: string,
+  to: string,
+  gameModes?: MatchSyncGameMode[],
+) {
+  const rows = await getDb().select({
+    id: journalMatches.id,
+    day: journalDays.day,
+    gameMode: dotaMatches.gameMode,
+    lobbyType: dotaMatches.lobbyType,
+  })
     .from(journalMatches)
     .innerJoin(journalDays, eq(journalMatches.dayId, journalDays.id))
+    .innerJoin(dotaMatches, eq(journalMatches.dotaMatchId, dotaMatches.matchId))
     .where(and(eq(journalMatches.userId, userId), isNotNull(journalMatches.dotaMatchId), gte(journalDays.day, from), lte(journalDays.day, to)));
   const summary = {
     tokenCostPerMatch: ANALYSIS_TOKEN_COST,
@@ -88,7 +101,8 @@ export async function requestOpenDotaAnalysisRange(userId: string, from: string,
     skippedOldDays: [] as string[],
   };
   const oldDays = new Set<string>();
-  for (const row of rows) {
+  for (const row of rows.filter((candidate) =>
+    matchesSyncGameMode(gameModes, candidate.gameMode, candidate.lobbyType))) {
     const result = await requestOpenDotaAnalysis(row.id, userId);
     if (result === "queued") summary.queued += 1;
     else if (result === "ready") summary.alreadyReady += 1;

@@ -4,7 +4,7 @@ import {
   matchAnalysisStatus,
   replayAgeState,
 } from "../lib/opendota/analysis-policy";
-import { manualMatchSyncInputSchema, saturdayWeekStart } from "../lib/opendota/sync-request";
+import { manualMatchSyncInputSchema, matchesSyncGameMode, saturdayWeekStart } from "../lib/opendota/sync-request";
 
 describe("controlled replay analysis policy", () => {
   const now = new Date("2026-09-13T12:00:00.000Z");
@@ -36,6 +36,22 @@ describe("manual match range validation", () => {
     expect(manualMatchSyncInputSchema.safeParse({ scope: "day", from: "2026-09-13", to: "2026-09-13", mode: "basic" }).success).toBe(true);
     expect(manualMatchSyncInputSchema.safeParse({ scope: "week", from: "2026-09-12", to: "2026-09-18", mode: "analysis" }).success).toBe(true);
     expect(manualMatchSyncInputSchema.safeParse({ scope: "week", from: "2026-09-12", to: "2026-09-16", mode: "analysis" }).success).toBe(true);
+  });
+
+  it("filters imported matches by the selected real game mode", () => {
+    expect(matchesSyncGameMode(["ranked"], 22, 7)).toBe(true);
+    expect(matchesSyncGameMode(["all_pick"], 22, 7)).toBe(false);
+    expect(matchesSyncGameMode(["all_pick"], 22, 0)).toBe(true);
+    expect(matchesSyncGameMode(["turbo"], 23, 0)).toBe(true);
+    expect(matchesSyncGameMode(["captains"], 2, 2)).toBe(true);
+    expect(matchesSyncGameMode(["other"], 4, 0)).toBe(true);
+  });
+
+  it("accepts unique mode filters and rejects an empty or duplicated selection", () => {
+    const base = { scope: "day", from: "2026-09-13", to: "2026-09-13", mode: "basic" } as const;
+    expect(manualMatchSyncInputSchema.safeParse({ ...base, gameModes: ["ranked", "turbo"] }).success).toBe(true);
+    expect(manualMatchSyncInputSchema.safeParse({ ...base, gameModes: [] }).success).toBe(false);
+    expect(manualMatchSyncInputSchema.safeParse({ ...base, gameModes: ["ranked", "ranked"] }).success).toBe(false);
   });
 
   it("rejects a mismatched scope and range", () => {

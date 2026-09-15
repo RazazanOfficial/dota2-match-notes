@@ -1,21 +1,21 @@
 :root {
-  --bg: #07090a;
-  --surface: #111518;
-  --surface-2: #171c20;
-  --surface-3: #20262b;
-  --border: #2c302f;
-  --border-strong: #49463f;
+  --bg: #071115;
+  --surface: #10191c;
+  --surface-2: #162125;
+  --surface-3: #1d2a2e;
+  --border: #29393c;
+  --border-strong: #46575a;
   --text: #f1eee7;
   --muted: #aaa69d;
   --muted-2: #746f67;
-  --accent: #b94736;
-  --accent-strong: #d45a43;
-  --accent-soft: rgba(185, 71, 54, 0.14);
-  --gold: #d0ad5d;
-  --gold-soft: rgba(208, 173, 93, 0.12);
-  --radiant: #5b9c86;
-  --dire: #b94736;
-  --win: #63ad8b;
+  --accent: #4d9f91;
+  --accent-strong: #68c5b2;
+  --accent-soft: rgba(77, 159, 145, 0.14);
+  --gold: #d2b56c;
+  --gold-soft: rgba(210, 181, 108, 0.12);
+  --radiant: #67b99f;
+  --dire: #c55c50;
+  --win: #68b997;
   --win-soft: rgba(99, 173, 139, 0.12);
   --loss: #d56555;
   --loss-soft: rgba(213, 101, 85, 0.12);
@@ -27,7 +27,7 @@
   font-family: Tahoma, "Segoe UI", Arial, sans-serif;
 }
 
-::selection { color: #fff8e8; background: rgba(185, 71, 54, 0.7); }
+::selection { color: #f4fffb; background: rgba(62, 137, 127, 0.78); }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: #090b0c; }
 ::-webkit-scrollbar-thumb { border: 2px solid #090b0c; background: #4a4640; }
@@ -35,12 +35,13 @@
 
 body {
   background:
-    linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px),
-    radial-gradient(circle at 86% -8%, rgba(185, 71, 54, 0.18), transparent 30rem),
-    radial-gradient(circle at 7% 88%, rgba(73, 119, 105, 0.11), transparent 34rem),
+    linear-gradient(rgba(154, 205, 202, 0.014) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(154, 205, 202, 0.014) 1px, transparent 1px),
+    radial-gradient(circle at 84% -10%, rgba(69, 151, 143, 0.2), transparent 31rem),
+    radial-gradient(circle at 5% 88%, rgba(54, 91, 126, 0.16), transparent 36rem),
+    radial-gradient(circle at 56% 112%, rgba(180, 145, 74, 0.075), transparent 29rem),
     var(--bg);
-  background-size: 48px 48px, 48px 48px, auto, auto, auto;
+  background-size: 48px 48px, 48px 48px, auto, auto, auto, auto;
   cursor: url("/cursors/dota-default.svg") 4 2, auto;
 }
 
