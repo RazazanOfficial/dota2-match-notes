@@ -22,9 +22,11 @@ import MatchInventory from "./MatchInventory";
 
 interface MatchScoreboardProps {
   match: Match;
+  selectedSlot?: number | null;
+  onSelectParticipant?: (participant: MatchParticipant) => void;
 }
 
-export default function MatchScoreboard({ match }: MatchScoreboardProps) {
+export default function MatchScoreboard({ match, selectedSlot: controlledSlot, onSelectParticipant }: MatchScoreboardProps) {
   const participants = match.participants || [];
   const profilePlayer = useMemo(
     () => participants.find((participant) => participant.isProfilePlayer)
@@ -33,13 +35,13 @@ export default function MatchScoreboard({ match }: MatchScoreboardProps) {
       || null,
     [match.heroId, participants],
   );
-  const [selectedSlot, setSelectedSlot] = useState<number | null>(
+  const [internalSelectedSlot, setInternalSelectedSlot] = useState<number | null>(
     profilePlayer?.playerSlot ?? null,
   );
   const [copiedMatchId, setCopiedMatchId] = useState(false);
 
   useEffect(() => {
-    setSelectedSlot(profilePlayer?.playerSlot ?? null);
+    setInternalSelectedSlot(profilePlayer?.playerSlot ?? null);
   }, [match.id, profilePlayer?.playerSlot]);
 
   useEffect(() => {
@@ -48,6 +50,7 @@ export default function MatchScoreboard({ match }: MatchScoreboardProps) {
     return () => window.clearTimeout(timer);
   }, [copiedMatchId]);
 
+  const selectedSlot = controlledSlot === undefined ? internalSelectedSlot : controlledSlot;
   const selected = participants.find((participant) => participant.playerSlot === selectedSlot)
     || profilePlayer;
   const radiant = participants.filter((participant) => participant.team === "radiant");
@@ -111,14 +114,22 @@ export default function MatchScoreboard({ match }: MatchScoreboardProps) {
           participants={radiant}
           selectedSlot={selected?.playerSlot ?? null}
           profileSlot={profilePlayer?.playerSlot ?? null}
-          onSelect={setSelectedSlot}
+          onSelect={(slot) => {
+            setInternalSelectedSlot(slot);
+            const participant = participants.find((entry) => entry.playerSlot === slot);
+            if (participant) onSelectParticipant?.(participant);
+          }}
         />
         <TeamPanel
           team="dire"
           participants={dire}
           selectedSlot={selected?.playerSlot ?? null}
           profileSlot={profilePlayer?.playerSlot ?? null}
-          onSelect={setSelectedSlot}
+          onSelect={(slot) => {
+            setInternalSelectedSlot(slot);
+            const participant = participants.find((entry) => entry.playerSlot === slot);
+            if (participant) onSelectParticipant?.(participant);
+          }}
         />
       </div>
 
@@ -214,7 +225,7 @@ function FocusedPlayer({ match, participant }: { match: Match; participant: Matc
   const won = match.radiantWin === null || match.radiantWin === undefined
     ? null
     : match.radiantWin === (participant.team === "radiant");
-  const role = participant.isProfilePlayer && match.role ? roleLabel(match.role) : "";
+  const role = participant.position ? positionLabel(participant.position) : participant.isProfilePlayer && match.role ? roleLabel(match.role) : "";
 
   return (
     <section className={`match-player-focus is-${participant.team}`}>
@@ -291,6 +302,10 @@ function formatNumber(value?: number | null, grouped = false) {
 
 function teamName(team: DotaTeam) {
   return team === "radiant" ? "Radiant" : "Dire";
+}
+
+function positionLabel(position: number) {
+  return ["", "Safe Lane", "Mid Lane", "Off Lane", "Soft Support", "Hard Support"][position] || "Unknown";
 }
 
 function playerName(name: string) {

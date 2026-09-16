@@ -67,26 +67,6 @@ export default function MatchDetailsPage({
     }
   }
 
-  async function deleteMatch(matchId: string) {
-    if (readonly) return;
-    setBusy(true);
-    try {
-      const session = await restorePlayer();
-      if (!session) throw new Error("برای حذف مچ دوباره وارد حساب شوید");
-      const nextDay = {
-        ...day,
-        matches: day.matches.filter((candidate) => candidate.id !== matchId),
-      };
-      await saveDay(session, dateKey, nextDay);
-      toast.success("بازی حذف شد");
-      router.push(fallbackHref);
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "حذف بازی انجام نشد");
-      setBusy(false);
-    }
-  }
-
   return (
     <MatchDialog
       key={`${match.id}:${revision}`}
@@ -99,7 +79,6 @@ export default function MatchDetailsPage({
       busy={busy}
       onClose={leaveMatchPage}
       onSave={saveMatch}
-      onDelete={deleteMatch}
     />
   );
 }

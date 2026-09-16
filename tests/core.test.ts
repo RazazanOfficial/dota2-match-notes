@@ -106,6 +106,7 @@ describe("profile migration", () => {
         heroId: 11,
         heroName: "Shadow Fiend",
         team: "dire",
+        position: 2,
         level: 27,
         kills: 6,
         deaths: 9,
@@ -144,6 +145,7 @@ describe("profile migration", () => {
     expect(match.participants?.[0]).toMatchObject({
       team: "radiant",
       heroName: "Shadow Fiend",
+      position: 2,
       itemIds: [108, 50, null, null, null, null],
       backpackItemIds: [38, null, null],
     });

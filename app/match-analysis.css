@@ -840,8 +840,7 @@
 
 .timeline-axis-label {
   fill: #758083;
-  font-family: var(--font-display), sans-serif;
-  font-size: 11px;
+  font: 700 10px Arial, sans-serif;
 }
 
 .timeline-empty {

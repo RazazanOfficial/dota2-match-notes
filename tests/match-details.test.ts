@@ -16,6 +16,7 @@ const matchPayload = {
       personaname: "Meraj",
       player_slot: 0,
       hero_id: 48,
+      position_est: 1,
       level: 30,
       kills: 15,
       deaths: 4,
@@ -47,6 +48,7 @@ const matchPayload = {
       personaname: null,
       player_slot: 128,
       hero_id: 2,
+      position_est: 3,
       level: 27,
       kills: 8,
       deaths: 10,
@@ -80,6 +82,7 @@ describe("match details extraction", () => {
     expect(details.participants[0]).toMatchObject({
       team: "radiant",
       heroName: "Luna",
+      position: 1,
       isProfilePlayer: true,
       hasAghanimsScepter: true,
       hasAghanimsShard: true,
@@ -90,6 +93,7 @@ describe("match details extraction", () => {
     expect(details.participants[1]).toMatchObject({
       team: "dire",
       heroName: "Axe",
+      position: 3,
       accountId: null,
       personName: "حساب خصوصی",
     });

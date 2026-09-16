@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { ArrowRight, Check, CircleX, ImageIcon, Save, Trash2, TriangleAlert, X } from "lucide-react";
+import { ArrowRight, Check, CircleX, ImageIcon, Save, TriangleAlert, X } from "lucide-react";
 import { toast } from "react-toastify";
-import { heroById, heroImage } from "@/data/heroes";
-import { QUEUE_OPTIONS, ROLE_OPTIONS, queueLabel, roleLabel } from "@/lib/constants";
+import { heroById, heroIcon, heroImage } from "@/data/heroes";
+import { QUEUE_OPTIONS, queueLabel, roleLabel } from "@/lib/constants";
 import { newMatchId } from "@/lib/date";
-import type { Hero, Match, MatchImage, MatchPreparationProgress, MatchResult, MatchRole, QueueType } from "@/lib/types";
+import type { Hero, Match, MatchImage, MatchParticipant, MatchPreparationProgress, MatchResult, MatchRole, QueueType } from "@/lib/types";
 import BanPicker from "./BanPicker";
 import ConfirmDialog from "./ConfirmDialog";
 import DotaSelect from "./DotaSelect";
@@ -45,7 +45,6 @@ interface MatchDialogProps {
   busy?: boolean;
   onClose: () => void;
   onSave: (match: Match) => void;
-  onDelete: (matchId: string) => void;
 }
 
 const EMPTY_MATCH: Match = {
@@ -74,13 +73,12 @@ export default function MatchDialog({
   busy = false,
   onClose,
   onSave,
-  onDelete,
 }: MatchDialogProps) {
   const [draft, setDraft] = useState<Match>(EMPTY_MATCH);
   const [invalidFields, setInvalidFields] = useState<RequiredMatchField[]>([]);
   const [activeTab, setActiveTab] = useState<MatchTab>("overview");
   const [discardWarning, setDiscardWarning] = useState(false);
-  const [deleteWarning, setDeleteWarning] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const initializedSource = useRef("");
   const initialDraft = useRef("");
   const formRef = useRef<HTMLFormElement>(null);
@@ -99,7 +97,6 @@ export default function MatchDialog({
     setInvalidFields([]);
     setActiveTab("overview");
     setDiscardWarning(false);
-    setDeleteWarning(false);
     const nextDraft = match
       ? structuredClone(match)
       : {
@@ -109,6 +106,10 @@ export default function MatchDialog({
           createdAt: new Date().toISOString(),
         };
     setDraft(nextDraft);
+    const profileParticipant = nextDraft.participants?.find((entry) => entry.isProfilePlayer)
+      || nextDraft.participants?.find((entry) => entry.heroId === nextDraft.heroId)
+      || nextDraft.participants?.[0];
+    setSelectedSlot(profileParticipant?.playerSlot ?? null);
     initialDraft.current = JSON.stringify(nextDraft);
   }, [dateLabel, match, nextNumber, open]);
 
@@ -156,6 +157,10 @@ export default function MatchDialog({
   }
 
   if (!open) return null;
+  const selectedParticipant = draft.participants?.find((entry) => entry.playerSlot === selectedSlot)
+    || draft.participants?.find((entry) => entry.isProfilePlayer)
+    || draft.participants?.[0]
+    || null;
 
   if (readonly) {
     return (
@@ -175,13 +180,13 @@ export default function MatchDialog({
           </header>
           <MatchTabs active={activeTab} onChange={setActiveTab} />
           <div className={`match-tab-panel${activeTab === "overview" ? " is-active" : ""}`} data-match-tab="overview">
-            <ReadonlyMatchContext match={draft} />
+            <ReadonlyMatchContext match={draft} participant={selectedParticipant} />
             {hasTeamDetails
-              ? <MatchScoreboard match={draft} />
+              ? <MatchScoreboard match={draft} selectedSlot={selectedSlot} onSelectParticipant={(entry) => setSelectedSlot(entry.playerSlot)} />
               : <LegacyMatchOverview match={draft} hero={hero} />}
           </div>
           <div className={`match-tab-panel${activeTab === "performance" ? " is-active" : ""}`} data-match-tab="performance">
-          <MatchAnalysisPanel match={draft} active={activeTab === "performance"} canRequestAnalysis={false} />
+          <MatchAnalysisPanel match={draft} active={activeTab === "performance"} canRequestAnalysis={false} selectedPlayerSlot={selectedSlot} onSelectPlayer={setSelectedSlot} />
           </div>
           <div className={`match-tab-panel${activeTab === "journal" ? " is-active" : ""}`} data-match-tab="journal">
             <div className="detail-section">
@@ -236,11 +241,12 @@ export default function MatchDialog({
             match={draft}
             formError={formError}
             invalidFields={invalidFields}
+            participant={selectedParticipant}
             onClearInvalid={clearInvalidField}
             onChange={setDraft}
           />
           {hasTeamDetails ? (
-            <MatchScoreboard match={draft} />
+            <MatchScoreboard match={draft} selectedSlot={selectedSlot} onSelectParticipant={(entry) => setSelectedSlot(entry.playerSlot)} />
           ) : (
             <>
               <div className="form-grid">
@@ -274,7 +280,7 @@ export default function MatchDialog({
         </div>
 
         <div className={`match-tab-panel${activeTab === "performance" ? " is-active" : ""}`} data-match-tab="performance">
-          <MatchAnalysisPanel match={draft} active={activeTab === "performance"} canRequestAnalysis onPositionOverrides={(updates) => setDraft((current) => ({ ...current, positionOverrides: { ...(current.positionOverrides || {}), ...updates } }))} />
+          <MatchAnalysisPanel match={draft} active={activeTab === "performance"} canRequestAnalysis selectedPlayerSlot={selectedSlot} onSelectPlayer={setSelectedSlot} onPositionOverrides={(updates) => setDraft((current) => ({ ...current, positionOverrides: { ...(current.positionOverrides || {}), ...updates }, participants: current.participants?.map((entry) => updates[String(entry.playerSlot)] ? { ...entry, position: updates[String(entry.playerSlot)] } : entry) }))} />
         </div>
 
         <div className={`match-tab-panel${activeTab === "journal" ? " is-active" : ""}`} data-match-tab="journal">
@@ -295,16 +301,6 @@ export default function MatchDialog({
         </div>
 
         <footer className="modal-actions">
-          {match && (
-            <button
-              className="secondary-button danger-button"
-              type="button"
-              disabled={busy}
-              onClick={() => setDeleteWarning(true)}
-            >
-              <Trash2 aria-hidden="true" /> حذف بازی
-            </button>
-          )}
           <span className="action-spacer" />
           <button className="secondary-button" type="button" onClick={requestClose}>
             <X aria-hidden="true" /> انصراف
@@ -322,15 +318,6 @@ export default function MatchDialog({
         onCancel={() => setDiscardWarning(false)}
         onConfirm={onClose}
       />
-      <ConfirmDialog
-        open={deleteWarning}
-        title="حذف این بازی؟"
-        description="این بازی و یادداشت‌های آن از دفترچه حذف می‌شوند."
-        confirmLabel="حذف بازی"
-        tone="delete"
-        onCancel={() => setDeleteWarning(false)}
-        onConfirm={() => match && onDelete(match.id)}
-      />
     </div>
   );
 }
@@ -339,39 +326,22 @@ function MatchPersonalEditor({
   match,
   formError,
   invalidFields,
+  participant,
   onClearInvalid,
   onChange,
 }: {
   match: Match;
   formError: string;
   invalidFields: RequiredMatchField[];
+  participant: MatchParticipant | null;
   onClearInvalid: (field: RequiredMatchField) => void;
   onChange: Dispatch<SetStateAction<Match>>;
 }) {
   return (
     <section className="match-personal-editor" aria-label="اطلاعات شخصی مچ">
       <div className="form-grid">
-        <MatchNumberField
-          value={match.number}
-          invalid={invalidFields.includes("number")}
-          onChange={(number) => {
-            if (Number.isFinite(number) && number >= 1) onClearInvalid("number");
-            onChange((current) => ({ ...current, number }));
-          }}
-        />
-        <DotaSelect<MatchRole>
-          label="رول"
-          value={match.role}
-          placeholder="انتخاب رول"
-          options={ROLE_OPTIONS}
-          required
-          invalid={invalidFields.includes("role")}
-          validationKey="role"
-          onChange={(role) => {
-            onClearInvalid("role");
-            onChange((current) => ({ ...current, role }));
-          }}
-        />
+        <MatchNumberField value={match.number} invalid={false} readOnly onChange={() => undefined} />
+        <ReadonlyRoleField participant={participant} fallback={roleLabel(match.role)} />
         <DotaSelect<QueueType>
           label="نوع صف"
           value={match.queueType}
@@ -385,10 +355,7 @@ function MatchPersonalEditor({
             onChange((current) => ({ ...current, queueType }));
           }}
         />
-        <ResultField
-          value={match.result}
-          onChange={(result) => onChange((current) => ({ ...current, result }))}
-        />
+        <ResultField value={participantResult(match, participant)} readOnly onChange={() => undefined} />
       </div>
       {formError && (
         <p className="form-error" id="match-required-error" role="alert">
@@ -400,27 +367,45 @@ function MatchPersonalEditor({
   );
 }
 
-function ReadonlyMatchContext({ match }: { match: Match }) {
+function ReadonlyMatchContext({ match, participant }: { match: Match; participant: MatchParticipant | null }) {
   return (
     <section className="match-context-bar" aria-label="اطلاعات شخصی مچ">
       <span><small>شماره بازی</small><strong>{match.number.toLocaleString("fa-IR")}</strong></span>
-      <span><small>رول</small><strong lang="en" dir="ltr">{roleLabel(match.role)}</strong></span>
+      <span className="match-readonly-role"><small>رول</small><ReadonlyRole participant={participant} fallback={roleLabel(match.role)} /></span>
       <span><small>نوع صف</small><strong lang="en" dir="ltr">{queueLabel(match.queueType)}</strong></span>
       <span>
         <small>نتیجه</small>
-        <strong className={`is-${match.result}`}>{match.result === "win" ? "برد" : "باخت"}</strong>
+        <strong className={`is-${participantResult(match, participant)}`}>{participantResult(match, participant) === "win" ? "برد" : "باخت"}</strong>
       </span>
     </section>
   );
 }
 
+function ReadonlyRole({ participant, fallback }: { participant: MatchParticipant | null; fallback: string }) {
+  const hero = participant ? heroById(participant.heroId) : null;
+  const position = participant?.position ?? null;
+  const label = position ? ["", "Safe Lane", "Mid Lane", "Off Lane", "Soft Support", "Hard Support"][position] : fallback;
+  return <strong className="match-readonly-role-value" lang="en" dir="ltr">{hero && <img src={heroIcon(hero)} alt="" />}{label || "—"}</strong>;
+}
+
+function ReadonlyRoleField({ participant, fallback }: { participant: MatchParticipant | null; fallback: string }) {
+  return <label className="field"><span>رول</span><button className="dota-select-trigger match-role-readonly-trigger" type="button" disabled><ReadonlyRole participant={participant} fallback={fallback} /></button></label>;
+}
+
+function participantResult(match: Match, participant: MatchParticipant | null): MatchResult {
+  if (!participant || match.radiantWin === null || match.radiantWin === undefined) return match.result;
+  return match.radiantWin === (participant.team === "radiant") ? "win" : "loss";
+}
+
 function MatchNumberField({
   value,
   invalid,
+  readOnly = false,
   onChange,
 }: {
   value: number;
   invalid: boolean;
+  readOnly?: boolean;
   onChange: (value: number) => void;
 }) {
   return (
@@ -435,6 +420,7 @@ function MatchNumberField({
           min="1"
           value={value}
           required
+          readOnly={readOnly}
           aria-invalid={invalid}
           onChange={(event) => onChange(Number(event.target.value))}
         />
@@ -448,10 +434,12 @@ function ResultField({
   value,
   onChange,
   fullWidth = false,
+  readOnly = false,
 }: {
   value: MatchResult;
   onChange: (value: MatchResult) => void;
   fullWidth?: boolean;
+  readOnly?: boolean;
 }) {
   return (
     <fieldset className={`result-field${fullWidth ? " field-full" : ""}`}>
@@ -459,7 +447,7 @@ function ResultField({
       <div className="result-options">
         {(["win", "loss"] as MatchResult[]).map((result) => (
           <label className={`result-option result-option-${result}`} key={result}>
-            <input type="radio" name="result" checked={value === result} onChange={() => onChange(result)} />
+            <input type="radio" name="result" checked={value === result} disabled={readOnly} onChange={() => onChange(result)} />
             <span>{result === "win" ? "برد" : "باخت"}</span>
           </label>
         ))}

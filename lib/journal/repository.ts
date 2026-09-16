@@ -14,7 +14,6 @@ import { normalizeProfile } from "@/lib/date";
 import { extractMatchDetails } from "@/lib/dota/match-details";
 import { gameModeName, lobbyTypeName } from "@/lib/dota/modes";
 import {
-  dismissedDotaMatches,
   dotaMatches,
   heroPoolEntries,
   heroPoolVersions,
@@ -29,11 +28,6 @@ import {
 } from "@/lib/db/schema";
 import { matchAnalysisStatus } from "@/lib/opendota/analysis-policy";
 import { hasParsedOpenDotaReplay } from "@/lib/opendota/validation";
-import {
-  deleteStoredObject,
-  isStorageNotFound,
-} from "@/lib/storage/client";
-import { collectDismissedDotaMatchIds } from "./dismissed";
 import { makePublicImageUrl } from "@/lib/storage/media";
 import type { DayInput, PublicPlayerIdentifier } from "./validation";
 import { toJournalDateKey } from "./timezone";
@@ -60,18 +54,6 @@ export interface JournalMatchPageData {
 interface DateRange {
   from: string;
   to: string;
-}
-
-async function deleteRemovedMatchImage(objectKey: string) {
-  try {
-    await deleteStoredObject(objectKey);
-  } catch (error) {
-    if (!isStorageNotFound(error)) {
-      console.warn("Unable to delete image for removed journal match", {
-        objectKey,
-      });
-    }
-  }
 }
 
 export async function findJournalOwnerById(id: string) {
@@ -361,8 +343,8 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
 /**
  * Resolve one journal entry for the standalone match page. Imported matches use
  * their public Dota match id; legacy/manual entries can still use their UUID.
- * Numeric Dota ids always require an owner because the same match may exist in
- * more than one player's journal.
+ * Numeric Dota ids can be opened publicly. When no owner is supplied we select
+ * one stored journal copy; adding ?player= keeps the viewed player explicit.
  */
 export async function loadJournalMatchPage(
   reference: string,
@@ -376,7 +358,6 @@ export async function loadJournalMatchPage(
     );
 
   if (!isDotaMatchId && !isJournalMatchId) return null;
-  if (isDotaMatchId && !ownerId) return null;
 
   const dotaMatchId = isDotaMatchId ? Number(normalized) : null;
   if (isDotaMatchId && (!Number.isSafeInteger(dotaMatchId) || dotaMatchId! <= 0)) {
@@ -384,10 +365,9 @@ export async function loadJournalMatchPage(
   }
 
   const conditions = isDotaMatchId
-    ? and(
-        eq(journalMatches.userId, ownerId!),
-        eq(journalMatches.dotaMatchId, dotaMatchId!),
-      )
+    ? ownerId
+      ? and(eq(journalMatches.userId, ownerId), eq(journalMatches.dotaMatchId, dotaMatchId!))
+      : eq(journalMatches.dotaMatchId, dotaMatchId!)
     : eq(journalMatches.id, normalized);
 
   const [target] = await getDb()
@@ -436,7 +416,6 @@ export async function loadJournalMatchPage(
 export async function saveJournalDay(userId: string, dateKey: string, input: DayInput) {
   const db = getDb();
   const now = new Date();
-  const removedImageKeys: string[] = [];
 
   await db.transaction(async (tx) => {
     await tx.execute(
@@ -475,45 +454,8 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
     const existingIds = new Set(existingMatches.map((match) => match.id));
     const existingById = new Map(existingMatches.map((match) => [match.id, match]));
     const incomingMatches = Object.values(input.matches);
-    const incomingIds = new Set(incomingMatches.map((match) => match.id));
-    const removedIds = existingMatches
-      .map((match) => match.id)
-      .filter((id) => !incomingIds.has(id));
-
-    if (removedIds.length) {
-      const dismissedMatchIds = collectDismissedDotaMatchIds(
-        existingMatches,
-        incomingIds,
-      );
-      if (dismissedMatchIds.length) {
-        await tx
-          .insert(dismissedDotaMatches)
-          .values(
-            dismissedMatchIds.map((dotaMatchId) => ({
-              userId,
-              dotaMatchId,
-              dismissedAt: now,
-            })),
-          )
-          .onConflictDoNothing();
-      }
-
-      const removedImages = await tx
-        .select({ objectKey: matchImages.objectKey })
-        .from(matchImages)
-        .where(inArray(matchImages.matchId, removedIds));
-      removedImageKeys.push(...removedImages.map((image) => image.objectKey));
-
-      await tx
-        .delete(journalMatches)
-        .where(
-          and(
-            eq(journalMatches.userId, userId),
-            eq(journalMatches.dayId, day.id),
-            inArray(journalMatches.id, removedIds),
-          ),
-        );
-    }
+    // Saving is intentionally non-destructive: omitted matches are preserved.
+    // This prevents stale clients and crafted save payloads from deleting history.
 
     for (const match of incomingMatches) {
       const existing = existingById.get(match.id);
@@ -590,8 +532,6 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
 
     await tx.update(users).set({ updatedAt: now }).where(eq(users.id, userId));
   });
-
-  await Promise.allSettled(removedImageKeys.map(deleteRemovedMatchImage));
 
   const owner = await findJournalOwnerById(userId);
   if (!owner) throw new Error("Journal owner disappeared after saving");

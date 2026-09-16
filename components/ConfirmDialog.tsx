@@ -1,6 +1,7 @@
 "use client";
 
 import { LogOut, Trash2, TriangleAlert, X } from "lucide-react";
+import ViewportPortal from "./ViewportPortal";
 
 export default function ConfirmDialog({
   open,
@@ -20,7 +21,7 @@ export default function ConfirmDialog({
   tone?: "discard" | "delete";
 }) {
   if (!open) return null;
-  return (
+  return <ViewportPortal>{(
     <div
       className="modal-backdrop confirm-layer"
       role="presentation"
@@ -42,5 +43,5 @@ export default function ConfirmDialog({
         </footer>
       </section>
     </div>
-  );
+  )}</ViewportPortal>;
 }

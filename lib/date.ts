@@ -180,6 +180,7 @@ function sanitizeParticipant(value: unknown): MatchParticipant | null {
 
   const personName = String(candidate.personName || "").trim().slice(0, 100);
   const accountId = nonNegativeInteger(candidate.accountId, 4_294_967_295);
+  const position = nonNegativeInteger(candidate.position, 5);
 
   return {
     playerSlot,
@@ -188,6 +189,7 @@ function sanitizeParticipant(value: unknown): MatchParticipant | null {
     heroId: hero.id,
     heroName: hero.name,
     team: playerSlot < 128 ? "radiant" : "dire",
+    position: position && position >= 1 ? position : null,
     level: nonNegativeInteger(candidate.level, 100),
     kills: nonNegativeInteger(candidate.kills, 32_767),
     deaths: nonNegativeInteger(candidate.deaths, 32_767),
