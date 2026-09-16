@@ -583,11 +583,22 @@ function AccessScreen({
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
 
-  async function submit(event: React.FormEvent) {
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     try {
-      if (view === "coach") await onCoachLogin(username);
+      if (view === "coach") {
+        const action = (event.nativeEvent as SubmitEvent).submitter instanceof HTMLButtonElement
+          ? ((event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement).value
+          : "player";
+        const normalized = username.normalize("NFKC").trim();
+        if (action === "match") {
+          if (!/^\d{6,20}$/.test(normalized)) throw new Error("Match ID باید فقط شامل عدد باشد");
+          window.location.assign(`/match/${normalized}`);
+          return;
+        }
+        await onCoachLogin(normalized);
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "ورود انجام نشد");
     }
@@ -618,7 +629,7 @@ function AccessScreen({
         <section className="access-panel" id="login">
           <div className="access-heading">
             <p className="week-kicker"><span aria-hidden="true" />{view === "roles" ? "ورود به Dota2Notes" : "دفتر عمومی بازیکن"}</p>
-            <h2>{view === "roles" ? "چطور می‌خواهی وارد شوی؟" : "دفتر کدام بازیکن را می‌خواهی ببینی؟"}</h2>
+            <h2>{view === "roles" ? "چطور می‌خواهی وارد شوی؟" : "بازیکن یا مچ موردنظر را پیدا کن"}</h2>
           </div>
           {view === "roles" ? (
             <div className="role-grid">
@@ -640,12 +651,12 @@ function AccessScreen({
           ) : (
             <form className="access-form" onSubmit={submit}>
               <label className="field">
-                <span>نام یا شناسه بازیکن</span>
+                <span>شناسه بازیکن یا Match ID</span>
                 <input
                   lang="en"
                   dir="ltr"
                   autoComplete="off"
-                  placeholder="Steam name, Account ID یا SteamID64"
+                  placeholder="Account ID، SteamID64 یا Match ID"
                   value={username}
                   maxLength={64}
                   required
@@ -657,8 +668,11 @@ function AccessScreen({
                 <button className="secondary-button" type="button" onClick={() => onViewChange("roles")}>
                   بازگشت
                 </button>
-                <button className="primary-button" type="submit" disabled={busy}>
+                <button className="primary-button" type="submit" value="player" disabled={busy}>
                   {busy ? "در حال پیدا کردن" : "مشاهده دفتر"}
+                </button>
+                <button className="secondary-button" type="submit" value="match" disabled={busy}>
+                  مشاهده Match
                 </button>
               </div>
             </form>

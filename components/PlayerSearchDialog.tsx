@@ -8,6 +8,7 @@ import {
 } from "react";
 import {
   ChevronLeft,
+  Gamepad2,
   LoaderCircle,
   Search,
   UserRound,
@@ -81,6 +82,7 @@ export default function PlayerSearchDialog({
     event.preventDefault();
     const first = results[0];
     if (first) window.location.assign(`/user/${first.steamAccountId}`);
+    else if (/^\d{6,20}$/.test(query.trim())) window.location.assign(`/match/${query.trim()}`);
   }
 
   const normalizedLength = query.normalize("NFKC").trim().length;
@@ -123,11 +125,18 @@ export default function PlayerSearchDialog({
         </label>
 
         <div className="player-search-results" role="listbox" aria-label="نتایج جست‌وجو">
+          {/^[0-9]{6,20}$/.test(query.trim()) && (
+            <a className="player-search-result is-match-result" href={`/match/${query.trim()}`} role="option" onClick={onClose}>
+              <span className="player-search-avatar"><Gamepad2 aria-hidden="true" /></span>
+              <span className="player-search-identity"><strong>باز کردن Match</strong><small lang="en" dir="ltr">Match ID {query.trim()}</small></span>
+              <ChevronLeft aria-hidden="true" />
+            </a>
+          )}
           {normalizedLength < MIN_QUERY_LENGTH ? (
             <p className="player-search-state">حداقل دو نویسه وارد کن.</p>
           ) : error ? (
             <p className="player-search-state is-error" role="alert">{error}</p>
-          ) : !loading && results.length === 0 ? (
+          ) : !loading && results.length === 0 && !/^[0-9]{6,20}$/.test(query.trim()) ? (
             <p className="player-search-state">بازیکنی با این نام یا شناسه پیدا نشد.</p>
           ) : (
             results.map((player) => (

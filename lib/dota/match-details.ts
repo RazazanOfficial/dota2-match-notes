@@ -1,6 +1,7 @@
 import { heroById } from "../../data/heroes";
 import type { MatchParticipant } from "../types";
 import { openDotaMatchSchema } from "../opendota/validation";
+import { resolveMatchPositions } from "./position-resolver";
 
 const SCEPTER_ITEM_IDS = new Set([108, 271, 727]);
 const SHARD_ITEM_IDS = new Set([609, 725]);
@@ -35,6 +36,15 @@ export function extractMatchDetails(
     (player) => Boolean(profileHeroId && player.hero_id === profileHeroId),
   )?.player_slot;
 
+  const rawPlayers = rawData && typeof rawData === "object" && Array.isArray((rawData as { players?: unknown }).players)
+    ? ((rawData as { players: unknown[] }).players.filter((player): player is Record<string, unknown> => Boolean(player) && typeof player === "object" && !Array.isArray(player)))
+    : parsed.data.players as unknown as Array<Record<string, unknown>>;
+  const positionResolutions = resolveMatchPositions({
+    players: rawPlayers,
+    profileSlot: typeof profilePlayerSlot === "number" ? profilePlayerSlot : null,
+    profileAssignedPosition: null,
+  });
+
   const participants = parsed.data.players
     .filter((player) => isStandardPlayerSlot(player.player_slot))
     .map((player): MatchParticipant | null => {
@@ -63,6 +73,7 @@ export function extractMatchDetails(
         heroId: hero.id,
         heroName: hero.name,
         team: player.player_slot < 128 ? "radiant" : "dire",
+        position: positionResolutions.get(player.player_slot)?.detectedPosition ?? null,
         level: player.level ?? null,
         kills: player.kills ?? null,
         deaths: player.deaths ?? null,

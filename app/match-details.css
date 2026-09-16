@@ -45,6 +45,8 @@ html:has(.match-workspace-shell:not(.is-page)),body:has(.match-workspace-shell:n
   background: rgba(7, 11, 13, 0.88);
 }
 
+body > .confirm-layer { z-index: 5000; }
+
 .match-not-found section {
   display: grid;
   width: min(460px, 100%);
@@ -914,11 +916,31 @@ clip-path: polygon(12.8% 0%, 100% 0%, 88% 100%, 0% 100%);
 }
 
 .match-personal-editor {
+  position: relative;
+  z-index: 60;
   margin: 12px 0 0;
   padding: 13px;
   border: 1px solid rgba(208, 173, 93, 0.13);
   background: rgba(6, 8, 9, 0.42);
 }
+
+.match-readonly-field { display: grid; align-content: center; min-height: 46px; }
+.match-readonly-field > span { color: var(--muted); font-size: .62rem; }
+.match-readonly-field > strong { display: block; margin-top: 7px; color: #e6e4dd; font: 750 .82rem Arial,sans-serif; }
+.match-readonly-field > strong.is-win { color: #69d5a8; }
+.match-readonly-field > strong.is-loss { color: #ef8178; }
+.match-readonly-role-value { display: inline-flex !important; align-items: center; justify-content: center; gap: 7px; min-height: 26px; }
+.match-readonly-role-value img { width: 34px; height: 25px; object-fit: cover; border: 1px solid rgba(211,169,79,.34); }
+.match-readonly-role-value img.is-position { width: 24px; height: 24px; object-fit: contain; border: 0; }
+.match-context-bar .match-readonly-role > .match-readonly-role-value { margin-top: 3px; }
+.match-personal-editor .dota-select { z-index: 70; }
+.match-personal-editor .dota-select-options { z-index: 1000; }
+.match-role-readonly-trigger:disabled { opacity:1; cursor:default; }
+.match-role-readonly-trigger .match-readonly-role-value { margin:0; font-size:inherit; }
+.match-role-readonly-trigger .match-readonly-role-value img,
+.match-context-bar .match-readonly-role-value img { width:24px; height:24px; border:0; object-fit:contain; }
+.match-personal-editor .result-option input:disabled + span { opacity:1; cursor:default; }
+.match-personal-editor input[readonly] { cursor:default; }
 
 .match-personal-editor .form-grid {
   grid-template-columns: minmax(110px, 0.55fr) repeat(3, minmax(180px, 1fr));

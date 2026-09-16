@@ -157,6 +157,11 @@ function mockAnalysis(): MatchAnalysis {
             : undefined,
         isProfilePlayer: playerIndex === 0,
         kills: 12 - Math.floor(playerIndex / 2), deaths: 2 + playerIndex % 5, assists: 9 + playerIndex,
+        lastHits: Math.round(Math.max(1.1, 7.8 - (playerIndex % 5) * 1.25) * 51),
+        denies: Math.max(0, 8 - (playerIndex % 5)),
+        heroDamage: Math.round((720 - playerIndex * 31) * 51),
+        heroHealing: Math.round((heroId === 30 ? 92 : heroId === 5 ? 38 : 0) * 51),
+        towerDamage: Math.max(480, 5_900 - playerIndex * 470),
         performanceScore: calculatePerformanceScore(benchmarks, 51, playerIndex === 0 ? 3 : (playerIndex % 5) + 1), benchmarks, strengths: sorted.filter((metric) => metric.qualityPercentile >= 80).slice(0, 3), weaknesses: sorted.filter((metric) => metric.qualityPercentile < 40).reverse().slice(0, 3), benchmarkSource: "hero" as const,
         timeline: Array.from({ length: 52 }, (_, minute) => {
           const impact = Math.round(Math.sin((minute + playerIndex) / 4) * 8 + (playerIndex < 5 ? 1 : -1));
@@ -221,6 +226,8 @@ function participant(
   options: ParticipantOptions,
 ): MatchParticipant {
   const index = playerSlot >= 128 ? playerSlot - 123 : playerSlot + 5;
+  const teamIndex = playerSlot >= 128 ? playerSlot - 128 : playerSlot;
+  const position = [3, 2, 1, 4, 5][teamIndex] ?? null;
   return {
     playerSlot,
     accountId: personName === "حساب خصوصی" ? null : 900_000_000 + playerSlot,
@@ -228,6 +235,7 @@ function participant(
     heroId,
     heroName,
     team,
+    position,
     level: options.level,
     kills: Math.max(1, 18 - index),
     deaths: Math.max(2, index - 1),
@@ -331,7 +339,6 @@ export default function DevMockPlayer() {
           toast.success("ذخیره در Dev Mock شبیه‌سازی شد.");
           setSelectedMatch(null);
         }}
-        onDelete={() => undefined}
       />
     </main>
   );

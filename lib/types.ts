@@ -58,6 +58,7 @@ export interface MatchParticipant {
   heroId: number;
   heroName: string;
   team: DotaTeam;
+  position?: number | null;
   level: number | null;
   kills: number | null;
   deaths: number | null;
@@ -220,6 +221,11 @@ export interface MatchPlayerAnalysis {
   kills?: number | null;
   deaths?: number | null;
   assists?: number | null;
+  lastHits?: number | null;
+  denies?: number | null;
+  heroDamage?: number | null;
+  heroHealing?: number | null;
+  towerDamage?: number | null;
   performanceScore?: number;
   benchmarks: MatchBenchmarkMetric[];
   scoreMetrics?:MatchBenchmarkMetric[];
