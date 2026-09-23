@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { getRequestUser } from "@/lib/auth/request";
+import { getRequestUser, hasValidRequestOrigin } from "@/lib/auth/request";
 import { jsonError, journalErrorResponse } from "@/lib/journal/http";
 import { saveJournalDay } from "@/lib/journal/repository";
 import { dayInputSchema, parseDateKey } from "@/lib/journal/validation";
@@ -14,6 +14,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   try {
     const user = await getRequestUser(request);
     if (!user) return jsonError(401, "unauthorized", "ابتدا وارد حساب شوید");
+    if (!hasValidRequestOrigin(request)) return jsonError(403, "invalid_origin", "مبدأ درخواست معتبر نیست");
 
     const contentLength = Number(request.headers.get("content-length") || 0);
     if (contentLength > 512_000) {

@@ -244,7 +244,18 @@ describe("OpenDota HTTP client", () => {
     const [url] = fetchMock.mock.calls[0] as [URL, RequestInit];
     expect(url.pathname).toBe("/api/players/988195076/matches");
     expect(Number(url.searchParams.get("date"))).toBeGreaterThanOrEqual(3);
+    expect(url.searchParams.get("limit")).toBe("100");
+    expect(url.searchParams.get("offset")).toBe("0");
     expect(url.searchParams.get("api_key")).toBe("server-secret");
+  });
+
+  it("paginates an older selected week without fetching full match payloads", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json([]));
+    vi.stubGlobal("fetch", fetchMock);
+    await fetchOpenDotaPlayerMatchesSince(988_195_076, new Date("2026-09-12T00:00:00Z"), 200, 100);
+    const [url] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(url.searchParams.get("offset")).toBe("200");
+    expect(url.searchParams.get("limit")).toBe("100");
   });
 
   it("rejects a response larger than the configured limit", async () => {

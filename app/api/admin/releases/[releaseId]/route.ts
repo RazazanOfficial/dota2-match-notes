@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { requireSuperAdmin } from "@/lib/admin/auth";
+import { hasValidRequestOrigin } from "@/lib/auth/request";
 import { AdminError, adminErrorResponse } from "@/lib/admin/errors";
 import { updateRelease } from "@/lib/releases/repository";
 import { releaseIdSchema, releaseInputSchema } from "@/lib/releases/validation";
@@ -9,6 +10,7 @@ export const runtime = "nodejs";
 export async function PUT(request: NextRequest, context: { params: Promise<{ releaseId: string }> }) {
   try {
     await requireSuperAdmin(request);
+    if (!hasValidRequestOrigin(request)) throw new AdminError(403, "invalid_origin", "مبدأ درخواست معتبر نیست");
     const id = releaseIdSchema.parse((await context.params).releaseId);
     const input = releaseInputSchema.parse(await request.json());
     const release = await updateRelease(id, input);

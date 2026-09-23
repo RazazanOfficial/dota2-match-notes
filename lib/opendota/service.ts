@@ -74,22 +74,42 @@ interface RecentSyncOptions {
   gameModes?: ManualMatchSyncInput["gameModes"];
 }
 
+const HISTORY_PAGE_SIZE = 100;
+const MAX_HISTORY_PAGES = 30;
+
+async function fetchSelectedHistory(user: RecentSyncUser, range: { from: string; to: string }, onClaim?: () => void) {
+  // OpenDota offers a lower age bound and offset, but no end-date parameter.
+  // Read bounded pages until the selected dates are covered; never mark an
+  // incomplete scan as completed when the safety cap is reached.
+  const since = new Date(`${range.from}T00:00:00.000Z`);
+  since.setUTCDate(since.getUTCDate() - 1);
+  const matches: Awaited<ReturnType<typeof fetchOpenDotaPlayerMatchesSince>> = [];
+  const config = getOpenDotaConfig();
+  for (let page = 0; page < MAX_HISTORY_PAGES; page += 1) {
+    await claimOpenDotaRequestQuota(quotaConfig(config));
+    onClaim?.();
+    const batch = await fetchOpenDotaPlayerMatchesSince(user.steamAccountId, since, page * HISTORY_PAGE_SIZE, HISTORY_PAGE_SIZE);
+    matches.push(...batch);
+    if (batch.length < HISTORY_PAGE_SIZE || batch[batch.length - 1].start_time * 1_000 < since.getTime()) return matches;
+  }
+  throw new OpenDotaError(503, "opendota_history_too_large", "تاریخچه بازی‌ها برای این بازه خیلی بزرگ است؛ لطفاً بعداً دوباره تلاش کنید");
+}
+
 async function discoverRecentMatches(
   user: RecentSyncUser,
   options: RecentSyncOptions,
 ) {
   const config = getOpenDotaConfig();
-  await claimOpenDotaRequestQuota(quotaConfig(config));
-  options.onExternalRequestClaimed?.();
   // The compact recent feed is best for the scheduled cursor. An explicit
   // day/week request uses player history so the user can retrieve an older week.
-  const historySince = options.range
-    ? new Date(`${options.range.from}T00:00:00.000Z`)
-    : null;
-  if (historySince) historySince.setUTCDate(historySince.getUTCDate() - 1);
-  const fetchedMatches = options.range
-    ? await fetchOpenDotaPlayerMatchesSince(user.steamAccountId, historySince as Date)
-    : await fetchOpenDotaRecentMatches(user.steamAccountId);
+  let fetchedMatches: Awaited<ReturnType<typeof fetchOpenDotaRecentMatches>>;
+  if (options.range) {
+    fetchedMatches = await fetchSelectedHistory(user, options.range, options.onExternalRequestClaimed);
+  } else {
+    await claimOpenDotaRequestQuota(quotaConfig(config));
+    options.onExternalRequestClaimed?.();
+    fetchedMatches = await fetchOpenDotaRecentMatches(user.steamAccountId);
+  }
   const recentMatches = options.range
     ? fetchedMatches.filter((match) => {
         const day = toJournalDateKey(new Date(match.start_time * 1_000));

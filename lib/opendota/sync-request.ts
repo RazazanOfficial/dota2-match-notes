@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { MatchSyncGameMode } from "@/lib/types";
+import { toJournalDateKey } from "../journal/timezone";
 
 const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const DAY_MS = 86_400_000;
@@ -71,6 +72,9 @@ export const manualMatchSyncInputSchema = z.object({
       path: ["to"],
       message: input.scope === "day" ? "بازه دریافت روزانه باید یک روز باشد" : "بازه هفتگی باید داخل یک هفته شنبه تا جمعه و حداکثر هفت روز باشد",
     });
+  }
+  if (input.to > toJournalDateKey(new Date())) {
+    context.addIssue({ code: "custom", path: ["to"], message: "تاریخ آینده قابل دریافت نیست" });
   }
   const oldestAllowed = new Date();
   oldestAllowed.setUTCDate(oldestAllowed.getUTCDate() - 366);

@@ -59,4 +59,9 @@ describe("manual match range validation", () => {
     expect(manualMatchSyncInputSchema.safeParse({ scope: "week", from: "2026-09-11", to: "2026-09-13", mode: "analysis" }).success).toBe(false);
     expect(manualMatchSyncInputSchema.safeParse({ scope: "week", from: "2026-09-12", to: "2026-09-19", mode: "analysis" }).success).toBe(false);
   });
+
+  it("rejects days beyond today in the journal time zone", () => {
+    const tomorrow = new Date(Date.now() + 3 * 86_400_000).toISOString().slice(0, 10);
+    expect(manualMatchSyncInputSchema.safeParse({ scope: "day", from: tomorrow, to: tomorrow, mode: "basic" }).success).toBe(false);
+  });
 });

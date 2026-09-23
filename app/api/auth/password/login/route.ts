@@ -16,16 +16,9 @@ import {
 } from "@/lib/auth/password";
 import { passwordLoginSchema } from "@/lib/auth/password-validation";
 import { passwordAuthErrorResponse } from "@/lib/auth/password-response";
+import { clientAddress } from "@/lib/auth/client-address";
 
 export const runtime = "nodejs";
-
-function clientAddress(request: NextRequest) {
-  return (
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip")?.trim() ||
-    "unknown"
-  );
-}
 
 export async function POST(request: NextRequest) {
   try {

@@ -1,6 +1,8 @@
 import { HEROES } from "../../data/heroes";
 import { fetchOpenDotaJson } from "../opendota/client";
 import { OpenDotaError } from "../opendota/errors";
+import { getOpenDotaConfig } from "../opendota/config";
+import { claimOpenDotaRequestQuota } from "../opendota/repository";
 import { fetchStratzGraphql } from "../stratz/gateway";
 
 type UnknownRecord = Record<string, unknown>;
@@ -108,13 +110,18 @@ function sleep(milliseconds: number) {
 async function fetchHeroBenchmarks(heroId: number) {
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
+      const config = getOpenDotaConfig();
+      await claimOpenDotaRequestQuota({
+        minuteRequestLimit: config.minuteRequestLimit,
+        dailyRequestLimit: config.dailyRequestLimit,
+      });
       const raw = await fetchOpenDotaJson(`benchmarks?hero_id=${heroId}`, {
         code: "opendota_benchmark_not_found",
         message: "Benchmark این Hero پیدا نشد",
       });
       return parseOpenDotaBenchmarks(raw, heroId);
     } catch (error) {
-      if (!(error instanceof OpenDotaError) || error.status !== 429 || attempt === 3) throw error;
+      if (!(error instanceof OpenDotaError) || error.status !== 429 || attempt === 3 || error.code === "opendota_global_rate_limited") throw error;
       await sleep(Math.max(1, error.retryAfterSeconds ?? attempt * 2) * 1_000);
     }
   }
@@ -123,13 +130,15 @@ async function fetchHeroBenchmarks(heroId: number) {
 
 export async function fetchAllHeroBenchmarks() {
   const rows: ExternalBenchmarkRow[] = [];
-  // Two requests per 2.1 seconds stays below the public 60 requests/minute
-  // ceiling while keeping the full 72-hour refresh inside the worker timeout.
+  // Pace benchmark requests and reserve every attempt in the shared DB quota.
   for (let index = 0; index < HEROES.length; index += 2) {
     const batch = HEROES.slice(index, index + 2);
     const results = await Promise.allSettled(batch.map((hero) => fetchHeroBenchmarks(hero.id)));
-    for (const result of results) if (result.status === "fulfilled") rows.push(...result.value);
-    if (index + 2 < HEROES.length) await sleep(2_100);
+    for (const result of results) {
+      if (result.status === "fulfilled") rows.push(...result.value);
+      else if (result.reason instanceof OpenDotaError && result.reason.code === "opendota_global_rate_limited") throw result.reason;
+    }
+    if (index + 2 < HEROES.length) await sleep(2_600);
   }
   return rows;
 }

@@ -31,6 +31,7 @@ import { hasParsedOpenDotaReplay } from "@/lib/opendota/validation";
 import { makePublicImageUrl } from "@/lib/storage/media";
 import type { DayInput, PublicPlayerIdentifier } from "./validation";
 import { toJournalDateKey } from "./timezone";
+import { journalMatchSummary } from "./match-summary";
 import type { Day, Match } from "@/lib/types";
 
 export interface JournalOwner {
@@ -124,7 +125,7 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
           gameModeId: dotaMatches.gameMode,
           lobbyTypeId: dotaMatches.lobbyType,
           radiantWin: dotaMatches.radiantWin,
-          rawData: dotaMatches.rawData,
+          rawData: journalMatchSummary,
           parseStatus: openDotaParseJobs.status,
           parseErrorCode: openDotaParseJobs.errorCode,
         })

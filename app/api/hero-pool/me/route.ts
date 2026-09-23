@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { getRequestUser } from "@/lib/auth/request";
+import { getRequestUser, hasValidRequestOrigin } from "@/lib/auth/request";
 import { jsonError, journalErrorResponse } from "@/lib/journal/http";
 import { loadActiveHeroPool, saveHeroPool } from "@/lib/hero-pool/repository";
 import { heroPoolInputSchema } from "@/lib/hero-pool/validation";
@@ -21,6 +21,7 @@ export async function PUT(request: NextRequest) {
   try {
     const user = await getRequestUser(request);
     if (!user) return jsonError(401, "unauthorized", "ابتدا وارد حساب شوید");
+    if (!hasValidRequestOrigin(request)) return jsonError(403, "invalid_origin", "مبدأ درخواست معتبر نیست");
     const contentLength = Number(request.headers.get("content-length") || 0);
     if (contentLength > 32_000) return jsonError(413, "payload_too_large", "حجم Hero Pool بیش از حد مجاز است");
     const input = heroPoolInputSchema.parse(await request.json());
