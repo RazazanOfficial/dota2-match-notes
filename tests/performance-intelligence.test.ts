@@ -30,9 +30,8 @@ describe("performance intelligence",()=>{
   });
 
   it("links both players in an inferred Role Swap pair",()=>{
-    const players=Array.from({length:10},(_,index)=>({player_slot:index<5?index:128+index-5,hero_id:index+1,gold_per_min:400,last_hits:80,lh_t:[0,5,10,15,20,25,30,35,40,45,50]}));
-    const stratzRawData={players:players.map((player,index)=>({playerSlot:player.player_slot,position:`POSITION_${index===0?3:index===3?4:(index%5)+1}`}))};
-    const result=resolveMatchPositions({players,stratzRawData,profileSlot:0,profileAssignedPosition:4});
+    const players=Array.from({length:10},(_,index)=>({player_slot:index<5?index:128+index-5,hero_id:index+1,gold_per_min:400,last_hits:80,lh_t:[0,5,10,15,20,25,30,35,40,45,50],position_est:index===0?3:index===2?1:(index%5)+1}));
+    const result=resolveMatchPositions({players,profileSlot:0,profileAssignedPosition:4});
     expect(result.get(0)).toMatchObject({detectedPosition:3,assignedPosition:4,roleSwapDetected:true,swapWithPlayerSlot:3});
     expect(result.get(3)).toMatchObject({detectedPosition:4,assignedPosition:3,roleSwapDetected:true,swapWithPlayerSlot:0});
   });

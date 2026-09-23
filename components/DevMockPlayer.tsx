@@ -21,7 +21,7 @@ const MOCK_MATCH: Match = {
   ],
   picks: [],
   role: "soft_support",
-  roleSource: "stratz",
+  roleSource: "manual",
   queueType: "",
   notes: "درگیری‌های مهم را با زمان‌بندی بهتر انتخاب کردم.",
   positivePoints: ["فشار مناسب روی لاین", "استفاده درست از تایمینگ آیتم‌ها"],
@@ -151,9 +151,9 @@ function mockAnalysis(): MatchAnalysis {
         position: playerIndex === 0 ? 3 : (playerIndex % 5) + 1,
         positionLabel: playerIndex === 0 ? "Offlane" : ["Carry", "Mid", "Offlane", "Soft Support", "Hard Support"][playerIndex % 5],
         positionResolution: playerIndex === 0
-          ? { assignedPosition: 4, detectedPosition: 3, confirmedPosition: 3, confidence: 86, source: "stratz" as const, roleSwapDetected: true, swapWithPlayerSlot: 3 }
+          ? { assignedPosition: 4, detectedPosition: 3, confirmedPosition: null, confidence: 78, source: "opendota" as const, roleSwapDetected: true, swapWithPlayerSlot: 3 }
           : playerIndex === 3
-            ? { assignedPosition: 3, detectedPosition: 4, confirmedPosition: 4, confidence: 82, source: "stratz" as const, roleSwapDetected: true, swapWithPlayerSlot: 0 }
+            ? { assignedPosition: 3, detectedPosition: 4, confirmedPosition: null, confidence: 76, source: "opendota" as const, roleSwapDetected: true, swapWithPlayerSlot: 0 }
             : undefined,
         isProfilePlayer: playerIndex === 0,
         kills: 12 - Math.floor(playerIndex / 2), deaths: 2 + playerIndex % 5, assists: 9 + playerIndex,

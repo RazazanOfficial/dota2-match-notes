@@ -26,6 +26,7 @@ export const journalMatchSummary = sql<unknown>`
     'radiant_score', ${raw}->'radiant_score',
     'dire_score', ${raw}->'dire_score',
     'version', ${raw}->'version',
+    'picks_bans', ${raw}->'picks_bans',
     'players', (
       SELECT COALESCE(jsonb_agg(projected.player ORDER BY projected.ordinal), '[]'::jsonb)
       FROM (

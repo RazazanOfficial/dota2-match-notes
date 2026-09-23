@@ -232,7 +232,7 @@ export interface MatchPlayerAnalysis {
   strengths: MatchBenchmarkMetric[];
   weaknesses: MatchBenchmarkMetric[];
   timeline: MatchMinuteSnapshot[];
-  timelineSource?: "opendota" | "stratz" | "unavailable";
+  timelineSource?: "local" | "opendota" | "stratz" | "unavailable";
   events?: MatchAnalysisEvent[];
   map?: MatchMapAnalysis;
   itemTimings?:MatchItemTiming[];
@@ -253,6 +253,7 @@ export interface MatchAnalysis {
   dotaMatchId: string;
   durationMinutes: number;
   parsed: boolean;
+  replaySource?: "local" | "opendota";
   coverage: {
     benchmarkPlayers: number;
     timelinePlayers: number;

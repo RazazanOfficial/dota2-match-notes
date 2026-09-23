@@ -12,7 +12,6 @@ import {
   journalMatches,
   matchBans,
   matchImageJobs,
-  stratzEnrichmentJobs,
   users,
 } from "@/lib/db/schema";
 import { isHeroPoolEligibleMode } from "@/lib/hero-pool/rules";
@@ -416,11 +415,6 @@ export async function saveDiscoveredOpenDotaMatch(params: {
       })
       .returning({ id: journalMatches.id });
 
-    await tx
-      .insert(stratzEnrichmentJobs)
-      .values({ matchId: saved.id, runAfter: now, updatedAt: now })
-      .onConflictDoNothing({ target: stratzEnrichmentJobs.matchId });
-
     await tx.update(users).set({ updatedAt: now }).where(eq(users.id, userId));
     return {
       created: true as const,
@@ -533,11 +527,11 @@ export async function saveOpenDotaMatch(params: {
         heroId: player.hero_id,
         heroName,
         role:
-          ownedMatch.roleSource === "manual" || ownedMatch.roleSource === "stratz"
+          ownedMatch.roleSource === "manual"
             ? ownedMatch.role
             : null,
         roleSource:
-          ownedMatch.roleSource === "manual" || ownedMatch.roleSource === "stratz"
+          ownedMatch.roleSource === "manual"
             ? ownedMatch.roleSource
             : null,
         heroPoolVersionId: activePool?.id || null,
@@ -572,24 +566,6 @@ export async function saveOpenDotaMatch(params: {
           eq(matchBans.source, "opendota"),
         ),
       );
-
-    await tx
-      .insert(stratzEnrichmentJobs)
-      .values({ matchId: journalMatchId, runAfter: now, updatedAt: now })
-      .onConflictDoUpdate({
-        target: stratzEnrichmentJobs.matchId,
-        set: {
-          status: "pending",
-          attempts: 0,
-          runAfter: now,
-          lockedAt: null,
-          finishedAt: null,
-          errorCode: null,
-          errorMessage: null,
-          updatedAt: now,
-        },
-        setWhere: ne(stratzEnrichmentJobs.status, "processing"),
-      });
 
     if (params.queueImages !== false && hasParsedOpenDotaReplay(match)) {
       await tx

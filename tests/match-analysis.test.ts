@@ -130,64 +130,37 @@ describe("match performance analysis", () => {
     expect(profile?.strengths.some((metric) => metric.key === "hero_healing_per_min")).toBe(false);
   });
 
-  it("uses STRATZ minute stats when OpenDota replay arrays are unavailable", () => {
+  it("leaves replay timeline unavailable without replay arrays", () => {
     const players = heroIds.map((_, index) => {
       const value = player(index);
       const { times: _times, gold_t: _gold, xp_t: _xp, lh_t: _lh, dn_t: _dn, ...withoutTimeline } = value;
       return withoutTimeline;
     });
-    const stratzPlayers = players.map((entry, index) => ({
-      steamAccountId: entry.account_id,
-      playerSlot: entry.player_slot,
-      heroId: entry.hero_id,
-      position: `POSITION_${(index % 5) + 1}`,
-      stats: {
-        networthPerMinute: [600, 1_000, 1_500],
-        experiencePerMinute: [0, 430, 940],
-        lastHitsPerMinute: [0, 5, 12],
-        deniesPerMinute: [0, 0, 1],
-        heroDamagePerMinute: [0, 200, 550],
-        healPerMinute: [0, 0, 0],
-        impPerMinute: [0, index === 0 ? -8 : 3, index === 0 ? -10 : 4],
-      },
-    }));
     const analysis = buildMatchAnalysis({
       rawData: { match_id: 8971629698, start_time: 1_787_000_000, duration: 2_400, radiant_win: true, players },
-      stratzRawData: { id: 8971629698, players: stratzPlayers },
     });
-    expect(analysis?.coverage.timelinePlayers).toBe(10);
-    expect(analysis?.players[0].timeline).toHaveLength(3);
-    expect(analysis?.players[0].timeline.map((point) => point.minute)).toEqual([1, 2, 3]);
-    expect(analysis?.players[0].timeline[2]).toMatchObject({ gold: 1_500, xp: 1_370, lastHits: 17 });
-    expect(analysis?.players[0].timeline[2].state).toBe("progress");
-    expect(analysis?.players[0].timelineSource).toBe("stratz");
+    expect(analysis?.coverage.timelinePlayers).toBe(0);
+    expect(analysis?.players[0].timeline).toHaveLength(0);
+    expect(analysis?.players[0].timelineSource).toBe("unavailable");
     expect(analysis?.parsed).toBe(false);
-    expect(analysis?.players[1].positionLabel).toBe("Mid");
   });
 
   it("detects the agreed role swap case without changing the assigned journal role", () => {
     const players = heroIds.map((_, index) => player(index));
     players[0].hero_id = 85;
-    const stratzPlayers = players.map((entry, index) => ({
-      steamAccountId: entry.account_id,
-      playerSlot: entry.player_slot,
-      heroId: entry.hero_id,
-      position: `POSITION_${index === 0 ? 3 : (index % 5) + 1}`,
-      stats: {},
-    }));
+    const positioned = players.map((entry, index) => ({ ...entry, position_est: index === 0 ? 3 : index === 2 ? 1 : (index % 5) + 1 }));
     const analysis = buildMatchAnalysis({
       profileAccountId: 1_000,
       profileAssignedRole: "soft_support",
-      rawData: { match_id: 8978303598, start_time: 1_787_000_000, duration: 2_400, radiant_win: true, players },
-      stratzRawData: { id: 8978303598, players: stratzPlayers },
+      rawData: { match_id: 8978303598, start_time: 1_787_000_000, duration: 2_400, radiant_win: true, players: positioned },
     });
     const profile = analysis?.players.find((entry) => entry.isProfilePlayer);
     expect(profile?.heroName).toBe("Undying");
     expect(profile?.positionResolution).toMatchObject({
       assignedPosition: 4,
       detectedPosition: 3,
-      confirmedPosition: 3,
-      source: "stratz",
+      confirmedPosition: null,
+      source: "opendota",
       roleSwapDetected: true,
     });
   });

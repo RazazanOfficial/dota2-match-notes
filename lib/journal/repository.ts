@@ -20,7 +20,6 @@ import {
   journalDays,
   journalMatches,
   matchBans,
-  matchPicks,
   matchImageJobs,
   matchImages,
   openDotaParseJobs,
@@ -32,6 +31,7 @@ import { makePublicImageUrl } from "@/lib/storage/media";
 import type { DayInput, PublicPlayerIdentifier } from "./validation";
 import { toJournalDateKey } from "./timezone";
 import { journalMatchSummary } from "./match-summary";
+import { estimatedOpenDotaRole, openDotaDraft } from "@/lib/opendota/match-derived";
 import type { Day, Match } from "@/lib/types";
 
 export interface JournalOwner {
@@ -126,6 +126,8 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
           lobbyTypeId: dotaMatches.lobbyType,
           radiantWin: dotaMatches.radiantWin,
           rawData: journalMatchSummary,
+          localReplayReady: sql<boolean>`${dotaMatches.localReplayData} is not null
+            and ${dotaMatches.localReplayData}->>'match_id' = ${dotaMatches.matchId}::text`,
           parseStatus: openDotaParseJobs.status,
           parseErrorCode: openDotaParseJobs.errorCode,
         })
@@ -146,15 +148,8 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
     ? await db
         .select()
         .from(matchBans)
-        .where(inArray(matchBans.matchId, matchIds))
+        .where(and(inArray(matchBans.matchId, matchIds), eq(matchBans.source, "manual")))
         .orderBy(asc(matchBans.sortOrder))
-    : [];
-  const pickRows = matchIds.length
-    ? await db
-        .select()
-        .from(matchPicks)
-        .where(inArray(matchPicks.matchId, matchIds))
-        .orderBy(asc(matchPicks.sortOrder))
     : [];
   const poolVersionIds = [...new Set(matchRows.map((match) => match.heroPoolVersionId).filter((id): id is string => Boolean(id)))];
   const [poolEntryRows, poolVersionRows] = poolVersionIds.length
@@ -182,17 +177,11 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
       ])
     : [[], []];
   const bansByMatch = new Map<string, typeof banRows>();
-  const picksByMatch = new Map<string, typeof pickRows>();
 
   banRows.forEach((ban) => {
     const bans = bansByMatch.get(ban.matchId) || [];
     bans.push(ban);
     bansByMatch.set(ban.matchId, bans);
-  });
-  pickRows.forEach((pick) => {
-    const picks = picksByMatch.get(pick.matchId) || [];
-    picks.push(pick);
-    picksByMatch.set(pick.matchId, picks);
   });
   const poolHeroIds = new Map<string, Set<number>>();
   poolEntryRows.forEach((entry) => {
@@ -250,8 +239,16 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
                 owner.steamAccountId,
                 match.heroId,
               );
-              const rolePool = match.heroPoolVersionId && match.role
-                ? poolHeroIds.get(`${match.heroPoolVersionId}:${match.role}`)
+              const estimatedRole = estimatedOpenDotaRole(match.rawData, owner.steamAccountId, match.heroId);
+              const role = match.roleSource === "manual" ? match.role : estimatedRole;
+              const draft = openDotaDraft(match.rawData, match.heroId);
+              const manualBans = bansByMatch.get(match.id) || [];
+              const bans = draft.bans.length ? draft.bans : manualBans.map((ban) => ({
+                id: ban.heroId, name: ban.heroName, source: "manual" as const,
+                team: ban.team, draftOrder: ban.draftOrder,
+              }));
+              const rolePool = match.heroPoolVersionId && role
+                ? poolHeroIds.get(`${match.heroPoolVersionId}:${role}`)
                 : null;
 
               return [
@@ -261,30 +258,23 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
                 number: match.number,
                 heroId: match.heroId,
                 heroName: match.heroName,
-                bans: (bansByMatch.get(match.id) || [])
+                bans: bans
                   .map((ban) => ({
-                    id: ban.heroId,
-                    name: ban.heroName,
-                    source: ban.source,
-                    team: ban.team,
-                    draftOrder: ban.draftOrder,
-                    inRolePool: Boolean(rolePool?.has(ban.heroId)),
+                    ...ban,
+                    inRolePool: Boolean(rolePool?.has(ban.id)),
                   }))
                   .sort((left, right) => Number(right.inRolePool) - Number(left.inRolePool) || (left.draftOrder ?? 999) - (right.draftOrder ?? 999)),
-                picks: (picksByMatch.get(match.id) || []).map((pick) => ({
-                  id: pick.heroId,
-                  name: pick.heroName,
-                  playerSlot: pick.playerSlot,
-                  team: pick.team,
-                  inRolePool: Boolean(rolePool?.has(pick.heroId)),
+                picks: draft.picks.map((pick) => ({
+                  ...pick,
+                  inRolePool: Boolean(rolePool?.has(pick.id)),
                 })),
                 legacyBans: match.legacyBans,
-                role: match.role || "",
-                roleSource: match.roleSource,
+                role: role || "",
+                roleSource: match.roleSource === "manual" ? "manual" : estimatedRole ? "opendota" : null,
                 positionOverrides: match.positionOverrides || {},
                 heroPoolEligible: match.heroPoolEligible,
                 heroPoolMatch:
-                  match.heroPoolEligible && match.heroPoolVersionId && match.role && match.heroId
+                  match.heroPoolEligible && match.heroPoolVersionId && role && match.heroId
                     ? Boolean(rolePool?.has(match.heroId))
                     : null,
                 heroPoolVersion: match.heroPoolVersionId
@@ -324,7 +314,8 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
                 images: imagesByMatch.get(match.id) || [],
                 imageJobStatus: imageJobByMatch.get(match.id) || null,
                 analysisStatus: matchAnalysisStatus({
-                  replayParsed: Boolean(match.rawData && hasParsedOpenDotaReplay(match.rawData as Record<string, unknown>)),
+                  replayParsed: Boolean(match.localReplayReady ||
+                    (match.rawData && hasParsedOpenDotaReplay(match.rawData as Record<string, unknown>))),
                   parseStatus: match.parseStatus,
                   startedAt: match.startedAt,
                 }),
@@ -444,8 +435,10 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
         dotaMatchId: journalMatches.dotaMatchId,
         role: journalMatches.role,
         roleSource: journalMatches.roleSource,
+        rawData: dotaMatches.rawData,
       })
       .from(journalMatches)
+      .leftJoin(dotaMatches, eq(journalMatches.dotaMatchId, dotaMatches.matchId))
       .where(
         and(
           eq(journalMatches.userId, userId),
@@ -461,16 +454,16 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
     for (const match of incomingMatches) {
       const existing = existingById.get(match.id);
       const nextRole = match.role || null;
+      const estimatedRole = estimatedOpenDotaRole(existing?.rawData, undefined, match.heroId);
+      const roleSource = !nextRole ? null
+        : existing?.roleSource === "manual" && existing.role === nextRole ? "manual" as const
+        : nextRole === estimatedRole ? "opendota" as const : "manual" as const;
       const values = {
         number: match.number,
         heroId: match.heroId,
         heroName: match.heroName,
         role: nextRole,
-        roleSource: nextRole
-          ? existing?.role === nextRole
-            ? existing.roleSource || "manual" as const
-            : "manual" as const
-          : null,
+        roleSource,
         positionOverrides: match.positionOverrides || {},
         queueType: match.queueType || null,
         notes: match.notes,
@@ -509,14 +502,14 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
         .where(
           and(
             eq(matchBans.matchId, match.id),
-            inArray(matchBans.source, ["opendota", "stratz"]),
+            eq(matchBans.source, "opendota"),
           ),
         )
         .limit(1);
 
       await tx
         .delete(matchBans)
-        .where(and(eq(matchBans.matchId, match.id), eq(matchBans.source, "manual")));
+        .where(and(eq(matchBans.matchId, match.id), inArray(matchBans.source, ["manual", "stratz"])));
 
       if (!automaticBan && match.banIds.length) {
         await tx.insert(matchBans).values(

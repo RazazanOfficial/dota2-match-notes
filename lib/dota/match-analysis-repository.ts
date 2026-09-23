@@ -11,6 +11,7 @@ import {
 import { buildMatchAnalysis } from "./match-analysis";
 import type { PerformanceReferenceData } from "./performance-cohort";
 import { hasParsedOpenDotaReplay } from "@/lib/opendota/validation";
+import { overlayReplayData } from "@/lib/replay/overlay";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -101,11 +102,11 @@ export async function loadPublicMatchAnalysis(journalMatchId: string, requestedP
     .select({
       dotaMatchId: journalMatches.dotaMatchId,
       profileHeroId: journalMatches.heroId,
-      profileAssignedRole: journalMatches.role,
+      profileAssignedRole: sql<"safe_lane" | "mid_lane" | "off_lane" | "soft_support" | "hard_support" | null>`case when ${journalMatches.roleSource} = 'manual' then ${journalMatches.role} else null end`,
       positionOverrides: journalMatches.positionOverrides,
       profileAccountId: users.steamAccountId,
       rawData: dotaMatches.rawData,
-      stratzRawData: dotaMatches.stratzRawData,
+      localReplayData: dotaMatches.localReplayData,
     })
     .from(journalMatches)
     .innerJoin(users, eq(journalMatches.userId, users.id))
@@ -114,9 +115,10 @@ export async function loadPublicMatchAnalysis(journalMatchId: string, requestedP
     .limit(1);
   if (!source) return { found: false as const, analysis: null, replayParsed: false };
   if (!source.dotaMatchId || !source.rawData) return { found: true as const, analysis: null, replayParsed: false };
-  const replayParsed = hasParsedOpenDotaReplay(source.rawData as Record<string, unknown>);
+  const overlaid = overlayReplayData(source.rawData, source.localReplayData);
+  const replayParsed = hasParsedOpenDotaReplay(overlaid.match);
 
-  const rawPlayers = Array.isArray(source.rawData.players) ? source.rawData.players : [];
+  const rawPlayers = Array.isArray(overlaid.match.players) ? overlaid.match.players : [];
   const heroIds = [...new Set(rawPlayers.flatMap((value) => {
     const heroId = numberValue(record(value)?.hero_id);
     return heroId === null ? [] : [heroId];
@@ -131,8 +133,8 @@ export async function loadPublicMatchAnalysis(journalMatchId: string, requestedP
     found: true as const,
     replayParsed,
     analysis: buildMatchAnalysis({
-      rawData: source.rawData,
-      stratzRawData: source.stratzRawData,
+      rawData: overlaid.match,
+      replaySource: overlaid.source,
       profileAccountId: source.profileAccountId,
       profileHeroId: source.profileHeroId,
       profileAssignedRole: source.profileAssignedRole,

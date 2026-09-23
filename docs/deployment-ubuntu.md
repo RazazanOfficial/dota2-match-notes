@@ -142,8 +142,6 @@ Migration فقط schema را به‌روز می‌کند و در اجرای مج
 sudo cp deploy/systemd/dota2notes.service /etc/systemd/system/
 sudo cp deploy/systemd/dota2notes-images.service /etc/systemd/system/
 sudo cp deploy/systemd/dota2notes-images.timer /etc/systemd/system/
-sudo cp deploy/systemd/dota2notes-stratz.service /etc/systemd/system/
-sudo cp deploy/systemd/dota2notes-stratz.timer /etc/systemd/system/
 sudo cp deploy/systemd/dota2notes-performance-reference.service /etc/systemd/system/
 sudo cp deploy/systemd/dota2notes-performance-reference.timer /etc/systemd/system/
 sudo cp deploy/systemd/dota2notes-opendota-parse.service /etc/systemd/system/
@@ -159,25 +157,29 @@ sudo systemctl status dota2notes.service --no-pager
 sudo -u dota2notes -H bash deploy/scripts/health-check.sh
 ```
 
-پس از موفقیت Health Check، Timerهای تصاویر و تکمیل STRATZ را فعال کنید:
+پس از موفقیت Health Check، Timerهای تصاویر، parse و آمار مرجع را فعال کنید:
 
 ```bash
 sudo systemctl enable --now dota2notes-images.timer
-sudo systemctl enable --now dota2notes-stratz.timer
 sudo systemctl enable --now dota2notes-performance-reference.timer
 sudo systemctl enable --now dota2notes-opendota-parse.timer
 systemctl list-timers 'dota2notes-*'
 ```
 
-Sync کاربران فقط با دکمه داخل سایت انجام می‌شود. Workerهای تصاویر و STRATZ هر دقیقه صف‌های
-مستقل را پردازش می‌کنند و قفل دیتابیس اجازه نمی‌دهد یک Job دوبار پردازش شود. فایل‌های Scheduler ساعتی
+Sync کاربران فقط با دکمه داخل سایت انجام می‌شود. Workerهای تصاویر و OpenDota parse صف‌های
+مستقل را پردازش می‌کنند. Worker قدیمی STRATZ برای مچ‌ها بازنشسته شده است:
+
+```bash
+sudo systemctl disable --now dota2notes-stratz.timer 2>/dev/null || true
+```
+
+فایل‌های Scheduler ساعتی
 برای توسعه آینده در مخزن باقی مانده‌اند، اما در این نسخه نباید نصب یا فعال شوند.
 
 برای اجرای دستی روی VPS:
 
 ```bash
 sudo systemctl start dota2notes-images.service
-sudo systemctl start dota2notes-stratz.service
 sudo systemctl start dota2notes-performance-reference.service
 sudo systemctl start dota2notes-opendota-parse.service
 ```
@@ -187,7 +189,6 @@ sudo systemctl start dota2notes-opendota-parse.service
 ```bash
 sudo journalctl -u dota2notes.service -n 100 --no-pager
 sudo journalctl -u dota2notes-images.service -n 100 --no-pager
-sudo journalctl -u dota2notes-stratz.service -n 100 --no-pager
 sudo journalctl -u dota2notes-performance-reference.service -n 100 --no-pager
 sudo journalctl -u dota2notes-opendota-parse.service -n 100 --no-pager
 ```
@@ -269,7 +270,8 @@ sudo certbot renew --dry-run
 
 ```bash
 cd /var/www/dota2notes
-sudo systemctl stop dota2notes-images.timer dota2notes-stratz.timer dota2notes-performance-reference.timer dota2notes-opendota-parse.timer
+sudo systemctl disable --now dota2notes-stratz.timer 2>/dev/null || true
+sudo systemctl stop dota2notes-images.timer dota2notes-performance-reference.timer dota2notes-opendota-parse.timer
 sudo systemctl stop dota2notes.service
 sudo -u dota2notes -H git pull --ff-only origin main
 sudo -u dota2notes -H npm ci
@@ -279,7 +281,7 @@ sudo -u dota2notes -H npm run typecheck
 sudo -u dota2notes -H npm run build
 sudo systemctl start dota2notes.service
 sudo -u dota2notes -H bash deploy/scripts/health-check.sh
-sudo systemctl start dota2notes-images.timer dota2notes-stratz.timer dota2notes-performance-reference.timer dota2notes-opendota-parse.timer
+sudo systemctl start dota2notes-images.timer dota2notes-performance-reference.timer dota2notes-opendota-parse.timer
 ```
 
 اگر هر فرمان قبل از `systemctl start` شکست خورد، ادامه ندهید و Log همان فرمان را بررسی
@@ -310,7 +312,6 @@ STRATZ_DIRECT_IP=IP_1
 STRATZ_MIN_REQUEST_INTERVAL_MS=1000
 STRATZ_MAX_ATTEMPTS=2
 STRATZ_RETRY_DELAY_MS=2000
-STRATZ_BACKFILL_ON_MANUAL_SYNC=false
 ```
 
 این گزینه در زمان درخواست از DNS استفاده نمی‌کند و DNS سراسری سیستم یا ارتباط سرویس‌های
@@ -320,5 +321,5 @@ STRATZ_BACKFILL_ON_MANUAL_SYNC=false
 sudo -u dota2notes -H npm run stratz:route-check -- IP_1
 ```
 
-مقدار `Observed direct egress IP` باید IP ثابت VPS باشد. برنامه و Worker STRATZ فقط
-از همین مقصد استفاده می‌کنند و Retry خودکار نیز روی همان مقصد انجام می‌شود.
+مقدار `Observed direct egress IP` باید IP ثابت VPS باشد. این مسیر فقط برای
+snapshot آماری و ابزار تشخیصی اختیاری است؛ worker مربوط به مچ غیرفعال شده است.

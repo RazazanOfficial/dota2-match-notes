@@ -21,26 +21,14 @@ function basePlayers() {
 }
 
 describe("performance recovery regressions", () => {
-  it("accumulates STRATZ minute buckets for an OpenDota-unparsed match", () => {
+  it("does not invent timeline metrics for an unparsed match", () => {
     const players = basePlayers();
-    const stratzPlayers = players.map((player,index) => ({
-      playerSlot: player.player_slot,
-      heroId: player.hero_id,
-      position: `POSITION_${index % 5 + 1}`,
-      stats: {
-        networthPerMinute: [650,820,1_000,1_180,1_339],
-        experiencePerMinute: [120,180,220,240,266],
-        lastHitsPerMinute: [2,3,5,6,7],
-        deniesPerMinute: [0,0,1,0,1],
-      },
-    }));
     const analysis = buildMatchAnalysis({
       profileAccountId: 50_000,
       rawData: { match_id: 8979219268, start_time: 1_787_000_000, duration: 2_760, radiant_win: false, players },
-      stratzRawData: { id: 8979219268, players: stratzPlayers },
     });
     const atFive = analysis?.players[0].timeline.find((point) => point.minute === 5);
-    expect(atFive).toMatchObject({ gold: 1_339, xp: 1_026, lastHits: 23, denies: 2 });
+    expect(atFive).toBeUndefined();
     expect(analysis?.parsed).toBe(false);
     expect(analysis?.players[0].map?.farm.farmUptimePercent).toBeNull();
     expect(analysis?.players[0].map?.movement.availability).toBe("unavailable");

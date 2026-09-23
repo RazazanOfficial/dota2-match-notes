@@ -153,6 +153,8 @@ export const dotaMatches = pgTable("dota_matches", {
   gameMode: integer("game_mode"),
   lobbyType: integer("lobby_type"),
   rawData: jsonb("raw_data").$type<Record<string, unknown>>(),
+  localReplayData: jsonb("local_replay_data").$type<Record<string, unknown>>(),
+  localReplayParsedAt: timestamp("local_replay_parsed_at", { withTimezone: true }),
   stratzRawData: jsonb("stratz_raw_data").$type<Record<string, unknown>>(),
   stratzFetchedAt: timestamp("stratz_fetched_at", { withTimezone: true }),
   fetchedAt: timestamp("fetched_at", { withTimezone: true })

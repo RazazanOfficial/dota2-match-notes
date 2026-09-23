@@ -34,5 +34,5 @@ export async function reprocessRecentUserMatches(params: { actorUserId: string; 
     }
   }
   await getDb().insert(adminAuditLogs).values({ actorUserId: params.actorUserId, targetUserId: params.targetUserId, action: "user.matches_reprocessed", metadata: { requested: params.count, selected: targets.length, refreshed: refreshed.length, failed: failed.length } });
-  return { requested: params.count, selected: targets.length, refreshed, failed, stratzQueued: refreshed.length };
+  return { requested: params.count, selected: targets.length, refreshed, failed };
 }

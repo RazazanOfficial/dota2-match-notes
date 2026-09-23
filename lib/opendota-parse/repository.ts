@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db";
 import { dotaMatches, journalDays, journalMatches, matchImageJobs, openDotaParseJobs, users } from "@/lib/db/schema";
 import { ANALYSIS_TOKEN_COST, matchAnalysisStatus } from "@/lib/opendota/analysis-policy";
 import { hasParsedOpenDotaReplay } from "@/lib/opendota/validation";
+import { overlayReplayData } from "@/lib/replay/overlay";
 import { matchesSyncGameMode } from "@/lib/opendota/sync-request";
 import type { MatchSyncGameMode } from "@/lib/types";
 import type { OpenDotaParseConfig } from "./config";
@@ -21,6 +22,7 @@ export async function getOpenDotaAnalysisState(matchId: string) {
   const [source] = await getDb().select({
     startedAt: journalMatches.startedAt,
     rawData: dotaMatches.rawData,
+    localReplayData: dotaMatches.localReplayData,
     parseStatus: openDotaParseJobs.status,
     errorCode: openDotaParseJobs.errorCode,
   })
@@ -30,7 +32,8 @@ export async function getOpenDotaAnalysisState(matchId: string) {
     .where(eq(journalMatches.id, matchId))
     .limit(1);
   if (!source) return null;
-  const replayParsed = Boolean(source.rawData && hasParsedOpenDotaReplay(source.rawData as Record<string, unknown>));
+  const replayParsed = Boolean(source.rawData &&
+    hasParsedOpenDotaReplay(overlayReplayData(source.rawData, source.localReplayData).match));
   return {
     status: matchAnalysisStatus({ replayParsed, parseStatus: source.parseStatus, startedAt: source.startedAt }),
     errorCode: source.errorCode,
@@ -53,15 +56,21 @@ export async function requestOpenDotaAnalysis(matchId: string, userId?: string) 
     dotaMatchId: journalMatches.dotaMatchId,
     startedAt: journalMatches.startedAt,
     rawData: dotaMatches.rawData,
+    localReplayData: dotaMatches.localReplayData,
     parseStatus: openDotaParseJobs.status,
   })
     .from(journalMatches).leftJoin(dotaMatches, eq(journalMatches.dotaMatchId, dotaMatches.matchId)).leftJoin(openDotaParseJobs, eq(journalMatches.id, openDotaParseJobs.matchId))
     .where(eq(journalMatches.id, matchId)).limit(1);
   if (!source?.dotaMatchId || (userId && source.userId !== userId)) return "not_found" as const;
-  const replayParsed = Boolean(source.rawData && hasParsedOpenDotaReplay(source.rawData as Record<string, unknown>));
+  const replayParsed = Boolean(source.rawData &&
+    hasParsedOpenDotaReplay(overlayReplayData(source.rawData, source.localReplayData).match));
   const state = matchAnalysisStatus({ replayParsed, parseStatus: source.parseStatus, startedAt: source.startedAt });
   if (state === "ready") {
-    await queueImagesIfNeeded(matchId);
+    // The image worker still consumes the original OpenDota payload. A local
+    // replay makes the analysis ready but cannot render an OpenDota-only image.
+    if (source.rawData && hasParsedOpenDotaReplay(source.rawData)) {
+      await queueImagesIfNeeded(matchId);
+    }
     return "ready" as const;
   }
   if (state === "expired") return "expired" as const;
