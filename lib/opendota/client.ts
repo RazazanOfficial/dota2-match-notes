@@ -137,10 +137,12 @@ export async function fetchOpenDotaRecentMatches(steamAccountId: number) {
 export async function fetchOpenDotaPlayerMatchesSince(
   steamAccountId: number,
   since: Date,
+  offset = 0,
+  limit = 100,
 ) {
   const ageMs = Math.max(0, Date.now() - since.getTime());
   const days = Math.max(1, Math.ceil(ageMs / 86_400_000) + 1);
-  const params = new URLSearchParams({ date: String(days) });
+  const params = new URLSearchParams({ date: String(days), limit: String(limit), offset: String(offset) });
   const raw = await fetchOpenDotaJson(
     `players/${steamAccountId}/matches?${params.toString()}`,
     {
