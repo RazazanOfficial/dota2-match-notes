@@ -269,11 +269,7 @@ export default function MatchDialog({
                 <BanPicker
                   value={draft.bans}
                   picks={draft.picks}
-                  pickedHeroId={draft.heroId}
                   legacyBans={draft.legacyBans}
-                  manualOverride={draft.banOverride}
-                  onChange={(bans) => setDraft((current) => ({ ...current, bans, banOverride: true }))}
-                  onReset={() => setDraft((current) => ({ ...current, banOverride: false, bans: match?.banOverride ? [] : match?.bans ?? [] }))}
                 />
               </div>
               <MatchStats match={draft} />

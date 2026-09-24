@@ -24,11 +24,13 @@ const matchSchema = z
     number: z.number().int().min(1).max(32_767),
     heroId: z.number().int().positive().nullable(),
     heroName: z.string().trim().min(1).max(100),
+    // Accepted only for existing clients; journal saves never write these fields.
     banIds: z
       .array(z.number().int().positive())
       .max(20)
       .refine((ids) => new Set(ids).size === ids.length, "بن تکراری است")
-      .refine((ids) => ids.every((id) => Boolean(heroById(id))), "هیروی بن‌شده نامعتبر است"),
+      .refine((ids) => ids.every((id) => Boolean(heroById(id))), "هیروی بن‌شده نامعتبر است")
+      .optional(),
     banOverride: z.boolean().optional(),
     legacyBans: z.string().max(500).optional().default(""),
     role: z.union([

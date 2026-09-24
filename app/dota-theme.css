@@ -480,8 +480,6 @@ select:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .match-hero-row > img { display:none; }
 .automatic-ban-heading { display:flex; justify-content:space-between; color:var(--muted); font-size:.72rem; }
 .automatic-ban-heading b { color:#77b0c2; }
-.automatic-ban-heading button { padding:0; border:0; background:none; color:#77b0c2; cursor:pointer; font:inherit; text-align:start; }
-.automatic-ban-heading button:hover { text-decoration:underline; }
 .ban-portrait { position:relative; border:1px solid rgba(181,48,42,.3); }
 .ban-portrait-image { position:relative; display:block; overflow:hidden; }
 .ban-portrait-image::before { position:absolute; z-index:1; inset:0; content:""; background:rgba(126,12,10,.43); mix-blend-mode:color; }

@@ -1,7 +1,5 @@
-// Older clients omit banOverride. Keep existing manual edits in that case.
-export function banWritePolicy(incoming: boolean | undefined, existing: boolean | undefined) {
-  return {
-    override: incoming ?? existing ?? false,
-    preserveRows: incoming === undefined && existing === true,
-  };
+// Imported matches show only the actual provider draft. Preserve historic
+// manual bans only for entries without an OpenDota match summary.
+export function selectVisibleBans<A, B>(openDotaSummary: unknown, providerBans: A[], historicBans: B[]): Array<A | B> {
+  return openDotaSummary === null || openDotaSummary === undefined ? historicBans : providerBans;
 }

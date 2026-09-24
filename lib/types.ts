@@ -270,7 +270,6 @@ export interface Match {
   heroId: number | null;
   heroName: string;
   bans: MatchBan[];
-  banOverride?: boolean;
   picks: MatchPick[];
   legacyBans?: string;
   role: MatchRole | "";

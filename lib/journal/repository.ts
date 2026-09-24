@@ -8,7 +8,6 @@ import {
   lte,
   sql,
 } from "drizzle-orm";
-import { heroById } from "@/data/heroes";
 import { getDb } from "@/lib/db";
 import { normalizeProfile } from "@/lib/date";
 import { extractMatchDetails } from "@/lib/dota/match-details";
@@ -30,7 +29,7 @@ import { hasParsedOpenDotaReplay } from "@/lib/opendota/validation";
 import { makePublicImageUrl } from "@/lib/storage/media";
 import type { DayInput, PublicPlayerIdentifier } from "./validation";
 import { toJournalDateKey } from "./timezone";
-import { banWritePolicy } from "./ban-policy";
+import { selectVisibleBans } from "./ban-policy";
 import { journalMatchSummary } from "./match-summary";
 import { estimatedOpenDotaRole, openDotaDraft } from "@/lib/opendota/match-derived";
 import type { Day, Match } from "@/lib/types";
@@ -244,10 +243,10 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
               const role = match.roleSource === "manual" ? match.role : estimatedRole;
               const draft = openDotaDraft(match.rawData, match.heroId);
               const manualBans = bansByMatch.get(match.id) || [];
-              const bans = match.banOverride ? manualBans.map((ban) => ({
+              const bans = selectVisibleBans(match.rawData, draft.bans, manualBans.map((ban) => ({
                 id: ban.heroId, name: ban.heroName, source: "manual" as const,
                 team: ban.team, draftOrder: ban.draftOrder,
-              })) : draft.bans;
+              })));
               const rolePool = match.heroPoolVersionId && role
                 ? poolHeroIds.get(`${match.heroPoolVersionId}:${role}`)
                 : null;
@@ -265,12 +264,11 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
                     inRolePool: Boolean(rolePool?.has(ban.id)),
                   }))
                   .sort((left, right) => Number(right.inRolePool) - Number(left.inRolePool) || (left.draftOrder ?? 999) - (right.draftOrder ?? 999)),
-                banOverride: match.banOverride,
                 picks: draft.picks.map((pick) => ({
                   ...pick,
                   inRolePool: Boolean(rolePool?.has(pick.id)),
                 })),
-                legacyBans: match.legacyBans,
+                legacyBans: match.rawData == null ? match.legacyBans : "",
                 role: role || "",
                 roleSource: match.roleSource === "manual" ? "manual" : estimatedRole ? "opendota" : null,
                 positionOverrides: match.positionOverrides || {},
@@ -437,7 +435,6 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
         dotaMatchId: journalMatches.dotaMatchId,
         role: journalMatches.role,
         roleSource: journalMatches.roleSource,
-        banOverride: journalMatches.banOverride,
         rawData: dotaMatches.rawData,
       })
       .from(journalMatches)
@@ -456,7 +453,6 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
 
     for (const match of incomingMatches) {
       const existing = existingById.get(match.id);
-      const banPolicy = banWritePolicy(match.banOverride, existing?.banOverride);
       const nextRole = match.role || null;
       const estimatedRole = estimatedOpenDotaRole(existing?.rawData, undefined, match.heroId);
       const roleSource = !nextRole ? null
@@ -473,8 +469,6 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
         notes: match.notes,
         positivePoints: match.positivePoints,
         negativePoints: match.negativePoints,
-        legacyBans: match.legacyBans,
-        banOverride: banPolicy.override,
         result: match.result,
         updatedAt: now,
       } as const;
@@ -501,23 +495,8 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
         });
       }
 
-      if (!banPolicy.preserveRows) {
-        await tx
-          .delete(matchBans)
-          .where(eq(matchBans.matchId, match.id));
-
-        if (banPolicy.override && match.banIds.length) {
-          await tx.insert(matchBans).values(
-            match.banIds.map((heroId, sortOrder) => ({
-              matchId: match.id,
-              heroId,
-              heroName: heroById(heroId)?.name || String(heroId),
-              sortOrder,
-              source: "manual" as const,
-            })),
-          );
-        }
-      }
+      // Existing bans stay in place as read-only history. Journal saves cannot
+      // insert, replace or remove bans, even if an older client sends banIds.
     }
 
     await tx.update(users).set({ updatedAt: now }).where(eq(users.id, userId));

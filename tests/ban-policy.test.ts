@@ -1,16 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { banWritePolicy } from "../lib/journal/ban-policy";
+import { selectVisibleBans } from "../lib/journal/ban-policy";
 
-describe("manual bans", () => {
-  it("persists an explicitly empty override so incomplete automatic bans stay hidden", () => {
-    expect(banWritePolicy(true, false)).toEqual({ override: true, preserveRows: false });
+describe("read-only match bans", () => {
+  const automatic = [{ id: 2, source: "opendota" }];
+  const historic = [{ id: 3, source: "manual" }];
+
+  it("prefers the OpenDota draft for an imported match, even with older manual edits", () => {
+    expect(selectVisibleBans({ match_id: 123 }, automatic, historic)).toEqual(automatic);
   });
 
-  it("permits resetting to current OpenDota bans", () => {
-    expect(banWritePolicy(false, true)).toEqual({ override: false, preserveRows: false });
+  it("does not invent bans when the provider draft is missing", () => {
+    expect(selectVisibleBans({ match_id: 123 }, [], historic)).toEqual([]);
   });
 
-  it("does not erase earlier manual edits when an old client saves without the new flag", () => {
-    expect(banWritePolicy(undefined, true)).toEqual({ override: true, preserveRows: true });
+  it("keeps historic bans visible for a journal entry without an imported match", () => {
+    expect(selectVisibleBans(null, automatic, historic)).toEqual(historic);
   });
 });

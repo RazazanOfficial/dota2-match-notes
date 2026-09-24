@@ -1,39 +1,17 @@
-"use client";
-
-import { useState } from "react";
-import { X } from "lucide-react";
 import { heroImage } from "@/data/heroes";
-import type { Hero, MatchBan, MatchPick } from "@/lib/types";
-import HeroPicker from "./HeroPicker";
+import type { MatchBan, MatchPick } from "@/lib/types";
 
 interface BanPickerProps {
   value: MatchBan[];
   picks: MatchPick[];
-  onChange: (heroes: MatchBan[]) => void;
-  onReset: () => void;
-  manualOverride?: boolean;
-  pickedHeroId?: number | null;
   legacyBans?: string;
 }
 
 export default function BanPicker({
   value,
   picks,
-  onChange,
-  onReset,
-  manualOverride,
-  pickedHeroId,
   legacyBans,
 }: BanPickerProps) {
-  const [candidate, setCandidate] = useState<Hero | null>(null);
-
-  function add(hero: Hero | null) {
-    setCandidate(hero);
-    if (!hero || value.some((item) => item.id === hero.id)) return;
-    onChange([...value, hero]);
-    queueMicrotask(() => setCandidate(null));
-  }
-
   return (
     <div className="field field-full ban-field">
       {picks.length > 0 && (
@@ -49,20 +27,7 @@ export default function BanPicker({
           </div>
         </section>
       )}
-      <div className="automatic-ban-heading">
-        <span>بن‌های مچ</span>
-        {manualOverride ? <button type="button" onClick={onReset}>بازگشت به Banهای OpenDota پس از ذخیره</button> : <b>OpenDota · ممکن است ناقص باشد</b>}
-      </div>
-      <HeroPicker
-          label="بن‌ها"
-          value={candidate}
-          onChange={add}
-          excludedIds={[
-            ...(pickedHeroId ? [pickedHeroId] : []),
-            ...picks.map((hero) => hero.id),
-            ...value.map((hero) => hero.id),
-          ]}
-      />
+      <div className="automatic-ban-heading"><span>بن‌های مچ</span><b>{value.some((hero) => hero.source === "manual") || legacyBans ? "ثبت قدیمی" : "OpenDota · ممکن است ناقص باشد"}</b></div>
       {(value.length > 0 || legacyBans) && (
         <div className="hero-chips">
           {value.map((hero) => (
@@ -71,7 +36,6 @@ export default function BanPicker({
               <span lang="en" dir="ltr">
                 {hero.name}
               </span>
-              <button type="button" aria-label={`حذف ${hero.name}`} onClick={() => onChange(value.filter((item) => item.id !== hero.id))}><X aria-hidden="true" /></button>
             </span>
           ))}
           {legacyBans && <span className="legacy-ban">بن‌های قبلی: {legacyBans}</span>}

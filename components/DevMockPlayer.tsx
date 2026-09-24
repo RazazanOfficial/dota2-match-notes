@@ -85,6 +85,8 @@ const MOCK_JOURNAL_MATCHES: Match[] = [
     lobbyTypeName: "Normal",
     notes: "",
     analysisStatus: "basic",
+    participants: [],
+    analysis: undefined,
   },
 ];
 
