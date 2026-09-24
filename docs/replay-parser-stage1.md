@@ -6,7 +6,8 @@
 `dota_matches.local_replay_data` ذخیره می‌شود. در تحلیل Match، آمار خام replay
 برای همهٔ ۱۰ بازیکن بر دادهٔ replay برگشتی از OpenDota اولویت دارد. فیلدهای
 مشخصات Match، Hero ID و KDA از Match summary در OpenDota می‌آیند؛ Position
-تخمین OpenDota است و در صورت تأیید دستی، مقدار کاربر اولویت دارد. benchmarkهای
+با شواهد Laning Stage از replay و تخمین OpenDota تعیین می‌شود و در صورت
+تأیید دستی، مقدار کاربر اولویت دارد. benchmarkهای
 مرجع از snapshot آماری می‌آیند. **ورودی این مرحله دستی و فقط مخصوص
 اپراتور سرور است**؛ دانلود خودکار replay، دکمهٔ کاربر و زمان‌بندی worker در
 این پچ فعال نمی‌شوند. هدف: تثبیت کیفیت داده و مصرف RAM، قبل از اتصال به
@@ -19,7 +20,7 @@
 | `networth_t`, LH, Deny, XP, Stack، Ward log، Heal/Damage timeline و سایر telemetry ثبت‌شده | parser محلی، بعد OpenDota | ورود فقط پس از تأیید Match ID داخل `.dem` و داشتن هر ۱۰ player |
 | `purchase_log` و `objectives` | OpenDota؛ اگر آرایه موجود نباشد parser محلی | خروجی parser و نسخهٔ enrich‌شدهٔ OpenDota در نمونه اختلاف داشتند |
 | `match_id`, start/duration, نتیجه، Hero ID، account، KDA، `picks_bans`, benchmarks | Match summary موجود در OpenDota | parser blob خام آن‌ها را به صورت قابل اتکا برنگردانده است |
-| Position بازیکن | تأیید دستی، سپس تخمین OpenDota و شواهد Lane/Farm | Position مستقیم در parser خام وجود ندارد؛ تخمین را قطعی نمایش ندهید |
+| Position بازیکن | تأیید دستی، سپس موقعیت‌های ده دقیقهٔ اول replay، تخمین OpenDota و LH/Ward همان بازه | Position مستقیم در parser خام وجود ندارد؛ وقتی شواهد کافی نیست، نامشخص می‌ماند |
 | IMP دقیقه‌ای اختصاصی STRATZ | در تحلیل مچ استفاده نمی‌شود | تا تعریف و اعتبارسنجی فرمول مستقل، مقدار آن ناموجود است |
 | cohort ماهانه و benchmark مرجع | منابع آماری بیرونی پروژه | آمار یک replay جای مرجع آماری را نمی‌گیرد |
 
@@ -28,6 +29,11 @@
 الزاماً منبع تک‌تک فیلدهای خلاصهٔ Match نیستند؛ دادهٔ خلاصه در هر حالت از
 OpenDota می‌ماند. نسخهٔ خام OpenDota دست‌نخورده ذخیره می‌شود و با sync مجدد
 هم local replay از بین نمی‌رود.
+
+`lane_pos` در خروجی parser، موقعیت‌های ثبت‌شده تا دقیقهٔ ۱۰ را به‌صورت
+تجمیعی نگه می‌دارد. تشخیص Safe/Mid/Off از تراکم همین موقعیت‌ها می‌آید؛
+برای جدا کردن Core و Support هم LH و Ward همان بازه بررسی می‌شوند.
+GPM یا تعداد Ward کل بازی به‌تنهایی نباید یک Position ظاهراً قطعی بسازند.
 
 مسیر همگام‌سازی مچ دیگر STRATZ را فراخوانی نمی‌کند؛ job جدیدی برای آن ساخته
 نمی‌شود و endpoint قدیمی worker پاسخ 410 می‌دهد. Draft قابل اتکا از
