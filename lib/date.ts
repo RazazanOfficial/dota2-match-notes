@@ -299,6 +299,7 @@ export function sanitizeMatch(raw: Record<string, unknown>, fallback = 1): Match
     heroId: selectedHero?.id || null,
     heroName: selectedHero?.name || legacyHero,
     bans,
+    banOverride: raw.banOverride === true,
     picks,
     legacyBans: typeof raw.bans === "string" ? raw.bans.trim() : String(raw.legacyBans || "").trim(),
     role: ["safe_lane", "mid_lane", "off_lane", "soft_support", "hard_support"].includes(

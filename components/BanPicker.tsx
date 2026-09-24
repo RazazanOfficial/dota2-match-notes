@@ -10,6 +10,8 @@ interface BanPickerProps {
   value: MatchBan[];
   picks: MatchPick[];
   onChange: (heroes: MatchBan[]) => void;
+  onReset: () => void;
+  manualOverride?: boolean;
   pickedHeroId?: number | null;
   legacyBans?: string;
 }
@@ -18,11 +20,12 @@ export default function BanPicker({
   value,
   picks,
   onChange,
+  onReset,
+  manualOverride,
   pickedHeroId,
   legacyBans,
 }: BanPickerProps) {
   const [candidate, setCandidate] = useState<Hero | null>(null);
-  const automatic = value.some((hero) => hero.source && hero.source !== "manual");
 
   function add(hero: Hero | null) {
     setCandidate(hero);
@@ -46,10 +49,11 @@ export default function BanPicker({
           </div>
         </section>
       )}
-      {automatic ? (
-        <div className="automatic-ban-heading"><span>بن‌های مچ</span><b>Dota2Notes</b></div>
-      ) : (
-        <HeroPicker
+      <div className="automatic-ban-heading">
+        <span>بن‌های مچ</span>
+        {manualOverride ? <button type="button" onClick={onReset}>بازگشت به Banهای OpenDota پس از ذخیره</button> : <b>OpenDota · ممکن است ناقص باشد</b>}
+      </div>
+      <HeroPicker
           label="بن‌ها"
           value={candidate}
           onChange={add}
@@ -58,8 +62,7 @@ export default function BanPicker({
             ...picks.map((hero) => hero.id),
             ...value.map((hero) => hero.id),
           ]}
-        />
-      )}
+      />
       {(value.length > 0 || legacyBans) && (
         <div className="hero-chips">
           {value.map((hero) => (
@@ -68,7 +71,7 @@ export default function BanPicker({
               <span lang="en" dir="ltr">
                 {hero.name}
               </span>
-              {!automatic && <button type="button" aria-label={`حذف ${hero.name}`} onClick={() => onChange(value.filter((item) => item.id !== hero.id))}><X aria-hidden="true" /></button>}
+              <button type="button" aria-label={`حذف ${hero.name}`} onClick={() => onChange(value.filter((item) => item.id !== hero.id))}><X aria-hidden="true" /></button>
             </span>
           ))}
           {legacyBans && <span className="legacy-ban">بن‌های قبلی: {legacyBans}</span>}

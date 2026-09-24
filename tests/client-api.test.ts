@@ -127,6 +127,7 @@ describe("journal client API", () => {
         "9eb718f9-8eee-40ec-bc62-b7f43329dce7": {
           heroId: 1,
           banIds: [2],
+          banOverride: false,
           notes: "client test",
         },
       },

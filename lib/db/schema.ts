@@ -307,6 +307,7 @@ export const journalMatches = pgTable(
     positivePoints: jsonb("positive_points").$type<string[]>().default([]).notNull(),
     negativePoints: jsonb("negative_points").$type<string[]>().default([]).notNull(),
     legacyBans: varchar("legacy_bans", { length: 500 }).default("").notNull(),
+    banOverride: boolean("ban_override").default(false).notNull(),
     startedAt: timestamp("started_at", { withTimezone: true }),
     durationSeconds: integer("duration_seconds"),
     kills: smallint("kills"),

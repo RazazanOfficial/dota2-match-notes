@@ -97,6 +97,7 @@ function serializeDay(day: Day) {
           heroId: match.heroId,
           heroName: match.heroName,
           banIds: match.bans.map((hero) => hero.id),
+          banOverride: match.banOverride === true,
           legacyBans: match.legacyBans || "",
           role: match.role,
           positionOverrides: match.positionOverrides || {},

@@ -29,6 +29,7 @@ const matchSchema = z
       .max(20)
       .refine((ids) => new Set(ids).size === ids.length, "بن تکراری است")
       .refine((ids) => ids.every((id) => Boolean(heroById(id))), "هیروی بن‌شده نامعتبر است"),
+    banOverride: z.boolean().optional(),
     legacyBans: z.string().max(500).optional().default(""),
     role: z.union([
       z.literal(""),

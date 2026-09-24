@@ -15,9 +15,9 @@ const MOCK_MATCH: Match = {
   heroId: 85,
   heroName: "Undying",
   bans: [
-    { id: 14, slug: "pudge", name: "Pudge" },
-    { id: 1, slug: "antimage", name: "Anti-Mage" },
-    { id: 86, slug: "rubick", name: "Rubick" },
+    { id: 14, slug: "pudge", name: "Pudge", source: "opendota" },
+    { id: 1, slug: "antimage", name: "Anti-Mage", source: "opendota" },
+    { id: 86, slug: "rubick", name: "Rubick", source: "opendota" },
   ],
   picks: [],
   role: "soft_support",
