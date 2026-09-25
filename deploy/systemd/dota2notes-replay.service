@@ -1,0 +1,30 @@
+[Unit]
+Description=Dota2 Notes local replay download and parse (one match)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=dota2notes
+Group=dota2notes
+WorkingDirectory=/var/www/dota2notes
+EnvironmentFile=/var/www/dota2notes/.env.production
+ExecStart=/usr/bin/node /var/www/dota2notes/scripts/replay-parser/run-queue.mjs
+TimeoutStartSec=720s
+UMask=0077
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/dota2notes/replays
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+MemoryHigh=1700M
+MemoryMax=2100M
+CPUQuota=100%

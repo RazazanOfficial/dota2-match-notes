@@ -163,7 +163,30 @@ export const dotaMatches = pgTable("dota_matches", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, (table) => [index("dota_matches_started_at_idx").on(table.startedAt)]);
+
+// One replay per Dota match, even when several journals reference that match.
+export const localReplayJobs = pgTable(
+  "local_replay_jobs",
+  {
+    matchId: bigint("match_id", { mode: "number" }).primaryKey()
+      .references(() => dotaMatches.matchId, { onDelete: "cascade" }),
+    status: varchar("status", { length: 16 }).default("pending").notNull(),
+    attempts: smallint("attempts").default(0).notNull(),
+    runAfter: timestamp("run_after", { withTimezone: true }).defaultNow().notNull(),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    source: varchar("source", { length: 16 }),
+    errorCode: varchar("error_code", { length: 64 }),
+    errorMessage: text("error_message"),
+    ...timestamps,
+  },
+  (table) => [
+    index("local_replay_jobs_status_run_after_idx").on(table.status, table.runAfter),
+    check("local_replay_jobs_status_check", sql`${table.status} in ('pending','processing','waiting_file','completed','failed')`),
+    check("local_replay_jobs_attempts_check", sql`${table.attempts} >= 0`),
+  ],
+);
 
 export const performanceReferenceSnapshots = pgTable(
   "performance_reference_snapshots",
@@ -330,6 +353,7 @@ export const journalMatches = pgTable(
       table.dotaMatchId,
     ),
     index("journal_matches_user_started_at_idx").on(table.userId, table.startedAt),
+    index("journal_matches_dota_match_id_idx").on(table.dotaMatchId),
     index("journal_matches_day_id_idx").on(table.dayId),
     check("journal_matches_number_check", sql`${table.number} > 0`),
     check(

@@ -8,6 +8,7 @@ import {
   heroPoolEntries,
   heroPoolVersions,
   journalMatches,
+  localReplayJobs,
   matchImageJobs,
   matchImages,
   releaseNoteReads,
@@ -23,6 +24,7 @@ describe("database schema", () => {
     expect(getTableConfig(users).name).toBe("users");
     expect(getTableConfig(sessions).name).toBe("sessions");
     expect(getTableConfig(journalMatches).name).toBe("journal_matches");
+    expect(getTableConfig(localReplayJobs).name).toBe("local_replay_jobs");
     expect(getTableConfig(matchImages).name).toBe("match_images");
     expect(getTableConfig(matchImageJobs).name).toBe("match_image_jobs");
     expect(getTableConfig(externalApiRateLimits).name).toBe(
@@ -98,6 +100,13 @@ describe("database schema", () => {
     expect(indexNames).toContain("match_image_jobs_match_id_uidx");
     expect(indexNames).toContain("match_image_jobs_status_run_after_idx");
     expect(checkNames).toContain("match_image_jobs_attempts_check");
+  });
+
+  it("deduplicates local replay jobs by Dota match rather than by journal owner", () => {
+    const config = getTableConfig(localReplayJobs);
+    expect(config.columns.find((column) => column.name === "match_id")?.primary).toBe(true);
+    expect(config.indexes.map((index) => index.config.name)).toContain("local_replay_jobs_status_run_after_idx");
+    expect(config.checks.map((constraint) => constraint.name)).toContain("local_replay_jobs_status_check");
   });
 
   it("keeps one durable STRATZ enrichment job per journal match", () => {

@@ -1,0 +1,11 @@
+[Unit]
+Description=Check one local replay job every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+RandomizedDelaySec=10s
+Persistent=true
+Unit=dota2notes-replay.service
+
+[Install]
+WantedBy=timers.target
