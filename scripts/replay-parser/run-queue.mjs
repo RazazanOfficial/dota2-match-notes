@@ -95,10 +95,10 @@ async function claim(client) {
 
 async function transition(client, job, status, errorCode = null, errorMessage = null, source = null, delaySeconds = 0) {
   const result = await client.query(`
-    UPDATE local_replay_jobs SET status = $3, error_code = $4, error_message = $5,
+    UPDATE local_replay_jobs SET status = $3::varchar(16), error_code = $4, error_message = $5,
       source = COALESCE($6::varchar, source), run_after = now() + $7::integer * interval '1 second',
       locked_at = NULL, updated_at = now(),
-      finished_at = CASE WHEN $3 IN ('completed','failed') THEN now() ELSE NULL END
+      finished_at = CASE WHEN $3::varchar(16) IN ('completed','failed') THEN now() ELSE NULL END
     WHERE match_id = $1 AND status = 'processing' AND locked_at = $2 RETURNING match_id
   `, [job.matchId, job.lockedAt, status, errorCode, errorMessage, source, delaySeconds]);
   if (result.rowCount !== 1) throw new Error("Replay job lease was lost");
