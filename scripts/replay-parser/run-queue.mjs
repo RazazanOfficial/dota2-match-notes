@@ -80,7 +80,7 @@ async function claim(client) {
     const updated = await client.query(`
       UPDATE local_replay_jobs SET status = 'processing', locked_at = now(), updated_at = now(),
         attempts = attempts + 1
-      WHERE match_id = $1 RETURNING locked_at, attempts
+      WHERE match_id = $1 RETURNING locked_at::text AS locked_at, attempts
     `, [candidate.match_id]);
     await client.query("COMMIT");
     return {
@@ -99,7 +99,7 @@ async function transition(client, job, status, errorCode = null, errorMessage = 
       source = COALESCE($6::varchar, source), run_after = now() + $7::integer * interval '1 second',
       locked_at = NULL, updated_at = now(),
       finished_at = CASE WHEN $3::varchar(16) IN ('completed','failed') THEN now() ELSE NULL END
-    WHERE match_id = $1 AND status = 'processing' AND locked_at = $2 RETURNING match_id
+    WHERE match_id = $1 AND status = 'processing' AND locked_at = $2::timestamptz RETURNING match_id
   `, [job.matchId, job.lockedAt, status, errorCode, errorMessage, source, delaySeconds]);
   if (result.rowCount !== 1) throw new Error("Replay job lease was lost");
 }
