@@ -271,6 +271,7 @@ sudo certbot renew --dry-run
 ```bash
 cd /var/www/dota2notes
 sudo systemctl disable --now dota2notes-stratz.timer 2>/dev/null || true
+sudo systemctl stop dota2notes-replay.timer 2>/dev/null || true
 sudo systemctl stop dota2notes-images.timer dota2notes-performance-reference.timer dota2notes-opendota-parse.timer
 sudo systemctl stop dota2notes.service
 sudo -u dota2notes -H git pull --ff-only origin main
@@ -282,7 +283,16 @@ sudo -u dota2notes -H npm run build
 sudo systemctl start dota2notes.service
 sudo -u dota2notes -H bash deploy/scripts/health-check.sh
 sudo systemctl start dota2notes-images.timer dota2notes-performance-reference.timer dota2notes-opendota-parse.timer
+if systemctl is-enabled --quiet dota2notes-replay.timer; then
+  sudo systemctl start dota2notes-replay.timer
+fi
 ```
+
+برای صف replay محلی، migration `0017` و unit جداگانه لازم است؛ مراحل
+تست و فعال‌کردن timer در [راهنمای صف replay](replay-queue-stage2.md) آمده
+است. این worker به‌صورت پیش‌فرض غیرفعال است. پس از فعال‌شدن، در انتشارهای
+بعدی timer آن را پیش از توقف برنامه متوقف کنید؛ دستور بالا فقط در صورتی
+دوباره آن را راه می‌اندازد که قبلاً فعال کرده باشید.
 
 اگر هر فرمان قبل از `systemctl start` شکست خورد، ادامه ندهید و Log همان فرمان را بررسی
 کنید. قبل از تغییرات بزرگ دیتابیس نیز از PostgreSQL نسخه پشتیبان بگیرید.
