@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { cleanupStaleDownloads, downloadReplay, incomingFile, replayDescriptor, replayProxySettings, retryDelaySeconds } from "../scripts/replay-parser/replay-queue-utils.mjs";
+import { fileURLToPath } from "node:url";
+import { cleanupStaleDownloads, downloadReplay, replayDescriptor, replayProxySettings, retryDelaySeconds } from "../scripts/replay-parser/replay-queue-utils.mjs";
 
 const raw = {
   match_id: 9013078038, cluster: 189, replay_salt: 724775528,
@@ -70,17 +72,29 @@ describe("local replay queue boundaries", () => {
     expect(await readdir(directory)).toEqual([]);
   });
 
-  it("recognizes a safely staged file and rejects symlinks", async () => {
+  it("ignores a manually staged replay even when its filename matches the requested match", async () => {
     const directory = await folder();
     const path = join(directory, "9013078038_724775528.dem.bz2");
-    await writeFile(path, "PBDEMS2 valid bytes");
-    expect(await incomingFile(directory, "9013078038_724775528.dem.bz2")).toBe(path);
-    if (process.platform !== "win32") {
-      await symlink(path, join(directory, "symlink.dem.bz2"));
-      await expect(incomingFile(directory, "symlink.dem.bz2")).rejects.toThrow("regular file");
-    }
+    await writeFile(path, "PBDEMS2 operator file");
+    const result = await downloadReplay(replayDescriptor(raw, raw.match_id), directory,
+      async () => new Response(Buffer.from("PBDEMS2 fetched file")));
+    expect(result.path).not.toBe(path);
+    expect(result.downloaded).toBe(true);
+    expect(await readFile(path, "utf8")).toBe("PBDEMS2 operator file");
+    await rm(result.path);
     expect(retryDelaySeconds(1)).toBe(60);
     expect(retryDelaySeconds(9)).toBe(3_600);
+  });
+
+  it("rejects the old direct import command for manually supplied files", async () => {
+    const directory = await folder();
+    const manual = join(directory, "9013078038_724775528.dem.bz2");
+    await writeFile(manual, "PBDEMS2 operator file");
+    const result = spawnSync(process.execPath, [
+      "scripts/replay-parser/import-replay.mjs", "--match", "9013078038", "--file", manual,
+    ], { cwd: fileURLToPath(new URL("..", import.meta.url)), encoding: "utf8" });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("only queue staging files");
   });
 
   it("uses only an explicit HTTPS relay, authenticates and keeps outages retryable", async () => {
@@ -109,11 +123,11 @@ describe("local replay queue boundaries", () => {
     }
   });
 
-  it("removes orphaned temporary files without touching operator replay files", async () => {
+  it("removes orphaned temporary files without touching other files", async () => {
     const directory = await folder();
     const orphan = ".replay-01234567-89ab-cdef-0123-456789abcdef.part";
     await writeFile(join(directory, orphan), "temporary");
-    await writeFile(join(directory, "9013078038_724775528.dem.bz2"), "operator replay");
+    await writeFile(join(directory, "9013078038_724775528.dem.bz2"), "PBDEMS2 operator replay");
     const now = Date.now() + 3_700_000;
     expect(await cleanupStaleDownloads(directory, now)).toBe(1);
     expect(await readdir(directory)).toEqual(["9013078038_724775528.dem.bz2"]);

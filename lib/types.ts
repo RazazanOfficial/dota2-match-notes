@@ -12,7 +12,7 @@ export type QueueType = "role_selected" | "earn_role_queue";
 export type ImageJobStatus = "pending" | "processing" | "completed" | "failed";
 export type MatchAnalysisStatus = "basic" | "pending" | "processing" | "ready" | "failed" | "expired";
 export type MatchSyncScope = "day" | "week";
-export type MatchSyncMode = "basic" | "analysis";
+export type MatchSyncMode = "basic";
 export type MatchSyncGameMode = "ranked" | "turbo" | "all_pick" | "captains" | "other";
 
 export interface MatchSyncRequest {

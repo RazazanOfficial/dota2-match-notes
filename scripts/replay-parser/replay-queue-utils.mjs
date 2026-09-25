@@ -63,17 +63,16 @@ export function retryDelaySeconds(attempts) {
   return Math.min(3_600, 60 * 2 ** Math.max(0, Math.min(6, attempts - 1)));
 }
 
-export async function incomingFile(directory, filename) {
-  const path = join(directory, filename);
-  const details = await lstat(path).catch((error) => {
-    if (error.code === "ENOENT") return null;
-    throw error;
-  });
-  if (!details) return null;
-  if (!details.isFile() || details.size < 8 || details.size > MAX_REPLAY_BYTES) {
-    throw new Error("Replay input is not a regular file within the size limit");
+export async function validateReplayHeader(path) {
+  const descriptorFile = await open(path, "r");
+  const header = Buffer.alloc(7);
+  try { await descriptorFile.read(header, 0, header.length, 0); }
+  finally { await descriptorFile.close(); }
+  if (header.toString("ascii", 0, 3) !== "BZh" &&
+    !header.subarray(0, 4).equals(Buffer.from([0x28, 0xb5, 0x2f, 0xfd])) &&
+    header.toString("ascii") !== "PBDEMS2") {
+    throw new Error("Replay input is not a replay file");
   }
-  return path;
 }
 
 export async function cleanupStaleDownloads(directory, now = Date.now()) {
@@ -138,19 +137,8 @@ export async function downloadReplay(descriptor, directory, fetchImpl = fetch, p
         done(bytes > MAX_REPLAY_BYTES ? new Error("Replay download exceeds the size limit") : null, chunk);
       } }), createWriteStream(temporary, { flags: "wx", mode: 0o600 }));
       if (bytes < 8) throw new Error("Replay response is empty");
-      const descriptorFile = await open(temporary, "r");
-      const header = Buffer.alloc(7);
-      try { await descriptorFile.read(header, 0, header.length, 0); }
-      finally { await descriptorFile.close(); }
-      if (header.toString("ascii", 0, 3) !== "BZh" &&
-        !header.subarray(0, 4).equals(Buffer.from([0x28, 0xb5, 0x2f, 0xfd])) &&
-        header.toString("ascii") !== "PBDEMS2") {
-        throw new Error("Valve response is not a replay file");
-      }
-      const existing = await incomingFile(directory, descriptor.filename);
-      if (existing) return { path: existing, downloaded: false, source: "incoming" };
-      // Keep downloads private and transient; only operator-provided filenames
-      // can be picked up by another job after an interrupted process.
+      await validateReplayHeader(temporary);
+      // Only the worker's random temporary path is accepted as input.
       retained = true;
       return { path: temporary, downloaded: true, source: name };
     } catch (error) {

@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { loadPublicMatchAnalysis } from "@/lib/dota/match-analysis-repository";
-import { getOpenDotaAnalysisState, requestOpenDotaAnalysis } from "@/lib/opendota-parse/repository";
+import { getReplayJobState, requestReplayJob } from "@/lib/replay/job-repository";
 import { getRequestUser, hasValidRequestOrigin } from "@/lib/auth/request";
 import { ANALYSIS_TOKEN_COST } from "@/lib/opendota/analysis-policy";
 
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const result = await loadPublicMatchAnalysis(parsedId.data,positionOverrides);
     if (!result.found) return Response.json({ ok: false, error: { code: "match_not_found", message: "مچ پیدا نشد" } }, { status: 404 });
     if (!result.replayParsed) {
-      const state = await getOpenDotaAnalysisState(parsedId.data);
+      const state = await getReplayJobState(parsedId.data);
       return Response.json({ ok: true, analysis: null, preparation: { replay: state?.status || "basic", errorCode: state?.errorCode || null, tokenCost: ANALYSIS_TOKEN_COST } }, { headers: { "Cache-Control": "private, no-store" } });
     }
     return Response.json({ ok: true, analysis: result.analysis }, { headers: { "Cache-Control": "private, no-store" } });
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const user = await getRequestUser(request);
   if (!user) return Response.json({ ok: false, error: { code: "unauthorized", message: "ابتدا وارد حساب شوید" } }, { status: 401 });
   try {
-    const state = await requestOpenDotaAnalysis(parsedId.data, user.id);
+    const state = await requestReplayJob(parsedId.data, user.id, "analysis");
     if (state === "not_found") return Response.json({ ok: false, error: { code: "match_not_found", message: "مچ در دفتر شما پیدا نشد" } }, { status: 404 });
     if (state === "expired") return Response.json({ ok: false, error: { code: "replay_too_old", message: "از این مچ بیش از ۲۰ روز گذشته و درخواست جدید Replay برای آن ارسال نمی‌شود" } }, { status: 409 });
     return Response.json({ ok: true, preparation: { replay: state === "already_queued" ? "pending" : state, tokenCost: state === "queued" ? ANALYSIS_TOKEN_COST : 0 } }, { status: state === "ready" ? 200 : 202, headers: { "Cache-Control": "private, no-store" } });

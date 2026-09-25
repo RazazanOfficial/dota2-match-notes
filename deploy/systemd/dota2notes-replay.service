@@ -10,7 +10,7 @@ Group=dota2notes
 WorkingDirectory=/var/www/dota2notes
 EnvironmentFile=/var/www/dota2notes/.env.production
 ExecStart=/usr/bin/node /var/www/dota2notes/scripts/replay-parser/run-queue.mjs
-TimeoutStartSec=720s
+TimeoutStartSec=1800s
 UMask=0077
 
 NoNewPrivileges=true

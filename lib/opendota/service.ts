@@ -7,7 +7,6 @@ import {
 import { ANALYSIS_TOKEN_COST } from "./analysis-policy";
 import type { ManualMatchSyncInput } from "./sync-request";
 import { MATCH_SYNC_GAME_MODES, matchesSyncGameMode, saturdayWeekStart } from "./sync-request";
-import { requestOpenDotaAnalysisRange } from "@/lib/opendota-parse/repository";
 import { toJournalDateKey } from "@/lib/journal/timezone";
 import { getOpenDotaConfig } from "./config";
 import { OpenDotaError } from "./errors";
@@ -300,9 +299,7 @@ export async function syncRecentMatchesFromOpenDota(
     if (!sync.failed.length && sync.deferred === 0 && checkedEveryGameMode) {
       await markJournalRangeCompleted(user.id, request.from, request.to);
     }
-    const analysis = request.mode === "analysis"
-      ? await requestOpenDotaAnalysisRange(user.id, request.from, request.to, request.gameModes)
-      : emptyAnalysisSummary();
+    const analysis = emptyAnalysisSummary();
     return {
       ...sync,
       registeredAt: user.createdAt.toISOString(),

@@ -52,7 +52,7 @@ export const manualMatchSyncInputSchema = z.object({
   scope: z.enum(["day", "week"]),
   from: dateKeySchema,
   to: dateKeySchema,
-  mode: z.enum(["basic", "analysis"]),
+  mode: z.literal("basic"),
   gameModes: z.array(z.enum(MATCH_SYNC_GAME_MODES))
     .min(1)
     .max(MATCH_SYNC_GAME_MODES.length)

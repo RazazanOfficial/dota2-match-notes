@@ -34,8 +34,9 @@ describe("manual match range validation", () => {
 
   it("accepts one day, a full week, or the elapsed part of the current week", () => {
     expect(manualMatchSyncInputSchema.safeParse({ scope: "day", from: "2026-09-13", to: "2026-09-13", mode: "basic" }).success).toBe(true);
-    expect(manualMatchSyncInputSchema.safeParse({ scope: "week", from: "2026-09-12", to: "2026-09-18", mode: "analysis" }).success).toBe(true);
-    expect(manualMatchSyncInputSchema.safeParse({ scope: "week", from: "2026-09-12", to: "2026-09-16", mode: "analysis" }).success).toBe(true);
+    expect(manualMatchSyncInputSchema.safeParse({ scope: "week", from: "2026-09-12", to: "2026-09-18", mode: "basic" }).success).toBe(true);
+    expect(manualMatchSyncInputSchema.safeParse({ scope: "week", from: "2026-09-12", to: "2026-09-16", mode: "basic" }).success).toBe(true);
+    expect(manualMatchSyncInputSchema.safeParse({ scope: "day", from: "2026-09-13", to: "2026-09-13", mode: "analysis" }).success).toBe(false);
   });
 
   it("filters imported matches by the selected real game mode", () => {
@@ -56,8 +57,8 @@ describe("manual match range validation", () => {
 
   it("rejects a mismatched scope and range", () => {
     expect(manualMatchSyncInputSchema.safeParse({ scope: "day", from: "2026-09-12", to: "2026-09-13", mode: "basic" }).success).toBe(false);
-    expect(manualMatchSyncInputSchema.safeParse({ scope: "week", from: "2026-09-11", to: "2026-09-13", mode: "analysis" }).success).toBe(false);
-    expect(manualMatchSyncInputSchema.safeParse({ scope: "week", from: "2026-09-12", to: "2026-09-19", mode: "analysis" }).success).toBe(false);
+    expect(manualMatchSyncInputSchema.safeParse({ scope: "week", from: "2026-09-11", to: "2026-09-13", mode: "basic" }).success).toBe(false);
+    expect(manualMatchSyncInputSchema.safeParse({ scope: "week", from: "2026-09-12", to: "2026-09-19", mode: "basic" }).success).toBe(false);
   });
 
   it("rejects days beyond today in the journal time zone", () => {

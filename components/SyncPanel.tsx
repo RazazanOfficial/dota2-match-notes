@@ -1,33 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import {
   CalendarDays,
   Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  CircleGauge,
   Crown,
-  Database,
   LayoutGrid,
   RefreshCw,
   Shapes,
   Trophy,
-  TriangleAlert,
   Zap,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { heroById, heroImage } from "@/data/heroes";
 import { getPlayerSyncStatus, syncPlayerMatches } from "@/lib/api";
 import { faNumber, formatDayDate, formatWeekday, parseDateKey, toJournalDateKey } from "@/lib/date";
-import {
-  ANALYSIS_TOKEN_COST,
-  REPLAY_REQUEST_MAX_AGE_DAYS,
-  REPLAY_WARNING_AFTER_DAYS,
-  replayAgeState,
-} from "@/lib/opendota/analysis-policy";
 import {
   buildPersianCalendarMonth,
   PERSIAN_WEEKDAYS,
@@ -36,7 +26,6 @@ import {
 import type {
   ImageQueueJob,
   ManualSyncResult,
-  MatchSyncMode,
   MatchSyncGameMode,
   MatchSyncRequest,
   MatchSyncScope,
@@ -48,7 +37,6 @@ const faDateTime = new Intl.DateTimeFormat("fa-IR", {
   dateStyle: "medium",
   timeStyle: "short",
 });
-const DAY_MS = 86_400_000;
 const ALL_SYNC_GAME_MODES: MatchSyncGameMode[] = ["ranked", "turbo", "all_pick", "captains", "other"];
 const SYNC_GAME_MODE_OPTIONS: Array<{
   value: MatchSyncGameMode;
@@ -68,16 +56,6 @@ function formatTime(value: string | null) {
 
 function queueLabel(job: ImageQueueJob) {
   return `نوبت ${faNumber.format(job.position || 1)} در صف`;
-}
-
-function dateKeys(from: string, to: string) {
-  const start = parseDateKey(from).getTime();
-  const end = parseDateKey(to).getTime();
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return [];
-  return Array.from(
-    { length: Math.max(0, Math.round((end - start) / DAY_MS) + 1) },
-    (_, index) => new Date(start + index * DAY_MS).toISOString().slice(0, 10),
-  );
 }
 
 function dateLabel(key: string) {
@@ -116,13 +94,11 @@ export default function SyncPanel({
   const [syncing, setSyncing] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [scope, setScope] = useState<MatchSyncScope>("day");
-  const [mode, setMode] = useState<MatchSyncMode>("basic");
   const [gameModes, setGameModes] = useState<MatchSyncGameMode[]>(ALL_SYNC_GAME_MODES);
   const [selectedDay, setSelectedDay] = useState(() => toJournalDateKey(new Date()));
   const [calendarCursor, setCalendarCursor] = useState(() => toJournalDateKey(new Date()));
-  const [confirming, setConfirming] = useState(false);
   const pickerRootRef = useRef<HTMLDivElement>(null);
   const today = toJournalDateKey(new Date());
   const calendar = useMemo(
@@ -210,15 +186,8 @@ export default function SyncPanel({
     [status],
   );
   const request: MatchSyncRequest = scope === "day"
-    ? { scope, from: selectedDay, to: selectedDay, mode, gameModes }
-    : { scope, from: weekRange.from, to: weekRange.to, mode, gameModes };
-  const requestDays = dateKeys(request.from, request.to);
-  const warningDays = requestDays.filter(
-    (key) => replayAgeState(`${key}T12:00:00.000Z`) === "warning",
-  );
-  const expiredDays = requestDays.filter(
-    (key) => replayAgeState(`${key}T12:00:00.000Z`) === "expired",
-  );
+    ? { scope, from: selectedDay, to: selectedDay, mode: "basic", gameModes }
+    : { scope, from: weekRange.from, to: weekRange.to, mode: "basic", gameModes };
   const selectionDisabled = !gameModes.length || !selectedDay || request.from > request.to;
 
   function toggleGameMode(value: MatchSyncGameMode) {
@@ -229,7 +198,6 @@ export default function SyncPanel({
 
   async function handleSync() {
     setSyncing(true);
-    setConfirming(false);
     if (previewMode) {
       toast.success("این دریافت فقط در حالت پیش‌نمایش شبیه‌سازی شد.");
       setOpen(false);
@@ -245,17 +213,6 @@ export default function SyncPanel({
           ? `${faNumber.format(result.imported.length)} مچ تازه اضافه شد.`
           : "مچ تازه‌ای پیدا نشد.",
       ];
-      if (mode === "analysis") {
-        if (result.analysis.queued) {
-          messages.push(`${faNumber.format(result.analysis.queued)} تحلیل وارد صف شد (${result.analysis.totalTokenCost.toLocaleString("en-US")} Token).`);
-        }
-        if (result.analysis.alreadyReady) {
-          messages.push(`${faNumber.format(result.analysis.alreadyReady)} تحلیل از قبل آماده بود.`);
-        }
-        if (result.analysis.skippedOld) {
-          messages.push(`${faNumber.format(result.analysis.skippedOld)} مچ قدیمی Parse نشد.`);
-        }
-      }
       if (result.deferred) {
         messages.push(`${faNumber.format(result.deferred)} مچ به‌دلیل سقف هر دریافت باقی ماند.`);
       }
@@ -315,7 +272,7 @@ export default function SyncPanel({
             <header className="sync-wizard-header">
               <div className="sync-wizard-title"><CalendarDays /><strong>دریافت اطلاعات مچ</strong></div>
               <ol aria-label="مراحل دریافت">
-                {[{ number: 1, label: "Game Mode" }, { number: 2, label: "بازه زمانی" }, { number: 3, label: "نوع دریافت" }].map((item) => (
+                {[{ number: 1, label: "Game Mode" }, { number: 2, label: "بازه زمانی" }].map((item) => (
                   <li className={`${step === item.number ? "is-active" : ""}${step > item.number ? " is-complete" : ""}`} key={item.number}>
                     <b lang="en">{item.number}</b><span>{item.label}</span>
                   </li>
@@ -375,29 +332,17 @@ export default function SyncPanel({
                 </section>
               )}
 
-              {step === 3 && (
-                <section className="sync-delivery-step" aria-labelledby="sync-delivery-title">
-                  <div className="sync-step-copy"><small lang="en">STEP 03</small><strong id="sync-delivery-title">نوع دریافت را انتخاب کن</strong><p>دریافت ساده فقط اطلاعات پایه را می‌گیرد. <br/> تحلیل، Replay قابل‌دسترسی را هم وارد صف می‌کند و سپس آنالیز بازی را تحویل میدهد.</p></div>
-                  <div className="sync-mode-grid" aria-label="نوع دریافت">
-                    <button className={mode === "basic" ? "is-active" : ""} type="button" onClick={() => setMode("basic")}><Database /><span><b>دریافت ساده</b></span>{mode === "basic" && <Check />}</button>
-                    <button className={mode === "analysis" ? "is-active" : ""} type="button" onClick={() => setMode("analysis")}><CircleGauge /><span><b>دریافت + تحلیل</b></span>{mode === "analysis" && <Check />}</button>
-                  </div>
-                  {mode === "analysis" && (warningDays.length > 0 || expiredDays.length > 0) && (
-                    <div className="sync-age-warning"><TriangleAlert /><div><strong>احتمال ناقص‌بودن Replay</strong>{warningDays.length > 0 && <p>روزهای {warningDays.map(dateLabel).join("، ")} بیش از {REPLAY_WARNING_AFTER_DAYS.toLocaleString("en-US")} روز قدمت دارند و ممکن است Replay در دسترس نباشد.</p>}{expiredDays.length > 0 && <p>برای روزهای {expiredDays.map(dateLabel).join("، ")} بیش از {REPLAY_REQUEST_MAX_AGE_DAYS.toLocaleString("en-US")} روز گذشته؛ مچ‌ها دریافت می‌شوند اما Parse جدید برایشان ارسال نمی‌شود.</p>}</div></div>
-                  )}
-                </section>
-              )}
             </div>
 
             <nav className="sync-wizard-navigation" aria-label="جابجایی مراحل">
-              <button type="button" disabled={step === 1} onClick={() => setStep(step === 3 ? 2 : 1)}><ChevronRight /> مرحله قبل</button>
-              <span lang="en" dir="ltr">{step} / 3</span>
-              <button type="button" disabled={step === 3 || (step === 1 && !gameModes.length)} onClick={() => setStep(step === 1 ? 2 : 3)}>مرحله بعد <ChevronLeft /></button>
+              <button type="button" disabled={step === 1} onClick={() => setStep(1)}><ChevronRight /> مرحله قبل</button>
+              <span lang="en" dir="ltr">{step} / 2</span>
+              <button type="button" disabled={step === 2 || !gameModes.length} onClick={() => setStep(2)}>مرحله بعد <ChevronLeft /></button>
             </nav>
 
             <footer className="sync-wizard-footer">
               <span>{step === 1 ? `${gameModes.length.toLocaleString("fa-IR")} حالت انتخاب شده` : scope === "day" ? (selectedDay ? dateLabel(selectedDay) : "روز قابل دریافت نیست") : `هفتهٔ ${dateLabel(weekRange.from)} تا ${dateLabel(weekRange.to)}`}</span>
-              {step === 3 && <button className="primary-button" type="button" disabled={selectionDisabled} onClick={() => mode === "analysis" ? setConfirming(true) : void handleSync()}>{mode === "analysis" ? "شروع دریافت" : "شروع دریافت"}</button>}
+              {step === 2 && <button className="primary-button" type="button" disabled={selectionDisabled} onClick={() => void handleSync()}>دریافت ساده</button>}
             </footer>
           </div>
         )}
@@ -420,17 +365,6 @@ export default function SyncPanel({
         </div>
       )}
 
-      {confirming && createPortal(
-        <div className="sync-confirm-backdrop" role="presentation" onMouseDown={() => setConfirming(false)}>
-          <section className="sync-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="sync-confirm-title" onMouseDown={(event) => event.stopPropagation()}>
-            <header><span><CircleGauge /></span><div><small>ANALYSIS REQUEST</small><strong id="sync-confirm-title">تأیید دریافت همراه تحلیل</strong></div></header>
-            <p>داده پایه دریافت می‌شود و مچ‌های قابل تحلیل وارد صف Replay خواهند شد.</p>
-            <div className="sync-token-note"><span>هزینه نمایشی هر مچ</span><strong className="latin-numerals" lang="en" dir="ltr">{ANALYSIS_TOKEN_COST.toLocaleString("en-US")} Token</strong><small>تعداد نهایی بعد از شناسایی مچ‌های نیازمند تحلیل مشخص می‌شود.</small></div>
-            <footer><button className="secondary-button" type="button" onClick={() => setConfirming(false)}>انصراف</button><button className="primary-button" type="button" onClick={handleSync}>تأیید و شروع</button></footer>
-          </section>
-        </div>,
-        document.body,
-      )}
     </section>
   );
 }

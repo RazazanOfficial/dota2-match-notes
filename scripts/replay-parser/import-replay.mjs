@@ -4,7 +4,7 @@
 import { createReadStream, createWriteStream } from "node:fs";
 import { open, mkdir, mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { pipeline } from "node:stream/promises";
@@ -25,7 +25,12 @@ function options(args) {
   }
   const id = Number(raw.match);
   if (!Number.isSafeInteger(id) || id <= 0 || !raw.file) throw new Error("Positive match ID and replay file are required");
-  return { matchId: id, file: resolve(raw.file), dryRun: raw.dryRun === true };
+  const file = resolve(raw.file);
+  const staging = resolve(process.env.LOCAL_REPLAY_INCOMING_DIR || "/var/lib/dota2notes/replays/incoming");
+  if (dirname(file) !== staging || !/^\.replay-[0-9a-f-]{36}\.part$/.test(basename(file))) {
+    throw new Error("Replay import accepts only queue staging files");
+  }
+  return { matchId: id, file, dryRun: raw.dryRun === true };
 }
 
 async function run(command, args, { timeoutMs = 120_000, outputLimit = 8_192 } = {}) {

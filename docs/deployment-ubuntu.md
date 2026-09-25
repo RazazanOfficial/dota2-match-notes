@@ -105,6 +105,8 @@ sudo nano .env.production
 - رمز موجود در `DATABASE_URL`
 - `SYNC_WORKER_SECRET`
 - تمام متغیرهای `CLOUD_SPACE_*`
+- برای صف Replay درخواستی و ذخیره در ParsPack، راهنمای
+  [Replay درخواستی](replay-on-demand-archive.md) را نیز ببینید.
 - در صورت داشتن کلید OpenDota، مقدار `OPENDOTA_API_KEY`
 
 برای ساخت Worker Secret اجرا کنید و خروجی را در `SYNC_WORKER_SECRET` بگذارید:
