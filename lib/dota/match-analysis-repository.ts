@@ -145,3 +145,25 @@ export async function loadPublicMatchAnalysis(journalMatchId: string, requestedP
     }),
   };
 }
+
+export async function loadStandaloneMatchAnalysis(matchId: number, profileAccountId: number, requestedPositionOverrides?: Record<string, number>) {
+  const [source] = await getDb().select({ rawData: dotaMatches.rawData, localReplayData: dotaMatches.localReplayData })
+    .from(dotaMatches).where(eq(dotaMatches.matchId, matchId)).limit(1);
+  if (!source?.rawData) return { found: false as const, replayParsed: false, analysis: null };
+  const overlaid = overlayReplayData(source.rawData, source.localReplayData);
+  const replayParsed = hasParsedOpenDotaReplay(overlaid.match);
+  const rawPlayers = Array.isArray(overlaid.match.players) ? overlaid.match.players : [];
+  const heroIds = [...new Set(rawPlayers.flatMap((value) => {
+    const heroId = numberValue(record(value)?.hero_id);
+    return heroId === null ? [] : [heroId];
+  }))];
+  let performanceReference: PerformanceReferenceData | undefined;
+  try { performanceReference = await loadPerformanceReference(heroIds); }
+  catch (error) { console.warn("External performance reference unavailable", error); }
+  return {
+    found: true as const,
+    replayParsed,
+    analysis: replayParsed ? buildMatchAnalysis({ rawData: overlaid.match, replaySource: overlaid.source,
+      profileAccountId, positionOverrides: requestedPositionOverrides, performanceReference }) : null,
+  };
+}

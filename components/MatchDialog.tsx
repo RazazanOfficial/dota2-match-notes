@@ -15,6 +15,7 @@ import { GameIcon, type GameIconName } from "./GameIcon";
 import GeneratedImageGallery from "./GeneratedImageGallery";
 import MatchScoreboard from "./MatchScoreboard";
 import MatchAnalysisPanel from "./MatchAnalysisPanel";
+import ReplayDownloadAction from "./ReplayDownloadAction";
 import ReviewListInput from "./ReviewListInput";
 
 type MatchTab = "overview" | "performance" | "journal" | "media";
@@ -43,6 +44,7 @@ interface MatchDialogProps {
   match: Match | null;
   nextNumber: number;
   busy?: boolean;
+  previewMode?: boolean;
   onClose: () => void;
   onSave: (match: Match) => void;
 }
@@ -71,6 +73,7 @@ export default function MatchDialog({
   match,
   nextNumber,
   busy = false,
+  previewMode = false,
   onClose,
   onSave,
 }: MatchDialogProps) {
@@ -275,6 +278,7 @@ export default function MatchDialog({
               <MatchStats match={draft} />
             </>
           )}
+          {draft.dotaMatchId && <ReplayDownloadAction matchId={draft.dotaMatchId} previewMode={previewMode} />}
         </div>
 
         <div className={`match-tab-panel${activeTab === "performance" ? " is-active" : ""}`} data-match-tab="performance">

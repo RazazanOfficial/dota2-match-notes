@@ -391,6 +391,7 @@ export default function MatchJournal({
                   {session.mode === "player" && session.isSuperAdmin && (
                     <a href="/admin" role="menuitem"><Shield aria-hidden="true" /> مدیریت</a>
                   )}
+                  <a href="/replays" role="menuitem"><Search aria-hidden="true" /> جست‌وجوی Replay</a>
                   <button type="button" role="menuitem" disabled={busy} onClick={leave}>
                     <LogOut aria-hidden="true" /> خروج
                   </button>

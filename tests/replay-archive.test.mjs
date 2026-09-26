@@ -4,15 +4,15 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { replayArchiveKey, retrieveReplay, uploadReplay } from "../scripts/replay-parser/replay-archive.mjs";
+import { archivedReplayExists, replayArchiveKey, retrieveReplay, uploadReplay } from "../scripts/replay-parser/replay-archive.mjs";
 import { replayDescriptor } from "../scripts/replay-parser/replay-queue-utils.mjs";
 
 describe("private replay archive layout", () => {
   const descriptor = replayDescriptor({ match_id: 9013078038, cluster: 189, replay_salt: 724775528 }, 9013078038);
 
-  it("uses the match start date in UTC and a stable match/salt filename", () => {
+  it("uses the match start date in UTC and only the match ID in new filenames", () => {
     expect(replayArchiveKey("2026-09-23T23:59:00.000Z", descriptor))
-      .toBe("replays/2026/09/23/9013078038_724775528.dem.bz2");
+      .toBe("replays/2026/09/23/9013078038.dem.bz2");
     expect(replayArchiveKey("2026-09-23T23:59:00.000Z", descriptor))
       .toBe(replayArchiveKey("2026-09-23T23:59:00.000Z", descriptor));
   });
@@ -55,8 +55,13 @@ describe("private replay archive layout", () => {
       const key = replayArchiveKey("2026-09-23", descriptor);
       expect(await uploadReplay(source, key)).toEqual({ key, bytes: body.length });
       expect(stored).toEqual(body);
+      expect(await archivedReplayExists(key, body.length)).toBe(true);
       const downloaded = await retrieveReplay(key, body.length, directory);
       expect(await readFile(downloaded)).toEqual(body);
+      // Existing ParsPack objects keep their historical salt-based key.
+      const legacy = key.replace("9013078038.dem", "9013078038_724775528.dem");
+      expect(await archivedReplayExists(legacy, body.length)).toBe(true);
+      expect(await readFile(await retrieveReplay(legacy, body.length, directory))).toEqual(body);
     } finally {
       for (const [key, value] of Object.entries(prior)) {
         if (value === undefined) delete process.env[key];

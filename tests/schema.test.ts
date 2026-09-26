@@ -107,6 +107,7 @@ describe("database schema", () => {
     expect(config.columns.find((column) => column.name === "match_id")?.primary).toBe(true);
     expect(config.indexes.map((index) => index.config.name)).toContain("local_replay_jobs_status_run_after_idx");
     expect(config.checks.map((constraint) => constraint.name)).toContain("local_replay_jobs_status_check");
+    expect(config.checks.map((constraint) => constraint.name)).toContain("local_replay_jobs_archive_status_check");
   });
 
   it("keeps one durable STRATZ enrichment job per journal match", () => {
