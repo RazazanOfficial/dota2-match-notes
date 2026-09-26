@@ -15,6 +15,7 @@ import AppLogo from "./AppLogo";
 import AdminReleaseNotes from "./AdminReleaseNotes";
 import AdminPasswordDialog from "./AdminPasswordDialog";
 import AdminMatchReprocessDialog from "./AdminMatchReprocessDialog";
+import AdminReplayArchive from "./AdminReplayArchive";
 
 type RangeDays = 7 | 30 | 90;
 type JobStatus = "pending" | "processing" | "completed" | "failed";
@@ -330,6 +331,7 @@ export default function AdminDashboard() {
         </footer>
       </section>
       <AdminReleaseNotes />
+      <AdminReplayArchive />
       <AdminPasswordDialog
         user={passwordUser}
         onClose={() => setPasswordUser(null)}

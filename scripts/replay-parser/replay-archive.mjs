@@ -11,7 +11,20 @@ export function replayArchiveKey(startedAt, descriptor) {
   const time = new Date(startedAt);
   if (!Number.isFinite(time.getTime()) || time.getUTCFullYear() < 2020 ||
     !/^\d+_\d+\.dem\.bz2$/.test(descriptor.filename)) throw new Error("Invalid replay archive date or filename");
-  return `replays/${time.toISOString().slice(0, 10).replaceAll("-", "/")}/${descriptor.filename}`;
+  return `replays/${time.toISOString().slice(0, 10).replaceAll("-", "/")}/${descriptor.filename.split("_")[0]}.dem.bz2`;
+}
+
+export async function archivedReplayExists(key, expectedBytes) {
+  if (!/^replays\/\d{4}\/\d{2}\/\d{2}\/\d+(?:_\d+)?\.dem(?:\.bz2)?$/.test(key)) throw new Error("Invalid archived replay reference");
+  const { client, bucket } = storage();
+  try {
+    const head = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }), { abortSignal: AbortSignal.timeout(30_000) });
+    if (head.ContentLength !== expectedBytes || !/^[0-9a-f]{64}$/.test(head.Metadata?.sha256 || "")) throw new Error("Archived replay metadata does not match the database");
+    return true;
+  } catch (error) {
+    if (error?.name === "NotFound" || error?.name === "NoSuchKey" || error?.$metadata?.httpStatusCode === 404) return false;
+    throw error;
+  } finally { client.destroy(); }
 }
 
 function storage() {
@@ -60,7 +73,7 @@ export async function uploadReplay(path, key) {
 }
 
 export async function retrieveReplay(key, expectedBytes, directory) {
-  if (!/^replays\/\d{4}\/\d{2}\/\d{2}\/\d+_\d+\.dem(?:\.bz2)?$/.test(key) ||
+  if (!/^replays\/\d{4}\/\d{2}\/\d{2}\/\d+(?:_\d+)?\.dem(?:\.bz2)?$/.test(key) ||
     !Number.isInteger(expectedBytes) || expectedBytes < 8 || expectedBytes > MAX_REPLAY_BYTES) {
     throw new Error("Invalid archived replay reference");
   }

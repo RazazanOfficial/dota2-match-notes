@@ -275,6 +275,8 @@ export default function DevMockPlayer() {
           <button className="secondary-button" type="button" onClick={() => setSelectedMatch(MOCK_MATCH)}>
             <Gauge aria-hidden="true" /> مشاهده تحلیل کامل
           </button>
+          <a className="secondary-button" href="/dev/mock/replays">پیش‌نمایش جست‌وجوی Replay</a>
+          <a className="secondary-button" href="/dev/mock/replay-archive">پیش‌نمایش آرشیو ادمین</a>
         </header>
 
         <SyncPanel
@@ -332,6 +334,7 @@ export default function DevMockPlayer() {
     <main className="dev-mock-player">
       <MatchDialog
         open
+        previewMode
         readonly={false}
         dateLabel="پنج‌شنبه ۶ شهریور"
         match={selectedMatch}

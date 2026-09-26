@@ -174,6 +174,7 @@ export const localReplayJobs = pgTable(
     status: varchar("status", { length: 16 }).default("pending").notNull(),
     intent: varchar("intent", { length: 16 }).default("analysis").notNull(),
     archiveKey: text("archive_key"),
+    archiveStatus: varchar("archive_status", { length: 16 }).default("missing").notNull(),
     archiveBytes: integer("archive_bytes"),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     attempts: smallint("attempts").default(0).notNull(),
@@ -189,6 +190,7 @@ export const localReplayJobs = pgTable(
     index("local_replay_jobs_status_run_after_idx").on(table.status, table.runAfter),
     check("local_replay_jobs_status_check", sql`${table.status} in ('pending','processing','waiting_file','completed','failed')`),
     check("local_replay_jobs_intent_check", sql`${table.intent} in ('download','analysis')`),
+    check("local_replay_jobs_archive_status_check", sql`${table.archiveStatus} in ('active','missing','deleted')`),
     check("local_replay_jobs_attempts_check", sql`${table.attempts} >= 0`),
   ],
 );

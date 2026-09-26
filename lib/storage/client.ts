@@ -8,7 +8,7 @@ import { getStorageConfig } from "./config";
 let cachedClient: S3Client | null = null;
 let cachedFingerprint = "";
 
-function getClient() {
+export function getClient() {
   const config = getStorageConfig();
   const fingerprint = [
     config.endpoint,

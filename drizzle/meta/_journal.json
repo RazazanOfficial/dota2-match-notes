@@ -134,6 +134,13 @@
       "when": 1790342400000,
       "tag": "0018_replay_archive",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790438400000,
+      "tag": "0019_replay_archive_status",
+      "breakpoints": true
     }
   ]
 }

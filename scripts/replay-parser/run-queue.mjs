@@ -6,7 +6,7 @@ import { lstat, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
-import { replayArchiveKey, retrieveReplay, uploadReplay } from "./replay-archive.mjs";
+import { archivedReplayExists, replayArchiveKey, retrieveReplay, uploadReplay } from "./replay-archive.mjs";
 import { cleanupStaleDownloads, downloadReplay, replayDescriptor, replayProxySettings, retryDelaySeconds } from "./replay-queue-utils.mjs";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
@@ -32,7 +32,7 @@ async function enqueueOne(client, matchId, intent) {
     WHERE local_replay_jobs.status IN ('failed', 'waiting_file') OR
       (local_replay_jobs.status = 'processing' AND local_replay_jobs.intent = 'download' AND $2 = 'analysis') OR
       (local_replay_jobs.status = 'completed' AND
-       (local_replay_jobs.archive_key IS NULL OR
+       (local_replay_jobs.archive_status <> 'active' OR local_replay_jobs.archive_key IS NULL OR
         ($2 = 'analysis' AND EXISTS (SELECT 1 FROM dota_matches dm
           WHERE dm.match_id = $1 AND dm.local_replay_data IS NULL))))
     RETURNING match_id
@@ -56,7 +56,7 @@ async function claim(client) {
   await client.query("BEGIN");
   try {
     const result = await client.query(`
-      SELECT match_id, status, attempts, source, intent, archive_key, archive_bytes FROM local_replay_jobs
+      SELECT match_id, status, attempts, source, intent, archive_key, archive_bytes, archive_status FROM local_replay_jobs
       WHERE status = 'pending' AND run_after <= now()
       ORDER BY run_after, match_id
       LIMIT 1 FOR UPDATE SKIP LOCKED
@@ -74,6 +74,7 @@ async function claim(client) {
       intent: candidate.intent,
       archiveKey: candidate.archive_key,
       archiveBytes: candidate.archive_bytes,
+      archiveStatus: candidate.archive_status,
       source: candidate.source,
       attempts: updated.rows[0].attempts,
       lockedAt: updated.rows[0].locked_at,
@@ -121,7 +122,11 @@ async function handle(client, job, proxy) {
     return { matchId: job.matchId, status: "failed", code: "match_missing" };
   }
   const parsed = match.local_replay_data?.match_id === job.matchId && match.local_replay_data?.players?.length === 10;
-  if (job.archiveKey && (job.intent === "download" || parsed)) {
+  const archived = job.archiveKey && job.archiveStatus === "active" ? await archivedReplayExists(job.archiveKey, job.archiveBytes) : false;
+  if (job.archiveKey && !archived && job.archiveStatus !== "deleted") {
+    await client.query("UPDATE local_replay_jobs SET archive_status = 'missing', updated_at = now() WHERE match_id = $1 AND locked_at = $2::timestamptz", [job.matchId, job.lockedAt]);
+  }
+  if (archived && (job.intent === "download" || parsed)) {
     await transition(client, job, "completed", null, null, "existing");
     return { matchId: job.matchId, status: "completed", source: "existing", archived: true };
   }
@@ -133,7 +138,7 @@ async function handle(client, job, proxy) {
   let file = null;
   let temporary = false;
   let downloadSource = null;
-  if (!file && job.archiveKey) {
+  if (!file && archived) {
     file = await retrieveReplay(job.archiveKey, job.archiveBytes, incoming);
     temporary = true;
     downloadSource = "archive";
@@ -163,11 +168,11 @@ async function handle(client, job, proxy) {
   }
   try {
     if (job.intent === "analysis" && !parsed) await importReplay(job.matchId, file);
-    if (!job.archiveKey) {
+    if (!archived) {
       const key = replayArchiveKey(match.started_at, descriptor);
       const archived = await uploadReplay(file, key);
       const updated = await client.query(`
-        UPDATE local_replay_jobs SET archive_key = $3, archive_bytes = $4, archived_at = now(), updated_at = now()
+        UPDATE local_replay_jobs SET archive_key = $3, archive_bytes = $4, archive_status = 'active', archived_at = now(), updated_at = now()
         WHERE match_id = $1 AND status = 'processing' AND locked_at = $2::timestamptz
         RETURNING match_id
       `, [job.matchId, job.lockedAt, archived.key, archived.bytes]);

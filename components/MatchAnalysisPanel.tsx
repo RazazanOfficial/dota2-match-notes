@@ -47,7 +47,8 @@ const TIMELINE: Record<TimelineMetric, { label: string; description: string; cla
   lastHits: { label: "Last Hits", description: "روند Last Hit بازیکن", className: "is-last-hits" },
 };
 
-export default function MatchAnalysisPanel({ match, active, canRequestAnalysis = false, selectedPlayerSlot, onSelectPlayer, onPositionOverrides }: { match: Match; active: boolean; canRequestAnalysis?: boolean; selectedPlayerSlot?: number|null; onSelectPlayer?: (slot:number) => void; onPositionOverrides?: (updates:Record<string,number>) => void }) {
+export default function MatchAnalysisPanel({ match, active, canRequestAnalysis = false, selectedPlayerSlot, onSelectPlayer, onPositionOverrides, analysisEndpoint }: { match: Match; active: boolean; canRequestAnalysis?: boolean; selectedPlayerSlot?: number|null; onSelectPlayer?: (slot:number) => void; onPositionOverrides?: (updates:Record<string,number>) => void; analysisEndpoint?: string }) {
+  const endpoint = analysisEndpoint || `/api/matches/${match.id}/analysis`;
   const cacheKey=analysisKey(match);
   const cached=analysisCache.get(cacheKey)??match.analysis??null;
   const [analysis, setAnalysis] = useState<MatchAnalysis | null>(cached);
@@ -78,7 +79,7 @@ export default function MatchAnalysisPanel({ match, active, canRequestAnalysis =
     const controller = new AbortController(); let timedOut = false; const requestedMatchId = cacheKey;
     const timeout = window.setTimeout(() => { timedOut = true; controller.abort(); }, 15_000);
     setRequestState("loading"); setError("");
-    void fetch(`/api/matches/${match.id}/analysis`, { cache: "no-store", signal: controller.signal })
+    void fetch(endpoint, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         const body = await response.json().catch(() => null) as { analysis?: MatchAnalysis | null; preparation?: { replay?: string; errorCode?: string | null }; error?: { message?: string } } | null;
         if (!response.ok) throw new Error(body?.error?.message || "تحلیل مچ آماده نشد");
@@ -98,7 +99,7 @@ export default function MatchAnalysisPanel({ match, active, canRequestAnalysis =
         setError(timedOut ? "دریافت تحلیل بیشتر از حد انتظار طول کشید. دوباره تلاش کنید." : reason instanceof Error ? reason.message : "تحلیل مچ آماده نشد"); setRequestState("error");
       }).finally(() => window.clearTimeout(timeout));
     return () => { window.clearTimeout(timeout); controller.abort(); };
-  }, [active, analysis, cacheKey, match.dotaMatchId, match.id, retryToken]);
+  }, [active, analysis, cacheKey, match.dotaMatchId, endpoint, retryToken]);
 
   useEffect(() => {
     if (!active || requestState !== "preparing") return;
@@ -133,7 +134,7 @@ export default function MatchAnalysisPanel({ match, active, canRequestAnalysis =
     onPositionOverrides?.(updates);
     setPendingPositionChange(null);
     currentMatchId.current=nextCacheKey;
-    void fetch(`/api/matches/${match.id}/analysis?positions=${encodeURIComponent(JSON.stringify(mergedOverrides))}`,{cache:"no-store"})
+    void fetch(`${endpoint}?positions=${encodeURIComponent(JSON.stringify(mergedOverrides))}`,{cache:"no-store"})
       .then(async(response)=>response.ok?(await response.json() as {analysis?:MatchAnalysis|null}).analysis:null)
       .then((next)=>{if(!next||currentMatchId.current!==nextCacheKey)return;analysisCache.set(nextCacheKey,next);setAnalysis(next);})
       .catch(()=>undefined);
@@ -148,10 +149,10 @@ export default function MatchAnalysisPanel({ match, active, canRequestAnalysis =
   const requestAnalysis = async () => {
     setAnalysisConfirmation(false); setRequestState("loading"); setError("");
     try {
-      const response=await fetch(`/api/matches/${match.id}/analysis`,{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
-      const body=await response.json().catch(()=>null) as {preparation?:{replay?:string};error?:{message?:string}}|null;
+      const response=await fetch(analysisEndpoint ? `/api/replays/${match.dotaMatchId}` : endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:analysisEndpoint ? JSON.stringify({intent:"analysis"}) : "{}"});
+      const body=await response.json().catch(()=>null) as {status?:string;preparation?:{replay?:string};error?:{message?:string}}|null;
       if(!response.ok)throw new Error(body?.error?.message||"درخواست تحلیل ثبت نشد");
-      if(body?.preparation?.replay==="ready")retry();
+      if(body?.preparation?.replay==="ready"||body?.status==="ready")retry();
       else setRequestState("preparing");
     }catch(reason){setError(reason instanceof Error?reason.message:"درخواست تحلیل ثبت نشد");setRequestState("error");}
   };
