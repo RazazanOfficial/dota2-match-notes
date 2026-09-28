@@ -4,6 +4,10 @@ export const RANKS = ["DIVINE", "IMMORTAL"] as const;
 export const MODES = [{ id: 22, name: "ALL_PICK_RANKED" }, { id: 23, name: "TURBO" }] as const;
 export const RANK_GROUPS = ["DIVINE_IMMORTAL"] as const;
 export const REFERENCE_POLICY = "stratz-ranked-assumed-di-v2";
+export function shouldResetLatestMonth(referenceMonth: string, latestMonth: string,
+  force: boolean, existingPolicies: string[]) {
+  return referenceMonth === latestMonth && (force || existingPolicies.some(policy => policy !== REFERENCE_POLICY));
+}
 export const METRICS = ["cs", "dn", "kills", "deaths", "assists", "networth", "xp", "heroDamage", "towerDamage", "healingAllies", "campsStacked", "neutrals", "ancients", "teamKills"] as const;
 export type Metric = typeof METRICS[number];
 export type Means = Record<Metric, number>;

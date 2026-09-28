@@ -1,7 +1,7 @@
-import { and, desc, eq, inArray, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { monthlyHeroPerformance, monthlyHeroPositionMeta, monthlyPositionPerformance, monthlyReferenceEvents, monthlyReferenceVersions } from "../db/schema";
-import { METRICS, MODES, RANKS, RANK_GROUPS, REFERENCE_POLICY, monthDate, monthIsSettled, monthKey, performanceJobs, previousMonth, type Means } from "./model";
+import { METRICS, MODES, RANKS, RANK_GROUPS, REFERENCE_POLICY, monthDate, monthIsSettled, monthKey, performanceJobs, previousMonth, shouldResetLatestMonth, type Means } from "./model";
 import { fetchMonthlyMeta, fetchMonthlyPerformance, type PerformanceRow } from "./providers";
 
 const LOCK = 2_741_073;
@@ -23,6 +23,17 @@ async function locked<T>(run: (tx: ReturnType<typeof getDb>) => Promise<T>) {
   });
 }
 
+async function clearMonthlyReference(tx: ReturnType<typeof getDb>, referenceMonth: string, versionIds: string[]) {
+  if (!versionIds.length) return;
+  // Explicit child-first order: these foreign keys do not cascade. The month
+  // predicate on partitioned tables prevents touching any earlier month.
+  await tx.delete(monthlyReferenceEvents).where(inArray(monthlyReferenceEvents.versionId, versionIds));
+  await tx.delete(monthlyHeroPositionMeta).where(eq(monthlyHeroPositionMeta.referenceMonth, referenceMonth));
+  await tx.delete(monthlyHeroPerformance).where(eq(monthlyHeroPerformance.referenceMonth, referenceMonth));
+  await tx.delete(monthlyPositionPerformance).where(eq(monthlyPositionPerformance.referenceMonth, referenceMonth));
+  await tx.delete(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.referenceMonth, referenceMonth));
+}
+
 export async function ensureMonthlyReference(now = new Date(), force = false, requestedMonth?: string) {
   if (requestedMonth && !/^20\d{2}-(0[1-9]|1[0-2])$/.test(requestedMonth)) throw new Error("Invalid reference month");
   const month = requestedMonth ? new Date(`${requestedMonth}-01T00:00:00Z`) : previousMonth(now);
@@ -30,30 +41,25 @@ export async function ensureMonthlyReference(now = new Date(), force = false, re
   if ((now.getUTCFullYear() - month.getUTCFullYear()) * 12 + now.getUTCMonth() - month.getUTCMonth() > 11) throw new Error("Reference backfill is limited to the last 11 months");
   if (!monthIsSettled(month, now)) return { status: "waiting-week", month: monthDate(month) };
   return locked(async tx => {
-    // Job order and count changed with the Divine/Immortal-only policy. Never
-    // resume a legacy cursor against the new list: keep its partial rows for
-    // diagnosis and start a fresh version with a fresh cursor instead.
-    const obsolete = await tx.update(monthlyReferenceVersions).set({ status: "failed", updatedAt: new Date(),
-      errorMessage: "Obsolete rank scope; replaced by Divine/Immortal-only reference" })
-      .where(and(eq(monthlyReferenceVersions.status, "building"), ne(monthlyReferenceVersions.sourcePolicy, REFERENCE_POLICY)))
-      .returning({ id: monthlyReferenceVersions.id });
-    if (obsolete.length) await tx.insert(monthlyReferenceEvents).values(obsolete.map(version => ({
-      versionId: version.id, service: "system", level: "info",
-      message: "نسخهٔ نیمه‌تمام مربوط به تمام Rankها متوقف شد؛ نسخهٔ جدید Divine/Immortal از صفر آغاز می‌شود",
-    })));
+    const monthString = monthDate(month);
+    const existing = await tx.select({ id: monthlyReferenceVersions.id, sourcePolicy: monthlyReferenceVersions.sourcePolicy })
+      .from(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.referenceMonth, monthString));
+    const reset = shouldResetLatestMonth(monthString, monthDate(previousMonth(now)), force,
+      existing.map(version => version.sourcePolicy));
+    if (reset) await clearMonthlyReference(tx, monthString, existing.map(version => version.id));
     const [building] = await tx.select().from(monthlyReferenceVersions)
-      .where(and(eq(monthlyReferenceVersions.referenceMonth, monthDate(month)), eq(monthlyReferenceVersions.status, "building"),
+      .where(and(eq(monthlyReferenceVersions.referenceMonth, monthString), eq(monthlyReferenceVersions.status, "building"),
         eq(monthlyReferenceVersions.sourcePolicy, REFERENCE_POLICY))).limit(1);
-    if (building) return { status: "building", month: monthDate(month), versionId: building.id };
+    if (building) return { status: "building", month: monthString, versionId: building.id };
     const [active] = await tx.select().from(monthlyReferenceVersions)
-      .where(and(eq(monthlyReferenceVersions.referenceMonth, monthDate(month)), eq(monthlyReferenceVersions.status, "active"),
+      .where(and(eq(monthlyReferenceVersions.referenceMonth, monthString), eq(monthlyReferenceVersions.status, "active"),
         eq(monthlyReferenceVersions.sourcePolicy, REFERENCE_POLICY))).limit(1);
-    if (active && !force) return { status: "active", month: monthDate(month), versionId: active.id };
-    const [created] = await tx.insert(monthlyReferenceVersions).values({ referenceMonth: monthDate(month), sourcePolicy: REFERENCE_POLICY }).returning({ id: monthlyReferenceVersions.id });
+    if (active && !force) return { status: "active", month: monthString, versionId: active.id };
+    const [created] = await tx.insert(monthlyReferenceVersions).values({ referenceMonth: monthString, sourcePolicy: REFERENCE_POLICY }).returning({ id: monthlyReferenceVersions.id });
     await tx.insert(monthlyReferenceEvents).values({ versionId: created.id, service: "system", level: "info",
       message: force ? "بازخوانی دستی ماه در صف قرار گرفت" : "ساخت خودکار مرجع ماه آغاز شد" });
     const end = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 1));
-    const lower = monthDate(month), upper = monthDate(end), suffix = monthKey(month);
+    const lower = monthString, upper = monthDate(end), suffix = monthKey(month);
     // Suffix and date values only come from Date UTC year/month, never request text.
     for (const parent of ["monthly_hero_position_meta", "monthly_hero_performance_reference", "monthly_position_performance_reference"]) {
       await tx.execute(sql.raw(`CREATE TABLE IF NOT EXISTS "${parent}_${suffix}" PARTITION OF "${parent}" FOR VALUES FROM ('${lower}') TO ('${upper}')`));
@@ -64,7 +70,7 @@ export async function ensureMonthlyReference(now = new Date(), force = false, re
 
 async function buildingVersion() {
   return (await getDb().select().from(monthlyReferenceVersions)
-    .where(eq(monthlyReferenceVersions.status, "building"))
+    .where(and(eq(monthlyReferenceVersions.status, "building"), eq(monthlyReferenceVersions.sourcePolicy, REFERENCE_POLICY)))
     .orderBy(monthlyReferenceVersions.referenceMonth).limit(1))[0];
 }
 

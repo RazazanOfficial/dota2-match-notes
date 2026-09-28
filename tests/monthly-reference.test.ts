@@ -1,9 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { monthIsSettled, performanceJobs, previousMonth, weekStartsInMonth, weightedMean, RANKS, RANK_GROUPS } from "../lib/monthly-reference/model";
+import { monthIsSettled, performanceJobs, previousMonth, weekStartsInMonth, weightedMean, RANKS, RANK_GROUPS, REFERENCE_POLICY, shouldResetLatestMonth } from "../lib/monthly-reference/model";
 import { metaQuery, parseMeta, parsePerformance, performanceQuery } from "../lib/monthly-reference/providers";
 import { poolDivineImmortalMeta } from "../lib/monthly-reference/selection";
 
 describe("monthly reference contract", () => {
+  it("resets only the latest month on a new policy or explicit refetch", () => {
+    const latest = "2026-08-01";
+    expect(shouldResetLatestMonth(latest, latest, false, ["stratz-ranked-assumed"])).toBe(true);
+    expect(shouldResetLatestMonth(latest, latest, false, [REFERENCE_POLICY])).toBe(false);
+    expect(shouldResetLatestMonth(latest, latest, true, [REFERENCE_POLICY])).toBe(true);
+    expect(shouldResetLatestMonth("2026-07-01", latest, true, ["stratz-ranked-assumed"])).toBe(false);
+  });
   it("assigns a crossing week entirely to its starting month and waits for it to finish", () => {
     const august = new Date("2026-08-01T00:00:00Z");
     const starts = weekStartsInMonth(august).map(value => new Date(value).toISOString().slice(0, 10));

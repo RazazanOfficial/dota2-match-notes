@@ -133,12 +133,13 @@ export default function AdminMonthlyReferences({ mock = false }: { mock?: boolea
       <p>Meta برای Ranked All Pick و Turbo جداست. Performance فعلاً با فرض Ranked بودن آمار STRATZ ثبت می‌شود؛ این فرض هنوز با فیلتر رسمی API تأیید نشده است.</p>
       <div className="monthly-reference-controls">
         <label>ماه Fetch دستی <input type="month" value={requestedMonth} onChange={event => setRequestedMonth(event.target.value)} /></label>
-        <button type="button" className="secondary-button" onClick={() => void start()} disabled={starting}>{starting ? "در حال ثبت…" : requestedMonth ? "بازخوانی ماه انتخابی" : "بازخوانی ماه قبل"}</button>
+        <button type="button" className="secondary-button" onClick={() => void start()} disabled={starting}>{starting ? "در حال ثبت…" : requestedMonth ? "بازخوانی ماه انتخابی" : "پاک‌سازی و بازخوانی ماه قبل"}</button>
         <button type="button" className="secondary-button" onClick={() => {
           void refresh().catch(reason => setError(String(reason)));
           setDetailRefresh(value => value + 1);
         }}>به‌روزرسانی وضعیت</button>
       </div>
+      <p className="monthly-reference-hint">بازخوانی آخرین ماه کامل، فقط دادهٔ مرجع همان ماه را پاک می‌کند و از ابتدا می‌گیرد. Tick عادی از پیشرفت ذخیره‌شده ادامه می‌دهد.</p>
       {error && <p role="alert" className="monthly-reference-error">{error}</p>}
       {loading && !versions.length ? <p>در حال دریافت ماه‌ها…</p> : !versions.length ? <p>هنوز هیچ ماهی ثبت نشده است.</p> : <>
         <div className="admin-table-wrap"><table className="admin-users-table"><thead><tr><th>ماه (UTC)</th><th>آخرین نسخه</th><th>تعداد نسخه</th><th>آخرین اجرا</th><th>جزئیات</th></tr></thead><tbody>
