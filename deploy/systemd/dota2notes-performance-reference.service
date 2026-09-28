@@ -1,5 +1,5 @@
 [Unit]
-Description=Dota2 Notes external performance reference refresh
+Description=Dota2 Notes monthly reference collection (one batch)
 After=network-online.target dota2notes.service
 Wants=network-online.target
 

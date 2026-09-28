@@ -90,7 +90,9 @@ describe("match performance analysis", () => {
     expect(analysis?.players[0].isProfilePlayer).toBe(true);
     expect(analysis?.players[0].benchmarks).toHaveLength(9);
     expect(analysis?.players[0].benchmarks.every((metric) => metric.source === "hero")).toBe(true);
-    expect(analysis?.players[0].laneImpact?.laneEfficiency).toBe(72);
+    expect(analysis?.players[0].laneImpact?.laneEfficiency).toBeNull();
+    expect(analysis?.players[0].laneEfficiency?.score).toBeNull();
+    expect(analysis?.players[0].benchmarks.some(metric => metric.key === "lane_efficiency_pct")).toBe(false);
     expect(analysis?.players[0].timeline.map((point) => point.minute)).toEqual([0, 1, 2, 3]);
     expect(analysis?.players[0].benchmarks.find((metric) => metric.key === "deaths_per_min")?.qualityPercentile).toBe(90);
     expect(analysis?.players[0].benchmarks.some((metric) => metric.key === "denies_per_min")).toBe(false);

@@ -7,6 +7,7 @@ import { buildCohortAnalysis, type CohortMetricKey, type PerformanceReferenceDat
 import { resolveMatchPositions } from "./position-resolver";
 import { buildLaneImpact } from "./lane-impact-analysis";
 import { buildItemOwnershipAnalysis } from "./item-ownership-analysis";
+import { calculateLaneEfficiency, type LaneEvents } from "./lane-efficiency";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -17,7 +18,6 @@ const METRICS = [
   { key: "deaths_per_min", label: "Deaths / min", description: "میانگین Death در هر دقیقه؛ مقدار کمتر بهتر است", direction: "lower", field: "deaths", unit: "perMinute" },
   { key: "assists_per_min", label: "Assists / min", description: "میانگین Assist در هر دقیقه", direction: "higher", field: "assists", unit: "perMinute" },
   { key: "fight_participation", label: "Fight Participation", description: "درصد مشارکت در Killهای تیم", direction: "higher", field: "fight_participation", unit: "percent" },
-  { key: "lane_efficiency_pct", label: "Lane Efficiency", description: "بازده اقتصادی Laning Stage", direction: "higher", field: "lane_efficiency_pct", unit: "percent" },
   { key: "last_hits_per_min", label: "LH / min", description: "میانگین Last Hit در هر دقیقه", direction: "higher", field: "last_hits", unit: "perMinute" },
   { key: "denies_at_10", label: "Denies @10", description: "تعداد Deny تا پایان دقیقه ۱۰", direction: "higher", field: "dn_t", unit: "at10" },
   { key: "hero_damage_per_min", label: "Hero DMG / min", description: "میانگین Damage واردشده به Heroها در هر دقیقه", direction: "higher", field: "hero_damage", unit: "perMinute" },
@@ -149,8 +149,10 @@ export function buildMatchAnalysis(params: { rawData: unknown; replaySource?: "l
   const assignedPosition=params.profileAssignedRole?ROLE_POSITION[params.profileAssignedRole]:null;
   const positionResolutions=resolveMatchPositions({players:standardPlayers,positionOverrides:params.positionOverrides,profileSlot:typeof profileSlot==="number"?profileSlot:null,profileAssignedPosition:assignedPosition});
   const patch=rawMatch.patch==null?null:String(rawMatch.patch),gameMode=numeric(rawMatch.game_mode);
+  const laneEvents=params.replaySource==="local"?record(rawMatch.lane_events) as LaneEvents|null:null;
   const ownershipEvents=buildItemOwnershipAnalysis(standardPlayers);
   const positionBySlot=new Map<number,number|null>(standardPlayers.flatMap((player)=>{const slot=numeric(player.player_slot);return slot===null?[]:[[slot,positionResolutions.get(slot)?.detectedPosition??null] as const];}));
+  const heroIdsBySlot=new Map<number,number>(standardPlayers.flatMap((player)=>{const slot=numeric(player.player_slot),id=numeric(player.hero_id);return slot===null||id===null?[]:[[slot,id] as const];}));
   const initialPlayers = standardPlayers.flatMap((player): MatchPlayerAnalysis[] => {
     const playerSlot = numeric(player.player_slot); const heroId = numeric(player.hero_id);
     if (playerSlot === null || heroId === null) return [];
@@ -164,14 +166,20 @@ export function buildMatchAnalysis(params: { rawData: unknown; replaySource?: "l
     const baseBenchmarks=cohortAnalysis.metrics.map((metric)=>({...metric,highlightEligible:highlightEligible(metric.key,metric.value,durationMinutes)}));
     const team=playerSlot<128?"radiant" as DotaTeam:"dire" as DotaTeam;const timeline=playerTimeline(player,durationMinutes);const events=playerEvents(player,standardPlayers,heroId,team);
     const map=buildPlayerMapAnalysis({player,allPlayers:standardPlayers,rawMatch,timeline,events,team,position});
-    const benchmarks=baseBenchmarks,scoreMetrics=benchmarks.filter((metric)=>metric.source!=="match"),sorted=[...benchmarks].sort((a,b)=>b.qualityPercentile-a.qualityPercentile),highlightMetrics=sorted.filter((metric)=>metric.highlightEligible!==false);
+    const laneEfficiency=calculateLaneEfficiency({slot:playerSlot,heroId,position,positions:positionBySlot,
+      heroIds:heroIdsBySlot,duration:parsed.data.duration,reference:params.performanceReference?.lane,
+      events:laneEvents??undefined,gameMode,lobbyType:numeric(rawMatch.lobby_type)});
+    const benchmarks=baseBenchmarks,scoreMetrics:MatchBenchmarkMetric[]=benchmarks.filter((metric)=>metric.source!=="match"),sorted=[...benchmarks].sort((a,b)=>b.qualityPercentile-a.qualityPercentile),highlightMetrics=sorted.filter((metric)=>metric.highlightEligible!==false);
+    if(laneEfficiency.score!==null)scoreMetrics.push({key:"lane_efficiency_pct",label:"Lane Efficiency",description:"امتیاز فرمول ده دقیقهٔ نخست",value:laneEfficiency.score,
+      formattedValue:String(laneEfficiency.score),percentile:laneEfficiency.score,qualityPercentile:laneEfficiency.score,
+      tone:performanceTone(laneEfficiency.score),source:"cohort",scoreOnly:true});
     const performanceScore=calculatePerformanceScoreOrNull(scoreMetrics,durationMinutes,position);
     const timelineSource = timeline.length < 2 ? "unavailable" as const : (params.replaySource === "local" ? "local" as const : "opendota" as const);
-    return [{ playerSlot, accountId: numeric(player.account_id), heroId, heroName: hero.name, personName: typeof player.personaname === "string" && player.personaname.trim() ? player.personaname.trim() : "حساب خصوصی", team, position, positionLabel: position ? POSITION_LABELS[position] : "نامشخص", positionResolution, isProfilePlayer: playerSlot === profileSlot, kills: numeric(player.kills), deaths: numeric(player.deaths), assists: numeric(player.assists), lastHits:numeric(player.last_hits), denies:numeric(player.denies), heroDamage:numeric(player.hero_damage), heroHealing:numeric(player.hero_healing), towerDamage:numeric(player.tower_damage), ...(performanceScore===null?{}:{performanceScore}), benchmarks,scoreMetrics, strengths: highlightMetrics.filter((metric) => metric.qualityPercentile >= 80).slice(0, 3), weaknesses: highlightMetrics.filter((metric) => metric.qualityPercentile < 40).reverse().slice(0, 3), timeline,timelineSource,events,map,itemTimings:[],cohort:cohortAnalysis.profile,ownershipEvents:ownershipEvents.filter((event)=>event.purchaserPlayerSlot===playerSlot||event.holderPlayerSlot===playerSlot), benchmarkSource: benchmarks.length ? benchmarks[0].source : "unavailable" }];
+    return [{ playerSlot, accountId: numeric(player.account_id), heroId, heroName: hero.name, personName: typeof player.personaname === "string" && player.personaname.trim() ? player.personaname.trim() : "حساب خصوصی", team, position, positionLabel: position ? POSITION_LABELS[position] : "نامشخص", positionResolution, isProfilePlayer: playerSlot === profileSlot, kills: numeric(player.kills), deaths: numeric(player.deaths), assists: numeric(player.assists), lastHits:numeric(player.last_hits), denies:numeric(player.denies), heroDamage:numeric(player.hero_damage), heroHealing:numeric(player.hero_healing), towerDamage:numeric(player.tower_damage), ...(performanceScore===null?{}:{performanceScore}), benchmarks,scoreMetrics,laneEfficiency, strengths: highlightMetrics.filter((metric) => metric.qualityPercentile >= 80).slice(0, 3), weaknesses: highlightMetrics.filter((metric) => metric.qualityPercentile < 40).reverse().slice(0, 3), timeline,timelineSource,events,map,itemTimings:[],cohort:cohortAnalysis.profile,ownershipEvents:ownershipEvents.filter((event)=>event.purchaserPlayerSlot===playerSlot||event.holderPlayerSlot===playerSlot), benchmarkSource: benchmarks.length ? benchmarks[0].source : "unavailable" }];
   }).sort((a, b) => a.playerSlot - b.playerSlot);
   const rawBySlot=new Map(standardPlayers.flatMap((player)=>{const slot=numeric(player.player_slot);return slot===null?[]:[[slot,player] as const];}));
   const timelinesBySlot=new Map(initialPlayers.map((entry)=>[entry.playerSlot,entry.timeline]));
-  const players=initialPlayers.map((entry)=>{const raw=rawBySlot.get(entry.playerSlot);return raw?{...entry,laneImpact:buildLaneImpact({player:raw,playerPosition:entry.position,players:standardPlayers,positions:positionBySlot,timeline:entry.timeline,timelines:timelinesBySlot,events:entry.events??[]})}:entry;});
+  const players=initialPlayers.map((entry)=>{const raw=rawBySlot.get(entry.playerSlot);return raw?{...entry,laneImpact:{...buildLaneImpact({player:raw,playerPosition:entry.position,players:standardPlayers,positions:positionBySlot,timeline:entry.timeline,timelines:timelinesBySlot,events:entry.events??[]}),laneEfficiency:entry.laneEfficiency?.score??null}}:entry;});
   const benchmarkPlayers = players.filter((player) => player.benchmarks.length).length;
   const timelinePlayers = players.filter((player) => player.timeline.length > 1).length;
   const status = !players.length ? "unavailable" : benchmarkPlayers === players.length && timelinePlayers === players.length ? "ready" : "partial";

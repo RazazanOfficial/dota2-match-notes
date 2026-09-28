@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
+import { extractLaneEvents } from "./lane-events.mjs";
 import { pipeline } from "node:stream/promises";
 import { Transform } from "node:stream";
 
@@ -149,6 +150,13 @@ async function main() {
     await run("java", ["com.sun.tools.javac.Main", "-cp", jar, "-d", work, join(scriptDir, "ReplayInspector.java")], { timeoutMs: 30_000 });
     const result = await run("java", ["-Xmx1200m", "-cp", `${jar}:${work}`, "ReplayInspector", String(matchId), dem], { timeoutMs: 120_000, outputLimit: MAX_JSON });
     const blob = verifyBlob(JSON.parse(result.toString("utf8")), matchId);
+    try {
+      await run("java", ["com.sun.tools.javac.Main", "-cp", jar, "-d", work, join(scriptDir, "LaneEvents.java")], { timeoutMs: 30_000 });
+      blob.lane_events = await extractLaneEvents(jar, work, dem);
+    } catch (error) {
+      // Replay analysis remains available; an incomplete Lane score is never invented.
+      console.error(`Lane events unavailable for ${matchId}: ${error instanceof Error ? error.message : String(error)}`);
+    }
     if (!dryRun) await store(matchId, blob);
     console.log(JSON.stringify({ matchId, mode: dryRun ? "validated" : "stored", parserVersion: blob.version,
       players: blob.players.length, timelinePoints: blob.players[0].times.length }));

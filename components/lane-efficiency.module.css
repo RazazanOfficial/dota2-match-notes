@@ -1,0 +1,18 @@
+.panel{padding:20px;border:1px solid rgba(153,178,203,.25);border-radius:18px;background:linear-gradient(135deg,rgba(26,43,57,.92),rgba(17,26,37,.96));color:#eef4f8}
+.panel header{display:flex;justify-content:space-between;align-items:center;gap:20px}
+.panel header small{font-size:.72rem;color:#7ddcc9;letter-spacing:.08em}
+.panel h3{margin:5px 0 8px;font-size:1.25rem}
+.panel p{margin:0;color:#b5c5d3;line-height:1.8;font-size:.9rem}
+.score{white-space:nowrap;font-size:2rem;color:#79e6c1;font-variant-numeric:tabular-nums}
+.score small{color:#aebecb;font-size:.86rem}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+.meta span{border:1px solid rgba(153,178,203,.25);border-radius:9px;padding:5px 10px;color:#cce0e9;font-size:.8rem}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.grid>div{padding:12px;background:rgba(219,237,247,.06);border-radius:11px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.grid span{color:#b6c8d7;font-size:.79rem}
+.grid b{font-size:1.05rem;color:#fff;font-variant-numeric:tabular-nums}
+.grid small{color:#a2b8c8;font-size:.76rem;line-height:1.5}
+.grid .missing{border:1px dashed #b9a268}
+.panel footer{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:14px;font-size:.82rem;color:#a9c3d2}
+.panel footer small{color:#e5c482}
+@media(max-width:780px){.panel{padding:14px}.panel header{align-items:start}.score{font-size:1.45rem}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}

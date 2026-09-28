@@ -1,5 +1,8 @@
 # Match Performance Analysis V3
 
+> این سند قرارداد V3 پیش از تغییر مرجع آماری است. شرح Worker و جدول‌های فعلی در
+> `docs/monthly-reference-services.md` قرار دارد. قرارداد جدید Score هنوز جداگانه بازنویسی می‌شود.
+
 ## Product rules
 
 - همه قابلیت‌های این نسخه برای همه کاربران فعال‌اند؛ هیچ Free/Premium gate وجود ندارد.
@@ -32,7 +35,7 @@ Worker هر ۷۲ ساعت یک Snapshot تازه می‌سازد. Meta از `her
 - GPM و XPM
 - Kills / min، Deaths / min و Assists / min
 - Fight Participation از `(Kills + Assists) / Team Kills`.
-- Lane Efficiency در صورت وجود داده‌ی معتبر OpenDota.
+- Lane Efficiency بر پایهٔ Replay محلیِ ده دقیقهٔ اول و Snapshot ماه قبلِ Divine/Immortal برای Ranked All Pick؛ در نبود داده یا مرجع معتبر، ناموجود نمایش داده می‌شود.
 - LH / min
 - Denies @10؛ Denies کل بازی از تحلیل اصلی حذف شده است.
 - Hero DMG / min
