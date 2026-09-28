@@ -101,7 +101,7 @@ function externalMetrics(params:{reference?:PerformanceReferenceData;heroId:numb
 
 export function buildCohortAnalysis(params:{reference?:PerformanceReferenceData;heroId:number;position:number|null;rankTier:number|null;patch:string|null;gameMode:number|null;durationMinutes:number;currentValues:Partial<Record<CohortMetricKey,number>>;fallbackMetrics:MatchBenchmarkMetric[]}){
   const allMeta=params.reference?.meta.filter((row)=>row.heroId===params.heroId&&(params.gameMode===null||row.gameMode===params.gameMode))??[];
-  const rank=rankName(params.rankTier);
+  const rank=allMeta.length>0&&allMeta.every(row=>row.rankBracket==="DIVINE_IMMORTAL")?"DIVINE_IMMORTAL":rankName(params.rankTier);
   const totalsByRank=new Map<string,number>();for(const row of allMeta)totalsByRank.set(row.rankBracket,(totalsByRank.get(row.rankBracket)??0)+row.matchCount);
   const fallbackRank=[...totalsByRank.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0];
   const selectedRank=rank&&allMeta.some((row)=>row.rankBracket===rank)?rank:fallbackRank;

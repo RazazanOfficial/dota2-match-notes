@@ -7,6 +7,13 @@ import { DOTA_741_LANDMARKS,DOTA_MAP_LAYER_ICONS,DOTA_MAP_LAYER_LABELS } from ".
 const reference:PerformanceReferenceData={snapshot:{id:"test",fetchedAt:"2026-09-02T00:00:00.000Z",expiresAt:"2026-09-05T00:00:00.000Z",windowDays:7,stale:false},meta:[{heroId:85,position:3,rankBracket:"LEGEND",gameMode:22,matchCount:30,winCount:17,positionShare:12.5,metaPickRate:1.8,winRate:56.7,positionSampleCount:20_000}],benchmarks:[{heroId:85,position:0,rankBracket:"ALL",gameMode:0,patch:"",metric:"gold_per_min",provider:"opendota",sampleCount:null,quantiles:[{percentile:.1,value:300},{percentile:.5,value:450},{percentile:.9,value:600}]}]};
 
 describe("performance intelligence",()=>{
+  it("keeps the Divine/Immortal reference for a Herald player",()=>{
+    const pooled={...reference,meta:[{...reference.meta[0],rankBracket:"DIVINE_IMMORTAL",matchCount:1000,winCount:540,winRate:54}]};
+    const result=buildCohortAnalysis({reference:pooled,heroId:85,position:3,rankTier:12,patch:null,gameMode:22,
+      durationMinutes:35,currentValues:{},fallbackMetrics:[]});
+    expect(result.profile?.label).toContain("DIVINE_IMMORTAL");
+    expect(result.profile?.heroPositionSamples).toBe(1000);
+  });
   it("uses external STRATZ meta and OpenDota distributions without local match cohorts",()=>{
     const result=buildCohortAnalysis({reference,heroId:85,position:3,rankTier:73,patch:"7.41",gameMode:22,durationMinutes:40,currentValues:{gold_per_min:520},fallbackMetrics:[]});
     expect(result.profile).toMatchObject({heroPositionSamples:30,positionSamples:20_000,heroPositionWeight:13,positionPickRate:12.5,metaPickRate:1.8,winRate:56.7,metaSource:"stratz"});

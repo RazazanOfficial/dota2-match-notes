@@ -6,7 +6,7 @@ import { HEROES } from "@/data/heroes";
 
 type Version = {
   id: string; referenceMonth: string; status: string; sourcePolicy: string;
-  metaCursor: number; performanceCursor: number; performanceTotal: number; metaRows: number;
+  metaCursor: number; metaTotal: number; performanceCursor: number; performanceTotal: number; metaRows: number;
   heroRows: number; positionRows: number; startedAt: string; completedAt: string | null;
   metaLastSuccessAt: string | null; performanceLastSuccessAt: string | null;
   metaLastErrorAt: string | null; performanceLastErrorAt: string | null;
@@ -163,7 +163,7 @@ export default function AdminMonthlyReferences({ mock = false }: { mock?: boolea
         </div>
         {selected && <>
           <div className="monthly-reference-overview">
-            <ServiceCard name="Meta · Hero / Position" cursor={selected.metaCursor} total={16} rows={selected.metaRows}
+            <ServiceCard name="Meta · Hero / Position" cursor={selected.metaCursor} total={selected.metaTotal} rows={selected.metaRows}
               success={selected.metaLastSuccessAt} error={selected.metaLastError} errorAt={selected.metaLastErrorAt} />
             <ServiceCard name="Performance · دقیقه‌ای" cursor={selected.performanceCursor} total={selected.performanceTotal}
               rows={selected.heroRows} success={selected.performanceLastSuccessAt}
@@ -236,20 +236,20 @@ function PerformanceTable({ rows, empty }: { rows: PerformanceRow[]; empty: stri
 
 const mockVersions: Version[] = [
   { id: "00000000-0000-4000-8000-000000000001", referenceMonth: "2026-08-01", status: "building",
-    sourcePolicy: "stratz-ranked-assumed", metaCursor: 16, performanceCursor: 93, performanceTotal: 512, metaRows: 12800, heroRows: 0, positionRows: 0,
+    sourcePolicy: "stratz-ranked-assumed-di-v2", metaCursor: 4, metaTotal: 4, performanceCursor: 93, performanceTotal: 128, metaRows: 3200, heroRows: 0, positionRows: 0,
     startedAt: "2026-09-06T10:00:00Z", completedAt: null, metaLastSuccessAt: "2026-09-06T10:16:00Z", performanceLastSuccessAt: "2026-09-06T12:05:00Z",
     metaLastErrorAt: null, performanceLastErrorAt: "2026-09-06T11:50:00Z", metaLastError: null, performanceLastError: null },
   { id: "00000000-0000-4000-8000-000000000002", referenceMonth: "2026-07-01", status: "active",
-    sourcePolicy: "stratz-ranked-assumed", metaCursor: 16, performanceCursor: 512, performanceTotal: 512, metaRows: 12000, heroRows: 62000, positionRows: 1500,
+    sourcePolicy: "stratz-ranked-assumed-di-v2", metaCursor: 4, metaTotal: 4, performanceCursor: 128, performanceTotal: 128, metaRows: 3000, heroRows: 15000, positionRows: 375,
     startedAt: "2026-08-07T08:00:00Z", completedAt: "2026-08-07T15:00:00Z", metaLastSuccessAt: "2026-08-07T08:16:00Z", performanceLastSuccessAt: "2026-08-07T15:00:00Z",
     metaLastErrorAt: null, performanceLastErrorAt: null, metaLastError: null, performanceLastError: null },
   { id: "00000000-0000-4000-8000-000000000003", referenceMonth: "2026-07-01", status: "retired",
-    sourcePolicy: "stratz-ranked-assumed", metaCursor: 16, performanceCursor: 512, performanceTotal: 512, metaRows: 11900, heroRows: 61500, positionRows: 1500,
+    sourcePolicy: "stratz-ranked-assumed", metaCursor: 16, metaTotal: 16, performanceCursor: 512, performanceTotal: 512, metaRows: 11900, heroRows: 61500, positionRows: 1500,
     startedAt: "2026-08-06T08:00:00Z", completedAt: "2026-08-06T15:00:00Z", metaLastSuccessAt: "2026-08-06T08:16:00Z", performanceLastSuccessAt: "2026-08-06T15:00:00Z",
     metaLastErrorAt: null, performanceLastErrorAt: null, metaLastError: null, performanceLastError: null },
 ];
 const mockEvents: Event[] = [
-  { id: "a", service: "performance", level: "success", message: "DIVINE_IMMORTAL / هفتهٔ 2959: 740 ردیف؛ ۹۳ از ۵۱۲", createdAt: "2026-09-06T12:05:00Z" },
+  { id: "a", service: "performance", level: "success", message: "DIVINE_IMMORTAL / هفتهٔ 2959: 740 ردیف؛ ۹۳ از ۱۲۸", createdAt: "2026-09-06T12:05:00Z" },
   { id: "b", service: "performance", level: "error", message: "STRATZ rate limit؛ Retry در اجرای بعد", createdAt: "2026-09-06T11:50:00Z" },
   { id: "c", service: "meta", level: "success", message: "IMMORTAL / TURBO: ۷۰۰ ردیف؛ Meta کامل شد", createdAt: "2026-09-06T10:16:00Z" },
 ];

@@ -3,7 +3,7 @@ import { requireSuperAdmin } from "@/lib/admin/auth";
 import { adminErrorResponse, AdminError } from "@/lib/admin/errors";
 import { hasValidRequestOrigin } from "@/lib/auth/request";
 import { ensureMonthlyReference, getMonthlyHeroDetails, getMonthlyReferenceEvents, listMonthlyReferences } from "@/lib/monthly-reference/service";
-import { performanceJobs } from "@/lib/monthly-reference/model";
+import { performanceJobs, RANKS, MODES, REFERENCE_POLICY } from "@/lib/monthly-reference/model";
 import { HEROES } from "@/data/heroes";
 import { z } from "zod";
 
@@ -31,7 +31,9 @@ export async function GET(request: NextRequest) {
     if (params.size) throw new AdminError(400, "invalid_request", "درخواست معتبر نیست");
     const versions = (await listMonthlyReferences()).map(version => ({
       ...version,
-      performanceTotal: performanceJobs(new Date(`${version.referenceMonth}T00:00:00Z`)).length,
+      metaTotal: version.sourcePolicy === REFERENCE_POLICY ? RANKS.length * MODES.length : 16,
+      performanceTotal: performanceJobs(new Date(`${version.referenceMonth}T00:00:00Z`)).length *
+        (version.sourcePolicy === REFERENCE_POLICY ? 1 : 4),
     }));
     return Response.json({ ok: true, versions }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) { return adminErrorResponse(error); }

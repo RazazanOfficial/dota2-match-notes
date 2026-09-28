@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { monthIsSettled, performanceJobs, previousMonth, weekStartsInMonth, weightedMean } from "../lib/monthly-reference/model";
+import { monthIsSettled, performanceJobs, previousMonth, weekStartsInMonth, weightedMean, RANKS, RANK_GROUPS } from "../lib/monthly-reference/model";
 import { metaQuery, parseMeta, parsePerformance, performanceQuery } from "../lib/monthly-reference/providers";
+import { poolDivineImmortalMeta } from "../lib/monthly-reference/selection";
 
 describe("monthly reference contract", () => {
   it("assigns a crossing week entirely to its starting month and waits for it to finish", () => {
@@ -43,6 +44,22 @@ describe("monthly reference contract", () => {
       minute: 11, sampleCount: 7823, means: { cs: 7.56, campsStacked: .5 },
     });
     expect(() => parsePerformance({ data: { heroStats: { stats: [{ ...raw, week: 2960 }] } } }, week, "DIVINE_IMMORTAL", [50])).toThrow("Invalid STRATZ performance cohort");
-    expect(performanceJobs(new Date("2026-08-01T00:00:00Z")).length).toBeGreaterThan(200);
+    const jobs = performanceJobs(new Date("2026-08-01T00:00:00Z"));
+    expect(RANKS).toEqual(["DIVINE", "IMMORTAL"]);
+    expect(RANK_GROUPS).toEqual(["DIVINE_IMMORTAL"]);
+    expect(jobs).toHaveLength(128);
+    expect(jobs.every(job => job.rank === "DIVINE_IMMORTAL")).toBe(true);
+  });
+
+  it("pools only Divine and Immortal Meta by match count, regardless of user rank", () => {
+    const meta = poolDivineImmortalMeta([
+      { heroId: 50, position: 5, rankBracket: "DIVINE", gameMode: 22, matchCount: 600, winCount: 300 },
+      { heroId: 50, position: 5, rankBracket: "IMMORTAL", gameMode: 22, matchCount: 400, winCount: 240 },
+      { heroId: 50, position: 4, rankBracket: "DIVINE", gameMode: 22, matchCount: 250, winCount: 125 },
+      { heroId: 50, position: 5, rankBracket: "HERALD", gameMode: 22, matchCount: 9000, winCount: 3000 },
+    ], [{ position: 5, gameMode: 22, count: 20000 }, { position: 4, gameMode: 22, count: 10000 }]);
+    expect(meta).toHaveLength(2);
+    expect(meta.find(row => row.position === 5)).toMatchObject({ rankBracket: "DIVINE_IMMORTAL",
+      matchCount: 1000, winCount: 540, positionSampleCount: 20000, positionShare: 80, winRate: 54, metaPickRate: 5 });
   });
 });

@@ -1,14 +1,13 @@
-import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { monthlyHeroPerformance, monthlyHeroPositionMeta, monthlyPositionPerformance, monthlyReferenceEvents, monthlyReferenceVersions } from "../db/schema";
-import { METRICS, MODES, RANKS, monthDate, monthIsSettled, monthKey, performanceJobs, previousMonth, type Means } from "./model";
+import { METRICS, MODES, RANKS, RANK_GROUPS, REFERENCE_POLICY, monthDate, monthIsSettled, monthKey, performanceJobs, previousMonth, type Means } from "./model";
 import { fetchMonthlyMeta, fetchMonthlyPerformance, type PerformanceRow } from "./providers";
 
 const LOCK = 2_741_073;
 const metaTasks = RANKS.flatMap(rank => MODES.map(mode => ({ rank, mode })));
 const rankMembers: Record<string, string[]> = {
-  HERALD_GUARDIAN: ["HERALD", "GUARDIAN"], CRUSADER_ARCHON: ["CRUSADER", "ARCHON"],
-  LEGEND_ANCIENT: ["LEGEND", "ANCIENT"], DIVINE_IMMORTAL: ["DIVINE", "IMMORTAL"],
+  DIVINE_IMMORTAL: ["DIVINE", "IMMORTAL"],
 };
 const meanColumns = {
   cs: "cs", dn: "dn", kills: "kills", deaths: "deaths", assists: "assists", networth: "networth", xp: "xp",
@@ -31,13 +30,26 @@ export async function ensureMonthlyReference(now = new Date(), force = false, re
   if ((now.getUTCFullYear() - month.getUTCFullYear()) * 12 + now.getUTCMonth() - month.getUTCMonth() > 11) throw new Error("Reference backfill is limited to the last 11 months");
   if (!monthIsSettled(month, now)) return { status: "waiting-week", month: monthDate(month) };
   return locked(async tx => {
+    // Job order and count changed with the Divine/Immortal-only policy. Never
+    // resume a legacy cursor against the new list: keep its partial rows for
+    // diagnosis and start a fresh version with a fresh cursor instead.
+    const obsolete = await tx.update(monthlyReferenceVersions).set({ status: "failed", updatedAt: new Date(),
+      errorMessage: "Obsolete rank scope; replaced by Divine/Immortal-only reference" })
+      .where(and(eq(monthlyReferenceVersions.status, "building"), ne(monthlyReferenceVersions.sourcePolicy, REFERENCE_POLICY)))
+      .returning({ id: monthlyReferenceVersions.id });
+    if (obsolete.length) await tx.insert(monthlyReferenceEvents).values(obsolete.map(version => ({
+      versionId: version.id, service: "system", level: "info",
+      message: "نسخهٔ نیمه‌تمام مربوط به تمام Rankها متوقف شد؛ نسخهٔ جدید Divine/Immortal از صفر آغاز می‌شود",
+    })));
     const [building] = await tx.select().from(monthlyReferenceVersions)
-      .where(and(eq(monthlyReferenceVersions.referenceMonth, monthDate(month)), eq(monthlyReferenceVersions.status, "building"))).limit(1);
+      .where(and(eq(monthlyReferenceVersions.referenceMonth, monthDate(month)), eq(monthlyReferenceVersions.status, "building"),
+        eq(monthlyReferenceVersions.sourcePolicy, REFERENCE_POLICY))).limit(1);
     if (building) return { status: "building", month: monthDate(month), versionId: building.id };
     const [active] = await tx.select().from(monthlyReferenceVersions)
-      .where(and(eq(monthlyReferenceVersions.referenceMonth, monthDate(month)), eq(monthlyReferenceVersions.status, "active"))).limit(1);
+      .where(and(eq(monthlyReferenceVersions.referenceMonth, monthDate(month)), eq(monthlyReferenceVersions.status, "active"),
+        eq(monthlyReferenceVersions.sourcePolicy, REFERENCE_POLICY))).limit(1);
     if (active && !force) return { status: "active", month: monthDate(month), versionId: active.id };
-    const [created] = await tx.insert(monthlyReferenceVersions).values({ referenceMonth: monthDate(month) }).returning({ id: monthlyReferenceVersions.id });
+    const [created] = await tx.insert(monthlyReferenceVersions).values({ referenceMonth: monthDate(month), sourcePolicy: REFERENCE_POLICY }).returning({ id: monthlyReferenceVersions.id });
     await tx.insert(monthlyReferenceEvents).values({ versionId: created.id, service: "system", level: "info",
       message: force ? "بازخوانی دستی ماه در صف قرار گرفت" : "ساخت خودکار مرجع ماه آغاز شد" });
     const end = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 1));
@@ -104,9 +116,9 @@ async function pruneUnderSampledHeroRows(tx: ReturnType<typeof getDb>, versionId
       .from(monthlyHeroPerformance).where(and(eq(monthlyHeroPerformance.versionId, versionId), eq(monthlyHeroPerformance.minute, 11))),
   ]);
   const byGroup = new Map<string, ReturnType<typeof eligible>>();
-  for (const group of RANKS) byGroup.set(group, eligible(meta, group));
+  for (const group of RANK_GROUPS) byGroup.set(group, eligible(meta, group));
   const metaCounts = new Map<string, number>(), totals = new Map<string, number>();
-  for (const row of meta) for (const group of RANKS) {
+  for (const row of meta) for (const group of RANK_GROUPS) {
     if (!rankMembers[group].includes(row.rankBracket)) continue;
     const key = `${group}:${row.heroId}:${row.position}`, hero = `${group}:${row.heroId}`;
     metaCounts.set(key, (metaCounts.get(key) ?? 0) + row.matchCount);
@@ -233,13 +245,16 @@ export async function getMonthlyHeroDetails(versionId: string, heroId: number, m
   const reference = eq(monthlyHeroPositionMeta.referenceMonth, version.referenceMonth);
   const [meta, performance, position] = await Promise.all([
     getDb().select().from(monthlyHeroPositionMeta).where(and(reference,
-      eq(monthlyHeroPositionMeta.versionId, versionId), eq(monthlyHeroPositionMeta.heroId, heroId)))
+      eq(monthlyHeroPositionMeta.versionId, versionId), eq(monthlyHeroPositionMeta.heroId, heroId),
+      inArray(monthlyHeroPositionMeta.rankBracket, RANKS)))
       .orderBy(monthlyHeroPositionMeta.gameMode, monthlyHeroPositionMeta.rankBracket, monthlyHeroPositionMeta.position),
     getDb().select().from(monthlyHeroPerformance).where(and(eq(monthlyHeroPerformance.referenceMonth, version.referenceMonth),
-      eq(monthlyHeroPerformance.versionId, versionId), eq(monthlyHeroPerformance.heroId, heroId), eq(monthlyHeroPerformance.minute, minute)))
+      eq(monthlyHeroPerformance.versionId, versionId), eq(monthlyHeroPerformance.heroId, heroId), eq(monthlyHeroPerformance.minute, minute),
+      eq(monthlyHeroPerformance.rankGroup, "DIVINE_IMMORTAL")))
       .orderBy(monthlyHeroPerformance.rankGroup, monthlyHeroPerformance.position),
     getDb().select().from(monthlyPositionPerformance).where(and(eq(monthlyPositionPerformance.referenceMonth, version.referenceMonth),
-      eq(monthlyPositionPerformance.versionId, versionId), eq(monthlyPositionPerformance.minute, minute)))
+      eq(monthlyPositionPerformance.versionId, versionId), eq(monthlyPositionPerformance.minute, minute),
+      eq(monthlyPositionPerformance.rankGroup, "DIVINE_IMMORTAL")))
       .orderBy(monthlyPositionPerformance.rankGroup, monthlyPositionPerformance.position),
   ]);
   return { meta, performance, position, version: { id: version.id, referenceMonth: version.referenceMonth, status: version.status } };

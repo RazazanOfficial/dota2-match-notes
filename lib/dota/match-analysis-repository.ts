@@ -14,6 +14,7 @@ import type { PerformanceReferenceData } from "./performance-cohort";
 import { hasParsedOpenDotaReplay } from "@/lib/opendota/validation";
 import { overlayReplayData } from "@/lib/replay/overlay";
 import { weekStartsInMonth } from "@/lib/monthly-reference/model";
+import { poolDivineImmortalMeta } from "@/lib/monthly-reference/selection";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -49,38 +50,25 @@ async function loadPerformanceReference(heroIds: number[], matchStart: unknown):
     db.select().from(monthlyHeroPositionMeta).where(and(
       eq(monthlyHeroPositionMeta.versionId, snapshot.id),
       inArray(monthlyHeroPositionMeta.heroId, heroIds),
+      inArray(monthlyHeroPositionMeta.rankBracket, ["DIVINE", "IMMORTAL"]),
     )),
     db.select({
       position: monthlyHeroPositionMeta.position,
-      rankBracket: monthlyHeroPositionMeta.rankBracket,
       gameMode: monthlyHeroPositionMeta.gameMode,
       count: sql<number>`sum(${monthlyHeroPositionMeta.matchCount})::integer`,
     }).from(monthlyHeroPositionMeta)
-      .where(eq(monthlyHeroPositionMeta.versionId, snapshot.id))
-      .groupBy(monthlyHeroPositionMeta.position, monthlyHeroPositionMeta.rankBracket, monthlyHeroPositionMeta.gameMode),
+      .where(and(eq(monthlyHeroPositionMeta.versionId, snapshot.id),
+        inArray(monthlyHeroPositionMeta.rankBracket, ["DIVINE", "IMMORTAL"])))
+      .groupBy(monthlyHeroPositionMeta.position, monthlyHeroPositionMeta.gameMode),
     db.select().from(monthlyHeroPerformance).where(and(eq(monthlyHeroPerformance.versionId, snapshot.id),
       eq(monthlyHeroPerformance.minute, 11), eq(monthlyHeroPerformance.rankGroup, "DIVINE_IMMORTAL"),
       inArray(monthlyHeroPerformance.heroId, heroIds))),
     db.select().from(monthlyPositionPerformance).where(and(eq(monthlyPositionPerformance.versionId, snapshot.id),
       eq(monthlyPositionPerformance.minute, 11), eq(monthlyPositionPerformance.rankGroup, "DIVINE_IMMORTAL"))),
   ]);
-  const positionTotals = new Map<string, number>();
-  for (const row of totals) {
-    const key = `${row.position}:${row.rankBracket}:${row.gameMode}`;
-    positionTotals.set(key, Number(row.count));
-  }
-  const meta = selectedMeta.map((row) => ({
-    heroId: row.heroId,
-    position: row.position,
-    rankBracket: row.rankBracket,
-    gameMode: row.gameMode,
-    matchCount: row.matchCount,
-    winCount: row.winCount,
-    positionShare: row.positionShare,
-    metaPickRate: row.metaPickRate,
-    winRate: row.winRate,
-    positionSampleCount: positionTotals.get(`${row.position}:${row.rankBracket}:${row.gameMode}`) ?? row.matchCount,
-  }));
+  const meta = poolDivineImmortalMeta(selectedMeta, totals.map(row => ({
+    position: row.position, gameMode: row.gameMode, count: Number(row.count),
+  })));
   return {
     snapshot: {
       id: snapshot.id,
