@@ -211,9 +211,13 @@ function ServiceCard({ name, cursor, total, rows, success, error, errorAt }: {
   name: string; cursor: number; total: number; rows: number; success: string | null; error: string | null; errorAt: string | null;
 }) {
   const status = error ? "خطا؛ تلاش بعدی در Tick بعد" : cursor >= total && total > 0 ? "کامل" : cursor > 0 ? "در حال دریافت" : "منتظر اجرا";
+  const remaining = Math.max(0, total - cursor);
+  const percent = total > 0 ? Math.min(100, Math.round(cursor / total * 100)) : 0;
   return <article className={`monthly-reference-card${error ? " is-error" : ""}`}>
     <h3>{name}</h3><strong>{status}</strong>
-    <p>پیشرفت: {number.format(cursor)} / {number.format(total)} · ردیف: {number.format(rows)}</p>
+    <p>پیشرفت: {number.format(cursor)} / {number.format(total)} ({number.format(percent)}٪) · مانده: {number.format(remaining)} درخواست · ردیف: {number.format(rows)}</p>
+    <progress max={total || 1} value={cursor} aria-label={`پیشرفت ${name}`} style={{ width: "100%" }} />
+    <p>حداقل زمان با اجرای یک Tick در دقیقه: حدود {number.format(remaining)} دقیقه؛ خطا و محدودیت Stratz زمان را بیشتر می‌کند.</p>
     <p>آخرین موفقیت: {formatDate(success)}</p>
     {errorAt && <p className="monthly-reference-error">آخرین خطا: {formatDate(errorAt)} · {error || "پس از آن بازیابی شده"}</p>}
   </article>;

@@ -17,6 +17,7 @@ import AdminPasswordDialog from "./AdminPasswordDialog";
 import AdminMatchReprocessDialog from "./AdminMatchReprocessDialog";
 import AdminReplayArchive from "./AdminReplayArchive";
 import AdminMonthlyReferences from "./AdminMonthlyReferences";
+import AdminServiceMonitor from "./AdminServiceMonitor";
 
 type RangeDays = 7 | 30 | 90;
 type JobStatus = "pending" | "processing" | "completed" | "failed";
@@ -333,6 +334,7 @@ export default function AdminDashboard() {
       </section>
       <AdminReleaseNotes />
       <AdminMonthlyReferences />
+      <AdminServiceMonitor />
       <AdminReplayArchive />
       <AdminPasswordDialog
         user={passwordUser}
