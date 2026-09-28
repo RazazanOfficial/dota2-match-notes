@@ -1,9 +1,10 @@
 import type { MatchBenchmarkMetric, MatchCohortProfile } from "../types";
 import { metricScoreWeight, performanceTone } from "./performance-score";
+import type { LaneReference } from "./lane-efficiency";
 
 export type CohortMetricKey =
   | "gold_per_min" | "xp_per_min" | "kills_per_min" | "deaths_per_min"
-  | "assists_per_min" | "fight_participation" | "lane_efficiency_pct"
+  | "assists_per_min" | "fight_participation"
   | "last_hits_per_min" | "denies_at_10" | "hero_damage_per_min"
   | "hero_healing_per_min" | "tower_damage";
 
@@ -16,9 +17,10 @@ export interface BenchmarkDistributionReference {
   sampleCount:number|null;quantiles:Array<{percentile:number;value:number}>;
 }
 export interface PerformanceReferenceData {
-  snapshot:{id:string;fetchedAt:string|null;expiresAt:string|null;windowDays:number;stale:boolean};
+  snapshot:{id:string;fetchedAt:string|null;expiresAt:string|null;windowDays:number;stale:boolean;referenceMonth?:string};
   meta:HeroPositionMetaReference[];
   benchmarks:BenchmarkDistributionReference[];
+  lane?:LaneReference;
 }
 
 const DEFINITIONS:Record<string,{label:string;description:string;direction:"higher"|"lower"|"contextual";format:"number"|"decimal"|"percent"}>={
@@ -28,7 +30,6 @@ const DEFINITIONS:Record<string,{label:string;description:string;direction:"high
   deaths_per_min:{label:"Deaths / min",description:"میانگین Death در هر دقیقه؛ کمتر بهتر است",direction:"lower",format:"decimal"},
   assists_per_min:{label:"Assists / min",description:"میانگین Assist در هر دقیقه",direction:"higher",format:"decimal"},
   fight_participation:{label:"Fight Participation",description:"درصد مشارکت در Killهای تیم",direction:"higher",format:"percent"},
-  lane_efficiency_pct:{label:"Lane Efficiency",description:"بازده اقتصادی Laning Stage",direction:"higher",format:"percent"},
   last_hits_per_min:{label:"LH / min",description:"میانگین Last Hit در هر دقیقه",direction:"higher",format:"decimal"},
   denies_at_10:{label:"Denies @10",description:"تعداد Deny تا دقیقه ۱۰",direction:"higher",format:"number"},
   hero_damage_per_min:{label:"Hero DMG / min",description:"Damage واردشده به Heroها در هر دقیقه",direction:"higher",format:"decimal"},
@@ -44,7 +45,7 @@ const confidence=(count:number):"high"|"medium"|"low"=>count>=500?"high":count>=
 
 export type HeroPositionTier="main"|"sub"|"rare"|"unknown";
 
-const POSITION_SENSITIVE_METRICS=new Set(["gold_per_min","xp_per_min","last_hits_per_min","denies_at_10","lane_efficiency_pct"]);
+const POSITION_SENSITIVE_METRICS=new Set(["gold_per_min","xp_per_min","last_hits_per_min","denies_at_10"]);
 const PARTLY_POSITION_SENSITIVE_METRICS=new Set(["kills_per_min","assists_per_min","fight_participation","hero_damage_per_min","hero_healing_per_min","tower_damage"]);
 
 export function classifyHeroPosition(rows:HeroPositionMetaReference[],position:number|null){
@@ -115,13 +116,15 @@ export function buildCohortAnalysis(params:{reference?:PerformanceReferenceData;
   const exactRankRow=rank?candidates.find((entry)=>entry.rankBracket===rank):undefined;
   const row=exactRankRow??candidates.sort((a,b)=>b.matchCount-a.matchCount)[0];
   if(!row)return{metrics,profile:undefined};
-  const limitations=["Meta براساس پنجره هفت‌روزه STRATZ است؛ فیلتر Patch دقیق هنوز در این منبع تأیید نشده است."];
+  const limitations=[params.reference.snapshot.referenceMonth
+    ? `Meta مربوط به ${params.reference.snapshot.referenceMonth} است؛ آمار عملکرد STRATZ با فرض Ranked بودن منبع جمع‌آوری می‌شود.`
+    : "Meta براساس پنجره هفت‌روزه STRATZ است؛ فیلتر Patch دقیق هنوز در این منبع تأیید نشده است."];
   if(!rank)limitations.push("Rank بازیکن موجود نبود؛ نزدیک‌ترین cohort Mode و Position استفاده شد.");
   else if(!exactRankRow)limitations.push("برای Rank دقیق نمونه‌ای نبود؛ پرنمونه‌ترین Rank همین Hero و Position نمایش داده شد.");
   if(params.reference.snapshot.stale)limitations.push("به‌روزرسانی منبع موقتاً ناموفق بوده و آخرین Snapshot سالم نمایش داده می‌شود.");
-  limitations.push("Benchmarkهای OpenDota در حال حاضر Hero-level هستند و Position را تفکیک نمی‌کنند.");
+  if (params.reference.benchmarks.length) limitations.push("Benchmarkهای OpenDota در حال حاضر Hero-level هستند و Position را تفکیک نمی‌کنند.");
   const weight=row.matchCount/(row.matchCount+200);
   const overallApplicability=metrics.length?Math.round(metrics.reduce((sum,metric)=>sum+(metric.heroPositionWeight??100),0)/metrics.length):Math.round(weight*100);
-  const profile:MatchCohortProfile={label:`STRATZ · Hero + Pos ${params.position} + ${row.rankBracket} + Mode · ${params.reference.snapshot.windowDays} روز`,heroPositionSamples:row.matchCount,positionSamples:row.positionSampleCount,heroPositionWeight:Math.round(weight*100),positionPickRate:Math.round(row.positionShare*10)/10,positionTier:classification.tier,mainPosition:classification.mainPosition,positionShares:classification.shares.map((entry)=>({...entry,share:Math.round(entry.share*10)/10})),benchmarkApplicability:overallApplicability,metaPickRate:Math.round(row.metaPickRate*10)/10,winRate:Math.round(row.winRate*10)/10,rankTier:params.rankTier,patch:null,gameMode:params.gameMode,confidence:confidence(row.matchCount),limitations,milestones:[],metaSource:"stratz",benchmarkSource:"opendota",snapshotFetchedAt:params.reference.snapshot.fetchedAt,stale:params.reference.snapshot.stale};
+  const profile:MatchCohortProfile={label:`STRATZ · Hero + Pos ${params.position} + ${row.rankBracket} + Mode · ${params.reference.snapshot.referenceMonth ?? `${params.reference.snapshot.windowDays} روز`}`,heroPositionSamples:row.matchCount,positionSamples:row.positionSampleCount,heroPositionWeight:Math.round(weight*100),positionPickRate:Math.round(row.positionShare*10)/10,positionTier:classification.tier,mainPosition:classification.mainPosition,positionShares:classification.shares.map((entry)=>({...entry,share:Math.round(entry.share*10)/10})),benchmarkApplicability:overallApplicability,metaPickRate:Math.round(row.metaPickRate*10)/10,winRate:Math.round(row.winRate*10)/10,rankTier:params.rankTier,patch:null,gameMode:params.gameMode,confidence:confidence(row.matchCount),limitations,milestones:[],metaSource:"stratz",benchmarkSource:params.reference.benchmarks.length?"opendota":"unavailable",snapshotFetchedAt:params.reference.snapshot.fetchedAt,stale:params.reference.snapshot.stale};
   return{metrics,profile};
 }

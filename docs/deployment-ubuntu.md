@@ -168,6 +168,17 @@ sudo systemctl enable --now dota2notes-opendota-parse.timer
 systemctl list-timers 'dota2notes-*'
 ```
 
+از پچ مرجع ماهانه، Timer آمار هر دقیقه فقط یک بخش کوچک از Meta و Performance را
+پیش می‌برد. اولین بار نسخهٔ ماه قبل ساخته می‌شود؛ شروع دستی و دریافت ماه‌های
+قدیمی‌تر از پنل Super Admin، بخش «مرجع آماری ماهانه»، انجام می‌شود. وضعیت
+`active` به معنی تکمیل همهٔ بخش‌هاست؛ برای جزئیات جدول‌ها و شرط‌های منبع،
+`docs/monthly-reference-services.md` را ببینید. بعد از کپی Unit تازه و
+`daemon-reload`، اگر Timer از قبل فعال بود آن را یک بار restart کنید:
+
+```bash
+sudo systemctl restart dota2notes-performance-reference.timer
+```
+
 Sync کاربران فقط با دکمه داخل سایت انجام می‌شود. Workerهای تصاویر و OpenDota parse صف‌های
 مستقل را پردازش می‌کنند. Worker قدیمی STRATZ برای مچ‌ها بازنشسته شده است:
 

@@ -3,7 +3,6 @@ import { buildCohortAnalysis,type PerformanceReferenceData } from "../lib/dota/p
 import { resolveMatchPositions } from "../lib/dota/position-resolver";
 import { buildMatchAnalysis } from "../lib/dota/match-analysis";
 import { DOTA_741_LANDMARKS,DOTA_MAP_LAYER_ICONS,DOTA_MAP_LAYER_LABELS } from "../lib/dota/map-landmarks";
-import { parseHeroMetaResponse,parseOpenDotaBenchmarks } from "../lib/performance-reference/providers";
 
 const reference:PerformanceReferenceData={snapshot:{id:"test",fetchedAt:"2026-09-02T00:00:00.000Z",expiresAt:"2026-09-05T00:00:00.000Z",windowDays:7,stale:false},meta:[{heroId:85,position:3,rankBracket:"LEGEND",gameMode:22,matchCount:30,winCount:17,positionShare:12.5,metaPickRate:1.8,winRate:56.7,positionSampleCount:20_000}],benchmarks:[{heroId:85,position:0,rankBracket:"ALL",gameMode:0,patch:"",metric:"gold_per_min",provider:"opendota",sampleCount:null,quantiles:[{percentile:.1,value:300},{percentile:.5,value:450},{percentile:.9,value:600}]}]};
 
@@ -19,14 +18,6 @@ describe("performance intelligence",()=>{
     const players=Array.from({length:10},(_,index)=>({account_id:100+index,player_slot:index<5?index:128+index-5,hero_id:index+1,kills:2,deaths:5,assists:6,last_hits:80,gold_per_min:400,xp_per_min:500,hero_damage:8_000,hero_healing:0,tower_damage:200,benchmarks:{deaths_per_min:{pct:.8354,raw:.14}}}));
     const analysis=buildMatchAnalysis({rawData:{match_id:1,start_time:1,duration:2_100,radiant_win:true,players}});
     expect(analysis?.players[0].benchmarks.find((metric)=>metric.key==="deaths_per_min")?.qualityPercentile).toBe(84);
-  });
-
-  it("normalizes provider responses into stable snapshot rows",()=>{
-    const meta=parseHeroMetaResponse({data:{heroStats:{pos1:[{heroId:85,matchCount:10,winCount:6}],pos2:[],pos3:[{heroId:85,matchCount:30,winCount:15}],pos4:[],pos5:[]}}},"LEGEND",22);
-    expect(meta.find((row)=>row.position===3)).toMatchObject({positionShare:75,metaPickRate:100,winRate:50});
-    const benchmark=parseOpenDotaBenchmarks({hero_id:85,result:{gold_per_min:[{percentile:.1,value:300},{percentile:.5,value:450},{percentile:.9,value:600}],unsupported:[{percentile:.5,value:1}]}},85);
-    expect(benchmark).toHaveLength(1);
-    expect(benchmark[0].metric).toBe("gold_per_min");
   });
 
   it("links both players in an inferred Role Swap pair",()=>{

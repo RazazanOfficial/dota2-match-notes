@@ -4,6 +4,7 @@ import {
   boolean,
   check,
   date,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -259,6 +260,111 @@ export const heroBenchmarkDistributions = pgTable(
     check("hero_benchmark_distributions_sample_check", sql`${table.sampleCount} is null or ${table.sampleCount} >= 0`),
   ],
 );
+
+// Monthly reference partitions are created by the monthly workers. The reference
+// month is part of every primary key because PostgreSQL requires the partition
+// key to be included in unique constraints on a partitioned table.
+export const monthlyReferenceVersions = pgTable("monthly_reference_versions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  referenceMonth: date("reference_month").notNull(),
+  status: varchar("status", { length: 16 }).default("building").notNull(),
+  metaCursor: integer("meta_cursor").default(0).notNull(),
+  performanceCursor: integer("performance_cursor").default(0).notNull(),
+  metaRows: integer("meta_rows").default(0).notNull(),
+  heroRows: integer("hero_rows").default(0).notNull(),
+  positionRows: integer("position_rows").default(0).notNull(),
+  sourcePolicy: varchar("source_policy", { length: 40 }).default("stratz-ranked-assumed").notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  errorMessage: text("error_message"),
+  metaLastSuccessAt: timestamp("meta_last_success_at", { withTimezone: true }),
+  performanceLastSuccessAt: timestamp("performance_last_success_at", { withTimezone: true }),
+  metaLastErrorAt: timestamp("meta_last_error_at", { withTimezone: true }),
+  performanceLastErrorAt: timestamp("performance_last_error_at", { withTimezone: true }),
+  metaLastError: text("meta_last_error"),
+  performanceLastError: text("performance_last_error"),
+  ...timestamps,
+}, (table) => [
+  index("monthly_reference_versions_month_status_idx").on(table.referenceMonth, table.status),
+  check("monthly_reference_versions_status_check", sql`${table.status} in ('building','active','retired','failed')`),
+  check("monthly_reference_versions_cursors_check", sql`${table.metaCursor} >= 0 and ${table.performanceCursor} >= 0`),
+]);
+
+export const monthlyReferenceEvents = pgTable("monthly_reference_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  versionId: uuid("version_id").notNull().references(() => monthlyReferenceVersions.id),
+  service: varchar("service", { length: 16 }).notNull(),
+  level: varchar("level", { length: 12 }).notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index("monthly_reference_events_version_time_idx").on(table.versionId, table.createdAt),
+  check("monthly_reference_events_service_check", sql`${table.service} in ('meta','performance','system')`),
+  check("monthly_reference_events_level_check", sql`${table.level} in ('info','success','error')`),
+]);
+
+export const monthlyHeroPositionMeta = pgTable("monthly_hero_position_meta", {
+  referenceMonth: date("reference_month").notNull(),
+  versionId: uuid("version_id").notNull().references(() => monthlyReferenceVersions.id),
+  heroId: integer("hero_id").notNull(),
+  position: smallint("position").notNull(),
+  rankBracket: varchar("rank_bracket", { length: 20 }).notNull(),
+  gameMode: integer("game_mode").notNull(),
+  matchCount: integer("match_count").notNull(),
+  winCount: integer("win_count").notNull(),
+  positionShare: doublePrecision("position_share").notNull(),
+  metaPickRate: doublePrecision("meta_pick_rate").notNull(),
+  winRate: doublePrecision("win_rate").notNull(),
+}, table => [
+  primaryKey({ columns: [table.referenceMonth, table.versionId, table.heroId, table.position, table.rankBracket, table.gameMode] }),
+  check("monthly_meta_position_check", sql`${table.position} between 1 and 5`),
+  check("monthly_meta_count_check", sql`${table.matchCount} >= 0 and ${table.winCount} >= 0 and ${table.winCount} <= ${table.matchCount}`),
+]);
+
+const monthlyMeans = () => ({
+  sampleCount: integer("sample_count").notNull(),
+  cs: doublePrecision("cs").notNull(),
+  dn: doublePrecision("dn").notNull(),
+  kills: doublePrecision("kills").notNull(),
+  deaths: doublePrecision("deaths").notNull(),
+  assists: doublePrecision("assists").notNull(),
+  networth: doublePrecision("networth").notNull(),
+  xp: doublePrecision("xp").notNull(),
+  heroDamage: doublePrecision("hero_damage").notNull(),
+  towerDamage: doublePrecision("tower_damage").notNull(),
+  healingAllies: doublePrecision("healing_allies").notNull(),
+  campsStacked: doublePrecision("camps_stacked").notNull(),
+  neutrals: doublePrecision("neutrals").notNull(),
+  ancients: doublePrecision("ancients").notNull(),
+  teamKills: doublePrecision("team_kills").notNull(),
+});
+
+export const monthlyHeroPerformance = pgTable("monthly_hero_performance_reference", {
+  referenceMonth: date("reference_month").notNull(),
+  versionId: uuid("version_id").notNull().references(() => monthlyReferenceVersions.id),
+  heroId: integer("hero_id").notNull(),
+  position: smallint("position").notNull(),
+  rankGroup: varchar("rank_group", { length: 24 }).notNull(),
+  minute: smallint("minute").notNull(),
+  ...monthlyMeans(),
+}, table => [
+  primaryKey({ columns: [table.referenceMonth, table.versionId, table.heroId, table.position, table.rankGroup, table.minute] }),
+  check("monthly_hero_performance_minute_check", sql`${table.minute} between 0 and 75`),
+  check("monthly_hero_performance_count_check", sql`${table.sampleCount} > 0`),
+]);
+
+export const monthlyPositionPerformance = pgTable("monthly_position_performance_reference", {
+  referenceMonth: date("reference_month").notNull(),
+  versionId: uuid("version_id").notNull().references(() => monthlyReferenceVersions.id),
+  position: smallint("position").notNull(),
+  rankGroup: varchar("rank_group", { length: 24 }).notNull(),
+  minute: smallint("minute").notNull(),
+  ...monthlyMeans(),
+}, table => [
+  primaryKey({ columns: [table.referenceMonth, table.versionId, table.position, table.rankGroup, table.minute] }),
+  check("monthly_position_performance_minute_check", sql`${table.minute} between 0 and 75`),
+  check("monthly_position_performance_count_check", sql`${table.sampleCount} > 0`),
+]);
 
 export const heroPoolVersions = pgTable(
   "hero_pool_versions",

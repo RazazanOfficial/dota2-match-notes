@@ -238,6 +238,7 @@ export interface MatchPlayerAnalysis {
   itemTimings?:MatchItemTiming[];
   cohort?:MatchCohortProfile;
   laneImpact?:MatchLaneImpact;
+  laneEfficiency?:import("./dota/lane-efficiency").LaneEfficiencyResult;
   ownershipEvents?:MatchItemOwnershipEvent[];
   benchmarkSource: "hero" | "match" | "cohort" | "unavailable";
 }

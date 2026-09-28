@@ -25,11 +25,6 @@ function closest(timeline:MatchMinuteSnapshot[],minute:number){
   return [...timeline].reverse().find((entry)=>entry.minute<=minute);
 }
 
-function laneEfficiency(player:Raw){
-  const percentage=num(player.lane_efficiency_pct),ratio=num(player.lane_efficiency);
-  return percentage??(ratio===null?null:Math.round(ratio*100));
-}
-
 export function buildLaneImpact(params:{player:Raw;playerPosition:number|null;players:Raw[];positions:Map<number,number|null>;timeline:MatchMinuteSnapshot[];timelines?:Map<number,MatchMinuteSnapshot[]>;events:MatchAnalysisEvent[]}):MatchLaneImpact{
   const slot=num(params.player.player_slot),team=teamOf(params.player),targetPosition=counterpartPosition(params.playerPosition);
   const opponent=targetPosition===null||team===null?null:params.players.find((candidate)=>{
@@ -71,7 +66,7 @@ export function buildLaneImpact(params:{player:Raw;playerPosition:number|null;pl
   const known=signals.filter((value):value is number=>value!==null);
   const result=known.length?known.reduce((sum,value)=>sum+value,0)/known.length:null;
   const assessment=result===null?"unknown":result>.18?"ahead":result<-.18?"behind":"even";
-  const available=[lastHits,denies,xp,netWorth,laneEfficiency(params.player)].filter((value)=>value!==null).length;
+  const available=[lastHits,denies,xp,netWorth].filter((value)=>value!==null).length;
   const confidence:MatchLaneImpact["confidence"]=opponent&&available>=4&&params.events.length?"high":opponent&&available>=2?"medium":"low";
-  return{availability:available?opponent?"ready":"partial":"unavailable",roleGroup:group,laneRole:num(params.player.lane_role),opponentPlayerSlot:opponentSlot,lastHitsAt10:lastHits,deniesAt10:denies,netWorthAt10:netWorth,xpAt10:xp,killsAt10:kills,deathsAt10:deaths,laneEfficiency:laneEfficiency(params.player),resourcePurchasesAt10:resources,observerPlacementsAt10:observers,sentryPlacementsAt10:sentries,netWorthDelta,xpDelta,lastHitDelta,assessment,confidence,evidence,note:group==="support"?"Support با XP، مرگ، مشارکت و منابع Lane بررسی می‌شود؛ LH و Net Worth پایین به‌تنهایی جریمه نیست.":"Core با اقتصاد، XP، LH/Deny و بقا در ده دقیقه اول بررسی می‌شود. این نتیجه Context همان Lane است و وارد Score جهانی نمی‌شود."};
+  return{availability:available?opponent?"ready":"partial":"unavailable",roleGroup:group,laneRole:num(params.player.lane_role),opponentPlayerSlot:opponentSlot,lastHitsAt10:lastHits,deniesAt10:denies,netWorthAt10:netWorth,xpAt10:xp,killsAt10:kills,deathsAt10:deaths,laneEfficiency:null,resourcePurchasesAt10:resources,observerPlacementsAt10:observers,sentryPlacementsAt10:sentries,netWorthDelta,xpDelta,lastHitDelta,assessment,confidence,evidence,note:group==="support"?"Support با XP، مرگ، مشارکت و منابع Lane بررسی می‌شود؛ LH و Net Worth پایین به‌تنهایی جریمه نیست.":"Core با اقتصاد، XP، LH/Deny و بقا در ده دقیقه اول بررسی می‌شود. این نتیجه Context همان Lane است و وارد Score جهانی نمی‌شود."};
 }

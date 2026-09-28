@@ -23,6 +23,7 @@ export const REPLAY_PLAYER_FIELDS = [
 ] as const;
 
 const MATCH_FIELDS = [
+  "lane_events",
   "teamfights", "pauses", "chat", "radiant_gold_adv",
   "radiant_xp_adv", "draft_timings",
 ] as const;

@@ -205,10 +205,10 @@ UTC سرور VPS تاریخ دفتر را جابه‌جا نمی‌کند. وض�
 - `POST /api/internal/performance-reference/tick`
 - Header اجباری: `Authorization: Bearer SYNC_WORKER_SECRET`
 
-این Worker هر ۷۲ ساعت Pick Rate و Win Rate تفکیک‌شده براساس Hero، Position، Rank و Mode
-را از STRATZ و منحنی‌های Benchmark همان Hero را از OpenDota در یک Snapshot اتمیک ذخیره
-می‌کند. مچ‌های کاربران سایت هیچ‌وقت جمعیت آماری Benchmark نیستند. اگر Refresh شکست بخورد،
-آخرین Snapshot سالم فعال می‌ماند.
+این Worker هر دقیقه یک بخش کوچک از آمار ماهانه را دریافت می‌کند: Meta هر Hero/Position/Rank/Mode
+و میانگین‌های زمانی STRATZ برای Hero/Position و fallback کلی Position. نسخهٔ هر ماه پس از
+تکمیل هر دو بخش فعال می‌شود؛ نسخه‌های قبلی حفظ می‌شوند. زمان‌بندی، جدول‌ها، فرض Game Mode
+و محدودیت داده در [`docs/monthly-reference-services.md`](docs/monthly-reference-services.md) آمده است.
 
 جزئیات قواعد Score، وزن Position، Lane Impact و محدودیت Timeline آیتم‌ها در
 [`docs/performance-scoring-phase2.md`](docs/performance-scoring-phase2.md) ثبت شده است.

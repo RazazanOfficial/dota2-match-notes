@@ -1,10 +1,10 @@
 [Unit]
-Description=Refresh Dota2 Notes external performance reference every 72 hours
+Description=Advance Dota2 Notes monthly reference collection
 
 [Timer]
 OnBootSec=10m
-OnUnitActiveSec=72h
-RandomizedDelaySec=20m
+OnUnitActiveSec=1m
+RandomizedDelaySec=10s
 Persistent=true
 Unit=dota2notes-performance-reference.service
 
