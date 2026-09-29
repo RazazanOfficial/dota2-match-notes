@@ -3,11 +3,18 @@ import { getDb } from "@/lib/db";
 import { dotaMatches, journalMatches, localReplayJobs } from "@/lib/db/schema";
 import { REPLAY_REQUEST_MAX_AGE_DAYS } from "@/lib/opendota/analysis-policy";
 import { replayObjectHead } from "./archive-storage";
+import { progressFromRow } from "./progress";
+const progressFields = {
+  phase: localReplayJobs.phase, downloadedBytes: localReplayJobs.downloadedBytes, totalBytes: localReplayJobs.totalBytes,
+  downloadBps: localReplayJobs.downloadBps, attempts: localReplayJobs.attempts, runAfter: localReplayJobs.runAfter,
+  phaseStartedAt: localReplayJobs.phaseStartedAt, heartbeatAt: localReplayJobs.heartbeatAt, retryDeadlineAt: localReplayJobs.retryDeadlineAt,
+};
 
 export type ReplayIntent = "download" | "analysis";
 
 export async function getReplayJobState(journalMatchId: string) {
   const [row] = await getDb().select({
+    ...progressFields,
     startedAt: journalMatches.startedAt,
     status: localReplayJobs.status,
     intent: localReplayJobs.intent,
@@ -23,6 +30,7 @@ export async function getReplayJobState(journalMatchId: string) {
       row.status || (!row.archiveKey && row.startedAt &&
         Date.now() - row.startedAt.getTime() > REPLAY_REQUEST_MAX_AGE_DAYS * 86_400_000 ? "expired" : "basic"),
     errorCode: row.errorCode,
+    progress: row.status ? progressFromRow(row) : null,
     archived: Boolean(row.archiveKey && row.archiveStatus === "active"),
   };
 }
@@ -35,11 +43,12 @@ export async function getReplayArchive(matchId: number) {
   }).from(localReplayJobs).where(eq(localReplayJobs.matchId, matchId)).limit(1);
   if (!row?.key || row.status !== "active") return null;
   const head = await replayObjectHead(row.key);
-  if (!head || head.bytes !== row.bytes || !head.sha256) {
+  if (!head) {
     await getDb().update(localReplayJobs).set({ archiveStatus: "missing", updatedAt: new Date() })
       .where(and(eq(localReplayJobs.matchId, matchId), eq(localReplayJobs.archiveKey, row.key), eq(localReplayJobs.archiveStatus, "active")));
     return null;
   }
+  if (head.bytes !== row.bytes || !/^[0-9a-f]{64}$/.test(head.sha256 || "")) throw new Error("Replay archive metadata mismatch");
   return { key: row.key, bytes: head.bytes };
 }
 
@@ -83,8 +92,11 @@ export async function requestReplayByDotaId(matchId: number, intent: ReplayInten
       intent: sql`CASE WHEN ${localReplayJobs.status} IN ('pending','processing')
         AND ${localReplayJobs.intent} = 'analysis' THEN 'analysis' ELSE ${intent} END`,
       status: sql`CASE WHEN ${localReplayJobs.status} = 'processing' THEN 'processing' ELSE 'pending' END`,
-      attempts: sql`CASE WHEN ${localReplayJobs.status} = 'processing' THEN ${localReplayJobs.attempts} ELSE 0 END`,
-      runAfter: now,
+      phase: sql`CASE WHEN ${localReplayJobs.status} = 'processing' THEN ${localReplayJobs.phase} ELSE 'queued' END`,
+      attempts: sql`CASE WHEN ${localReplayJobs.status} IN ('pending','processing') THEN ${localReplayJobs.attempts} ELSE 0 END`,
+      requestStartedAt: sql`CASE WHEN ${localReplayJobs.status} IN ('pending','processing') THEN ${localReplayJobs.requestStartedAt} ELSE ${now} END`,
+      retryDeadlineAt: sql`CASE WHEN ${localReplayJobs.status} IN ('pending','processing') THEN ${localReplayJobs.retryDeadlineAt} ELSE now() + interval '24 hours' END`,
+      runAfter: sql`CASE WHEN ${localReplayJobs.status} IN ('pending','processing') THEN ${localReplayJobs.runAfter} ELSE ${now} END`,
       lockedAt: sql`CASE WHEN ${localReplayJobs.status} = 'processing' THEN ${localReplayJobs.lockedAt} ELSE NULL END`,
       finishedAt: null, errorCode: null, errorMessage: null, updatedAt: now,
     },
@@ -96,11 +108,12 @@ export async function requestReplayByDotaId(matchId: number, intent: ReplayInten
 
 export async function replayStatusForMatch(matchId: number) {
   const [row] = await getDb().select({
+    ...progressFields,
     status: localReplayJobs.status, intent: localReplayJobs.intent, errorCode: localReplayJobs.errorCode,
     archiveStatus: localReplayJobs.archiveStatus,
   }).from(localReplayJobs).where(eq(localReplayJobs.matchId, matchId)).limit(1);
-  if (!row) return { status: "basic", archived: false, errorCode: null };
+  if (!row) return { status: "basic", archived: false, errorCode: null, progress: null };
   // A completed analysis job may still have a downloadable archive.
   const archived = row.archiveStatus === "active" && Boolean(await getReplayArchive(matchId));
-  return { status: row.status === "completed" && row.intent === "download" ? "basic" : row.status, archived, errorCode: row.errorCode };
+  return { status: row.status === "completed" && row.intent === "download" ? "basic" : row.status, archived, errorCode: row.errorCode, progress: progressFromRow(row) };
 }

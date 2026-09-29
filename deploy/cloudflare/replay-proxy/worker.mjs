@@ -13,8 +13,9 @@ function authenticated(request, secret) {
   return difference === 0;
 }
 
-function reply(message, status) {
-  return new Response(message, { status, headers: { "Cache-Control": "no-store", "Content-Type": "text/plain" } });
+function reply(message, status, source = "worker", extra = {}) {
+  return new Response(message, { status, headers: { "Cache-Control": "no-store", "Content-Type": "text/plain",
+    "X-Replay-Relay": "2", "X-Replay-Error-Source": source, ...extra } });
 }
 
 export function createReplayProxy(fetchUpstream = fetch) {
@@ -32,28 +33,41 @@ export function createReplayProxy(fetchUpstream = fetch) {
       return reply("Invalid replay path", 400);
     }
     const range = request.headers.get("range");
-    if (range && range !== "bytes=0-31") return reply("Unsupported range", 400);
+    const resume = range && /^bytes=([1-9]\d*)-$/.exec(range);
+    const ifRange = request.headers.get("if-range");
+    if (range && range !== "bytes=0-31" && (!resume || Number(resume[1]) >= MAX_REPLAY_BYTES ||
+      !/^"[^"\x00-\x20\x7f]{1,250}"$/.test(ifRange || ""))) return reply("Unsupported range", 400);
     const [cluster, matchId, salt] = match.slice(1);
     const valveUrl = `http://replay${cluster}.valve.net/570/${matchId}_${salt}.dem.bz2`;
-    const headers = range ? { Range: range } : {};
+    const headers = range ? { Range: range, ...(resume ? { "If-Range": ifRange } : {}) } : {};
     let upstream;
-    try { upstream = await fetchUpstream(valveUrl, { redirect: "manual", headers }); }
-    catch { return reply("Valve origin unavailable", 502); }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15_000);
+    try { upstream = await fetchUpstream(valveUrl, { redirect: "manual", headers, signal: controller.signal }); }
+    catch { return reply("Valve origin unavailable", 502, "valve"); }
+    finally { clearTimeout(timer); }
     if (upstream.status >= 300 && upstream.status < 400) {
       await upstream.body?.cancel();
       return reply("Valve redirect rejected", 502);
     }
     if (!upstream.ok) {
       await upstream.body?.cancel();
-      return reply(`Valve returned ${upstream.status}`, upstream.status);
+      return reply(`Valve returned ${upstream.status}`, upstream.status, "valve", upstream.headers.has("retry-after") ? { "Retry-After": upstream.headers.get("retry-after") } : {});
     }
     if (!range && upstream.status !== 200) {
       await upstream.body?.cancel();
       return reply("Valve returned a partial replay", 502);
     }
-    if (range && (upstream.status !== 206 || upstream.headers.get("content-range")?.split("/")[0] !== "bytes 0-31")) {
+    if (range === "bytes=0-31" && (upstream.status !== 206 || upstream.headers.get("content-range")?.split("/")[0] !== "bytes 0-31")) {
       await upstream.body?.cancel();
       return reply("Valve did not honor replay range", 502);
+    }
+    const contentRange = upstream.headers.get("content-range");
+    if (resume && upstream.status === 206) {
+      const parsed = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(contentRange || "");
+      if (!parsed || Number(parsed[1]) !== Number(resume[1]) || Number(parsed[2]) !== Number(parsed[3]) - 1 || Number(parsed[3]) > MAX_REPLAY_BYTES) {
+        await upstream.body?.cancel(); return reply("Invalid Valve range", 502, "valve");
+      }
     }
     const length = upstream.headers.get("content-length");
     if (length !== null && (!/^\d+$/.test(length) || Number(length) > MAX_REPLAY_BYTES)) {
@@ -65,9 +79,11 @@ export function createReplayProxy(fetchUpstream = fetch) {
       "Content-Type": "application/octet-stream",
       "Cache-Control": "private, no-store",
       "X-Content-Type-Options": "nosniff",
+      "X-Replay-Relay": "2",
     });
     if (length !== null) responseHeaders.set("Content-Length", length);
-    if (range) responseHeaders.set("Content-Range", upstream.headers.get("content-range"));
+    if (upstream.status === 206 && contentRange) responseHeaders.set("Content-Range", contentRange);
+    for (const key of ["etag", "accept-ranges", "last-modified"]) if (upstream.headers.has(key)) responseHeaders.set(key, upstream.headers.get(key));
     // Passing the upstream ReadableStream directly preserves backpressure and
     // avoids keeping a ~100 MB replay in the Worker's 128 MB memory budget.
     return new Response(upstream.body, { status: upstream.status, headers: responseHeaders });

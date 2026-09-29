@@ -46,30 +46,46 @@ function storage() {
     forcePathStyle: process.env.CLOUD_SPACE_FORCE_PATH_STYLE !== "false",
     requestChecksumCalculation: "WHEN_REQUIRED",
     credentials: { accessKeyId: required("CLOUD_SPACE_ACCESS_KEY"), secretAccessKey: required("CLOUD_SPACE_SECRET_KEY") },
-    maxAttempts: 2,
+    maxAttempts: 1,
   });
   return { client, bucket };
 }
 
-export async function uploadReplay(path, key) {
+export async function uploadReplay(path, key, { onProgress, onUploaded, signal } = {}) {
   const details = await lstat(path);
   if (!details.isFile() || details.size < 8 || details.size > MAX_REPLAY_BYTES) throw new Error("Invalid replay archive input");
   const hash = createHash("sha256");
   for await (const chunk of createReadStream(path)) hash.update(chunk);
   const sha256 = hash.digest("hex");
   const { client, bucket } = storage();
+  let pending = 0, last = Date.now();
+  const body = createReadStream(path);
+  const meter = new Transform({ transform(chunk, _, done) {
+    pending += chunk.length;
+    if (Date.now() - last >= 2000 && onProgress) {
+      const delta = pending; pending = 0; last = Date.now();
+      Promise.resolve(onProgress(delta)).then(() => done(null, chunk), done);
+    } else done(null, chunk);
+  }});
+  body.on("error", error => meter.destroy(error));
+  meter.on("error", () => {});
+  body.pipe(meter);
   try {
     await client.send(new PutObjectCommand({
-      Bucket: bucket, Key: key, Body: createReadStream(path), ContentLength: details.size,
+      Bucket: bucket, Key: key, Body: meter, ContentLength: details.size,
       ContentType: "application/octet-stream", CacheControl: "private, no-store",
       Metadata: { sha256 },
-    }), { abortSignal: AbortSignal.timeout(360_000) });
+    }), { abortSignal: signal ? AbortSignal.any([signal, AbortSignal.timeout(360_000)]) : AbortSignal.timeout(360_000) });
+    if (onUploaded) await onUploaded({ key, bytes: details.size });
     const head = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }), { abortSignal: AbortSignal.timeout(30_000) });
     if (head.ContentLength !== details.size || head.Metadata?.sha256 !== sha256) {
       throw new Error("Replay archive verification failed");
     }
     return { key, bytes: details.size };
-  } finally { client.destroy(); }
+  } finally {
+    body.destroy(); meter.destroy(); client.destroy();
+    if (pending && onProgress) await onProgress(pending);
+  }
 }
 
 export async function retrieveReplay(key, expectedBytes, directory) {

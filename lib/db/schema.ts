@@ -174,6 +174,23 @@ export const localReplayJobs = pgTable(
       .references(() => dotaMatches.matchId, { onDelete: "cascade" }),
     status: varchar("status", { length: 16 }).default("pending").notNull(),
     intent: varchar("intent", { length: 16 }).default("analysis").notNull(),
+    phase: varchar("phase", { length: 24 }).default("queued").notNull(),
+    phaseStartedAt: timestamp("phase_started_at", { withTimezone: true }),
+    heartbeatAt: timestamp("heartbeat_at", { withTimezone: true }),
+    requestStartedAt: timestamp("request_started_at", { withTimezone: true }).defaultNow().notNull(),
+    retryDeadlineAt: timestamp("retry_deadline_at", { withTimezone: true }).default(sql`now() + interval '24 hours'`).notNull(),
+    downloadedBytes: bigint("downloaded_bytes", { mode: "number" }).default(0).notNull(),
+    totalBytes: bigint("total_bytes", { mode: "number" }),
+    transferBytes: bigint("transfer_bytes", { mode: "number" }).default(0).notNull(),
+    uploadBytes: bigint("upload_bytes", { mode: "number" }).default(0).notNull(),
+    downloadBps: integer("download_bps").default(0).notNull(),
+    spoolName: varchar("spool_name", { length: 64 }),
+    spoolCreatedAt: timestamp("spool_created_at", { withTimezone: true }),
+    spoolComplete: boolean("spool_complete").default(false).notNull(),
+    spoolEtag: varchar("spool_etag", { length: 256 }),
+    spoolSha256: varchar("spool_sha256", { length: 64 }),
+    lastEndpoint: text("last_endpoint"),
+    lastAddress: varchar("last_address", { length: 64 }),
     archiveKey: text("archive_key"),
     archiveStatus: varchar("archive_status", { length: 16 }).default("missing").notNull(),
     archiveBytes: integer("archive_bytes"),
@@ -195,6 +212,32 @@ export const localReplayJobs = pgTable(
     check("local_replay_jobs_attempts_check", sql`${table.attempts} >= 0`),
   ],
 );
+
+// Route health survives the one-shot replay worker process.
+export const replayTransportRoutes = pgTable("replay_transport_routes", {
+  routeKey: text("route_key").primaryKey(),
+  endpoint: text("endpoint").notNull(),
+  address: varchar("address", { length: 64 }).notNull(),
+  failures: integer("failures").default(0).notNull(),
+  openUntil: timestamp("open_until", { withTimezone: true }),
+  lastSuccessAt: timestamp("last_success_at", { withTimezone: true }),
+  lastErrorCode: varchar("last_error_code", { length: 64 }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const replayJobEvents = pgTable("replay_job_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  matchId: bigint("match_id", { mode: "number" }).notNull().references(() => dotaMatches.matchId, { onDelete: "cascade" }),
+  phase: varchar("phase", { length: 24 }).notNull(),
+  code: varchar("code", { length: 64 }),
+  detail: text("detail").notNull(),
+  endpoint: text("endpoint"),
+  address: varchar("address", { length: 64 }),
+  httpStatus: integer("http_status"),
+  transferredBytes: bigint("transferred_bytes", { mode: "number" }).default(0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [index("replay_job_events_match_created_idx").on(table.matchId, table.createdAt),
+  index("replay_job_events_created_idx").on(table.createdAt)]);
 
 export const performanceReferenceSnapshots = pgTable(
   "performance_reference_snapshots",

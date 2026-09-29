@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, context: Context) {
     if (!result.found) return Response.json({ ok: false, error: { message: "مچ پیدا نشد" } }, { status: 404 });
     if (!result.replayParsed) {
       const state = await replayStatusForMatch(id.data);
-      return Response.json({ ok: true, analysis: null, preparation: { replay: state.status, errorCode: state.errorCode } }, { headers: { "Cache-Control": "private, no-store" } });
+      return Response.json({ ok: true, analysis: null, preparation: { replay: state.status, errorCode: state.errorCode, progress: state.progress } }, { headers: { "Cache-Control": "private, no-store" } });
     }
     return Response.json({ ok: true, analysis: result.analysis }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) { console.error("Standalone analysis failed", error); return Response.json({ ok: false, error: { message: "تحلیل مچ آماده نشد" } }, { status: 500 }); }

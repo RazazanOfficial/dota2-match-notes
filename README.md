@@ -274,3 +274,6 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
 `admin_audit_logs` ثبت می‌شود. API نمای کلی نیز تعداد کاربران، Sessionهای فعال، مچ‌ها، تصاویر،
 Jobهای همگام‌سازی، Jobهای تصویر و مصرف پنجره‌های OpenDota را برمی‌گرداند. هیچ‌کدام از این
 مسیرها اطلاعات نشست یا کلیدهای محرمانه را نمایش نمی‌دهند.
+
+
+راهنمای پایداری دانلود Replay، استقرار و تست failover: [Replay resilience](docs/replay-resilience.md).

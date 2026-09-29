@@ -346,3 +346,6 @@ sudo -u dota2notes -H npm run stratz:route-check -- IP_1
 
 مقدار `Observed direct egress IP` باید IP ثابت VPS باشد. این مسیر فقط برای
 snapshot آماری و ابزار تشخیصی اختیاری است؛ worker مربوط به مچ غیرفعال شده است.
+
+
+راهنمای پایداری دانلود Replay، استقرار و تست failover: [Replay resilience](replay-resilience.md).

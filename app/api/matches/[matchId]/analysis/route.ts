@@ -26,7 +26,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     if (!result.found) return Response.json({ ok: false, error: { code: "match_not_found", message: "مچ پیدا نشد" } }, { status: 404 });
     if (!result.replayParsed) {
       const state = await getReplayJobState(parsedId.data);
-      return Response.json({ ok: true, analysis: null, preparation: { replay: state?.status || "basic", errorCode: state?.errorCode || null, tokenCost: ANALYSIS_TOKEN_COST } }, { headers: { "Cache-Control": "private, no-store" } });
+      return Response.json({ ok: true, analysis: null, preparation: { replay: state?.status || "basic", errorCode: state?.errorCode || null, progress: state?.progress || null, tokenCost: ANALYSIS_TOKEN_COST } }, { headers: { "Cache-Control": "private, no-store" } });
     }
     return Response.json({ ok: true, analysis: result.analysis }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {

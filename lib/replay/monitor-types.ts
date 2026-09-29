@@ -1,0 +1,11 @@
+export type ReplayMonitorJob = { match_id: string; status: string; intent: string; phase: string;
+  attempts: number; downloaded_bytes: string; total_bytes: string | null; download_bps: number;
+  transfer_bytes: string; upload_bytes: string; archive_status: string; spool_complete: boolean;
+  error_code: string | null; error_message: string | null; last_endpoint: string | null; last_address: string | null;
+  heartbeat_at: string | null; phase_started_at: string | null; run_after: string; retry_deadline_at: string };
+export type ReplayMonitorRoute = { endpoint: string; address: string; failures: number; open_until: string | null;
+  last_success_at: string | null; last_error_code: string | null };
+export type ReplayMonitorEvent = { match_id: string; phase: string; code: string | null; detail: string;
+  endpoint: string | null; address: string | null; created_at: string; http_status: number | null };
+export type ReplayMonitorSnapshot = { capturedAt: string; jobs: ReplayMonitorJob[]; routes: ReplayMonitorRoute[];
+  events: ReplayMonitorEvent[]; totals: { status: string; count: string; transfer_bytes: string; upload_bytes: string }[] };

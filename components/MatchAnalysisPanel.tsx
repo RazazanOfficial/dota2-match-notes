@@ -1,5 +1,7 @@
 "use client";
 
+import ReplayProgressView from "./ReplayProgressView";
+import type { ReplayProgress } from "@/lib/replay/progress";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Activity, AlertTriangle, ArrowDown, ArrowRightLeft, ArrowUp, BarChart3, Check, ChevronLeft, ChevronRight, CircleGauge, Clock3, Coins, Eye, EyeOff, Info, Lightbulb, MapPinned, Minus, Package, RefreshCw, ShieldAlert, Skull, Sparkles, Target, TrendingUp, UsersRound, X } from "lucide-react";
 import { heroById, heroIcon, heroImage } from "@/data/heroes";
@@ -50,9 +52,12 @@ const TIMELINE: Record<TimelineMetric, { label: string; description: string; cla
 };
 
 export default function MatchAnalysisPanel({ match, active, canRequestAnalysis = false, selectedPlayerSlot, onSelectPlayer, onPositionOverrides, analysisEndpoint }: { match: Match; active: boolean; canRequestAnalysis?: boolean; selectedPlayerSlot?: number|null; onSelectPlayer?: (slot:number) => void; onPositionOverrides?: (updates:Record<string,number>) => void; analysisEndpoint?: string }) {
+  const [pageVisible, setPageVisible] = useState(true);
+  useEffect(() => { const update = () => setPageVisible(document.visibilityState === "visible"); update(); document.addEventListener("visibilitychange", update); return () => document.removeEventListener("visibilitychange", update); }, []);
   const endpoint = analysisEndpoint || `/api/matches/${match.id}/analysis`;
   const cacheKey=analysisKey(match);
   const cached=analysisCache.get(cacheKey)??match.analysis??null;
+  const [replayProgress, setReplayProgress] = useState<ReplayProgress | null>(null);
   const [analysis, setAnalysis] = useState<MatchAnalysis | null>(cached);
   const [requestState, setRequestState] = useState<RequestState>(cached ? "ready" : "idle");
   const [error, setError] = useState("");
@@ -68,7 +73,7 @@ export default function MatchAnalysisPanel({ match, active, canRequestAnalysis =
   useEffect(() => {
     currentMatchId.current = cacheKey;
     const next = analysisCache.get(cacheKey)??match.analysis??null;
-    setAnalysis(next); setRequestState(next ? "ready" : "idle"); setError(""); setView("summary"); setSlot(initialSlot(next)); setMinute(next?.durationMinutes || 0);
+    setReplayProgress(null); setAnalysis(next); setRequestState(next ? "ready" : "idle"); setError(""); setView("summary"); setSlot(initialSlot(next)); setMinute(next?.durationMinutes || 0);
   }, [cacheKey, match.analysis]);
 
   useEffect(() => {
@@ -77,18 +82,19 @@ export default function MatchAnalysisPanel({ match, active, canRequestAnalysis =
   }, [analysis, selectedPlayerSlot]);
 
   useEffect(() => {
-    if (!active || !match.dotaMatchId || analysis) return;
+    if (!active || !pageVisible || !match.dotaMatchId || analysis) return;
     const controller = new AbortController(); let timedOut = false; const requestedMatchId = cacheKey;
     const timeout = window.setTimeout(() => { timedOut = true; controller.abort(); }, 15_000);
     setRequestState("loading"); setError("");
     void fetch(endpoint, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
-        const body = await response.json().catch(() => null) as { analysis?: MatchAnalysis | null; preparation?: { replay?: string; errorCode?: string | null }; error?: { message?: string } } | null;
+        const body = await response.json().catch(() => null) as { analysis?: MatchAnalysis | null; preparation?: { replay?: string; errorCode?: string | null; progress?: ReplayProgress | null }; error?: { message?: string } } | null;
         if (!response.ok) throw new Error(body?.error?.message || "تحلیل مچ آماده نشد");
-        return { analysis: body?.analysis || null, replay: body?.preparation?.replay || "ready" };
+        return { progress: body?.preparation?.progress || null, analysis: body?.analysis || null, replay: body?.preparation?.replay || "ready" };
       })
-      .then(({ analysis: value, replay }) => {
+      .then(({ analysis: value, replay, progress }) => {
         if (controller.signal.aborted || currentMatchId.current !== requestedMatchId) return;
+        setReplayProgress(progress);
         if (replay === "pending" || replay === "processing" || replay === "queued") { setRequestState("preparing"); return; }
         if (replay === "expired") { setRequestState("expired"); return; }
         if (replay === "basic" || replay === "failed") { setRequestState("needs_request"); return; }
@@ -101,13 +107,13 @@ export default function MatchAnalysisPanel({ match, active, canRequestAnalysis =
         setError(timedOut ? "دریافت تحلیل بیشتر از حد انتظار طول کشید. دوباره تلاش کنید." : reason instanceof Error ? reason.message : "تحلیل مچ آماده نشد"); setRequestState("error");
       }).finally(() => window.clearTimeout(timeout));
     return () => { window.clearTimeout(timeout); controller.abort(); };
-  }, [active, analysis, cacheKey, match.dotaMatchId, endpoint, retryToken]);
+  }, [active, pageVisible, analysis, cacheKey, match.dotaMatchId, endpoint, retryToken]);
 
   useEffect(() => {
-    if (!active || requestState !== "preparing") return;
-    const timer = window.setTimeout(() => setRetryToken((current) => current + 1), 5_000);
+    if (!active || !pageVisible || requestState !== "preparing") return;
+    const timer = window.setTimeout(() => setRetryToken((current) => current + 1), document.visibilityState === "visible" ? 5_000 : 30_000);
     return () => window.clearTimeout(timer);
-  }, [active, requestState, retryToken]);
+  }, [active, pageVisible, requestState, retryToken]);
 
   useEffect(() => {
     if (!active || !analysis) return;
@@ -159,7 +165,7 @@ export default function MatchAnalysisPanel({ match, active, canRequestAnalysis =
     }catch(reason){setError(reason instanceof Error?reason.message:"درخواست تحلیل ثبت نشد");setRequestState("error");}
   };
   if (!match.dotaMatchId) return null;
-  if (requestState === "loading" || requestState === "preparing") return <section className="analysis-loading"><AppLogo size={48} alt="" /><div><strong>{requestState === "preparing" ? "Replay در حال تکمیل است" : "در حال آماده‌سازی Match Analysis"}</strong><p>{requestState === "preparing" ? "پس از پایان Parse، تحلیل کامل به‌صورت خودکار نمایش داده می‌شود." : "Benchmark و Timeline هر ۱۰ بازیکن در حال پردازش است."}</p></div></section>;
+  if (requestState === "loading" || requestState === "preparing") return <section className="analysis-loading"><AppLogo size={48} alt="" /><div><strong>{requestState === "preparing" ? "Replay در حال تکمیل است" : "در حال آماده‌سازی Match Analysis"}</strong><p>{requestState === "preparing" ? "پس از پایان Parse، تحلیل کامل به‌صورت خودکار نمایش داده می‌شود." : "Benchmark و Timeline هر ۱۰ بازیکن در حال پردازش است."}</p><ReplayProgressView progress={replayProgress} /></div></section>;
   if (requestState === "error") return <Empty icon={<AlertTriangle />} title="تحلیل مچ آماده نشد" text={error} actionLabel="بررسی دوباره" onAction={retry} />;
   if (requestState === "expired") return <Empty icon={<AlertTriangle />} title="Replay این مچ قدیمی است" text="بیش از ۲۰ روز از این بازی گذشته و دیتای کامل در سرورهای valve احتمالا دیگر موجود نیست." />;
   if (requestState === "needs_request") return <><Empty icon={<CircleGauge />} title="تحلیل Replay هنوز درخواست نشده" text={canRequestAnalysis ? "داده پایه مچ آماده است. Parse فقط با تأیید شما وارد صف می‌شود." : "صاحب دفتر هنوز تحلیل Replay این مچ را درخواست نکرده است."} actionLabel={canRequestAnalysis ? "درخواست تحلیل · 10 Token" : undefined} onAction={canRequestAnalysis ? ()=>setAnalysisConfirmation(true) : undefined} />{analysisConfirmation&&<AnalysisRequestDialog match={match} aging={replayAgeState(match.startedAt)==="warning"} cancel={()=>setAnalysisConfirmation(false)} confirm={requestAnalysis}/>}</>;

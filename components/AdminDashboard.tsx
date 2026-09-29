@@ -1,5 +1,6 @@
 "use client";
 
+import AdminReplayMonitor from "./AdminReplayMonitor";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import {
   ArrowLeft,
@@ -335,6 +336,7 @@ export default function AdminDashboard() {
       <AdminReleaseNotes />
       <AdminMonthlyReferences />
       <AdminServiceMonitor />
+        <AdminReplayMonitor />
       <AdminReplayArchive />
       <AdminPasswordDialog
         user={passwordUser}

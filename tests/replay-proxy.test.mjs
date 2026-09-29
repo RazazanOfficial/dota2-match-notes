@@ -35,7 +35,7 @@ describe("private Valve replay relay", () => {
     const result = await handler(request(path, { range: "bytes=0-31" }), env);
     expect(calls).toEqual([{
       url: "http://replay189.valve.net/570/9013078038_724775528.dem.bz2",
-      options: { redirect: "manual", headers: { Range: "bytes=0-31" } },
+      options: expect.objectContaining({ redirect: "manual", headers: { Range: "bytes=0-31" }, signal: expect.any(AbortSignal) }),
     }]);
     expect(result.status).toBe(206);
     expect(result.headers.get("content-range")).toBe("bytes 0-31/108902277");
@@ -60,4 +60,26 @@ describe("private Valve replay relay", () => {
     }));
     expect((await large(request(path), env)).status).toBe(413);
   });
+});
+
+it("relays safe resume ranges and their strong validator without buffering", async () => {
+  let forwarded;
+  const handler = createReplayProxy(async (_url, options) => {
+    forwarded = options.headers;
+    return new Response(new Uint8Array(60), { status:206, headers:{"content-range":"bytes 40-99/100","content-length":"60",etag:'"same-file"'} });
+  });
+  const result = await handler(request(path, { range:"bytes=40-", "if-range":'"same-file"' }), env);
+  expect(forwarded).toEqual({Range:"bytes=40-","If-Range":'"same-file"'});
+  expect(result.status).toBe(206);expect(result.headers.get("etag")).toBe('"same-file"');
+  expect(result.headers.get("x-replay-relay")).toBe("2");
+});
+it("rejects arbitrary, multi and oversized ranges, and identifies Valve errors", async () => {
+  let calls=0;
+  const handler=createReplayProxy(async()=>{calls++;return new Response("bad gateway",{status:520});});
+  for(const range of ["bytes=0-10,20-30","bytes=209715200-","bytes=-30","bytes=abc-"]){
+    expect((await handler(request(path,{range,"if-range":'"file"'}),env)).status).toBe(400);
+  }
+  expect(calls).toBe(0);
+  const result=await handler(request(path),env);
+  expect(result.status).toBe(520);expect(result.headers.get("x-replay-error-source")).toBe("valve");
 });

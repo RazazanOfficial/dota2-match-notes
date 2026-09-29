@@ -1,48 +1,35 @@
 #!/usr/bin/env node
-// Read-only connectivity test: Worker -> Valve and Iran VPS -> Worker.
-import { replayProxySettings } from "./replay-queue-utils.mjs";
-
+import { requestRoute, selectRoutes, transportConfig, responseError, ReplayError } from "./replay-transport.mjs";
 async function main() {
   const args = process.argv.slice(2);
-  if (args.length !== 3 || !/^([1-9]\d{0,3})$/.test(args[0]) ||
-    args.slice(1).some((item) => !/^[1-9]\d{0,15}$/.test(item) || !Number.isSafeInteger(Number(item)))) {
-    throw new Error("Usage: node probe-proxy.mjs CLUSTER MATCH_ID REPLAY_SALT");
+  if (args.length !== 3 || !/^[1-9]\d{0,3}$/.test(args[0]) || args.slice(1).some(x => !/^[1-9]\d{0,15}$/.test(x) || !Number.isSafeInteger(Number(x)))) {
+    throw new Error("Usage: probe-proxy.mjs CLUSTER MATCH_ID REPLAY_SALT");
   }
-  const proxy = replayProxySettings();
-  if (!proxy) throw new Error("Set LOCAL_REPLAY_PROXY_URL and LOCAL_REPLAY_PROXY_TOKEN first");
-  const headers = { Authorization: `Bearer ${proxy.token}` };
-  const health = await fetch(`${proxy.url}/healthz`, {
-    headers, redirect: "error", signal: AbortSignal.timeout(10_000),
-  });
-  if (health.status !== 200 || (await health.text()).trim() !== "ok") {
-    throw new Error(`Replay proxy health failed: HTTP ${health.status}`);
+  const config = transportConfig(); const routes = await selectRoutes(config);
+  let last;
+  for (const route of routes.slice(0, 3)) {
+    let health, response;
+    try {
+      const headers = { Authorization: `Bearer ${config.token}` };
+      health = await requestRoute(`${route.endpoint}/healthz`, route, headers, { totalMs: 15_000 });
+      if (health.status !== 200) throw responseError(health);
+      let healthText = "";
+      for await (const part of health.body) { healthText += part.toString(); if (healthText.length > 64) throw new Error("Unexpected health response"); }
+      if (healthText.trim() !== "ok") throw new Error("Unexpected health response");
+      response = await requestRoute(`${route.endpoint}/v1/replay/${args.join("/")}`, route, { ...headers, Range: "bytes=0-31" }, { totalMs: 25_000 });
+      if (response.status !== 206) throw responseError(response);
+      if (!/^bytes 0-31\/\d+$/.test(response.headers.get("content-range") || "") || response.headers.get("content-length") !== "32") throw new Error("Invalid probe range");
+      const chunks = []; let bytes = 0;
+      for await (const part of response.body) { bytes += part.length; if (bytes > 32) throw new Error("Probe exceeded 32 bytes"); chunks.push(part); }
+      const payload = Buffer.concat(chunks);
+      if (bytes !== 32 || !(payload.subarray(0,3).toString() === "BZh" || payload.subarray(0,4).equals(Buffer.from([0x28,0xb5,0x2f,0xfd])) || payload.subarray(0,7).toString() === "PBDEMS2")) throw new Error("Probe response is not a replay");
+      console.log(JSON.stringify({ ok:true, matchId:Number(args[1]), origin:route.endpoint, address:route.address, range:"0-31" })); return;
+    } catch (error) {
+      last = error;
+      console.error(JSON.stringify({ok:false,phase:"probe",endpoint:route.endpoint,address:route.address,code:error.code || "probe_failed",message:error.message}));
+      if (error instanceof ReplayError && !error.retryable) throw error;
+    } finally { health?.close(); response?.close(); }
   }
-  const response = await fetch(`${proxy.url}/v1/replay/${args.join("/")}`, {
-    headers: { ...headers, Range: "bytes=0-31" },
-    redirect: "error", signal: AbortSignal.timeout(20_000),
-  });
-  if (response.status !== 206 || !/^bytes 0-31\/\d+$/.test(response.headers.get("content-range") || "") ||
-    response.headers.get("content-length") !== "32" || !response.body) {
-    await response.body?.cancel();
-    throw new Error(`Replay probe failed: HTTP ${response.status}, range ${response.headers.get("content-range")}`);
-  }
-  const reader = response.body.getReader();
-  let bytes = 0;
-  const header = Buffer.alloc(4);
-  try {
-    while (bytes < 4) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      header.set(value.subarray(0, Math.min(4 - bytes, value.length)), bytes);
-      bytes += value.length;
-      if (bytes > 32) throw new Error("Probe exceeded 32 bytes");
-    }
-  } finally { await reader.cancel(); }
-  if (bytes < 4 || !(header.subarray(0, 3).toString("ascii") === "BZh" ||
-    header.equals(Buffer.from([0x28, 0xb5, 0x2f, 0xfd])))) {
-    throw new Error("Proxy response is not a compressed replay");
-  }
-  console.log(JSON.stringify({ ok: true, matchId: Number(args[1]), origin: proxy.url, range: "0-31" }));
+  throw last || new Error("No relay route available");
 }
-
-main().catch((error) => { console.error(error instanceof Error ? error.message : String(error)); process.exitCode = 1; });
+main().catch(error => { console.error(error.message); process.exitCode=1; });
