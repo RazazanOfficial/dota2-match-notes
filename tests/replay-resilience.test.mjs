@@ -128,6 +128,13 @@ describe("route and checkpoint policy",()=>{
     expect(retryDecision(new ReplayError("network","network"),{...job,retry_deadline_at:new Date(now)},now)).toMatchObject({status:"failed",code:"replay_retry_exhausted"});
     expect(retryDecision(new ReplayError("auth","auth",{retryable:false}),job,now)).toMatchObject({status:"failed",code:"auth"});
   });
+  it("retries one initial connection failure sooner while keeping later and rate-limited backoff",()=>{
+    const now=Date.now(),job={attempts:1,retry_deadline_at:new Date(now+86400000)};
+    expect(retryDecision(new ReplayError("replay_connect_failed","network"),job,now,()=>0)).toMatchObject({status:"pending",delay:20});
+    expect(retryDecision(new ReplayError("replay_connect_timeout","network"),job,now,()=>1)).toMatchObject({status:"pending",delay:25});
+    expect(retryDecision(new ReplayError("replay_connect_failed","network"),{...job,attempts:2},now,()=>0)).toMatchObject({status:"pending",delay:120});
+    expect(retryDecision(new ReplayError("replay_metadata_rate_limited","limited",{retryAfter:300}),job,now,()=>0)).toMatchObject({status:"pending",delay:300});
+  });
   it("reuses the checkpoint after upload failure, and prefers an existing archive",()=>{
     expect(processingPlan({archived:false,parsed:true,intent:"analysis",checkpoint:true})).toBe("use-checkpoint");
     expect(processingPlan({archived:true,parsed:false,intent:"download",checkpoint:false})).toBe("complete");
