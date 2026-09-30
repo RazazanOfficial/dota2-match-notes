@@ -2,6 +2,58 @@
 // Cloudflare Worker; do not route arbitrary URLs or buffer replay bodies.
 const MAX_REPLAY_BYTES = 200 * 1024 * 1024;
 const REPLAY_PATH = /^\/v1\/replay\/([1-9]\d{0,3})\/([1-9]\d{0,15})\/([1-9]\d{0,15})$/;
+const METADATA_PATH = /^\/v1\/metadata\/([1-9]\d{0,15})$/;
+const MAX_METADATA_BYTES = 4 * 1024 * 1024;
+
+function positiveInteger(value, max = Number.MAX_SAFE_INTEGER) {
+  const number = Number(value);
+  return (typeof value === "number" || typeof value === "string" && /^\d+$/.test(value)) &&
+    Number.isSafeInteger(number) && number > 0 && number <= max ? number : null;
+}
+
+async function metadataFromOpenDota(matchId, fetchUpstream) {
+  let unavailable = false;
+  for (const path of [`replays?match_id=${matchId}`, `matches/${matchId}`]) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8_000);
+    let response;
+    try {
+      response = await fetchUpstream(`https://api.opendota.com/api/${path}`, {
+        redirect: "manual", headers: { Accept: "application/json" }, signal: controller.signal,
+      });
+      if (response.status === 429) return reply("OpenDota rate limited", 429, "opendota", {
+        ...(response.headers.has("retry-after") ? { "Retry-After": response.headers.get("retry-after") } : {}),
+      });
+      if (response.status === 404) continue;
+      if (!response.ok || response.status !== 200) { unavailable = true; continue; }
+      if (Number(response.headers.get("content-length") || 0) > MAX_METADATA_BYTES) { unavailable = true; continue; }
+      let size = 0;
+      const decoder = new TextDecoder();
+      let text = "";
+      for await (const chunk of response.body || []) {
+        size += chunk.byteLength;
+        if (size > MAX_METADATA_BYTES) { unavailable = true; break; }
+        text += decoder.decode(chunk, { stream: true });
+      }
+      if (size > MAX_METADATA_BYTES) continue;
+      let data;
+      try { data = JSON.parse(text + decoder.decode()); }
+      catch { unavailable = true; continue; }
+      const candidates = Array.isArray(data) ? data : [data];
+      const found = candidates.find(item => item && positiveInteger(item.match_id) === matchId &&
+        positiveInteger(item.replay_salt) !== null);
+      if (found) {
+        const cluster = positiveInteger(found.cluster, 9_999);
+        const salt = positiveInteger(found.replay_salt);
+        return Response.json({ match_id: matchId, cluster, replay_salt: salt }, {
+          headers: { "Cache-Control": "private, no-store", "X-Replay-Relay": "2" },
+        });
+      }
+    } catch { unavailable = true; }
+    finally { clearTimeout(timer); await response?.body?.cancel().catch(() => {}); }
+  }
+  return reply(unavailable ? "OpenDota unavailable" : "Replay metadata not ready", unavailable ? 502 : 404, "opendota");
+}
 
 function authenticated(request, secret) {
   if (typeof secret !== "string" || !/^[a-f0-9]{64}$/i.test(secret)) return false;
@@ -28,6 +80,12 @@ export function createReplayProxy(fetchUpstream = fetch) {
     const url = new URL(request.url);
     if (url.search || url.hash) return reply("Unexpected query", 400);
     if (url.pathname === "/healthz") return reply("ok", 200);
+    const metadata = METADATA_PATH.exec(url.pathname);
+    if (metadata) {
+      const matchId = positiveInteger(metadata[1]);
+      if (!matchId || request.headers.has("range")) return reply("Invalid metadata request", 400);
+      return metadataFromOpenDota(matchId, fetchUpstream);
+    }
     const match = REPLAY_PATH.exec(url.pathname);
     if (!match || !Number.isSafeInteger(Number(match[2])) || !Number.isSafeInteger(Number(match[3]))) {
       return reply("Invalid replay path", 400);

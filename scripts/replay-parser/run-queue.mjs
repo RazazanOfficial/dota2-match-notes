@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { archivedReplayExists, replayArchiveKey, retrieveReplay, uploadReplay } from "./replay-archive.mjs";
 import { replayDescriptor } from "./replay-queue-utils.mjs";
+import { fetchReplayMetadata } from "./replay-metadata.mjs";
 import { downloadResilient, ReplayError, sha256File, transportConfig } from "./replay-transport.mjs";
 import { cleanSpool, ensureCapacity, inspectSpool, spoolPath, verifyCheckpoint } from "./replay-spool.mjs";
 import { processingPlan, retryDecision } from "./replay-job-policy.mjs";
@@ -138,8 +139,18 @@ async function handle(client, job, hooks) {
   }
   const plan = processingPlan({ archived, parsed, intent: job.intent, checkpoint: validCheckpoint });
   if (plan === "complete") { await complete(client, job, hooks, "existing"); return; }
-  const descriptor = replayDescriptor(match.raw_data, Number(job.match_id));
-  if (!descriptor && !archived && !validCheckpoint) throw new ReplayError("invalid_replay_metadata", "No valid Valve replay cluster/salt", { retryable: false });
+  let descriptor = replayDescriptor(match.raw_data, Number(job.match_id));
+  if (!descriptor && !archived && !validCheckpoint) {
+    await hooks.phase("resolving_metadata");
+    const metadata = await fetchReplayMetadata(Number(job.match_id), match.raw_data, transportConfig(), hooks, { signal: abort.signal });
+    const replayUrl = `http://replay${metadata.cluster}.valve.net/570/${job.match_id}_${metadata.salt}.dem.bz2`;
+    await client.query(`UPDATE dota_matches SET raw_data=raw_data || jsonb_build_object(
+      'cluster',$2::integer,'replay_salt',$3::bigint,'replay_url',$4::text),updated_at=now()
+      WHERE match_id=$1 AND raw_data IS NOT NULL`, [job.match_id, metadata.cluster, metadata.salt, replayUrl]);
+    match.raw_data = { ...match.raw_data, cluster: metadata.cluster, replay_salt: metadata.salt, replay_url: replayUrl };
+    descriptor = replayDescriptor(match.raw_data, Number(job.match_id));
+    if (!descriptor) throw new ReplayError("replay_metadata_invalid", "Refreshed replay metadata did not match", { retryable: false });
+  }
   if (!job.spool_name) {
     job.spool_name = `.replay-${randomUUID()}.part`;
     await updateJob(client, job, "spool_name=$3,spool_created_at=now(),spool_complete=false,spool_etag=NULL,spool_sha256=NULL", [job.spool_name]);

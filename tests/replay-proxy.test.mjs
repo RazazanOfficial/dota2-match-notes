@@ -83,3 +83,44 @@ it("rejects arbitrary, multi and oversized ranges, and identifies Valve errors",
   const result=await handler(request(path),env);
   expect(result.status).toBe(520);expect(result.headers.get("x-replay-error-source")).toBe("valve");
 });
+
+it("returns only verified replay metadata for the requested match", async () => {
+  const calls = [];
+  const handler = createReplayProxy(async (url, options) => {
+    calls.push(url);
+    expect(options.redirect).toBe("manual");
+    return Response.json([
+      { match_id: 4, cluster: 42, replay_salt: 999 },
+      { match_id: 9020830802, cluster: 436, replay_salt: 123456789, secret: "discard" },
+    ]);
+  });
+  const url = "https://replay.example.org/v1/metadata/9020830802";
+  expect((await handler(new Request(url), env)).status).toBe(401);
+  expect((await handler(request(`${url}?url=http://localhost`), env)).status).toBe(400);
+  expect((await handler(request(url, { range: "bytes=0-31" }), env)).status).toBe(400);
+  const result = await handler(request(url), env);
+  expect(await result.json()).toEqual({ match_id: 9020830802, cluster: 436, replay_salt: 123456789 });
+  expect(result.headers.get("cache-control")).toContain("no-store");
+  expect(calls).toEqual(["https://api.opendota.com/api/replays?match_id=9020830802"]);
+});
+
+it("checks the OpenDota match when replays are missing and never invents a salt", async () => {
+  const url = "https://replay.example.org/v1/metadata/9020830802";
+  const calls = [];
+  const handler = createReplayProxy(async path => {
+    calls.push(path);
+    return path.includes("/replays?") ? Response.json([]) : Response.json({
+      match_id: 9020830802, cluster: 436, replay_salt: 111,
+    });
+  });
+  expect(await (await handler(request(url), env)).json()).toEqual({ match_id: 9020830802, cluster: 436, replay_salt: 111 });
+  expect(calls).toHaveLength(2);
+  const notFoundThenMatch = createReplayProxy(async path => path.includes("/replays?")
+    ? new Response(null, { status: 404 })
+    : Response.json({ match_id: 9020830802, cluster: 436, replay_salt: 222 }));
+  expect(await (await notFoundThenMatch(request(url), env)).json()).toEqual({ match_id: 9020830802, cluster: 436, replay_salt: 222 });
+  const missing = createReplayProxy(async () => Response.json({ match_id: 42, cluster: 436, replay_salt: 111 }));
+  expect((await missing(request(url), env)).status).toBe(404);
+  const oversized = createReplayProxy(async () => new Response("x", { headers: { "content-length": "9999999" } }));
+  expect((await oversized(request(url), env)).status).toBe(502);
+});

@@ -4,9 +4,10 @@ import { mkdtemp, readFile, writeFile, rm, lstat } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
-const mocks = vi.hoisted(() => ({ upload:vi.fn(), exists:vi.fn(), download:vi.fn() }));
+const mocks = vi.hoisted(() => ({ upload:vi.fn(), exists:vi.fn(), download:vi.fn(), metadata:vi.fn() }));
 vi.mock("../scripts/replay-parser/replay-archive.mjs", async original => ({ ...await original(), uploadReplay:mocks.upload, archivedReplayExists:mocks.exists }));
 vi.mock("../scripts/replay-parser/replay-transport.mjs", async original => ({ ...await original(), downloadResilient:mocks.download }));
+vi.mock("../scripts/replay-parser/replay-metadata.mjs", () => ({ fetchReplayMetadata:mocks.metadata }));
 let db, client, worker, folder;
 const payload=Buffer.from("PBDEMS2 complete test replay data");
 const hash=createHash("sha256").update(payload).digest("hex");
@@ -18,7 +19,7 @@ beforeAll(async()=>{
   worker=await import("../scripts/replay-parser/run-queue.mjs");
   db=new PGlite();
   client={ query:async (query,args=[])=>{const r=await db.query(query,args);return {rows:r.rows,rowCount:r.rows.length || r.affectedRows || 0};} };
-  await db.exec(`CREATE TABLE dota_matches(match_id bigint PRIMARY KEY,raw_data jsonb,local_replay_data jsonb,started_at timestamptz);
+  await db.exec(`CREATE TABLE dota_matches(match_id bigint PRIMARY KEY,raw_data jsonb,local_replay_data jsonb,started_at timestamptz,updated_at timestamptz DEFAULT now());
     CREATE TABLE local_replay_jobs(match_id bigint PRIMARY KEY REFERENCES dota_matches(match_id),status varchar(16) NOT NULL DEFAULT 'pending',
     intent varchar(16) NOT NULL DEFAULT 'analysis',archive_key text,archive_status varchar(16) NOT NULL DEFAULT 'missing',archive_bytes integer,
     archived_at timestamptz,attempts smallint NOT NULL DEFAULT 0,run_after timestamptz NOT NULL DEFAULT now(),locked_at timestamptz,finished_at timestamptz,
@@ -30,6 +31,7 @@ beforeAll(async()=>{
 afterAll(async()=>{await db?.close();if(folder)await rm(folder,{recursive:true,force:true});});
 beforeEach(async()=>{
   vi.clearAllMocks();mocks.exists.mockResolvedValue(false);
+  mocks.metadata.mockResolvedValue({cluster:436,salt:123456789});
   mocks.download.mockImplementation(async(_descriptor,path,_checkpoint,_config,hooks)=>{
     await writeFile(path,payload,{mode:0o600});
     await hooks.checkpoint({etag:'"file"',total:payload.length,complete:true,sha256:hash});
@@ -45,6 +47,26 @@ beforeEach(async()=>{
 const row=async()=> (await client.query("SELECT * FROM local_replay_jobs WHERE match_id=2")).rows[0];
 const start=async(intent="download")=>{await worker.enqueueOne(client,2,intent);return (await worker.claim(client)).job;};
 describe("replay queue SQL and persisted lifecycle",()=>{
+  it("refreshes missing salt in the existing match and then downloads the replay", async()=>{
+    await client.query("UPDATE dota_matches SET raw_data=$1 WHERE match_id=2", [JSON.stringify({match_id:2,cluster:436,players:[{hero_id:1}],version:22})]);
+    const job=await start();
+    await worker.handle(client,job,worker.hooksFor(client,job));
+    const saved=(await client.query("SELECT raw_data FROM dota_matches WHERE match_id=2")).rows[0].raw_data;
+    expect(saved).toMatchObject({match_id:2,cluster:436,replay_salt:123456789,version:22,players:[{hero_id:1}]});
+    expect(mocks.metadata).toHaveBeenCalledTimes(1);
+    expect(mocks.download.mock.calls[0][0]).toMatchObject({matchId:2,cluster:436,salt:123456789});
+    expect(await row()).toMatchObject({status:"completed",archive_status:"active"});
+  });
+  it("keeps incomplete metadata pending rather than failing the match", async()=>{
+    await client.query("UPDATE dota_matches SET raw_data=$1 WHERE match_id=2", [JSON.stringify({match_id:2,cluster:436,players:[]})]);
+    const {ReplayError}=await import("../scripts/replay-parser/replay-transport.mjs");
+    mocks.metadata.mockRejectedValueOnce(new ReplayError("replay_metadata_pending","Not ready",{retryAfter:300}));
+    const job=await start();
+    try { await worker.handle(client,job,worker.hooksFor(client,job));throw new Error("Expected metadata wait"); }
+    catch(error){expect(error.code).toBe("replay_metadata_pending");await worker.failJob(client,job,worker.hooksFor(client,job),error);}
+    expect(await row()).toMatchObject({status:"pending",phase:"retry_wait",error_code:"replay_metadata_pending"});
+    expect(mocks.download).not.toHaveBeenCalled();
+  });
   it("migrates existing archived matches without losing their status",async()=>{
     const old=(await client.query("SELECT * FROM local_replay_jobs WHERE match_id=1")).rows[0];
     expect(old).toMatchObject({status:"completed",phase:"completed",archive_status:"active",archive_bytes:100});
