@@ -14,13 +14,15 @@ export default function ReplayProgressView({ progress }: { progress: ReplayProgr
   const downloading = progress.phase === "downloading";
   const percent = downloading && progress.totalBytes ? Math.min(100, Math.floor(progress.bytes / progress.totalBytes * 100)) : null;
   const wait = progress.nextTryAt ? Math.max(0, Math.ceil((Date.parse(progress.nextTryAt) - now) / 1000)) : null;
+  const waitLabel = wait && wait > 0 ? wait < 60 ? `تلاش بعدی تا ${wait} ثانیه` : `تلاش بعدی تا ${Math.ceil(wait / 60)} دقیقه`
+    : "منتظر نوبت اجرای سرویس";
   const elapsed = progress.phaseStartedAt ? Math.max(0, Math.floor((now - Date.parse(progress.phaseStartedAt)) / 1000)) : 0;
   return <div className={styles.progress} dir="rtl" role="status">
     <strong>{replayPhaseLabels[progress.phase] || "آماده‌سازی Replay"}</strong>
     {downloading && <><span dir="ltr">{mb(progress.bytes)}{progress.totalBytes ? ` / ${mb(progress.totalBytes)} · ${percent}%` : ""}</span>
       {percent !== null && <progress value={percent} max={100} aria-label="پیشرفت دانلود" />}
       {progress.bytesPerSecond > 0 && <small dir="ltr">{mb(progress.bytesPerSecond)}/s</small>}</>}
-    {progress.phase === "retry_wait" ? <small>{wait && wait > 0 ? `تلاش بعدی تا ${Math.ceil(wait / 60)} دقیقه` : "منتظر نوبت اجرای سرویس"} · نوبت {progress.attempts}</small>
+    {progress.phase === "retry_wait" ? <small>{waitLabel} · نوبت {progress.attempts}</small>
       : !["completed", "failed", "queued"].includes(progress.phase) && <small>{elapsed} ثانیه از شروع این مرحله گذشته</small>}
     {progress.errorCode && ["retry_wait", "failed"].includes(progress.phase) && <small>{replayErrorMessage(progress.errorCode)}</small>}
   </div>;

@@ -1,9 +1,10 @@
 [Unit]
-Description=Check one local replay job every minute
+Description=Check one local replay job every 15 seconds
 
 [Timer]
-OnCalendar=*-*-* *:*:00
-RandomizedDelaySec=10s
+OnCalendar=*-*-* *:*:00/15
+AccuracySec=1s
+RandomizedDelaySec=2s
 Persistent=true
 Unit=dota2notes-replay.service
 
