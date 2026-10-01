@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionUser } from "../lib/auth/session";
+import { OpenDotaError } from "../lib/opendota/errors";
 
 const mocks = vi.hoisted(() => ({
   quota: vi.fn(),
   history: vi.fn(),
+  detail: vi.fn(),
+  save: vi.fn(),
   known: vi.fn(),
   completed: vi.fn(),
   claim: vi.fn(),
@@ -11,12 +14,14 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../lib/opendota/client", () => ({
   fetchOpenDotaPlayerMatchesSince: mocks.history,
+  fetchOpenDotaMatch: mocks.detail,
 }));
 vi.mock("../lib/opendota/repository", () => ({
   claimOpenDotaRequestQuota: mocks.quota,
   claimManualOpenDotaSync: mocks.claim,
   findKnownOpenDotaMatchIds: mocks.known,
   markJournalRangeCompleted: mocks.completed,
+  saveDiscoveredOpenDotaMatch: mocks.save,
 }));
 vi.mock("../lib/stratz/config", () => ({
   getStratzConfig: () => ({ backfillOnManualSync: false, inlineProcessBatchSize: 0 }),
@@ -25,7 +30,7 @@ vi.mock("../lib/stratz/job-repository", () => ({ enqueueStratzBackfillForUser: v
 vi.mock("../lib/stratz/job-service", () => ({ runStratzEnrichmentTick: vi.fn() }));
 vi.mock("../lib/opendota-parse/repository", () => ({ requestOpenDotaAnalysisRange: vi.fn() }));
 
-import { syncRecentMatchesFromOpenDota } from "../lib/opendota/service";
+import { syncRecentMatchesFromOpenDota, syncManualRangeBatch } from "../lib/opendota/service";
 
 const user = {
   id: "test-user",
@@ -66,5 +71,36 @@ describe("manual selected range sync", () => {
     await expect(syncRecentMatchesFromOpenDota(user, request)).rejects.toMatchObject({ code: "opendota_history_too_large" });
     expect(mocks.quota).toHaveBeenCalledTimes(30);
     expect(mocks.completed).not.toHaveBeenCalled();
+  });
+
+  it("visits every match beyond 20 and verifies Turbo when its compact mode is missing", async () => {
+    const matches = Array.from({ length: 28 }, (_, index) => ({ ...match(9_000_000_000 + index, "2026-09-13"),
+      game_mode: index % 3 === 0 ? null : 23, lobby_type: 0 }));
+    mocks.history.mockResolvedValue(matches);
+    mocks.known.mockImplementation(async () => ({ importedIds: new Set(), dismissedIds: new Set() }));
+    mocks.detail.mockImplementation(async (id: number) => ({ match_id: id, game_mode: 23, lobby_type: 0,
+      players: [{ account_id: user.steamAccountId, player_slot: 0, hero_id: 1 }] }));
+    mocks.save.mockImplementation(async ({ match: item }: { match: { match_id: number } }) => ({
+      created: true, journalMatchId: String(item.match_id), dotaMatchId: item.match_id, day: "2026-09-13",
+    }));
+    let attempted: number[] = [];
+    const imported: number[] = [];
+    let remaining: number;
+    do {
+      const batch = await syncManualRangeBatch(user, { ...request, gameModes: ["turbo"] }, attempted);
+      attempted = [...attempted, ...batch.attemptedIds];
+      imported.push(...batch.imported.map((item) => item.dotaMatchId));
+      remaining = batch.deferred;
+    } while (remaining > 0);
+    expect(new Set(imported).size).toBe(28);
+    expect(attempted).toHaveLength(28);
+    expect(mocks.detail).toHaveBeenCalledTimes(28);
+  });
+
+  it("retries a rate limited match instead of marking it as attempted", async () => {
+    mocks.history.mockResolvedValue([match(41, "2026-09-13")]);
+    mocks.known.mockResolvedValue({ importedIds: new Set(), dismissedIds: new Set() });
+    mocks.detail.mockRejectedValue(new OpenDotaError(429, "opendota_rate_limited", "Rate limited"));
+    await expect(syncManualRangeBatch(user, request, [])).rejects.toMatchObject({ status: 429 });
   });
 });

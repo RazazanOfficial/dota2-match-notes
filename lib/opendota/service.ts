@@ -68,6 +68,7 @@ interface RecentSyncOptions {
   onExternalRequestClaimed?: () => void;
   range?: { from: string; to: string };
   gameModes?: ManualMatchSyncInput["gameModes"];
+  skipMatchIds?: ReadonlySet<number>;
 }
 
 const HISTORY_PAGE_SIZE = 100;
@@ -109,9 +110,11 @@ async function discoverRecentMatches(
   const recentMatches = options.range
     ? fetchedMatches.filter((match) => {
         const day = toJournalDateKey(new Date(match.start_time * 1_000));
-        return day >= options.range!.from &&
-          day <= options.range!.to &&
-          matchesSyncGameMode(options.gameModes, match.game_mode, match.lobby_type);
+        return day >= options.range!.from && day <= options.range!.to &&
+          // The compact player feed can omit mode fields. Verify the full
+          // match before excluding Turbo or another selected game mode.
+          (match.game_mode == null || match.lobby_type == null ||
+            matchesSyncGameMode(options.gameModes, match.game_mode, match.lobby_type));
       })
     : fetchedMatches;
   const { importedIds, dismissedIds } = await findKnownOpenDotaMatchIds(
@@ -122,7 +125,7 @@ async function discoverRecentMatches(
     recentMatches,
     importedIds,
     dismissedIds,
-  );
+  ).filter((match) => !options.skipMatchIds?.has(match.match_id));
   const selection = selectRecentSyncMatches(
     newMatches,
     options.range
@@ -143,6 +146,7 @@ async function discoverRecentMatches(
       await claimOpenDotaRequestQuota(quotaConfig(config));
       options.onExternalRequestClaimed?.();
       const match = await fetchOpenDotaMatch(candidate.match_id);
+      if (options.range && !matchesSyncGameMode(options.gameModes, match.game_mode, match.lobby_type)) continue;
       const player =
         match.players.find(
           (item) => item.account_id === user.steamAccountId,
@@ -187,6 +191,7 @@ async function discoverRecentMatches(
     imported,
     failed,
     deferred: Math.max(0, selection.eligible.length - attempted),
+    attemptedIds: selection.candidates.slice(0, attempted).map((candidate) => candidate.match_id),
     ignoredOlder: selection.ignoredOlder,
   };
 }
@@ -282,7 +287,8 @@ export async function syncRecentMatchesFromOpenDota(
   }
   const claimedAt = await claimManualOpenDotaSync(
     user.id,
-    config.manualSyncCooldownSeconds,
+    request.scope === "day" ? config.manualDayCooldownSeconds : config.manualSyncCooldownSeconds,
+    request.scope,
   );
   let externalRequestClaimed = false;
 
@@ -311,11 +317,29 @@ export async function syncRecentMatchesFromOpenDota(
       ).toISOString(),
     };
   } catch (error) {
-    if (!externalRequestClaimed) {
-      await releaseManualOpenDotaSyncClaim(user.id, claimedAt).catch(() => {});
+    if (!externalRequestClaimed || error instanceof OpenDotaError && error.code === "opendota_timeout") {
+      await releaseManualOpenDotaSyncClaim(user.id, claimedAt, request.scope).catch(() => {});
     }
     throw error;
   }
+}
+
+// Manual selected ranges run in bounded worker batches. Every candidate is
+// visited, including matches older than the former per-request limit of 20.
+export async function syncManualRangeBatch(
+  user: Pick<SessionUser, "id" | "steamAccountId" | "createdAt">,
+  request: ManualMatchSyncInput,
+  attempted: readonly number[],
+  batchSize = 5,
+) {
+  const config = getOpenDotaConfig();
+  return discoverRecentMatches(user, {
+    maxNewMatches: batchSize,
+    range: { from: request.from, to: request.to },
+    gameModes: request.gameModes,
+    skipMatchIds: new Set(attempted),
+    throwOnRetryableError: true,
+  });
 }
 
 export async function syncScheduledMatchesFromOpenDota(

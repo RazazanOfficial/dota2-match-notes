@@ -63,6 +63,8 @@ export async function getPlayerSyncSnapshot(userId: string) {
     .select({
       createdAt: users.createdAt,
       lastManualSyncAt: users.lastManualSyncAt,
+      lastDaySyncAt: users.lastDaySyncAt,
+      lastWeekSyncAt: users.lastWeekSyncAt,
       manualSyncCursorAt: users.manualSyncCursorAt,
     })
     .from(users)
@@ -152,18 +154,25 @@ export async function getPlayerSyncSnapshot(userId: string) {
 export function serializePlayerSyncSnapshot(
   snapshot: NonNullable<Awaited<ReturnType<typeof getPlayerSyncSnapshot>>>,
   cooldownSeconds: number,
+  dayCooldownSeconds = 90,
 ) {
   const nextAllowedAt = snapshot.user.lastManualSyncAt
     ? new Date(
         snapshot.user.lastManualSyncAt.getTime() + cooldownSeconds * 1_000,
       )
     : null;
+  const dayAllowedAt = snapshot.user.lastDaySyncAt
+    ? new Date(snapshot.user.lastDaySyncAt.getTime() + dayCooldownSeconds * 1_000) : null;
+  const weekAllowedAt = snapshot.user.lastWeekSyncAt
+    ? new Date(snapshot.user.lastWeekSyncAt.getTime() + cooldownSeconds * 1_000) : null;
 
   return {
     registeredAt: snapshot.user.createdAt.toISOString(),
     trackedThrough: snapshot.user.manualSyncCursorAt?.toISOString() || null,
     lastSyncAt: snapshot.user.lastManualSyncAt?.toISOString() || null,
     nextAllowedAt: nextAllowedAt?.toISOString() || null,
+    nextDayAllowedAt: dayAllowedAt?.toISOString() || null,
+    nextWeekAllowedAt: weekAllowedAt?.toISOString() || null,
     imageQueue: {
       counts: snapshot.counts,
       jobs: snapshot.jobs.map((job) => ({

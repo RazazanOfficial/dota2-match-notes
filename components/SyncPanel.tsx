@@ -73,7 +73,7 @@ interface SyncPanelProps {
   onCurrentWeek: () => void;
   onNextWeek: () => void;
   onReport: () => void;
-  onMatchesImported: (result: ManualSyncResult) => void;
+  onMatchesImported: () => void;
   previewMode?: boolean;
 }
 
@@ -91,6 +91,9 @@ export default function SyncPanel({
   previewMode = false,
 }: SyncPanelProps) {
   const [status, setStatus] = useState<PlayerSyncStatus | null>(null);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const observedPendingJobId = useRef<string | null>(null);
+  const handledJobId = useRef<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [open, setOpen] = useState(false);
@@ -156,7 +159,7 @@ export default function SyncPanel({
 
   useEffect(() => {
     if (previewMode) return;
-    const active = Boolean(
+    const active = Boolean(status?.manualJob && ["pending", "processing"].includes(status.manualJob.status)) || Boolean(
       status?.imageQueue.jobs.some(
         (job) => job.kind === "analysis" && (job.status === "pending" || job.status === "processing"),
       ),
@@ -166,12 +169,31 @@ export default function SyncPanel({
   }, [loadStatus, previewMode, status]);
 
   useEffect(() => {
+    const job = status?.manualJob;
+    if (job && ["pending", "processing"].includes(job.status)) {
+      observedPendingJobId.current = job.id;
+      return;
+    }
+    if (!job || !["completed", "failed"].includes(job.status) || handledJobId.current === job.id ||
+        (activeJobId !== job.id && observedPendingJobId.current !== job.id)) return;
+    handledJobId.current = job.id;
+    setActiveJobId(null);
+    onMatchesImported();
+    if (job.status === "completed") {
+      const count = job.result?.imported.length || 0;
+      toast.success(count ? `${faNumber.format(count)} مچ تازه اضافه شد.` : "مچ تازه‌ای پیدا نشد.");
+      if (job.result?.failed.length) toast.error(`${faNumber.format(job.result.failed.length)} مچ دریافت نشد؛ دوباره تلاش کنید.`);
+    } else toast.error(job.error || "دریافت مچ‌ها انجام نشد؛ دوباره تلاش کنید.");
+  }, [activeJobId, onMatchesImported, status?.manualJob]);
+
+  useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1_000);
     return () => window.clearInterval(timer);
   }, []);
 
-  const cooldownSeconds = status?.nextAllowedAt
-    ? Math.max(0, Math.ceil((new Date(status.nextAllowedAt).getTime() - now) / 1_000))
+  const nextAllowedAt = scope === "day" ? status?.nextDayAllowedAt : status?.nextWeekAllowedAt;
+  const cooldownSeconds = nextAllowedAt
+    ? Math.max(0, Math.ceil((new Date(nextAllowedAt).getTime() - now) / 1_000))
     : 0;
   const visibleJobs = useMemo(
     () => status?.imageQueue.jobs
@@ -206,17 +228,9 @@ export default function SyncPanel({
       return;
     }
     try {
-      const result = await syncPlayerMatches(request);
-      onMatchesImported(result);
-      const messages: string[] = [
-        result.imported.length
-          ? `${faNumber.format(result.imported.length)} مچ تازه اضافه شد.`
-          : "مچ تازه‌ای پیدا نشد.",
-      ];
-      if (result.deferred) {
-        messages.push(`${faNumber.format(result.deferred)} مچ به‌دلیل سقف هر دریافت باقی ماند.`);
-      }
-      toast.success(messages.join(" "));
+      const jobId = await syncPlayerMatches(request);
+      setActiveJobId(jobId);
+      toast.info("دریافت مچ‌ها در صف آغاز شد.");
       setOpen(false);
       setStep(1);
       await loadStatus();
@@ -248,7 +262,7 @@ export default function SyncPanel({
         <button
           className="sync-button"
           type="button"
-          disabled={syncing || cooldownSeconds > 0}
+          disabled={syncing || cooldownSeconds > 0 || Boolean(status?.manualJob && ["pending", "processing"].includes(status.manualJob.status))}
           onClick={() => setOpen((value) => {
             if (!value) setStep(1);
             return !value;
@@ -257,6 +271,8 @@ export default function SyncPanel({
           <span>
             {syncing
               ? "در حال دریافت"
+              : status?.manualJob && ["pending", "processing"].includes(status.manualJob.status)
+                ? "دریافت مچ‌ها در حال انجام است"
               : cooldownSeconds
                 ? `${faNumber.format(cooldownSeconds)} ثانیه تا دریافت بعدی`
                 : "انتخاب بازه زمانی و دریافت اطلاعات"}
@@ -342,7 +358,7 @@ export default function SyncPanel({
 
             <footer className="sync-wizard-footer">
               <span>{step === 1 ? `${gameModes.length.toLocaleString("fa-IR")} حالت انتخاب شده` : scope === "day" ? (selectedDay ? dateLabel(selectedDay) : "روز قابل دریافت نیست") : `هفتهٔ ${dateLabel(weekRange.from)} تا ${dateLabel(weekRange.to)}`}</span>
-              {step === 2 && <button className="primary-button" type="button" disabled={selectionDisabled} onClick={() => void handleSync()}>دریافت ساده</button>}
+              {step === 2 && <button className="primary-button" type="button" disabled={selectionDisabled || cooldownSeconds > 0} onClick={() => void handleSync()}>دریافت ساده</button>}
             </footer>
           </div>
         )}
@@ -363,6 +379,9 @@ export default function SyncPanel({
             })}
           </div>
         </div>
+      )}
+      {status?.manualJob && ["pending", "processing"].includes(status.manualJob.status) && (
+        <p role="status">دریافت مچ‌ها در حال انجام است: {faNumber.format(status.manualJob.attempted.length)} بررسی شده، {faNumber.format(status.manualJob.result?.imported.length || 0)} ثبت شده.</p>
       )}
 
     </section>

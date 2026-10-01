@@ -169,11 +169,11 @@ export async function getPlayerSyncStatus() {
 }
 
 export async function syncPlayerMatches(input: MatchSyncRequest) {
-  const response = await requestJson<{ ok: boolean; sync: ManualSyncResult }>(
+  const response = await requestJson<{ ok: boolean; jobId: string }>(
     "/api/sync/me",
     { method: "POST", body: JSON.stringify(input) },
   );
-  return response.sync;
+  return response.jobId;
 }
 
 export async function viewPlayer(username: string, from: string, to: string) {

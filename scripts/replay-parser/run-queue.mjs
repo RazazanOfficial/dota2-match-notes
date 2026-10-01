@@ -8,6 +8,7 @@ import pg from "pg";
 import { archivedReplayExists, replayArchiveKey, retrieveReplay, uploadReplay } from "./replay-archive.mjs";
 import { replayDescriptor } from "./replay-queue-utils.mjs";
 import { fetchReplayMetadata } from "./replay-metadata.mjs";
+import { refreshMatchMetadata } from "./refresh-match-metadata.mjs";
 import { downloadResilient, ReplayError, sha256File, transportConfig } from "./replay-transport.mjs";
 import { cleanSpool, ensureCapacity, inspectSpool, spoolPath, verifyCheckpoint } from "./replay-spool.mjs";
 import { processingPlan, retryDecision } from "./replay-job-policy.mjs";
@@ -23,15 +24,15 @@ const log = result => process.stdout.write(`${JSON.stringify(result)}\n`);
 const safeError = error => error instanceof ReplayError ? error.message.slice(0, 300) : "Replay stage failed; consult the phase and error code";
 
 async function enqueueOne(client, matchId, intent) {
-  const result = await client.query(`INSERT INTO local_replay_jobs (match_id, intent)
-    SELECT match_id, $2 FROM dota_matches WHERE match_id=$1 AND raw_data IS NOT NULL
+  const result = await client.query(`INSERT INTO local_replay_jobs (match_id, intent, retry_deadline_at)
+    SELECT match_id, $2, now()+interval '20 days' FROM dota_matches WHERE match_id=$1 AND raw_data IS NOT NULL
     ON CONFLICT (match_id) DO UPDATE SET
       intent=CASE WHEN local_replay_jobs.status IN ('pending','processing') AND local_replay_jobs.intent='analysis' THEN 'analysis' ELSE EXCLUDED.intent END,
       status=CASE WHEN local_replay_jobs.status='processing' THEN 'processing' ELSE 'pending' END,
       phase=CASE WHEN local_replay_jobs.status='processing' THEN local_replay_jobs.phase ELSE 'queued' END,
       attempts=CASE WHEN local_replay_jobs.status IN ('pending','processing') THEN local_replay_jobs.attempts ELSE 0 END,
       request_started_at=CASE WHEN local_replay_jobs.status IN ('pending','processing') THEN local_replay_jobs.request_started_at ELSE now() END,
-      retry_deadline_at=CASE WHEN local_replay_jobs.status IN ('pending','processing') THEN local_replay_jobs.retry_deadline_at ELSE now()+interval '24 hours' END,
+      retry_deadline_at=CASE WHEN local_replay_jobs.status IN ('pending','processing') THEN local_replay_jobs.retry_deadline_at ELSE now()+interval '20 days' END,
       run_after=CASE WHEN local_replay_jobs.status IN ('pending','processing') THEN local_replay_jobs.run_after ELSE now() END,
       finished_at=NULL, error_code=NULL, error_message=NULL, updated_at=now()
     WHERE local_replay_jobs.status IN ('failed','waiting_file') OR
@@ -142,14 +143,45 @@ async function handle(client, job, hooks) {
   let descriptor = replayDescriptor(match.raw_data, Number(job.match_id));
   if (!descriptor && !archived && !validCheckpoint) {
     await hooks.phase("resolving_metadata");
-    const metadata = await fetchReplayMetadata(Number(job.match_id), match.raw_data, transportConfig(), hooks, { signal: abort.signal });
-    const replayUrl = `http://replay${metadata.cluster}.valve.net/570/${job.match_id}_${metadata.salt}.dem.bz2`;
-    await client.query(`UPDATE dota_matches SET raw_data=raw_data || jsonb_build_object(
-      'cluster',$2::integer,'replay_salt',$3::bigint,'replay_url',$4::text),updated_at=now()
-      WHERE match_id=$1 AND raw_data IS NOT NULL`, [job.match_id, metadata.cluster, metadata.salt, replayUrl]);
-    match.raw_data = { ...match.raw_data, cluster: metadata.cluster, replay_salt: metadata.salt, replay_url: replayUrl };
-    descriptor = replayDescriptor(match.raw_data, Number(job.match_id));
+    // A partial early OpenDota response is never a usable replay descriptor.
+    // Keep the basic match and its journal links; discard only replay fields.
+    await client.query(`UPDATE dota_matches SET raw_data=raw_data - 'cluster' - 'replay_salt' - 'replay_url',updated_at=now()
+      WHERE match_id=$1 AND raw_data IS NOT NULL`, [job.match_id]);
+    match.raw_data = { ...match.raw_data };
+    delete match.raw_data.cluster; delete match.raw_data.replay_salt; delete match.raw_data.replay_url;
+    let refreshError;
+    try {
+      descriptor = await refreshMatchMetadata(Number(job.match_id));
+    } catch (error) { refreshError = error; }
+    if (!descriptor) {
+      try {
+        const metadata = await fetchReplayMetadata(Number(job.match_id), match.raw_data, transportConfig(), hooks, { signal: abort.signal });
+        descriptor = replayDescriptor({ match_id: Number(job.match_id), cluster: metadata.cluster, replay_salt: metadata.salt }, Number(job.match_id));
+      } catch (error) {
+        // Preserve the more useful upstream rate-limit diagnosis if the relay
+        // merely failed to connect after a real 429 from the full match API.
+        if (refreshError?.code === "replay_metadata_rate_limited" &&
+            (error.code === "replay_connect_failed" || error.code === "replay_connect_timeout")) throw refreshError;
+        throw error;
+      }
+    }
     if (!descriptor) throw new ReplayError("replay_metadata_invalid", "Refreshed replay metadata did not match", { retryable: false });
+    const replayUrl = `http://replay${descriptor.cluster}.valve.net/570/${job.match_id}_${descriptor.salt}.dem.bz2`;
+    await client.query(`UPDATE dota_matches SET raw_data=(raw_data - 'cluster' - 'replay_salt' - 'replay_url') || jsonb_build_object(
+      'cluster',$2::integer,'replay_salt',$3::bigint,'replay_url',$4::text),updated_at=now(),fetched_at=now()
+      WHERE match_id=$1 AND raw_data IS NOT NULL`, [job.match_id, descriptor.cluster, descriptor.salt, replayUrl]);
+    match.raw_data = { ...match.raw_data, cluster: descriptor.cluster, replay_salt: descriptor.salt, replay_url: replayUrl };
+  }
+  // Pre-existing records can have cluster and salt without the canonical URL.
+  // Complete the validated tuple before any replay transfer uses it.
+  if (descriptor && !archived && !validCheckpoint) {
+    const replayUrl = `http://replay${descriptor.cluster}.valve.net/570/${job.match_id}_${descriptor.salt}.dem.bz2`;
+    if (match.raw_data.cluster !== descriptor.cluster || match.raw_data.replay_salt !== descriptor.salt ||
+        match.raw_data.replay_url !== replayUrl) {
+      await client.query(`UPDATE dota_matches SET raw_data=(raw_data - 'cluster' - 'replay_salt' - 'replay_url') || jsonb_build_object(
+        'cluster',$2::integer,'replay_salt',$3::bigint,'replay_url',$4::text),updated_at=now()
+        WHERE match_id=$1 AND raw_data IS NOT NULL`, [job.match_id, descriptor.cluster, descriptor.salt, replayUrl]);
+    }
   }
   if (!job.spool_name) {
     job.spool_name = `.replay-${randomUUID()}.part`;

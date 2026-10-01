@@ -133,7 +133,7 @@ describe("route and checkpoint policy",()=>{
     expect(retryDecision(new ReplayError("replay_connect_failed","network"),job,now,()=>0)).toMatchObject({status:"pending",delay:20});
     expect(retryDecision(new ReplayError("replay_connect_timeout","network"),job,now,()=>1)).toMatchObject({status:"pending",delay:25});
     expect(retryDecision(new ReplayError("replay_connect_failed","network"),{...job,attempts:2},now,()=>0)).toMatchObject({status:"pending",delay:120});
-    expect(retryDecision(new ReplayError("replay_metadata_rate_limited","limited",{retryAfter:300}),job,now,()=>0)).toMatchObject({status:"pending",delay:300});
+    expect(retryDecision(new ReplayError("replay_metadata_rate_limited","limited",{retryAfter:300}),job,now,()=>0)).toMatchObject({status:"pending",delay:600});
   });
   it("reuses the checkpoint after upload failure, and prefers an existing archive",()=>{
     expect(processingPlan({archived:false,parsed:true,intent:"analysis",checkpoint:true})).toBe("use-checkpoint");

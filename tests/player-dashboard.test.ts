@@ -22,6 +22,8 @@ describe("player sync dashboard", () => {
         user: {
           createdAt: new Date("2026-08-16T08:00:00.000Z"),
           lastManualSyncAt: lastSyncAt,
+          lastDaySyncAt: lastSyncAt,
+          lastWeekSyncAt: lastSyncAt,
           manualSyncCursorAt: lastSyncAt,
         },
         counts: { pending: 1, processing: 0, completed: 0, failed: 0 },
@@ -49,6 +51,7 @@ describe("player sync dashboard", () => {
     );
 
     expect(status.nextAllowedAt).toBe("2026-08-16T10:05:00.000Z");
+    expect(status.nextDayAllowedAt).toBe("2026-08-16T10:01:30.000Z");
     expect(status.imageQueue.jobs[0]).toMatchObject({
       dotaMatchId: "8940973270",
       heroId: 11,
