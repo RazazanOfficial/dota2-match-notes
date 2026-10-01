@@ -13,8 +13,8 @@
             importer و parser روی VPS ایران
 ```
 
-Worker فقط `GET /v1/replay/CLUSTER/MATCH_ID/SALT` و `GET /healthz` را می‌پذیرد؛
-هر دو به secret نیاز دارند. خودش آدرس `replayCLUSTER.valve.net` را می‌سازد؛
+Worker فقط `GET /v1/replay/CLUSTER/MATCH_ID/SALT`، `GET /v1/metadata/MATCH_ID` و `GET /healthz` را می‌پذیرد؛
+هر سه به secret نیاز دارند. مسیر metadata در [بازیابی اطلاعات Replay](replay-metadata-recovery.md) توضیح داده شده است. خودش آدرس `replayCLUSTER.valve.net` را می‌سازد؛
 URL انتخابیِ درخواست‌کننده، redirect و میزبان دلخواه نمی‌پذیرد. برای تست
 از `Range: bytes=0-31` پشتیبانی می‌کند. در دانلود اصلی فایل را در RAM
 نگه نمی‌دارد: stream را مستقیم به VPS می‌دهد؛ VPS هم اندازه را به ۲۰۰ MiB

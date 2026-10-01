@@ -11,19 +11,50 @@ function positiveInteger(value, max = Number.MAX_SAFE_INTEGER) {
     Number.isSafeInteger(number) && number > 0 && number <= max ? number : null;
 }
 
-async function metadataFromOpenDota(matchId, fetchUpstream) {
+function replayMetadata(item, matchId) {
+  if (!item || positiveInteger(item.match_id) !== matchId) return null;
+  let cluster = positiveInteger(item.cluster, 9_999);
+  let salt = positiveInteger(item.replay_salt);
+  if (typeof item.replay_url === "string" && item.replay_url.trim()) {
+    let url;
+    try { url = new URL(item.replay_url); } catch { return null; }
+    const host = /^replay([1-9]\d{0,3})\.valve\.net$/.exec(url.hostname);
+    const path = /^\/570\/([1-9]\d{0,15})_([1-9]\d{0,15})\.dem\.bz2$/.exec(url.pathname);
+    if (!host || !path || !["http:", "https:"].includes(url.protocol) || url.port ||
+      url.username || url.password || url.search || url.hash || Number(path[1]) !== matchId) return null;
+    const urlCluster = positiveInteger(host[1], 9_999);
+    const urlSalt = positiveInteger(path[2]);
+    if (cluster !== null && cluster !== urlCluster || salt !== null && salt !== urlSalt) return null;
+    cluster = urlCluster;
+    salt = urlSalt;
+  }
+  return salt === null ? null : { match_id: matchId, cluster, replay_salt: salt };
+}
+
+async function metadataFromOpenDota(matchId, fetchUpstream, apiKey) {
   let unavailable = false;
-  for (const path of [`replays?match_id=${matchId}`, `matches/${matchId}`]) {
+  let rateLimited = false;
+  let retryAfter = null;
+  // The match page can already have a replay URL when the smaller replays API
+  // is throttled. Both requests are bounded and tied to the same match ID.
+  const paths = [`matches/${matchId}`, `replays?match_id=${matchId}`];
+  for (let index = 0; index < paths.length + 1; index += 1) {
+    // Spend an API-key request only when the public API actually rate limits us.
+    if (index === paths.length && (!rateLimited || !apiKey)) break;
+    const url = new URL(`https://api.opendota.com/api/${paths[index] || paths[0]}`);
+    if (index === paths.length) url.searchParams.set("api_key", apiKey);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8_000);
     let response;
     try {
-      response = await fetchUpstream(`https://api.opendota.com/api/${path}`, {
+      response = await fetchUpstream(url.toString(), {
         redirect: "manual", headers: { Accept: "application/json" }, signal: controller.signal,
       });
-      if (response.status === 429) return reply("OpenDota rate limited", 429, "opendota", {
-        ...(response.headers.has("retry-after") ? { "Retry-After": response.headers.get("retry-after") } : {}),
-      });
+      if (response.status === 429) {
+        rateLimited = true;
+        retryAfter ||= response.headers.get("retry-after");
+        continue;
+      }
       if (response.status === 404) continue;
       if (!response.ok || response.status !== 200) { unavailable = true; continue; }
       if (Number(response.headers.get("content-length") || 0) > MAX_METADATA_BYTES) { unavailable = true; continue; }
@@ -40,18 +71,16 @@ async function metadataFromOpenDota(matchId, fetchUpstream) {
       try { data = JSON.parse(text + decoder.decode()); }
       catch { unavailable = true; continue; }
       const candidates = Array.isArray(data) ? data : [data];
-      const found = candidates.find(item => item && positiveInteger(item.match_id) === matchId &&
-        positiveInteger(item.replay_salt) !== null);
+      const found = candidates.map(item => replayMetadata(item, matchId)).find(Boolean);
       if (found) {
-        const cluster = positiveInteger(found.cluster, 9_999);
-        const salt = positiveInteger(found.replay_salt);
-        return Response.json({ match_id: matchId, cluster, replay_salt: salt }, {
+        return Response.json(found, {
           headers: { "Cache-Control": "private, no-store", "X-Replay-Relay": "2" },
         });
       }
     } catch { unavailable = true; }
     finally { clearTimeout(timer); await response?.body?.cancel().catch(() => {}); }
   }
+  if (rateLimited) return reply("OpenDota rate limited", 429, "opendota", retryAfter ? { "Retry-After": retryAfter } : {});
   return reply(unavailable ? "OpenDota unavailable" : "Replay metadata not ready", unavailable ? 502 : 404, "opendota");
 }
 
@@ -84,7 +113,9 @@ export function createReplayProxy(fetchUpstream = fetch) {
     if (metadata) {
       const matchId = positiveInteger(metadata[1]);
       if (!matchId || request.headers.has("range")) return reply("Invalid metadata request", 400);
-      return metadataFromOpenDota(matchId, fetchUpstream);
+      const apiKey = typeof env.OPENDOTA_API_KEY === "string" && env.OPENDOTA_API_KEY.length <= 256
+        ? env.OPENDOTA_API_KEY.trim() : "";
+      return metadataFromOpenDota(matchId, fetchUpstream, apiKey);
     }
     const match = REPLAY_PATH.exec(url.pathname);
     if (!match || !Number.isSafeInteger(Number(match[2])) || !Number.isSafeInteger(Number(match[3]))) {

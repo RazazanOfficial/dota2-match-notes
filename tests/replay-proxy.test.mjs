@@ -101,7 +101,7 @@ it("returns only verified replay metadata for the requested match", async () => 
   const result = await handler(request(url), env);
   expect(await result.json()).toEqual({ match_id: 9020830802, cluster: 436, replay_salt: 123456789 });
   expect(result.headers.get("cache-control")).toContain("no-store");
-  expect(calls).toEqual(["https://api.opendota.com/api/replays?match_id=9020830802"]);
+  expect(calls).toEqual(["https://api.opendota.com/api/matches/9020830802"]);
 });
 
 it("checks the OpenDota match when replays are missing and never invents a salt", async () => {
@@ -109,18 +109,92 @@ it("checks the OpenDota match when replays are missing and never invents a salt"
   const calls = [];
   const handler = createReplayProxy(async path => {
     calls.push(path);
-    return path.includes("/replays?") ? Response.json([]) : Response.json({
+    return path.includes("/matches/") ? Response.json({ match_id: 9020830802 }) : Response.json([{
       match_id: 9020830802, cluster: 436, replay_salt: 111,
-    });
+    }]);
   });
   expect(await (await handler(request(url), env)).json()).toEqual({ match_id: 9020830802, cluster: 436, replay_salt: 111 });
   expect(calls).toHaveLength(2);
-  const notFoundThenMatch = createReplayProxy(async path => path.includes("/replays?")
+  const notFoundThenMatch = createReplayProxy(async path => path.includes("/matches/")
     ? new Response(null, { status: 404 })
-    : Response.json({ match_id: 9020830802, cluster: 436, replay_salt: 222 }));
+    : Response.json([{ match_id: 9020830802, cluster: 436, replay_salt: 222 }]));
   expect(await (await notFoundThenMatch(request(url), env)).json()).toEqual({ match_id: 9020830802, cluster: 436, replay_salt: 222 });
   const missing = createReplayProxy(async () => Response.json({ match_id: 42, cluster: 436, replay_salt: 111 }));
   expect((await missing(request(url), env)).status).toBe(404);
   const oversized = createReplayProxy(async () => new Response("x", { headers: { "content-length": "9999999" } }));
   expect((await oversized(request(url), env)).status).toBe(502);
+});
+
+it("uses the exact replay URL from the match when the replays API is rate limited", async () => {
+  const url = "https://replay.example.org/v1/metadata/9023606320";
+  const calls = [];
+  const handler = createReplayProxy(async path => {
+    calls.push(path);
+    return path.includes("/matches/") ? Response.json({
+      match_id: 9023606320, cluster: 271,
+      replay_url: "http://replay271.valve.net/570/9023606320_349414436.dem.bz2",
+    }) : new Response("limit", { status: 429 });
+  });
+  expect(await (await handler(request(url), env)).json()).toEqual({
+    match_id: 9023606320, cluster: 271, replay_salt: 349414436,
+  });
+  expect(calls).toEqual(["https://api.opendota.com/api/matches/9023606320"]);
+});
+
+it("tries the other metadata endpoint once after a 429 and preserves rate limiting if both fail", async () => {
+  const url = "https://replay.example.org/v1/metadata/9023606320";
+  const calls = [];
+  const fallback = createReplayProxy(async path => {
+    calls.push(path);
+    return path.includes("/matches/") ? new Response("limit", { status: 429, headers: { "retry-after": "600" } })
+      : Response.json([{ match_id: 9023606320, cluster: 271, replay_salt: 349414436 }]);
+  });
+  expect((await fallback(request(url), env)).status).toBe(200);
+  expect(calls).toHaveLength(2);
+  const limited = createReplayProxy(async () => new Response("limit", { status: 429, headers: { "retry-after": "600" } }));
+  const result = await limited(request(url), env);
+  expect(result.status).toBe(429);
+  expect(result.headers.get("retry-after")).toBe("600");
+  expect(result.headers.get("x-replay-error-source")).toBe("opendota");
+});
+
+it("uses the private OpenDota key only after public metadata is rate limited", async () => {
+  const url = "https://replay.example.org/v1/metadata/9023606320";
+  const keyedEnv = { ...env, OPENDOTA_API_KEY: "private-key" };
+  const calls = [];
+  const handler = createReplayProxy(async path => {
+    calls.push(path);
+    if (path.includes("api_key=")) return Response.json({
+      match_id: 9023606320, cluster: 271, replay_salt: 349414436,
+    });
+    return new Response("rate limited", { status: 429 });
+  });
+  expect(await (await handler(request(url), keyedEnv)).json()).toEqual({
+    match_id: 9023606320, cluster: 271, replay_salt: 349414436,
+  });
+  expect(calls).toEqual([
+    "https://api.opendota.com/api/matches/9023606320",
+    "https://api.opendota.com/api/replays?match_id=9023606320",
+    "https://api.opendota.com/api/matches/9023606320?api_key=private-key",
+  ]);
+  calls.length = 0;
+  const publicHandler = createReplayProxy(async path => {
+    calls.push(path);
+    return Response.json({ match_id: 9023606320, cluster: 271, replay_salt: 349414436 });
+  });
+  expect((await publicHandler(request(url), keyedEnv)).status).toBe(200);
+  expect(calls).toEqual(["https://api.opendota.com/api/matches/9023606320"]);
+});
+
+it("does not trust a replay URL with a different ID, cluster, origin or query", async () => {
+  const url = "https://replay.example.org/v1/metadata/9023606320";
+  for (const replayUrl of [
+    "http://replay271.valve.net/570/9023606321_349414436.dem.bz2",
+    "http://replay272.valve.net/570/9023606320_349414436.dem.bz2",
+    "http://replay271.valve.net.evil.test/570/9023606320_349414436.dem.bz2",
+    "http://replay271.valve.net/570/9023606320_349414436.dem.bz2?extra=1",
+  ]) {
+    const handler = createReplayProxy(async () => Response.json({ match_id: 9023606320, cluster: 271, replay_url: replayUrl }));
+    expect((await handler(request(url), env)).status).toBe(404);
+  }
 });
