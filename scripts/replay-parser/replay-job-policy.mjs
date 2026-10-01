@@ -6,11 +6,12 @@ export function retryDelay(attempts, retryAfter = null, random = Math.random) {
 export function retryDecision(error, job, now = Date.now(), random = Math.random) {
   if (error.retryable === false) return { status: "failed", delay: 0, code: error.code };
   const deadline = new Date(job.retry_deadline_at).getTime();
+  const metadataWaiting = error.code === "replay_metadata_pending" || error.code === "replay_metadata_rate_limited" || error.code === "replay_metadata_unavailable";
   // A brief connection failure gets one quicker retry. Provider rate limits
   // and later failures retain their normal backoff.
   const firstConnectFailure = Number(job.attempts) === 1 &&
     (error.code === "replay_connect_failed" || error.code === "replay_connect_timeout") && !error.retryAfter;
-  const delay = firstConnectFailure ? 20 + Math.round(random() * 5)
+  const delay = metadataWaiting ? Math.max(600, error.retryAfter || 0) : firstConnectFailure ? 20 + Math.round(random() * 5)
     : retryDelay(Number(job.attempts), error.retryAfter, random);
   if (!Number.isFinite(deadline) || now >= deadline || now + delay * 1000 >= deadline) {
     return { status: "failed", delay: 0, code: "replay_retry_exhausted" };

@@ -17,6 +17,7 @@ import {
 import { isHeroPoolEligibleMode } from "@/lib/hero-pool/rules";
 import { OpenDotaError } from "./errors";
 import { hasParsedOpenDotaReplay, type OpenDotaMatch, type OpenDotaPlayer } from "./validation";
+import { preserveVerifiedReplayRaw } from "@/lib/replay/metadata-fields";
 
 export async function findOpenDotaSyncTarget(userId: string, matchId: string) {
   const [target] = await getDb()
@@ -37,20 +38,22 @@ export async function findOpenDotaSyncTarget(userId: string, matchId: string) {
 export async function claimManualOpenDotaSync(
   userId: string,
   cooldownSeconds: number,
+  scope: "day" | "week" = "week",
 ) {
+  const field = scope === "day" ? users.lastDaySyncAt : users.lastWeekSyncAt;
   const claimedAt = new Date();
   const availableBefore = new Date(
     claimedAt.getTime() - cooldownSeconds * 1_000,
   );
   const [claim] = await getDb()
     .update(users)
-    .set({ lastManualSyncAt: claimedAt })
+    .set({ lastManualSyncAt: claimedAt, ...(scope === "day" ? { lastDaySyncAt: claimedAt } : { lastWeekSyncAt: claimedAt }) })
     .where(
       and(
         eq(users.id, userId),
         or(
-          isNull(users.lastManualSyncAt),
-          lte(users.lastManualSyncAt, availableBefore),
+          isNull(field),
+          lte(field, availableBefore),
         ),
       ),
     )
@@ -59,7 +62,7 @@ export async function claimManualOpenDotaSync(
   if (claim?.claimedAt) return claim.claimedAt;
 
   const [user] = await getDb()
-    .select({ lastManualSyncAt: users.lastManualSyncAt })
+    .select({ lastManualSyncAt: field })
     .from(users)
     .where(eq(users.id, userId))
     .limit(1);
@@ -70,7 +73,7 @@ export async function claimManualOpenDotaSync(
   throw new OpenDotaError(
     429,
     "manual_sync_cooldown",
-    "همگام‌سازی دستی هر ۵ دقیقه یک‌بار مجاز است",
+    scope === "day" ? "دریافت روزانه هر ۹۰ ثانیه یک‌بار مجاز است" : "دریافت هفتگی هر ۵ دقیقه یک‌بار مجاز است",
     retryAfterSeconds,
   );
 }
@@ -78,12 +81,14 @@ export async function claimManualOpenDotaSync(
 export async function releaseManualOpenDotaSyncClaim(
   userId: string,
   claimedAt: Date,
+  scope: "day" | "week" = "week",
 ) {
   await getDb()
     .update(users)
-    .set({ lastManualSyncAt: null })
+    .set({ lastManualSyncAt: sql`CASE WHEN ${users.lastManualSyncAt} = ${claimedAt} THEN NULL ELSE ${users.lastManualSyncAt} END`,
+      ...(scope === "day" ? { lastDaySyncAt: null } : { lastWeekSyncAt: null }) })
     .where(
-      and(eq(users.id, userId), eq(users.lastManualSyncAt, claimedAt)),
+      and(eq(users.id, userId), eq(scope === "day" ? users.lastDaySyncAt : users.lastWeekSyncAt, claimedAt)),
     );
 }
 
@@ -351,6 +356,9 @@ export async function saveDiscoveredOpenDotaMatch(params: {
       );
     }
 
+    const [storedMatch] = await tx.select({ rawData: dotaMatches.rawData }).from(dotaMatches)
+      .where(eq(dotaMatches.matchId, match.match_id)).limit(1);
+    const rawData = preserveVerifiedReplayRaw(match, storedMatch?.rawData, match.match_id);
     await tx
       .insert(dotaMatches)
       .values({
@@ -360,7 +368,7 @@ export async function saveDiscoveredOpenDotaMatch(params: {
         radiantWin: match.radiant_win,
         gameMode: match.game_mode ?? null,
         lobbyType: match.lobby_type ?? null,
-        rawData: match,
+        rawData,
         fetchedAt: now,
         updatedAt: now,
       })
@@ -372,7 +380,7 @@ export async function saveDiscoveredOpenDotaMatch(params: {
           radiantWin: match.radiant_win,
           gameMode: match.game_mode ?? null,
           lobbyType: match.lobby_type ?? null,
-          rawData: match,
+          rawData,
           fetchedAt: now,
           updatedAt: now,
         },
@@ -484,6 +492,9 @@ export async function saveOpenDotaMatch(params: {
       );
     }
 
+    const [storedMatch] = await tx.select({ rawData: dotaMatches.rawData }).from(dotaMatches)
+      .where(eq(dotaMatches.matchId, match.match_id)).limit(1);
+    const rawData = preserveVerifiedReplayRaw(match, storedMatch?.rawData, match.match_id);
     await tx
       .insert(dotaMatches)
       .values({
@@ -493,7 +504,7 @@ export async function saveOpenDotaMatch(params: {
         radiantWin: match.radiant_win,
         gameMode: match.game_mode ?? null,
         lobbyType: match.lobby_type ?? null,
-        rawData: match,
+        rawData,
         fetchedAt: now,
         updatedAt: now,
       })
@@ -505,7 +516,7 @@ export async function saveOpenDotaMatch(params: {
           radiantWin: match.radiant_win,
           gameMode: match.game_mode ?? null,
           lobbyType: match.lobby_type ?? null,
-          rawData: match,
+          rawData,
           fetchedAt: now,
           updatedAt: now,
         },

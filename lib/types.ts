@@ -381,6 +381,15 @@ export interface PlayerSyncStatus {
   trackedThrough: string | null;
   lastSyncAt: string | null;
   nextAllowedAt: string | null;
+  nextDayAllowedAt?: string | null;
+  nextWeekAllowedAt?: string | null;
+  manualJob?: {
+    id: string;
+    status: "pending" | "processing" | "completed" | "failed";
+    attempted: number[];
+    result: Pick<ManualSyncResult, "checked" | "imported" | "failed" | "deferred"> | null;
+    error: string | null;
+  } | null;
   imageQueue: {
     counts: Record<ImageJobStatus, number>;
     jobs: ImageQueueJob[];

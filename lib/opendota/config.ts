@@ -4,6 +4,7 @@ export interface OpenDotaConfig {
   timeoutMs: number;
   maxResponseBytes: number;
   manualSyncCooldownSeconds: number;
+  manualDayCooldownSeconds: number;
   minuteRequestLimit: number;
   dailyRequestLimit: number;
   maxNewMatchesPerSync: number;
@@ -60,6 +61,7 @@ export function getOpenDotaConfig(): OpenDotaConfig {
       5,
       3_600,
     ),
+    manualDayCooldownSeconds: parseInteger("OPENDOTA_MANUAL_DAY_COOLDOWN_SECONDS", 90, 30, 3_600),
     minuteRequestLimit: parseInteger(
       "OPENDOTA_MINUTE_REQUEST_LIMIT",
       DEFAULT_MINUTE_REQUEST_LIMIT,

@@ -8,6 +8,8 @@ const repository = vi.hoisted(() => ({
   rescheduleOrFailScheduledSyncJob: vi.fn(),
 }));
 const syncScheduledMatchesFromOpenDota = vi.hoisted(() => vi.fn());
+const runManualRangeSyncTick = vi.hoisted(() => vi.fn(async () => ({ processed: 0 })));
+vi.mock("../lib/sync/manual-service", () => ({ runManualRangeSyncTick }));
 
 vi.mock("../lib/sync/config", () => ({
   getSyncWorkerConfig: () => ({
@@ -45,6 +47,7 @@ describe("scheduled sync toggle", () => {
       processed: 0,
       stoppedEarly: false,
       jobs: [],
+      manual: { processed: 0 },
     });
 
     expect(repository.recoverStaleScheduledJobs).not.toHaveBeenCalled();

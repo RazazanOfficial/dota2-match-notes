@@ -8,8 +8,9 @@ import { dotaMatches } from "@/lib/db/schema";
 import { fetchOpenDotaMatch } from "@/lib/opendota/client";
 import { getOpenDotaConfig } from "@/lib/opendota/config";
 import { OpenDotaError } from "@/lib/opendota/errors";
-import { claimManualOpenDotaSync, claimOpenDotaRequestQuota, releaseManualOpenDotaSyncClaim } from "@/lib/opendota/repository";
+import { claimManualOpenDotaSync, claimOpenDotaRequestQuota, releaseManualOpenDotaSyncClaim, saveDiscoveredOpenDotaMatch } from "@/lib/opendota/repository";
 import { parseOpenDotaMatch } from "@/lib/opendota/validation";
+import { normalizedReplayRaw } from "@/lib/replay/metadata-fields";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,6 +28,8 @@ export async function POST(request: NextRequest) {
     const [cached] = await db.select({ rawData: dotaMatches.rawData, startedAt: dotaMatches.startedAt })
       .from(dotaMatches).where(eq(dotaMatches.matchId, matchId)).limit(1);
     let match = cached?.rawData ? parseOpenDotaMatch(cached.rawData, matchId) : null;
+    // Cached basic data is enough to enqueue a replay. Metadata is refreshed
+    // by the replay worker, without charging a manual sync cooldown here.
     if (!match) {
       const config = getOpenDotaConfig();
       const claimedAt = await claimManualOpenDotaSync(user.id, config.manualSyncCooldownSeconds);
@@ -38,14 +41,15 @@ export async function POST(request: NextRequest) {
         await db.insert(dotaMatches).values({
           matchId, startedAt: new Date(match.start_time * 1000), durationSeconds: match.duration,
           radiantWin: match.radiant_win, gameMode: match.game_mode, lobbyType: match.lobby_type,
-          rawData: match, fetchedAt: now, updatedAt: now,
-        }).onConflictDoNothing();
+          rawData: normalizedReplayRaw(match, matchId), fetchedAt: now, updatedAt: now,
+        }).onConflictDoNothing({ target: dotaMatches.matchId });
         completed = true;
       } finally {
         if (!completed) await releaseManualOpenDotaSyncClaim(user.id, claimedAt);
       }
     }
     const player = match.players.find((entry) => entry.account_id === user.steamAccountId);
+    if (player) await saveDiscoveredOpenDotaMatch({ userId: user.id, match, player });
     return Response.json({ ok: true, match: {
       matchId, startedAt: new Date(match.start_time * 1000).toISOString(), duration: match.duration,
       radiantWin: match.radiant_win, radiantScore: match.radiant_score, direScore: match.dire_score,

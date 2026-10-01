@@ -148,6 +148,8 @@ sudo cp deploy/systemd/dota2notes-performance-reference.service /etc/systemd/sys
 sudo cp deploy/systemd/dota2notes-performance-reference.timer /etc/systemd/system/
 sudo cp deploy/systemd/dota2notes-opendota-parse.service /etc/systemd/system/
 sudo cp deploy/systemd/dota2notes-opendota-parse.timer /etc/systemd/system/
+sudo cp deploy/systemd/dota2notes-sync.service /etc/systemd/system/
+sudo cp deploy/systemd/dota2notes-sync-manual.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now dota2notes.service
 ```
@@ -165,6 +167,7 @@ sudo -u dota2notes -H bash deploy/scripts/health-check.sh
 sudo systemctl enable --now dota2notes-images.timer
 sudo systemctl enable --now dota2notes-performance-reference.timer
 sudo systemctl enable --now dota2notes-opendota-parse.timer
+sudo systemctl enable --now dota2notes-sync-manual.timer
 systemctl list-timers 'dota2notes-*'
 ```
 
@@ -179,15 +182,17 @@ systemctl list-timers 'dota2notes-*'
 sudo systemctl restart dota2notes-performance-reference.timer
 ```
 
-Sync کاربران فقط با دکمه داخل سایت انجام می‌شود. Workerهای تصاویر و OpenDota parse صف‌های
-مستقل را پردازش می‌کنند. Worker قدیمی STRATZ برای مچ‌ها بازنشسته شده است:
+Sync کاربران فقط با دکمه داخل سایت درخواست می‌شود؛ `dota2notes-sync-manual.timer`
+هر ۳۰ ثانیه صف درخواست‌های روز و هفته را در دسته‌های کوچک پیش می‌برد. زمان‌بند
+ساعتی `dota2notes-sync.timer` با `SCHEDULED_SYNC_ENABLED=off` لازم نیست.
+Workerهای تصاویر و OpenDota parse صف‌های مستقل را پردازش می‌کنند. Worker قدیمی STRATZ برای مچ‌ها بازنشسته شده است:
 
 ```bash
 sudo systemctl disable --now dota2notes-stratz.timer 2>/dev/null || true
 ```
 
-فایل‌های Scheduler ساعتی
-برای توسعه آینده در مخزن باقی مانده‌اند، اما در این نسخه نباید نصب یا فعال شوند.
+فایل‌های Scheduler ساعتی برای توسعه آینده در مخزن باقی مانده‌اند، اما در این نسخه
+`dota2notes-sync.timer` را نصب یا فعال نکنید؛ فقط timer دستی بالا لازم است.
 
 برای اجرای دستی روی VPS:
 
@@ -195,6 +200,7 @@ sudo systemctl disable --now dota2notes-stratz.timer 2>/dev/null || true
 sudo systemctl start dota2notes-images.service
 sudo systemctl start dota2notes-performance-reference.service
 sudo systemctl start dota2notes-opendota-parse.service
+sudo systemctl start dota2notes-sync.service
 ```
 
 برای دیدن Logها:
@@ -204,6 +210,7 @@ sudo journalctl -u dota2notes.service -n 100 --no-pager
 sudo journalctl -u dota2notes-images.service -n 100 --no-pager
 sudo journalctl -u dota2notes-performance-reference.service -n 100 --no-pager
 sudo journalctl -u dota2notes-opendota-parse.service -n 100 --no-pager
+sudo journalctl -u dota2notes-sync.service -n 100 --no-pager
 ```
 
 ## ۹. فعال‌کردن Nginx
@@ -285,6 +292,7 @@ sudo certbot renew --dry-run
 cd /var/www/dota2notes
 sudo systemctl disable --now dota2notes-stratz.timer 2>/dev/null || true
 sudo systemctl stop dota2notes-replay.timer 2>/dev/null || true
+sudo systemctl stop dota2notes-sync-manual.timer 2>/dev/null || true
 sudo systemctl stop dota2notes-images.timer dota2notes-performance-reference.timer dota2notes-opendota-parse.timer
 sudo systemctl stop dota2notes.service
 sudo -u dota2notes -H git pull --ff-only origin main
@@ -293,9 +301,12 @@ sudo -u dota2notes -H env DOTENV_CONFIG_PATH=.env.production npm run db:migrate
 sudo -u dota2notes -H npm test
 sudo -u dota2notes -H npm run typecheck
 sudo -u dota2notes -H npm run build
+sudo cp deploy/systemd/dota2notes-sync.service deploy/systemd/dota2notes-sync-manual.timer /etc/systemd/system/
+sudo systemctl daemon-reload
 sudo systemctl start dota2notes.service
 sudo -u dota2notes -H bash deploy/scripts/health-check.sh
 sudo systemctl start dota2notes-images.timer dota2notes-performance-reference.timer dota2notes-opendota-parse.timer
+sudo systemctl enable --now dota2notes-sync-manual.timer
 if systemctl is-enabled --quiet dota2notes-replay.timer; then
   sudo systemctl start dota2notes-replay.timer
 fi

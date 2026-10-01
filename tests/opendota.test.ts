@@ -82,6 +82,7 @@ describe("OpenDota configuration", () => {
       timeoutMs: 10_000,
       maxResponseBytes: 8_388_608,
       manualSyncCooldownSeconds: 300,
+      manualDayCooldownSeconds: 90,
       manualSyncLookbackSeconds: 21_600,
       minuteRequestLimit: 50,
       dailyRequestLimit: 2_900,

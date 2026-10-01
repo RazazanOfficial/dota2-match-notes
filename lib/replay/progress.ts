@@ -13,8 +13,7 @@ export function replayErrorMessage(code: string | null | undefined) {
   if (!code) return "";
   if (code === "replay_retry_exhausted") return "مهلت تلاش خودکار تمام شد؛ می‌توانید دوباره درخواست دهید.";
   if (code === "replay_not_found") return "فایل Replay فعلاً از سرور بازی دریافت نشد.";
-  if (code === "replay_metadata_pending") return "اطلاعات دانلود Replay هنوز در OpenDota آماده نیست؛ سرویس دوباره بررسی می‌کند.";
-  if (code === "replay_metadata_rate_limited" || code === "replay_metadata_unavailable") return "دریافت اطلاعات Replay موقتاً ممکن نیست؛ سرویس دوباره تلاش می‌کند.";
+  if (code === "replay_metadata_pending" || code === "replay_metadata_rate_limited" || code === "replay_metadata_unavailable") return "Replay هنوز آماده نیست؛ سرویس هر ۱۰ دقیقه دوباره بررسی می‌کند.";
   if (code.includes("disk")) return "فضای پردازش سرور موقتاً کافی نیست؛ درخواست در صف می‌ماند.";
   if (code.includes("archive")) return "ارتباط با آرشیو موقتاً مشکل دارد؛ مرحلهٔ ذخیره‌سازی دوباره امتحان می‌شود.";
   if (code.includes("parser")) return "خواندن این Replay موفق نبود؛ جزئیات برای مدیر ثبت شده است.";

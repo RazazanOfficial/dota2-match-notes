@@ -2,6 +2,7 @@ import { OpenDotaError } from "@/lib/opendota/errors";
 import { syncScheduledMatchesFromOpenDota } from "@/lib/opendota/service";
 import { getSyncWorkerConfig } from "./config";
 import { scheduledSyncUserFromJob } from "./job";
+import { runManualRangeSyncTick } from "./manual-service";
 import {
   claimNextScheduledSyncJob,
   completeScheduledSyncJob,
@@ -31,6 +32,7 @@ function describeWorkerError(error: unknown) {
 
 export async function runScheduledSyncTick() {
   const config = getSyncWorkerConfig();
+  const manual = await runManualRangeSyncTick();
   if (!config.enabled) {
     return {
       enabled: false,
@@ -39,6 +41,7 @@ export async function runScheduledSyncTick() {
       processed: 0,
       stoppedEarly: false,
       jobs: [],
+      manual,
     };
   }
 
@@ -97,5 +100,6 @@ export async function runScheduledSyncTick() {
     processed: jobs.length,
     stoppedEarly,
     jobs,
+    manual,
   };
 }

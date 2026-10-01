@@ -155,15 +155,9 @@ describe("journal client API", () => {
 
   it("sends an explicit range and import mode for manual match retrieval", async () => {
     const fetchMock = mockFetch({
-      ok: true,
-      sync: {
-        checked: 0, alreadyImported: 0, dismissedByUser: 0, imported: [], failed: [], deferred: 0, ignoredOlder: 0,
-        registeredAt: "2026-09-01T00:00:00.000Z", trackedFrom: "2026-09-07T00:00:00.000Z", nextAllowedAt: "2026-09-13T12:05:00.000Z",
-        request: { scope: "week", from: "2026-09-07", to: "2026-09-13", mode: "basic" },
-        analysis: { tokenCostPerMatch: 10, totalTokenCost: 0, queued: 0, alreadyReady: 0, alreadyQueued: 0, failed: 0, skippedOld: 0, skippedOldDays: [] },
-      },
+      ok: true, jobId: "pending-sync-id",
     });
-    await syncPlayerMatches({ scope: "week", from: "2026-09-07", to: "2026-09-13", mode: "basic" });
+    expect(await syncPlayerMatches({ scope: "week", from: "2026-09-07", to: "2026-09-13", mode: "basic" })).toBe("pending-sync-id");
     const [,init]=fetchMock.mock.calls[0] as [string,RequestInit];
     expect(init.method).toBe("POST");
     expect(JSON.parse(String(init.body))).toEqual({ scope: "week", from: "2026-09-07", to: "2026-09-13", mode: "basic" });

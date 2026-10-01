@@ -1,9 +1,9 @@
 import type { NextRequest } from "next/server";
 import { getRequestUser, hasValidRequestOrigin } from "@/lib/auth/request";
 import { OpenDotaError, openDotaErrorResponse } from "@/lib/opendota/errors";
-import { syncRecentMatchesFromOpenDota } from "@/lib/opendota/service";
 import { getOpenDotaConfig } from "@/lib/opendota/config";
 import { manualMatchSyncInputSchema } from "@/lib/opendota/sync-request";
+import { enqueueManualRangeSync, latestManualRangeJob } from "@/lib/sync/manual-service";
 import {
   getPlayerSyncSnapshot,
   serializePlayerSyncSnapshot,
@@ -22,12 +22,10 @@ export async function GET(request: NextRequest) {
     if (!snapshot) {
       throw new OpenDotaError(404, "user_not_found", "حساب کاربر پیدا نشد");
     }
-    const status = serializePlayerSyncSnapshot(
-      snapshot,
-      getOpenDotaConfig().manualSyncCooldownSeconds,
-    );
+    const config = getOpenDotaConfig();
+    const status = serializePlayerSyncSnapshot(snapshot, config.manualSyncCooldownSeconds, config.manualDayCooldownSeconds);
     return Response.json(
-      { ok: true, status },
+      { ok: true, status: { ...status, manualJob: await latestManualRangeJob(user.id) } },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
@@ -68,10 +66,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const sync = await syncRecentMatchesFromOpenDota(user, parsed.data);
+    const jobId = await enqueueManualRangeSync(user.id, parsed.data);
     return Response.json(
-      { ok: true, sync },
-      { headers: { "Cache-Control": "no-store" } },
+      { ok: true, jobId },
+      { status: 202, headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
     return openDotaErrorResponse(error);

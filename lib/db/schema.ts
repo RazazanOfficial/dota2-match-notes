@@ -89,6 +89,8 @@ export const users = pgTable(
     isAdmin: boolean("is_admin").default(false).notNull(),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     lastManualSyncAt: timestamp("last_manual_sync_at", { withTimezone: true }),
+    lastDaySyncAt: timestamp("last_day_sync_at", { withTimezone: true }),
+    lastWeekSyncAt: timestamp("last_week_sync_at", { withTimezone: true }),
     manualSyncCursorAt: timestamp("manual_sync_cursor_at", {
       withTimezone: true,
     }),
@@ -786,6 +788,9 @@ export const syncJobs = pgTable(
     lockedAt: timestamp("locked_at", { withTimezone: true }),
     finishedAt: timestamp("finished_at", { withTimezone: true }),
     errorMessage: text("error_message"),
+    manualRequest: jsonb("manual_request").$type<Record<string, unknown>>(),
+    manualAttempted: jsonb("manual_attempted").$type<number[]>().default([]).notNull(),
+    manualResult: jsonb("manual_result").$type<Record<string, unknown>>(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

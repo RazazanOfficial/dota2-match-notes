@@ -162,6 +162,13 @@
       "when": 1790660223031,
       "tag": "0022_replay_resilience",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790850482547,
+      "tag": "0023_replay_refresh_manual_sync",
+      "breakpoints": true
     }
   ]
 }
