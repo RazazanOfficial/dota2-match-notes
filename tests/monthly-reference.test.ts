@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { monthIsSettled, performanceJobs, previousMonth, weekStartsInMonth, weightedMean, RANKS, RANK_GROUPS, REFERENCE_POLICY, shouldResetLatestMonth } from "../lib/monthly-reference/model";
+import { monthIsSettled, performanceJobs, previousMonth, referenceMonthsForMatch, weekStartsInMonth, weightedMean, RANKS, RANK_GROUPS, REFERENCE_POLICY, shouldResetLatestMonth } from "../lib/monthly-reference/model";
 import { metaQuery, parseMeta, parsePerformance, performanceQuery } from "../lib/monthly-reference/providers";
 import { poolDivineImmortalMeta } from "../lib/monthly-reference/selection";
 
 describe("monthly reference contract", () => {
+  it("limits a missing September reference to the active August fallback for October matches", () => {
+    expect(referenceMonthsForMatch(new Date("2026-10-01T19:30:00Z")))
+      .toEqual(["2026-09-01", "2026-08-01"]);
+    expect(referenceMonthsForMatch(new Date("2027-01-01T00:00:00Z")))
+      .toEqual(["2026-12-01", "2026-11-01"]);
+  });
   it("resets only the latest month on a new policy or explicit refetch", () => {
     const latest = "2026-08-01";
     expect(shouldResetLatestMonth(latest, latest, false, ["stratz-ranked-assumed"])).toBe(true);

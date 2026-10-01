@@ -168,6 +168,7 @@ export function buildMatchAnalysis(params: { rawData: unknown; replaySource?: "l
     const map=buildPlayerMapAnalysis({player,allPlayers:standardPlayers,rawMatch,timeline,events,team,position});
     const laneEfficiency=calculateLaneEfficiency({slot:playerSlot,heroId,position,positions:positionBySlot,
       heroIds:heroIdsBySlot,duration:parsed.data.duration,reference:params.performanceReference?.lane,
+      requestedReferenceMonth:params.performanceReference?.snapshot.requestedReferenceMonth,
       events:laneEvents??undefined,gameMode,lobbyType:numeric(rawMatch.lobby_type)});
     const benchmarks=baseBenchmarks,scoreMetrics:MatchBenchmarkMetric[]=benchmarks.filter((metric)=>metric.source!=="match"),sorted=[...benchmarks].sort((a,b)=>b.qualityPercentile-a.qualityPercentile),highlightMetrics=sorted.filter((metric)=>metric.highlightEligible!==false);
     if(laneEfficiency.score!==null)scoreMetrics.push({key:"lane_efficiency_pct",label:"Lane Efficiency",description:"امتیاز فرمول ده دقیقهٔ نخست",value:laneEfficiency.score,

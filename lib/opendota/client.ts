@@ -142,7 +142,9 @@ export async function fetchOpenDotaPlayerMatchesSince(
 ) {
   const ageMs = Math.max(0, Date.now() - since.getTime());
   const days = Math.max(1, Math.ceil(ageMs / 86_400_000) + 1);
-  const params = new URLSearchParams({ date: String(days), limit: String(limit), offset: String(offset) });
+  // OpenDota defaults significant to 1, which removes Turbo and other
+  // non-standard modes before our requested game-mode filter sees them.
+  const params = new URLSearchParams({ date: String(days), limit: String(limit), offset: String(offset), significant: "0" });
   const raw = await fetchOpenDotaJson(
     `players/${steamAccountId}/matches?${params.toString()}`,
     {

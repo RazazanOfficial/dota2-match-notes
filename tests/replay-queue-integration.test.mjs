@@ -57,6 +57,8 @@ describe("replay queue SQL and persisted lifecycle",()=>{
     expect(saved).toMatchObject({match_id:2,cluster:436,replay_salt:123456789,version:22,players:[{hero_id:1}]});
     expect(mocks.refresh).toHaveBeenCalledTimes(1);
     expect(mocks.metadata).toHaveBeenCalledTimes(1);
+    expect((await client.query("SELECT code FROM replay_job_events WHERE match_id=2 ORDER BY created_at")).rows.map(event=>event.code))
+      .toContain("metadata_direct_pending");
     expect(mocks.download.mock.calls[0][0]).toMatchObject({matchId:2,cluster:436,salt:123456789});
     expect(await row()).toMatchObject({status:"completed",archive_status:"active"});
   });
@@ -66,6 +68,8 @@ describe("replay queue SQL and persisted lifecycle",()=>{
     const job=await start();
     await worker.handle(client,job,worker.hooksFor(client,job));
     expect(mocks.metadata).not.toHaveBeenCalled();
+    expect((await client.query("SELECT code FROM replay_job_events WHERE match_id=2 ORDER BY created_at")).rows.map(event=>event.code))
+      .toContain("metadata_direct_ready");
     expect((await client.query("SELECT raw_data FROM dota_matches WHERE match_id=2")).rows[0].raw_data)
       .toMatchObject({cluster:436,replay_salt:123456789,replay_url:"http://replay436.valve.net/570/2_123456789.dem.bz2"});
   });
@@ -85,6 +89,16 @@ describe("replay queue SQL and persisted lifecycle",()=>{
     catch(error){expect(error.code).toBe("replay_metadata_pending");await worker.failJob(client,job,worker.hooksFor(client,job),error);}
     expect(await row()).toMatchObject({status:"pending",phase:"retry_wait",error_code:"replay_metadata_pending"});
     expect(mocks.download).not.toHaveBeenCalled();
+  });
+  it("records a direct OpenDota rate limit separately from the relay failure", async()=>{
+    await client.query("UPDATE dota_matches SET raw_data=$1 WHERE match_id=2", [JSON.stringify({match_id:2,players:[]})]);
+    const {ReplayError}=await import("../scripts/replay-parser/replay-transport.mjs");
+    mocks.refresh.mockRejectedValueOnce(new ReplayError("replay_metadata_rate_limited","Rate limited",{retryAfter:600}));
+    mocks.metadata.mockRejectedValueOnce(new ReplayError("replay_metadata_rate_limited","Rate limited",{retryAfter:600}));
+    const job=await start();
+    await expect(worker.handle(client,job,worker.hooksFor(client,job))).rejects.toMatchObject({code:"replay_metadata_rate_limited"});
+    const events=(await client.query("SELECT code,detail FROM replay_job_events WHERE match_id=2 ORDER BY created_at")).rows;
+    expect(events).toContainEqual({code:"metadata_direct_failed",detail:"replay_metadata_rate_limited"});
   });
   it("migrates existing archived matches without losing their status",async()=>{
     const old=(await client.query("SELECT * FROM local_replay_jobs WHERE match_id=1")).rows[0];

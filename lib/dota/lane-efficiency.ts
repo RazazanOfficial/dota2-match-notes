@@ -98,6 +98,7 @@ function wardPoints(events: LaneEvents, slot: number, duration: number) {
 export function calculateLaneEfficiency(params: {
   slot: number; heroId: number; position: number | null; positions: Map<number, number | null>;
   heroIds: Map<number, number>; duration: number; reference?: LaneReference;
+  requestedReferenceMonth?: string;
   events?: LaneEvents; gameMode: number | null; lobbyType: number | null;
 }): LaneEfficiencyResult {
   const { slot, position, events, reference } = params;
@@ -128,6 +129,10 @@ export function calculateLaneEfficiency(params: {
           actual === null ? "رویداد قابل‌اتکا ثبت نشده" : "میانگین معتبر موجود نیست" } : {}) };
   });
   const notes: string[] = [];
+  if (reference && params.requestedReferenceMonth &&
+      reference.month.slice(0, 7) !== params.requestedReferenceMonth.slice(0, 7)) {
+    notes.push(`مرجع ${params.requestedReferenceMonth.slice(0, 7)} هنوز آماده نیست؛ این امتیاز موقتاً با مرجع ${reference.month.slice(0, 7)} محاسبه شده است.`);
+  }
   if (!supportedMode) notes.push("فعلاً مقایسهٔ ماهانه فقط برای Ranked All Pick انجام می‌شود.");
   if (events && !snapshot) notes.push("Replay برای این بازیکن شمارندهٔ معتبر دقیقهٔ ۱۰ ندارد.");
   if (snapshot && supportedMode && (!Array.isArray(completeEvents?.assists) || completeEvents.unresolvedAssistChanges))

@@ -247,6 +247,7 @@ describe("OpenDota HTTP client", () => {
     expect(Number(url.searchParams.get("date"))).toBeGreaterThanOrEqual(3);
     expect(url.searchParams.get("limit")).toBe("100");
     expect(url.searchParams.get("offset")).toBe("0");
+    expect(url.searchParams.get("significant")).toBe("0");
     expect(url.searchParams.get("api_key")).toBe("server-secret");
   });
 
@@ -257,6 +258,7 @@ describe("OpenDota HTTP client", () => {
     const [url] = fetchMock.mock.calls[0] as [URL, RequestInit];
     expect(url.searchParams.get("offset")).toBe("200");
     expect(url.searchParams.get("limit")).toBe("100");
+    expect(url.searchParams.get("significant")).toBe("0");
   });
 
   it("rejects a response larger than the configured limit", async () => {
