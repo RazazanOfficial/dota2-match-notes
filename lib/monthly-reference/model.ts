@@ -20,6 +20,10 @@ export function monthStart(when: Date) {
 export function previousMonth(when: Date) {
   return new Date(Date.UTC(when.getUTCFullYear(), when.getUTCMonth() - 1, 1));
 }
+export function referenceMonthsForMatch(when: Date) {
+  const preferred = previousMonth(when);
+  return [monthDate(preferred), monthDate(previousMonth(preferred))] as const;
+}
 export function monthKey(month: Date) { return month.toISOString().slice(0, 7).replace("-", "_"); }
 export function monthDate(month: Date) { return month.toISOString().slice(0, 10); }
 export function weekStartsInMonth(month: Date) {

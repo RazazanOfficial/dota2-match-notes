@@ -13,7 +13,7 @@ import { buildMatchAnalysis } from "./match-analysis";
 import type { PerformanceReferenceData } from "./performance-cohort";
 import { hasParsedOpenDotaReplay } from "@/lib/opendota/validation";
 import { overlayReplayData } from "@/lib/replay/overlay";
-import { weekStartsInMonth } from "@/lib/monthly-reference/model";
+import { referenceMonthsForMatch, weekStartsInMonth } from "@/lib/monthly-reference/model";
 import { poolDivineImmortalMeta } from "@/lib/monthly-reference/selection";
 
 type UnknownRecord = Record<string, unknown>;
@@ -34,15 +34,17 @@ async function loadPerformanceReference(heroIds: number[], matchStart: unknown):
   if (!heroIds.length || !started || !Number.isSafeInteger(started)) return undefined;
   const matchDate = new Date(started * 1_000);
   if (Number.isNaN(matchDate.getTime())) return undefined;
-  const referenceMonth = new Date(Date.UTC(matchDate.getUTCFullYear(), matchDate.getUTCMonth() - 1, 1)).toISOString().slice(0, 10);
+  const [preferredMonth, fallbackMonth] = referenceMonthsForMatch(matchDate);
   const db = getDb();
   const [snapshot] = await db
     .select()
     .from(monthlyReferenceVersions)
-    .where(and(eq(monthlyReferenceVersions.status, "active"), eq(monthlyReferenceVersions.referenceMonth, referenceMonth)))
-    .orderBy(desc(monthlyReferenceVersions.completedAt))
+    .where(and(eq(monthlyReferenceVersions.status, "active"),
+      inArray(monthlyReferenceVersions.referenceMonth, [preferredMonth, fallbackMonth])))
+    .orderBy(desc(monthlyReferenceVersions.referenceMonth), desc(monthlyReferenceVersions.completedAt))
     .limit(1);
   if (!snapshot) return undefined;
+  const referenceMonth = snapshot.referenceMonth;
 
   // These rows come exclusively from the external worker snapshot. The site's
   // journal matches are never used as a statistical population.
@@ -75,8 +77,9 @@ async function loadPerformanceReference(heroIds: number[], matchStart: unknown):
       fetchedAt: snapshot.completedAt?.toISOString() ?? null,
       expiresAt: null,
       windowDays: weekStartsInMonth(new Date(`${referenceMonth}T00:00:00Z`)).length * 7,
-      stale: false,
+      stale: referenceMonth !== preferredMonth,
       referenceMonth,
+      requestedReferenceMonth: preferredMonth,
     },
     meta,
     benchmarks: [],

@@ -17,7 +17,7 @@ export interface BenchmarkDistributionReference {
   sampleCount:number|null;quantiles:Array<{percentile:number;value:number}>;
 }
 export interface PerformanceReferenceData {
-  snapshot:{id:string;fetchedAt:string|null;expiresAt:string|null;windowDays:number;stale:boolean;referenceMonth?:string};
+  snapshot:{id:string;fetchedAt:string|null;expiresAt:string|null;windowDays:number;stale:boolean;referenceMonth?:string;requestedReferenceMonth?:string};
   meta:HeroPositionMetaReference[];
   benchmarks:BenchmarkDistributionReference[];
   lane?:LaneReference;
@@ -121,7 +121,9 @@ export function buildCohortAnalysis(params:{reference?:PerformanceReferenceData;
     : "Meta براساس پنجره هفت‌روزه STRATZ است؛ فیلتر Patch دقیق هنوز در این منبع تأیید نشده است."];
   if(!rank)limitations.push("Rank بازیکن موجود نبود؛ نزدیک‌ترین cohort Mode و Position استفاده شد.");
   else if(!exactRankRow)limitations.push("برای Rank دقیق نمونه‌ای نبود؛ پرنمونه‌ترین Rank همین Hero و Position نمایش داده شد.");
-  if(params.reference.snapshot.stale)limitations.push("به‌روزرسانی منبع موقتاً ناموفق بوده و آخرین Snapshot سالم نمایش داده می‌شود.");
+  if(params.reference.snapshot.stale)limitations.push(params.reference.snapshot.requestedReferenceMonth
+    ? `مرجع ${params.reference.snapshot.requestedReferenceMonth} هنوز فعال نیست؛ مقایسه موقتاً با ${params.reference.snapshot.referenceMonth} انجام می‌شود.`
+    : "به‌روزرسانی منبع موقتاً ناموفق بوده و آخرین Snapshot سالم نمایش داده می‌شود.");
   if (params.reference.benchmarks.length) limitations.push("Benchmarkهای OpenDota در حال حاضر Hero-level هستند و Position را تفکیک نمی‌کنند.");
   const weight=row.matchCount/(row.matchCount+200);
   const overallApplicability=metrics.length?Math.round(metrics.reduce((sum,metric)=>sum+(metric.heroPositionWeight??100),0)/metrics.length):Math.round(weight*100);

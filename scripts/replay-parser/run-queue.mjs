@@ -150,9 +150,15 @@ async function handle(client, job, hooks) {
     match.raw_data = { ...match.raw_data };
     delete match.raw_data.cluster; delete match.raw_data.replay_salt; delete match.raw_data.replay_url;
     let refreshError;
+    await hooks.event("resolving_metadata", "metadata_direct_attempt", "Checking the full match through OpenDota from the VPS");
     try {
       descriptor = await refreshMatchMetadata(Number(job.match_id));
-    } catch (error) { refreshError = error; }
+      await hooks.event("resolving_metadata", descriptor ? "metadata_direct_ready" : "metadata_direct_pending",
+        descriptor ? "Verified replay metadata found in the full match" : "Full match has no replay metadata yet");
+    } catch (error) {
+      refreshError = error;
+      await hooks.event("resolving_metadata", "metadata_direct_failed", error instanceof ReplayError ? error.code : "request_failed");
+    }
     if (!descriptor) {
       try {
         const metadata = await fetchReplayMetadata(Number(job.match_id), match.raw_data, transportConfig(), hooks, { signal: abort.signal });

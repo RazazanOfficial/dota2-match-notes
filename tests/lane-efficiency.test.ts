@@ -64,6 +64,9 @@ describe("Lane Efficiency contract", () => {
   it("uses the per-position 100-point weights and an actual replay minute-10 scoreboard", () => {
     for (const weights of Object.values(LANE_WEIGHTS)) expect(Object.values(weights).reduce((a, b) => a + b, 0)).toBe(100);
     const result = calculateLaneEfficiency(base);
+    const fallback = calculateLaneEfficiency({ ...base, requestedReferenceMonth: "2026-09-01" });
+    expect(fallback.referenceMonth).toBe("2026-08");
+    expect(fallback.notes).toContain("مرجع 2026-09 هنوز آماده نیست؛ این امتیاز موقتاً با مرجع 2026-08 محاسبه شده است.");
     expect(result.cohort).toBe("hero-position");
     expect(result.parts.find(row => row.key === "lh")).toMatchObject({ value: 2.5, maximum: 5, actual: 10, mean: 10 });
     expect(result.parts.find(row => row.key === "deaths")).toMatchObject({ value: 18, maximum: 18, actual: 0 });
