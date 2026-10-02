@@ -5,6 +5,7 @@ const ITEMS = new Set(["item_flask", "item_clarity", "item_enchanted_mango", "it
   "item_faerie_fire", "item_ward_observer", "item_ward_sentry", "item_ward_dispenser",
   "item_smoke_of_deceit", "item_dust"]);
 const SLOTS = [0, 1, 2, 3, 4, 128, 129, 130, 131, 132];
+const LANE_END = 720;
 const heroKey = name => typeof name === "string"
   ? name.replace(/^(?:npc_dota_hero_|CDOTA_Unit_Hero_)/i, "").replace(/[^a-z0-9]/gi, "").toLowerCase() : "";
 
@@ -14,11 +15,11 @@ export function createLaneCollector() {
   function accept(event) {
     if (event.type === "player_slot" && Number.isInteger(Number(event.key)) && SLOTS.includes(Number(event.value))) {
       indices.set(Number(event.key), Number(event.value));
-    } else if (event.type === "interval" && event.time >= -300 && event.time <= 600) {
+    } else if (event.type === "interval" && event.time >= -300 && event.time <= LANE_END) {
       const slot = indices.get(event.slot);
       if (slot !== undefined) {
-        if (event.time === 600) {
-          snapshots.set(slot, { slot, heroId: event.hero_id, time: 600, kills: event.kills,
+        if (event.time === LANE_END) {
+          snapshots.set(slot, { slot, heroId: event.hero_id, time: LANE_END, kills: event.kills,
             deaths: event.deaths, assists: event.assists, lh: event.lh, dn: event.denies, networth: event.networth });
           if (typeof event.unit === "string") heroes.set(heroKey(event.unit), slot);
         }
@@ -31,7 +32,7 @@ export function createLaneCollector() {
           lastAssists.set(slot, event.assists);
         }
       }
-    } else if (event.type === "DOTA_COMBATLOG_PURCHASE" && event.time >= -300 && event.time <= 600 && ITEMS.has(event.valuename)) {
+    } else if (event.type === "DOTA_COMBATLOG_PURCHASE" && event.time >= -300 && event.time <= LANE_END && ITEMS.has(event.valuename)) {
       if (purchases.length >= 1000) throw new Error("Excessive Lane purchase events");
       purchases.push({ index: event.slot, buyer: event.targetname, time: event.time,
         item: event.valuename, charges: event.charges ?? null });
@@ -39,13 +40,13 @@ export function createLaneCollector() {
       if (wards.length >= 1000) throw new Error("Excessive Lane ward events");
       wards.push({ type: event.type, index: event.slot, time: event.time,
         handle: event.ehandle ?? null, attacker: event.attackername ?? null });
-    } else if (event.type === "DOTA_COMBATLOG_DEATH" && event.targethero && event.time >= -300 && event.time <= 600) {
+    } else if (event.type === "DOTA_COMBATLOG_DEATH" && event.targethero && event.time >= -300 && event.time <= LANE_END) {
       if (combat.length >= 250) throw new Error("Excessive early hero deaths");
       combat.push({ time: event.time, target: event.targetname, attacker: event.attackername });
     }
   }
   function finish() {
-    if (snapshots.size !== 10) throw new Error("Incomplete minute-10 Lane snapshots");
+    if (snapshots.size !== 10) throw new Error("Incomplete minute-12 Lane snapshots");
     const heroSlot = name => heroes.get(heroKey(name)) ?? null;
     const deaths = combat.map(row => ({ ...row, targetSlot: heroSlot(row.target) }));
     const assists = [], unresolved = [];

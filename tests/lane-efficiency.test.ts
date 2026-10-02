@@ -10,7 +10,7 @@ const reference: LaneReference = { month: "2026-08", versionId: "reference-v1", 
 
 const events: LaneEvents = {
   version: 1,
-  snapshots: [{ slot: 3, heroId: 37, time: 600, lh: 10, dn: 2, kills: 1, deaths: 0, assists: 4, networth: 2000 }],
+  snapshots: [{ slot: 3, heroId: 37, time: 720, lh: 10, dn: 2, kills: 1, deaths: 0, assists: 4, networth: 2000 }],
   purchases: [
     { slot: 3, time: -90, item: "item_ward_dispenser", charges: null },
     { slot: 3, time: -89, item: "item_ward_dispenser", charges: 1 },
@@ -34,7 +34,7 @@ const base = { slot: 3, heroId: 37, position: 5, duration: 2500, gameMode: 22, l
   reference, events };
 
 describe("Lane Efficiency contract", () => {
-  it("grades all ten players in each supplied replay with the August Divine/Immortal time-11 means", () => {
+  it("does not mislabel old minute-10 replay snapshots as minute-12 data", () => {
     for (const fixture of [firstMatch, secondMatch]) {
       const positions = new Map(Object.entries(fixture.positions).map(([slot, pos]) => [Number(slot), pos]));
       const heroIds = new Map(fixture.events.snapshots.map(row => [row.slot, row.heroId]));
@@ -45,13 +45,14 @@ describe("Lane Efficiency contract", () => {
         const result = calculateLaneEfficiency({ slot: snapshot.slot, heroId: snapshot.heroId,
           position: positions.get(snapshot.slot) ?? null, positions, heroIds, duration: fixture.duration,
           reference: fixture.reference, events: fixture.events as LaneEvents, gameMode: 22, lobbyType: 7 });
-        expect(result.score, `match ${fixture.matchId}, slot ${snapshot.slot}: ${JSON.stringify(result.parts.filter(p => p.value === null))}`).not.toBeNull();
+        expect(result.score, `match ${fixture.matchId}, slot ${snapshot.slot}`).toBeNull();
+        expect(result.notes.some(note => note.includes("دوباره پارس"))).toBe(true);
       }
     }
     const grimstroke = secondMatch.events.snapshots.find(row => row.slot === 129);
     expect(grimstroke?.kills).toBe(1); // The older kills_log had zero here.
   });
-  it("accepts 1000 samples alone, or 500 with a 20% share; also checks minute-10 coverage", () => {
+  it("accepts 1000 samples alone, or 500 with a 20% share; also checks minute-12 coverage", () => {
     expect(qualifiesHeroPosition(1000, 10000)).toBe(true);
     expect(qualifiesHeroPosition(500, 2500)).toBe(true);
     expect(qualifiesHeroPosition(999, 10000)).toBe(false);
@@ -61,18 +62,23 @@ describe("Lane Efficiency contract", () => {
     expect(qualifiesHeroPosition(1200, 15000, 1000)).toBe(true);
   });
 
-  it("uses the per-position 100-point weights and an actual replay minute-10 scoreboard", () => {
+  it("uses the requested per-position 100-point weights and a replay minute-12 scoreboard", () => {
     for (const weights of Object.values(LANE_WEIGHTS)) expect(Object.values(weights).reduce((a, b) => a + b, 0)).toBe(100);
+    expect(LANE_WEIGHTS[1]).toEqual({ lh: 26, deaths: 23, networth: 26, dn: 5, kills: 10, assists: 7, ward: 1, resources: 2 });
+    expect(LANE_WEIGHTS[2]).toMatchObject({ ward: 1, deaths: 24, networth: 18, kills: 13 });
+    expect(LANE_WEIGHTS[3]).toMatchObject({ ward: 1, resources: 2, kills: 12, dn: 12, networth: 18 });
+    expect(LANE_WEIGHTS[4]).toMatchObject({ dn: 3, kills: 7 });
+    expect(LANE_WEIGHTS[5]).toMatchObject({ resources: 25, kills: 5, deaths: 20 });
     const result = calculateLaneEfficiency(base);
     const fallback = calculateLaneEfficiency({ ...base, requestedReferenceMonth: "2026-09-01" });
     expect(fallback.referenceMonth).toBe("2026-08");
     expect(fallback.notes).toContain("مرجع 2026-09 هنوز آماده نیست؛ این امتیاز موقتاً با مرجع 2026-08 محاسبه شده است.");
     expect(result.cohort).toBe("hero-position");
     expect(result.parts.find(row => row.key === "lh")).toMatchObject({ value: 2.5, maximum: 5, actual: 10, mean: 10 });
-    expect(result.parts.find(row => row.key === "deaths")).toMatchObject({ value: 18, maximum: 18, actual: 0 });
+    expect(result.parts.find(row => row.key === "deaths")).toMatchObject({ value: 20, maximum: 20, actual: 0 });
     expect(result.parts.find(row => row.key === "assists")).toMatchObject({ value: 6, maximum: 12, actual: 4 });
     expect(result.parts.find(row => row.key === "ward")?.value).toBeCloseTo(12.5); // 4 + 3 + 2 + 1 + 2.5
-    expect(result.parts.find(row => row.key === "resources")?.value).toBeCloseTo(11.25); // 5 + 3 + 2 + 1.25
+    expect(result.parts.find(row => row.key === "resources")?.value).toBeCloseTo(11.25 * 25 / 26); // 5 + 3 + 2 + 1.25
     expect(result.bonus).toBe(1); // verified out-of-lane Kill and justified Dust
     expect(result.score).toBe(Math.round(result.subtotal + 1));
   });
@@ -85,7 +91,7 @@ describe("Lane Efficiency contract", () => {
     const missing = calculateLaneEfficiency({ ...base, reference: undefined });
     expect(missing.score).toBeNull();
     expect(missing.parts.find(row => row.key === "lh")?.value).toBeNull();
-    expect(missing.covered).toBe(53); // Ward 27 + Resources 26, not a fake zero for six stats
+    expect(missing.covered).toBe(52); // Ward 27 + Resources 25, not a fake zero for six stats
   });
 
   it("does not award a deward when a ward naturally expires with an attacker field", () => {
@@ -93,6 +99,17 @@ describe("Lane Efficiency contract", () => {
       wards: events.wards.map(row => row.handle === 3 && row.type === "obs_left"
         ? { ...row, time: 360 } : row) } });
     expect(result.parts.find(row => row.key === "ward")?.value).toBeCloseTo(10);
+  });
+
+  it("counts purchases and ward actions through minute 12", () => {
+    const late = calculateLaneEfficiency({ ...base, events: { ...events,
+      purchases: [...events.purchases, { slot: 3, time: 710, item: "item_flask", charges: 1 }],
+      wards: [...events.wards, { slot: 3, type: "obs", time: 650, handle: 8, attackerSlot: null },
+        { slot: 3, type: "obs_left", time: 870, handle: 8, attackerSlot: null }],
+    } });
+    const original = calculateLaneEfficiency(base);
+    expect(late.parts.find(row => row.key === "resources")?.actual).toBeGreaterThan(original.parts.find(row => row.key === "resources")?.actual ?? 0);
+    expect(late.parts.find(row => row.key === "ward")?.actual).toBeGreaterThan(original.parts.find(row => row.key === "ward")?.actual ?? 0);
   });
 
   it("does not silently grade Turbo or old replay data", () => {

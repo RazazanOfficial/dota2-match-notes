@@ -24,6 +24,7 @@ export function extractMatchDetails(
   rawData: unknown,
   profileAccountId?: number | null,
   profileHeroId?: number | null,
+  positionOverrides?: Record<string, number> | null,
 ): ExtractedMatchDetails {
   const parsed = openDotaMatchSchema.safeParse(rawData);
   if (!parsed.success) return EMPTY_DETAILS;
@@ -41,6 +42,7 @@ export function extractMatchDetails(
     : parsed.data.players as unknown as Array<Record<string, unknown>>;
   const positionResolutions = resolveMatchPositions({
     players: rawPlayers,
+    positionOverrides,
     profileSlot: typeof profilePlayerSlot === "number" ? profilePlayerSlot : null,
     profileAssignedPosition: null,
   });

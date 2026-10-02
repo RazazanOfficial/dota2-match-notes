@@ -32,6 +32,8 @@ import { toJournalDateKey } from "./timezone";
 import { selectVisibleBans } from "./ban-policy";
 import { journalMatchSummary } from "./match-summary";
 import { estimatedOpenDotaRole, openDotaDraft } from "@/lib/opendota/match-derived";
+import { overlayReplayData } from "@/lib/replay/overlay";
+import type { MatchRole } from "@/lib/types";
 import type { Day, Match } from "@/lib/types";
 
 export interface JournalOwner {
@@ -238,9 +240,12 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
                 match.rawData,
                 owner.steamAccountId,
                 match.heroId,
+                match.positionOverrides,
               );
               const estimatedRole = estimatedOpenDotaRole(match.rawData, owner.steamAccountId, match.heroId);
-              const role = match.roleSource === "manual" ? match.role : estimatedRole;
+              const detectedPosition = details.participants.find((entry) => entry.isProfilePlayer)?.position;
+              const resolvedRole = detectedPosition ? (["safe_lane", "mid_lane", "off_lane", "soft_support", "hard_support"] as MatchRole[])[detectedPosition - 1] : null;
+              const role = match.roleSource === "manual" ? match.role : resolvedRole ?? estimatedRole;
               const draft = openDotaDraft(match.rawData, match.heroId);
               const manualBans = bansByMatch.get(match.id) || [];
               const bans = selectVisibleBans(match.rawData, draft.bans, manualBans.map((ban) => ({
@@ -270,7 +275,7 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
                 })),
                 legacyBans: match.rawData == null ? match.legacyBans : "",
                 role: role || "",
-                roleSource: match.roleSource === "manual" ? "manual" : estimatedRole ? "opendota" : null,
+                roleSource: match.roleSource === "manual" ? "manual" : resolvedRole ? "heuristic" : estimatedRole ? "opendota" : null,
                 positionOverrides: match.positionOverrides || {},
                 heroPoolEligible: match.heroPoolEligible,
                 heroPoolMatch:
@@ -436,6 +441,7 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
         role: journalMatches.role,
         roleSource: journalMatches.roleSource,
         rawData: dotaMatches.rawData,
+        localReplayData: dotaMatches.localReplayData,
       })
       .from(journalMatches)
       .leftJoin(dotaMatches, eq(journalMatches.dotaMatchId, dotaMatches.matchId))
@@ -455,14 +461,21 @@ export async function saveJournalDay(userId: string, dateKey: string, input: Day
       const existing = existingById.get(match.id);
       const nextRole = match.role || null;
       const estimatedRole = estimatedOpenDotaRole(existing?.rawData, undefined, match.heroId);
+      const overlaid = existing?.rawData ? overlayReplayData(existing.rawData, existing.localReplayData).match : null;
+      const detectedPosition = extractMatchDetails(overlaid, undefined, match.heroId, match.positionOverrides)
+        .participants.find(entry => entry.isProfilePlayer)?.position;
+      const inferredRole = detectedPosition
+        ? (["safe_lane", "mid_lane", "off_lane", "soft_support", "hard_support"] as MatchRole[])[detectedPosition - 1]
+        : estimatedRole;
       const roleSource = !nextRole ? null
         : existing?.roleSource === "manual" && existing.role === nextRole ? "manual" as const
-        : nextRole === estimatedRole ? "opendota" as const : "manual" as const;
+        : existing?.roleSource === "stratz" && existing.role === nextRole ? "stratz" as const
+        : nextRole === inferredRole ? null : "manual" as const;
       const values = {
         number: match.number,
         heroId: match.heroId,
         heroName: match.heroName,
-        role: nextRole,
+        role: roleSource === "manual" || roleSource === "stratz" ? nextRole : null,
         roleSource,
         positionOverrides: match.positionOverrides || {},
         queueType: match.queueType || null,

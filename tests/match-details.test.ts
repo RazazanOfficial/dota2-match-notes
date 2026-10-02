@@ -100,6 +100,13 @@ describe("match details extraction", () => {
     expect(details.participants[1].itemIds).toEqual([null, 1, null, null, null, null]);
   });
 
+  it("shows the resolved role in match details and applies saved manual position overrides", () => {
+    const inferred = extractMatchDetails(matchPayload, 988_195_076, 48);
+    const confirmed = extractMatchDetails(matchPayload, 988_195_076, 48, { "0": 4 });
+    expect(inferred.participants[0].position).toBe(1);
+    expect(confirmed.participants[0].position).toBe(4);
+  });
+
   it("falls back to the journal hero when OpenDota hides the account id", () => {
     const anonymous = {
       ...matchPayload,

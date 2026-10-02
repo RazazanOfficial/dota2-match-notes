@@ -306,7 +306,7 @@ export function sanitizeMatch(raw: Record<string, unknown>, fallback = 1): Match
     )
       ? (raw.role as Match["role"])
       : "",
-    roleSource: ["manual", "opendota", "stratz"].includes(String(raw.roleSource))
+    roleSource: ["manual", "opendota", "stratz", "heuristic"].includes(String(raw.roleSource))
       ? (raw.roleSource as Match["roleSource"])
       : null,
     positionOverrides,
