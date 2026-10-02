@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Reparse a single existing archived replay to add trusted minute-10 events.
+// Reparse a single existing archived replay to add trusted minute-12 events.
 // Operator-only; keeps the same archived file and does not enqueue downloads.
 import { constants } from "node:fs";
 import { copyFile, mkdir, mkdtemp, rm, stat } from "node:fs/promises";

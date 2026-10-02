@@ -1,9 +1,9 @@
 export const LANE_WEIGHTS: Record<number, Record<LaneKey, number>> = {
-  1: { lh: 28, deaths: 22, networth: 20, dn: 7, kills: 8, assists: 5, ward: 5, resources: 5 },
-  2: { lh: 24, deaths: 23, networth: 17, dn: 13, kills: 14, assists: 6, ward: 2, resources: 1 },
-  3: { lh: 25, deaths: 22, networth: 17, dn: 11, kills: 10, assists: 8, ward: 3, resources: 4 },
-  4: { lh: 5, deaths: 20, networth: 3, dn: 4, kills: 6, assists: 12, ward: 25, resources: 25 },
-  5: { lh: 5, deaths: 18, networth: 3, dn: 3, kills: 6, assists: 12, ward: 27, resources: 26 },
+  1: { lh: 26, deaths: 23, networth: 26, dn: 5, kills: 10, assists: 7, ward: 1, resources: 2 },
+  2: { lh: 24, deaths: 24, networth: 18, dn: 13, kills: 13, assists: 6, ward: 1, resources: 1 },
+  3: { lh: 25, deaths: 22, networth: 18, dn: 12, kills: 12, assists: 8, ward: 1, resources: 2 },
+  4: { lh: 5, deaths: 20, networth: 3, dn: 3, kills: 7, assists: 12, ward: 25, resources: 25 },
+  5: { lh: 5, deaths: 20, networth: 3, dn: 3, kills: 5, assists: 12, ward: 27, resources: 25 },
 };
 export type LaneKey = "lh" | "deaths" | "networth" | "dn" | "kills" | "assists" | "ward" | "resources";
 export type LaneMean = Record<"cs" | "deaths" | "networth" | "dn" | "kills" | "assists", number>;
@@ -38,13 +38,14 @@ const RESTORE: Record<string, number> = { item_flask: 3, item_clarity: 1.5,
   item_enchanted_mango: .75, item_tango: 2.5, item_faerie_fire: .75 };
 const VISION = new Set(["item_ward_observer", "item_ward_sentry", "item_ward_dispenser"]);
 const INVIS_HEROES = new Set([32, 56, 62, 63, 88]); // Riki, Clinkz, Bounty Hunter, Weaver, Nyx
+const LANE_END = 720;
 const clamp = (value: number, maximum: number) => Math.max(0, Math.min(maximum, value));
 const valid = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0;
 const laneOf = (position: number | null | undefined) => position === 1 || position === 5 ? 1
   : position === 2 ? 2 : position === 3 || position === 4 ? 3 : null;
 
 function purchasePoints(events: LaneEvents, slot: number) {
-  const purchases = events.purchases.filter(row => row.slot === slot && row.time <= 600 && row.time >= -300);
+  const purchases = events.purchases.filter(row => row.slot === slot && row.time <= LANE_END && row.time >= -300);
   let restore = 0, vision = 0, tools = 0;
   for (const row of purchases) {
     // The parser repeats the initial ward dispenser at -90 before listing the inventory at -89.
@@ -63,7 +64,7 @@ function purchasePoints(events: LaneEvents, slot: number) {
 }
 
 function wardPoints(events: LaneEvents, slot: number, duration: number) {
-  const placed = events.wards.filter(row => row.slot === slot && (row.type === "obs" || row.type === "sen") && row.time <= 600);
+  const placed = events.wards.filter(row => row.slot === slot && (row.type === "obs" || row.type === "sen") && row.time <= LANE_END);
   const observers = placed.filter(row => row.type === "obs"), sentries = placed.filter(row => row.type === "sen");
   const left = new Map(events.wards.filter(row => row.type.endsWith("_left") && row.handle !== null)
     .map(row => [row.handle, row]));
@@ -83,7 +84,7 @@ function wardPoints(events: LaneEvents, slot: number, duration: number) {
   for (const placement of events.wards.filter(row => (row.type === "obs" || row.type === "sen") &&
     row.slot !== null && (row.slot < 128) !== (slot < 128) && row.handle !== null)) {
     const end = left.get(placement.handle!);
-    if (end?.attackerSlot !== slot || end.time > 600) continue;
+    if (end?.attackerSlot !== slot || end.time > LANE_END) continue;
     // Expiry events can carry the owner's name; only an enemy attacker before natural expiry counts.
     if (end.time - placement.time >= (placement.type === "obs" ? 360 : 420)) continue;
     if (placement.type === "obs") enemyObs++;
@@ -105,7 +106,7 @@ export function calculateLaneEfficiency(params: {
   const weights = position === null ? null : LANE_WEIGHTS[position];
   const completeEvents = events?.version === 1 && Array.isArray(events.snapshots) &&
     Array.isArray(events.purchases) && Array.isArray(events.wards) && Array.isArray(events.combat) ? events : undefined;
-  const snapshot = completeEvents?.snapshots.find(row => row.slot === slot && row.heroId === params.heroId && row.time === 600);
+  const snapshot = completeEvents?.snapshots.find(row => row.slot === slot && row.heroId === params.heroId && row.time === LANE_END);
   const supportedMode = params.gameMode === 22 && params.lobbyType === 7;
   const hero = reference?.hero.find(row => row.heroId === params.heroId && row.position === position);
   const mean = hero ?? reference?.position.find(row => row.position === position);
@@ -125,7 +126,7 @@ export function calculateLaneEfficiency(params: {
               : maximum * clamp(actual / (2 * average), 1);
     return { key, label: LABELS[key], value: base, maximum, actual,
       mean: average, ...(base === null ? { note: !supportedMode ? "این Mode مرجع Ranked ندارد" :
-        !snapshot ? "شمارندهٔ دقیقهٔ ۱۰ Replay موجود نیست" : !mean && STAT[key] ? "مرجع ماه قبل موجود نیست" :
+        !snapshot ? "شمارندهٔ دقیقهٔ ۱۲ Replay موجود نیست" : !mean && STAT[key] ? "مرجع ماه قبل موجود نیست" :
           actual === null ? "رویداد قابل‌اتکا ثبت نشده" : "میانگین معتبر موجود نیست" } : {}) };
   });
   const notes: string[] = [];
@@ -134,7 +135,7 @@ export function calculateLaneEfficiency(params: {
     notes.push(`مرجع ${params.requestedReferenceMonth.slice(0, 7)} هنوز آماده نیست؛ این امتیاز موقتاً با مرجع ${reference.month.slice(0, 7)} محاسبه شده است.`);
   }
   if (!supportedMode) notes.push("فعلاً مقایسهٔ ماهانه فقط برای Ranked All Pick انجام می‌شود.");
-  if (events && !snapshot) notes.push("Replay برای این بازیکن شمارندهٔ معتبر دقیقهٔ ۱۰ ندارد.");
+  if (events && !snapshot) notes.push("Replay برای این بازیکن شمارندهٔ معتبر دقیقهٔ ۱۲ ندارد؛ Replay ذخیره‌شده باید دوباره پارس شود.");
   if (snapshot && supportedMode && (!Array.isArray(completeEvents?.assists) || completeEvents.unresolvedAssistChanges))
     notes.push("Bonus Assist فقط برای رویدادهای با حریف قابل انتساب محاسبه شده؛ بعضی مشارکت‌ها ممکن است قابل اثبات نباشند.");
   let bonuses = 0;

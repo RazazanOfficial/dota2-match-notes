@@ -274,7 +274,7 @@ export interface Match {
   picks: MatchPick[];
   legacyBans?: string;
   role: MatchRole | "";
-  roleSource?: "manual" | "opendota" | "stratz" | null;
+  roleSource?: "manual" | "opendota" | "stratz" | "heuristic" | null;
   positionOverrides?: Record<string, number>;
   heroPoolEligible?: boolean;
   heroPoolMatch?: boolean | null;

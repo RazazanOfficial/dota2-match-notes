@@ -5,6 +5,7 @@ type Lane = "safe" | "mid" | "off";
 
 interface PositionCandidate {
   slot: number;
+  lane: Lane | null;
   scores: Record<number, number>;
   evidence: MatchPositionEvidence[];
   source: MatchPositionResolution["source"];
@@ -62,7 +63,7 @@ function evidence(player: Raw, manualPosition: number | null): PositionCandidate
   };
   if (manualPosition !== null && Number.isInteger(manualPosition) && manualPosition >= 1 && manualPosition <= 5) {
     add("manual", "Position توسط کاربر تأیید شده", 100, [manualPosition]);
-    return { slot, scores, evidence: items, source: "manual", preferred: manualPosition };
+    return { slot, lane: null, scores, evidence: items, source: "manual", preferred: manualPosition };
   }
 
   const openPosition = num(player.position_est);
@@ -89,7 +90,7 @@ function evidence(player: Raw, manualPosition: number | null): PositionCandidate
   const wards = earlyWardCount(player);
   if (wards >= 2) add("early-vision", "Ward در ده دقیقه اول", 12, [4, 5]);
   const preferred = Object.entries(scores).sort((left, right) => right[1] - left[1])[0];
-  return { slot, scores, evidence: items, source: validOpenPosition ? "opendota" : "heuristic", preferred: preferred && preferred[1] > 0 ? Number(preferred[0]) : null };
+  return { slot, lane, scores, evidence: items, source: validOpenPosition ? "opendota" : "heuristic", preferred: preferred && preferred[1] > 0 ? Number(preferred[0]) : null };
 }
 
 function permutations(values: number[]): number[][] {
@@ -102,6 +103,20 @@ function resolveTeam(candidates: PositionCandidate[]) {
   const resolved = new Map<number, { position: number | null; candidate: PositionCandidate; confidence: number }>();
   const fixed = candidates.filter((candidate) => candidate.source === "manual");
   const open = candidates.filter((candidate) => candidate.source !== "manual");
+  // When a teammate spent the opening ten minutes in the off lane while the
+  // other candidate jungled, lane presence is stronger role evidence than
+  // early jungle CS or OpenDota's farm-based position estimate.
+  const offLaner = open.filter((candidate) => candidate.lane === "off");
+  const offJungler = open.filter((candidate) => candidate.lane === null &&
+    (candidate.evidence.some((item) => item.key === "opendota-position" && item.supports[0] === 3) ||
+      candidate.evidence.some((item) => item.key === "off-lane")));
+  if (offLaner.length === 1 && offJungler.length === 1) {
+    const [laner] = offLaner, [jungler] = offJungler;
+    laner.scores[3] += 100;
+    jungler.scores[4] += 70;
+    laner.evidence.push({ key: "off-lane-presence", label: "حضور در Off Lane در برابر هم‌تیمی جنگل‌رو", weight: 100, supports: [3] });
+    jungler.evidence.push({ key: "off-lane-jungle", label: "هم‌تیمی Off Lane در لاین حضور داشته است", weight: 70, supports: [4] });
+  }
   fixed.forEach((candidate) => resolved.set(candidate.slot, { position: candidate.preferred, candidate, confidence: 100 }));
   const used = new Set(fixed.flatMap((candidate) => candidate.preferred ? [candidate.preferred] : []));
   const available = [1, 2, 3, 4, 5].filter((position) => !used.has(position));
@@ -123,6 +138,20 @@ function resolveTeam(candidates: PositionCandidate[]) {
     const base = candidate.source === "opendota" ? 68 : 48;
     resolved.set(candidate.slot, { position, candidate, confidence: reliable ? Math.min(86, Math.round(base + Math.min(18, margin / 2))) : 0 });
   });
+  if (candidates.length === 5) {
+    const unknown = [...resolved.entries()].filter(([, item]) => item.position === null);
+    const known = [...resolved.values()].flatMap((item) => item.position === null ? [] : [item.position]);
+    if (unknown.length === 1 && new Set(known).size === 4) {
+      const missing = [1, 2, 3, 4, 5].find((position) => !known.includes(position));
+      if (missing) {
+        const item = unknown[0][1];
+        item.position = missing;
+        item.confidence = Math.min(72, Math.min(...[...resolved.values()].filter((entry) => entry.position !== null && entry !== item).map((entry) => entry.confidence)));
+        item.candidate.source = "heuristic";
+        item.candidate.evidence.push({ key: "team-complement", label: "تنها Position باقی‌مانده بین پنج بازیکن تیم", weight: 0, supports: [missing] });
+      }
+    }
+  }
   return resolved;
 }
 

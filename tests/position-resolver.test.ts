@@ -77,4 +77,30 @@ describe("position resolution from the first ten minutes of a replay", () => {
     });
     expect(result.get(0)).toMatchObject({ detectedPosition: 4, confirmedPosition: 4, confidence: 100, source: "manual", roleSwapDetected: false });
   });
+
+  it("infers the one unassigned position after four teammates are identified", () => {
+    const players = [
+      { ...player(0, "bottom", 50, 0), position_est: 1 },
+      { ...player(1, "mid", 40, 0), position_est: 2 },
+      { ...player(2, "top", 34, 0), position_est: 3 },
+      { ...player(3, "top", 20, 0), lane_pos: {}, lh_t: [], position_est: null },
+      { ...player(4, "bottom", 3, 3), position_est: 5 },
+    ];
+    const result = resolveMatchPositions({ players, profileSlot: null, profileAssignedPosition: null });
+    expect(players.map((entry) => result.get(entry.player_slot)?.detectedPosition)).toEqual([1, 2, 3, 4, 5]);
+    expect(result.get(3)?.evidence).toContainEqual(expect.objectContaining({ key: "team-complement", supports: [4] }));
+  });
+
+  it("prefers the occupied off lane to a jungler's early farm when the team roles conflict", () => {
+    const players = [
+      { ...player(0, "bottom", 48, 0), position_est: 1 },
+      { ...player(1, "mid", 45, 0), position_est: 2 },
+      { ...player(2, "top", 6, 0), position_est: 4 }, // Doom, solo off lane
+      { ...player(3, "top", 48, 0), lane_pos: {}, position_est: 3 }, // Enigma, jungle
+      { ...player(4, "bottom", 4, 3), position_est: 5 },
+    ];
+    const result = resolveMatchPositions({ players, profileSlot: null, profileAssignedPosition: null });
+    expect(result.get(2)?.detectedPosition).toBe(3);
+    expect(result.get(3)?.detectedPosition).toBe(4);
+  });
 });

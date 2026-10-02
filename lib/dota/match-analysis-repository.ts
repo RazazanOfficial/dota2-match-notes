@@ -15,6 +15,7 @@ import { hasParsedOpenDotaReplay } from "@/lib/opendota/validation";
 import { overlayReplayData } from "@/lib/replay/overlay";
 import { referenceMonthsForMatch, weekStartsInMonth } from "@/lib/monthly-reference/model";
 import { poolDivineImmortalMeta } from "@/lib/monthly-reference/selection";
+import { qualifiesHeroPosition } from "@/lib/monthly-reference/service";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -63,14 +64,16 @@ async function loadPerformanceReference(heroIds: number[], matchStart: unknown):
         inArray(monthlyHeroPositionMeta.rankBracket, ["DIVINE", "IMMORTAL"])))
       .groupBy(monthlyHeroPositionMeta.position, monthlyHeroPositionMeta.gameMode),
     db.select().from(monthlyHeroPerformance).where(and(eq(monthlyHeroPerformance.versionId, snapshot.id),
-      eq(monthlyHeroPerformance.minute, 11), eq(monthlyHeroPerformance.rankGroup, "DIVINE_IMMORTAL"),
+      eq(monthlyHeroPerformance.minute, 13), eq(monthlyHeroPerformance.rankGroup, "DIVINE_IMMORTAL"),
       inArray(monthlyHeroPerformance.heroId, heroIds))),
     db.select().from(monthlyPositionPerformance).where(and(eq(monthlyPositionPerformance.versionId, snapshot.id),
-      eq(monthlyPositionPerformance.minute, 11), eq(monthlyPositionPerformance.rankGroup, "DIVINE_IMMORTAL"))),
+      eq(monthlyPositionPerformance.minute, 13), eq(monthlyPositionPerformance.rankGroup, "DIVINE_IMMORTAL"))),
   ]);
   const meta = poolDivineImmortalMeta(selectedMeta, totals.map(row => ({
     position: row.position, gameMode: row.gameMode, count: Number(row.count),
   })));
+  const laneMeta = new Map(meta.filter(row => row.gameMode === 22)
+    .map(row => [`${row.heroId}:${row.position}`, row] as const));
   return {
     snapshot: {
       id: snapshot.id,
@@ -84,7 +87,13 @@ async function loadPerformanceReference(heroIds: number[], matchStart: unknown):
     meta,
     benchmarks: [],
     lane: { month: referenceMonth, versionId: snapshot.id,
-      hero: heroLane.map(row => ({ heroId: row.heroId, position: row.position, sampleCount: row.sampleCount,
+      hero: heroLane.filter(row => {
+        const sample = laneMeta.get(`${row.heroId}:${row.position}`);
+        return sample && qualifiesHeroPosition(sample.matchCount,
+          sample.positionShare > 0 ? sample.matchCount * 100 / sample.positionShare : 0,
+          row.sampleCount);
+      })
+        .map(row => ({ heroId: row.heroId, position: row.position, sampleCount: row.sampleCount,
         cs: row.cs, dn: row.dn, kills: row.kills, deaths: row.deaths, assists: row.assists, networth: row.networth })),
       position: positionLane.map(row => ({ position: row.position, sampleCount: row.sampleCount,
         cs: row.cs, dn: row.dn, kills: row.kills, deaths: row.deaths, assists: row.assists, networth: row.networth })) },

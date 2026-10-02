@@ -13,6 +13,7 @@ const PLAYER_FIELDS = [
   "aghanims_scepter", "aghanims_shard", "position_est", "lane_role",
   "is_roaming", "obs_placed", "sen_placed", "purchase_ward_observer",
   "purchase_ward_sentry", "purchase", "lh_t", "times", "gold_t", "xp_t",
+  "lane_pos", "obs_log", "sen_log",
 ];
 
 const raw = dotaMatches.rawData;
@@ -33,7 +34,11 @@ export const journalMatchSummary = sql<unknown>`
         SELECT entry.ordinal,
           (SELECT COALESCE(jsonb_object_agg(field.key, field.value), '{}'::jsonb)
            FROM jsonb_each(entry.player) AS field(key, value)
-           WHERE field.key IN (${sql.join(PLAYER_FIELDS.map((field) => sql`${field}`), sql`, `)})) AS player
+          WHERE field.key IN (${sql.join(PLAYER_FIELDS.map((field) => sql`${field}`), sql`, `)})) ||
+          CASE WHEN ${dotaMatches.localReplayData}->'players'->(entry.ordinal::int - 1)->>'player_slot' = entry.player->>'player_slot'
+            AND ${dotaMatches.localReplayData}->'players'->(entry.ordinal::int - 1)->'lane_pos' IS NOT NULL
+          THEN jsonb_build_object('lane_pos', ${dotaMatches.localReplayData}->'players'->(entry.ordinal::int - 1)->'lane_pos')
+          ELSE '{}'::jsonb END AS player
         FROM jsonb_array_elements(COALESCE(${raw}->'players', '[]'::jsonb))
           WITH ORDINALITY AS entry(player, ordinal)
       ) AS projected
