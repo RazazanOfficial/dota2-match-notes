@@ -1,7 +1,9 @@
 # Match Performance Analysis V3
 
 > این سند قرارداد V3 پیش از تغییر مرجع آماری است. شرح Worker و جدول‌های فعلی در
-> `docs/monthly-reference-services.md` قرار دارد. قرارداد جدید Score هنوز جداگانه بازنویسی می‌شود.
+> `docs/monthly-reference-services.md` قرار دارد. زمان‌بندی ۷۲ ساعته و
+> Lane Efficiency ده‌دقیقه‌ای پایین، توصیف اجرای فعلی نیستند؛ برای مسیر جاری
+> [handoff](HANDOFF.md) و [Lane Efficiency](lane-efficiency-next-step.md) را بخوانید.
 
 ## Product rules
 

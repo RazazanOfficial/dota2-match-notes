@@ -2,6 +2,9 @@
 
 دفتر فارسی و واکنش‌گرا برای ثبت، مرور و گزارش مچ‌های Dota 2 با Next.js و PostgreSQL.
 
+برای تحویل کار به چت یا توسعه‌دهندهٔ بعدی، از [docs/HANDOFF.md](docs/HANDOFF.md)
+شروع کنید. [فهرست docs](docs/README.md) سندهای جاری را از گزارش‌های مرحله‌ای جدا می‌کند.
+
 ## امکانات
 
 - تقویم شمسی هفتگی از شنبه ۳ مرداد ۱۴۰۵
@@ -35,6 +38,7 @@ OPENDOTA_TIMEOUT_MS=30000
 OPENDOTA_MAX_RESPONSE_BYTES=8388608
 OPENDOTA_MANUAL_SYNC_COOLDOWN_SECONDS=300
 OPENDOTA_MANUAL_DAY_COOLDOWN_SECONDS=90
+OPENDOTA_MANUAL_SYNC_LOOKBACK_SECONDS=21600
 OPENDOTA_MINUTE_REQUEST_LIMIT=50
 OPENDOTA_DAILY_REQUEST_LIMIT=2900
 OPENDOTA_MAX_NEW_MATCHES_PER_SYNC=20
@@ -167,7 +171,8 @@ MATCH_IMAGE_RETRY_BASE_SECONDS=60
 - بدنه: `{ "dotaMatchId": "8981928176" }`
 
 این مسیر فقط برای صاحب مچ و با نشست Steam قابل استفاده است و درخواست مرورگر باید از Origin
-خود سایت ارسال شود. هر کاربر به‌صورت پیش‌فرض هر ۵ دقیقه یک همگام‌سازی دستی دارد. پاسخ کامل
+خود سایت ارسال شود. جست‌وجو/اتصال یک Match و دریافت هفتگی cooldown پنج‌دقیقه‌ای دارند؛ دریافت روزانه
+هر ۹۰ ثانیه ممکن است. پاسخ کامل
 OpenDota در `dota_matches.raw_data` ذخیره می‌شود و آمار همان بازیکن شامل نتیجه، هیرو، K/D/A،
 GPM، XPM، Net Worth و Damageها در `journal_matches` ثبت می‌شود. Match ID به‌شکل رشته ارسال
 می‌شود تا تبدیل عددی ناخواسته در کلاینت‌های مختلف رخ ندهد.
@@ -216,6 +221,10 @@ UTC سرور VPS تاریخ دفتر را جابه‌جا نمی‌کند. وض�
 
 جزئیات قواعد Score، وزن Position، Lane Impact و محدودیت Timeline آیتم‌ها در
 [`docs/performance-scoring-phase2.md`](docs/performance-scoring-phase2.md) ثبت شده است.
+قرارداد پچ تحویلی Lane Efficiency دقیقهٔ ۱۲ و بازپردازش Replayهای قدیمی در
+[`docs/lane-efficiency-next-step.md`](docs/lane-efficiency-next-step.md) است؛
+Lane Impact و Denies @10 ده‌دقیقه‌ای باقی مانده‌اند. وضعیت merge و استقرار
+پچ را مطابق `docs/HANDOFF.md` بررسی کنید.
 
 ## Worker آماده‌سازی Replay در OpenDota
 
