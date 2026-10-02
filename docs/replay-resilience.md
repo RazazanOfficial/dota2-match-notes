@@ -1,5 +1,11 @@
 # پچ پایداری دانلود Replay — راهنمای کامل
 
+> این سند تحویل پچ تاریخی است. برای وضعیت کنونی و روش Git،
+> [handoff](HANDOFF.md) و [روال انتشار](deployment-ubuntu.md)
+> را بخوانید. دستورهای merge و استقرار همین سند را برای پچ‌های تازه تکرار نکنید.
+> مهلت ۲۴ساعتهٔ صف در متن اولیهٔ این پچ با مهلت ۲۰روزهٔ درخواست تازه در
+> [بازیابی metadata](replay-metadata-recovery.md) جایگزین شده است.
+
 مبنای پچ: `aaecc22298c5c72c2d35897a0b9aaeafafe3b70b` از main.
 برنچ پیشنهادی: `fix/replay-resilience`.
 این پچ فرمول Score و Lane Efficiency را عوض نمی‌کند. فایل قابل حذف دستی ندارد.
@@ -15,7 +21,7 @@
 | دانلود وسط کار قطع شد | اگر strong ETag و اندازه معتبر داریم، از همان نقطه ادامه می‌دهد؛ اگر هویت فایل قابل اثبات نباشد از ابتدا می‌گیرد. |
 | فایل کامل است ولی آپلود شکست خورد | فایل خصوصی موقت نگه داشته می‌شود؛ دفعه بعد دوباره دانلود نمی‌شود. تحلیل موفق ثبت‌شده نیز تکرار نمی‌شود. |
 | کاربر چندبار درخواست می‌دهد | یک Job برای هر Match باقی می‌ماند؛ درخواست فعال deadline تازه نمی‌گیرد. |
-| خطا ادامه دارد | فاصله retry بیشتر می‌شود و پس از حداکثر ۲۴ ساعت درخواست به failed می‌رود؛ کاربر می‌تواند درخواست تازه بدهد. |
+| خطا ادامه دارد | فاصله retry بیشتر می‌شود؛ درخواست تازه تا `retry_deadline_at` (۲۰ روز) فرصت دارد و پس از انقضا به `failed` می‌رود. |
 | کاربر فقط دانلود می‌خواهد | Parse انجام نمی‌شود؛ فقط دریافت و ذخیره در ParsPack. |
 | کاربر تحلیل می‌خواهد | دریافت، Parse، آپلود و پاک‌کردن فایل موقت پس از موفقیت. |
 
@@ -102,11 +108,12 @@ git commit -m "fix: make replay downloads resilient with failover and progress"
 git push -u origin fix/replay-resilience
 git switch main
 git pull --ff-only origin main
-git merge --ff-only fix/replay-resilience
+git merge --no-ff fix/replay-resilience -m "Merge branch 'fix/replay-resilience'"
 git push origin main
 ```
 
-اگر merge با fast-forward انجام نشد، force نزنید. برای این پچ tag اجباری نیست.
+برای این پچ tag اجباری نیست. این بلوک نمونهٔ تاریخی است؛ نام branch و وضعیت
+checkout هر انتشار تازه باید جداگانه بررسی شود.
 
 ## ۴. استقرار VPS: توقف، بکاپ، نصب و Build
 

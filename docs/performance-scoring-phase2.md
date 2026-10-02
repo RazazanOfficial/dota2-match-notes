@@ -1,5 +1,9 @@
 # Performance Intelligence — Phase 2
 
+> This document explains the earlier scoring design. Lane Impact and Denies @10
+> still use ten-minute context. The current Lane Efficiency score uses minute 12;
+> see [Lane Efficiency](lane-efficiency-next-step.md) and [handoff](HANDOFF.md).
+
 ## Non-negotiable scoring rule
 
 The Performance Score uses external global hero distributions only. The ten players in the current match and matches stored by Dota2 Notes users are never used as benchmark populations. When no global benchmark exists, the score is unavailable rather than fabricated as zero or derived from the lobby.
