@@ -36,7 +36,8 @@ const steamIdentifierSchema = z
 export const passwordLoginSchema = z
   .object({
     steamIdentifier: steamIdentifierSchema,
-    password: passwordSchema,
+    // Registration accepts six characters when the other strength rules pass.
+    password: z.string().min(6).max(72),
   })
   .strict();
 

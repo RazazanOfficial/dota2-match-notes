@@ -25,7 +25,8 @@
     "api:start": "npm run start -w @dota-notes/api",
     "mobile:dev": "npm run start -w @dota-notes/mobile",
     "mobile:android": "npm run android -w @dota-notes/mobile",
-    "mobile:ios": "npm run ios -w @dota-notes/mobile"
+    "mobile:ios": "npm run ios -w @dota-notes/mobile",
+    "desktop:installer": "npm run tauri -w @dota-notes/desktop -- build"
   },
   "devDependencies": {
     "@types/node": "24.10.1",

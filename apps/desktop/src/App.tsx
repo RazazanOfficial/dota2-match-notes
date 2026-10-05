@@ -6,7 +6,9 @@ import { PreferenceControls, LanguageSwitch, CursorControls } from "./components
 import { ComingSoon, Dashboard, Matches, Modal, Replay } from "./components/Workspace";
 import { LiveDashboard, LiveMatches } from "./components/LiveWorkspace";
 import { Login } from "./components/Login";
-import { useDesktopAuth } from "./desktopAuth";
+import { useDesktopAuth, signupKey, signupChoiceKey } from "./desktopAuth";
+import { apiRequest } from "./api";
+import { RegistrationWizard } from "./components/RegistrationWizard";
 import CursorThemeProvider from "@/components/CursorThemeProvider";
 import { Avatar } from "./components/Shared";
 import type { Session } from "@/lib/types";
@@ -24,7 +26,8 @@ export function App({ session }: {
 }
 function AuthenticatedApp({ prefs }: { prefs: PreferenceState }) {
     const auth = useDesktopAuth();
-    if (!auth.session) return <Login preferences={prefs.preferences} setPreferences={prefs.setPreferences} t={messages[prefs.preferences.language]} busy={auth.busy || auth.restoring} error={auth.error} onSteam={auth.signIn} onPassword={auth.signInWithPassword} clearError={auth.clearError}/>;
+    if (!auth.session) return <Login preferences={prefs.preferences} setPreferences={prefs.setPreferences} t={messages[prefs.preferences.language]} busy={auth.busy || auth.restoring} error={auth.error} onSteam={auth.signIn} onPassword={async (id, password) => { localStorage.removeItem(signupKey); await auth.signInWithPassword(id, password); }} clearError={auth.clearError}/>;
+    if (!auth.session.onboardingCompletedAt) return <RegistrationWizard session={auth.session} t={messages[prefs.preferences.language]} preferences={prefs.preferences} setPreferences={prefs.setPreferences} onFinished={async () => { await apiRequest("/api/auth/signup/complete", { method: "POST" }); await auth.refreshSession(); localStorage.removeItem(`dota-notes.signup.step.${auth.session?.steamId}`); localStorage.removeItem(signupKey); }} onBackToSteam={async () => { localStorage.setItem(signupChoiceKey, "1"); await auth.signOut(); }}/>;
     return <Desktop session={auth.session} prefs={prefs} live onLogout={() => void auth.signOut()}/>;
 }
 function Desktop({ session, prefs, live = false, onLogout }: {

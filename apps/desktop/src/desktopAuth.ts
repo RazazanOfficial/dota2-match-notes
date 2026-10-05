@@ -5,6 +5,8 @@ import type { Session } from "@/lib/types";
 import { API_ORIGIN, ApiError, apiRequest, currentSession, logout, setBearer } from "./api";
 
 const pendingKey = "dota-notes.desktop-login.pending";
+export const signupKey = "dota-notes.desktop-signup.pending";
+export const signupChoiceKey = "dota-notes.desktop-signup.choice";
 const validSecret = /^[A-Za-z0-9_-]{43}$/;
 type Pending = { verifier: string; nonce: string; createdAt: number };
 
@@ -51,7 +53,8 @@ export function useDesktopAuth() {
                     if (failure instanceof ApiError && failure.status === 401) {
                         if (active && generation === authGeneration.current) {
                             setBearer(null);
-                            await invoke("clear_session_token");
+                            try { await invoke("clear_session_token"); }
+                            catch { /* Retrying the stale token next launch is harmless. */ }
                         }
                     } else if (active) setError(String(failure));
                 }
@@ -73,6 +76,7 @@ export function useDesktopAuth() {
                     setBearer(grant.token);
                     const user = await currentSession();
                     await invoke("save_session_token", { token: grant.token });
+                    if (localStorage.getItem(signupKey) === "pending" && user.steamId) localStorage.setItem(signupKey, user.steamId);
                     if (active) { setSession(user); setError(""); }
                 } catch (failure) {
                     setBearer(null);
@@ -90,7 +94,7 @@ export function useDesktopAuth() {
         return () => { active = false; unlisten?.(); };
     }, []);
 
-    async function signIn() {
+    async function signIn(signup = false) {
         if (!isTauri()) { setError("Steam sign-in needs the installed desktop app."); return; }
         authGeneration.current += 1;
         setBusy(true); setError("");
@@ -99,9 +103,11 @@ export function useDesktopAuth() {
             const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
             const challenge = btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
             sessionStorage.setItem(pendingKey, JSON.stringify({ verifier, nonce, createdAt: Date.now() } satisfies Pending));
+            if (signup) localStorage.setItem(signupKey, "pending");
+            else localStorage.removeItem(signupKey);
             const url = `${API_ORIGIN}/api/auth/desktop/start?${new URLSearchParams({ challenge, nonce })}`;
             await invoke("open_steam_login", { url });
-        } catch (failure) { sessionStorage.removeItem(pendingKey); setError(String(failure)); }
+        } catch (failure) { sessionStorage.removeItem(pendingKey); if (signup) localStorage.removeItem(signupKey); setError(String(failure)); }
         finally { setBusy(false); }
     }
 
@@ -133,5 +139,5 @@ export function useDesktopAuth() {
             setBearer(null); setSession(null);
         }
     }
-    return { session, signIn, signInWithPassword, signOut, clearError: () => setError(""), busy, restoring, error };
+    return { session, signIn, signInWithPassword, signOut, refreshSession: async () => setSession(await currentSession()), clearError: () => setError(""), busy, restoring, error };
 }

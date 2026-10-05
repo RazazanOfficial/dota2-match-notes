@@ -342,6 +342,9 @@ export interface Session {
   createdAt?: string;
   registeredDate?: string;
   hasPassword?: boolean;
+  hasVerifiedEmail?: boolean;
+  onboardingCompletedAt?: string | null;
+  recoveryCodesSavedAt?: string | null;
 }
 
 export interface PlayerSearchResult {

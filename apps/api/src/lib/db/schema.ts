@@ -86,6 +86,10 @@ export const users = pgTable(
     profileUrl: text("profile_url"),
     passwordHash: varchar("password_hash", { length: 255 }),
     passwordUpdatedAt: timestamp("password_updated_at", { withTimezone: true }),
+    onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
+    recoveryCodesSavedAt: timestamp("recovery_codes_saved_at", { withTimezone: true }),
+    recoveryEmail: varchar("recovery_email", { length: 254 }),
+    recoveryEmailVerifiedAt: timestamp("recovery_email_verified_at", { withTimezone: true }),
     isAdmin: boolean("is_admin").default(false).notNull(),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     lastManualSyncAt: timestamp("last_manual_sync_at", { withTimezone: true }),
@@ -104,6 +108,7 @@ export const users = pgTable(
     uniqueIndex("users_steam_id_uidx").on(table.steamId),
     uniqueIndex("users_steam_account_id_uidx").on(table.steamAccountId),
     uniqueIndex("users_handle_lower_uidx").on(sql`lower(${table.handle})`),
+    uniqueIndex("users_recovery_email_verified_uidx").on(sql`lower(${table.recoveryEmail})`).where(sql`${table.recoveryEmailVerifiedAt} is not null`),
     check("users_handle_length_check", sql`char_length(${table.handle}) between 3 and 32`),
   ],
 );
@@ -144,6 +149,24 @@ export const desktopAuthCodes = pgTable(
   },
   (table) => [index("desktop_auth_codes_expires_at_idx").on(table.expiresAt)],
 );
+
+export const accountRecoveryCodes = pgTable("account_recovery_codes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  codeHash: varchar("code_hash", { length: 255 }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [index("account_recovery_codes_user_idx").on(table.userId)]);
+
+export const accountEmailChallenges = pgTable("account_email_challenges", {
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  purpose: varchar("purpose", { length: 16 }).notNull(),
+  email: varchar("email", { length: 254 }).notNull(),
+  codeHash: varchar("code_hash", { length: 255 }).notNull(),
+  attempts: integer("attempts").default(0).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  sentAt: timestamp("sent_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [primaryKey({ columns: [table.userId, table.purpose] }), check("account_email_challenges_purpose_check", sql`${table.purpose} in ('verify','reset')`)]);
 
 export const journalDays = pgTable(
   "journal_days",

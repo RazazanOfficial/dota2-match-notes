@@ -52,6 +52,7 @@ describe("PostgreSQL schema migration and real Express services", () => {
   it("upgrades the old schema twice without losing users or journal data", async () => {
     const [user]=await db.select().from(users).where(eq(users.id,userId));
     expect(user.displayName).toBe("Legacy user");expect(user.lastMonthSyncAt).toBeNull();
+    expect(user.onboardingCompletedAt).not.toBeNull();
     expect((await db.select().from(journalDays).where(eq(journalDays.userId,userId)))[0].completed).toBe(true);
     const result=await verifyDatabaseSchema();expect(result.tables).toBeGreaterThan(20);
   });
@@ -60,6 +61,31 @@ describe("PostgreSQL schema migration and real Express services", () => {
     expect(result.body.authenticated).toBe(true);expect(result.body.user.id).toBe(userId);
     expect(result.body.user.passwordHash).toBeUndefined();expect(result.body.user.hasPassword).toBe(true);
   });
+  it("keeps an interrupted Steam signup provisional across sessions until completion", async () => {
+    const [provisional] = await db.insert(users).values({ steamId: "76561197960265730", steamAccountId: 2, handle: "provisional_user", displayName: "Provisional" }).returning({ id: users.id });
+    try {
+      const first = await createSession(provisional.id);
+      const app = createApp();
+      expect((await request(app).get("/api/auth/session").auth(first.token,{type:"bearer"})).body.user.onboardingCompletedAt).toBeNull();
+      expect((await request(app).get("/api/matches/me?from=2026-09-12&to=2026-09-18").auth(first.token,{type:"bearer"})).body.error.code).toBe("onboarding_required");
+      expect((await request(app).post("/api/auth/signup/complete").auth(first.token,{type:"bearer"})).status).toBe(409);
+      await db.update(users).set({ passwordHash: await hashPassword(password) }).where(eq(users.id, provisional.id));
+      const second = await createSession(provisional.id);
+      expect((await request(app).get("/api/auth/session").auth(second.token,{type:"bearer"})).body.user.onboardingCompletedAt).toBeNull();
+      expect((await request(app).get("/api/matches/me?from=2026-09-12&to=2026-09-18").auth(second.token,{type:"bearer"})).status).toBe(409);
+      expect((await request(app).post("/api/auth/signup/complete").auth(second.token,{type:"bearer"})).status).toBe(409);
+      const issued = await request(app).post("/api/auth/signup/codes/reissue").auth(second.token,{type:"bearer"}).send({ password });
+      expect(issued.status).toBe(200);
+      expect(issued.body.recoveryCodes).toHaveLength(6);
+      expect((await request(app).post("/api/auth/signup/codes/saved").auth(second.token,{type:"bearer"})).status).toBe(200);
+      const completed = await request(app).post("/api/auth/signup/complete").auth(second.token,{type:"bearer"});
+      expect(completed.status).toBe(200);
+      expect(completed.body.alreadyCompleted).toBe(false);
+      expect((await request(app).get("/api/auth/session").auth(first.token,{type:"bearer"})).body.user.onboardingCompletedAt).toBeTruthy();
+      expect((await request(app).get("/api/matches/me?from=2026-09-12&to=2026-09-18").auth(second.token,{type:"bearer"})).status).toBe(200);
+      expect((await request(app).post("/api/auth/signup/complete").auth(second.token,{type:"bearer"})).body.alreadyCompleted).toBe(true);
+    } finally { await db.delete(users).where(eq(users.id, provisional.id)); }
+  }, 30_000);
   it("performs password login through the actual route, DB and bcrypt", async () => {
     const result=await request(createApp()).post("/api/auth/password/login").set("Origin","https://dota.example").send({steamIdentifier:"1",password});
     expect(result.status).toBe(200);expect(result.headers["set-cookie"][0]).toContain("HttpOnly");

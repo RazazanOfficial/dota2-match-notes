@@ -2,14 +2,16 @@ import { describe, expect, it } from "vitest";
 import {
   CURSOR_EFFECTS,
   CURSOR_PACKS,
+  DEFAULT_CURSOR_PACK,
   isCursorEffectId,
   isCursorPackId,
 } from "../lib/cursor-theme";
 
 describe("cursor theme contracts", () => {
-  it("ships seven complete selectable packs", () => {
-    expect(CURSOR_PACKS).toHaveLength(7);
-    expect(new Set(CURSOR_PACKS.map((pack) => pack.id)).size).toBe(7);
+  it("offers the system cursor and seven complete custom packs", () => {
+    expect(CURSOR_PACKS).toHaveLength(8);
+    expect(new Set(CURSOR_PACKS.map((pack) => pack.id)).size).toBe(8);
+    expect(DEFAULT_CURSOR_PACK).toBe("system");
   });
 
   it("accepts only known cursor packs", () => {

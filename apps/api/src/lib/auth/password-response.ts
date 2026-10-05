@@ -37,7 +37,7 @@ export function passwordAuthErrorResponse(error: unknown) {
   return Response.json(
     {
       ok: false,
-      error: { code: "password_auth_failed", message: "ورود انجام نشد" },
+      error: { code: "password_auth_failed", message: "درخواست انجام نشد؛ دوباره تلاش کنید" },
     },
     { status: 500 },
   );

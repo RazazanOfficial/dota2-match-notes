@@ -42,6 +42,14 @@ import * as r38 from "./users/search/route";
 import * as desktopStart from "./auth/desktop/start/route";
 import * as desktopExchange from "./auth/desktop/exchange/route";
 import * as desktopMatches from "./matches/me/route";
+import * as signupPassword from "./auth/signup/password/route";
+import * as emailStart from "./auth/email/start/route";
+import * as emailVerify from "./auth/email/verify/route";
+import * as recoveryRequest from "./auth/recovery/request/route";
+import * as recoveryReset from "./auth/recovery/reset/route";
+import * as signupComplete from "./auth/signup/complete/route";
+import * as signupCodesReissue from "./auth/signup/codes/reissue/route";
+import * as signupCodesSaved from "./auth/signup/codes/saved/route";
 
 export const routes = [
   { path: "/players/:identifier", method: "GET", handler: playerPage.GET },
@@ -71,6 +79,14 @@ export const routes = [
   { path: "/auth/steam", method: "GET", handler: r16.GET },
   { path: "/auth/desktop/start", method: "GET", handler: desktopStart.GET },
   { path: "/auth/desktop/exchange", method: "POST", handler: desktopExchange.POST },
+  { path: "/auth/signup/password", method: "POST", handler: signupPassword.POST },
+  { path: "/auth/signup/complete", method: "POST", handler: signupComplete.POST },
+  { path: "/auth/signup/codes/reissue", method: "POST", handler: signupCodesReissue.POST },
+  { path: "/auth/signup/codes/saved", method: "POST", handler: signupCodesSaved.POST },
+  { path: "/auth/email/start", method: "POST", handler: emailStart.POST },
+  { path: "/auth/email/verify", method: "POST", handler: emailVerify.POST },
+  { path: "/auth/recovery/request", method: "POST", handler: recoveryRequest.POST },
+  { path: "/auth/recovery/reset", method: "POST", handler: recoveryReset.POST },
   { path: "/matches/me", method: "GET", handler: desktopMatches.GET },
   { path: "/health", method: "GET", handler: r17.GET },
   { path: "/hero-pool/me", method: "GET", handler: r18.GET },

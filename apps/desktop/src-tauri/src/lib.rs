@@ -1,4 +1,5 @@
 mod replay;
+mod recovery;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
 
@@ -61,7 +62,7 @@ pub fn run() {
             Ok(())
         })
         .manage(replay::ReplayState::default())
-        .invoke_handler(tauri::generate_handler![open_steam_login, save_session_token, load_session_token, clear_session_token, replay::replay_settings, replay::choose_dota_folder, replay::list_replays, replay::download_replay])
+        .invoke_handler(tauri::generate_handler![open_steam_login, save_session_token, load_session_token, clear_session_token, replay::replay_settings, replay::choose_dota_folder, replay::list_replays, replay::download_replay, recovery::export_recovery_codes])
         .run(tauri::generate_context!())
         .expect("error while running Dota Notes");
 }

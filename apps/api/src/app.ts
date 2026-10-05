@@ -2,11 +2,14 @@ import { logFailure } from "./http/log";
 import express, { type ErrorRequestHandler } from "express";
 import cors from "cors";
 import helmet from "helmet";
+import { parse as parseCookie } from "cookie";
 import { routes } from "./routes/registry";
 import { expressHandler, handlerBodyLimit } from "./http/express-handler";
 import { configuredOrigins, originGuard, requestRateLimit } from "./http/security";
 import type { HttpHandler } from "./http/protocol";
 import { verifyDatabaseSchema } from "./lib/db/compatibility";
+import { getSessionUser } from "./lib/auth/session";
+import { SESSION_COOKIE } from "./lib/auth/config";
 
 export function createApp(allowedOrigins: readonly string[] = []) {
   const app = express();
@@ -37,7 +40,20 @@ export function createApp(allowedOrigins: readonly string[] = []) {
   const router = express.Router();
   for (const route of routes) {
     const middleware: express.RequestHandler[] = [];
-    if (route.path === "/auth/password/login" || route.path === "/auth/steam" || route.path.startsWith("/auth/desktop/")) middleware.push(loginLimit);
+    if (route.path === "/auth/password/login" || route.path === "/auth/steam" || route.path.startsWith("/auth/desktop/") || route.path.startsWith("/auth/recovery/") || route.path.startsWith("/auth/email/") || route.path === "/auth/signup/codes/reissue") middleware.push(loginLimit);
+    if (!route.path.startsWith("/auth/") && !route.path.startsWith("/internal/") && route.path !== "/health") {
+      middleware.push((request, response, next) => {
+        const authorization = request.get("authorization");
+        const token = authorization ? /^Bearer ([A-Za-z0-9_-]{43})$/i.exec(authorization)?.[1]
+          : parseCookie(request.get("cookie") || "")[SESSION_COOKIE];
+        if (!token) { next(); return; }
+        void getSessionUser(token).then(user => {
+          if (user && !user.onboardingCompletedAt) {
+            response.status(409).json({ ok: false, error: { code: "onboarding_required", message: "ثبت‌نام را کامل کنید" } });
+          } else next();
+        }).catch(next);
+      });
+    }
     if (!["GET", "HEAD"].includes(route.method)) {
       middleware.push(express.raw({ type: () => true, limit: handlerBodyLimit(route.path), inflate: false }));
       middleware.push((request, response, next) => {

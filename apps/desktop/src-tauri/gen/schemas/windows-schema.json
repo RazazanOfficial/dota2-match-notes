@@ -441,6 +441,12 @@
           "markdownDescription": "Denies the save_session_token command without any pre-configured scope."
         },
         {
+          "description": "Save the six recovery codes to a user-selected text file.",
+          "type": "string",
+          "const": "recovery-export",
+          "markdownDescription": "Save the six recovery codes to a user-selected text file."
+        },
+        {
           "description": "Select the Dota folder, read local demos and download a numeric match ID.",
           "type": "string",
           "const": "replay-library",

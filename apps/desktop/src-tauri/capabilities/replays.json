@@ -8,6 +8,7 @@
     "replay-library",
     "steam-login",
     "session-vault",
+    "recovery-export",
     "deep-link:default",
     "core:event:allow-listen",
     "core:event:allow-unlisten"

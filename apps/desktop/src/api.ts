@@ -7,7 +7,7 @@ export const API_ORIGIN = new URL(configuredOrigin).origin;
 if (configuredOrigin !== API_ORIGIN) throw new Error("VITE_API_ORIGIN must be an origin without a path");
 let bearer: string | null = null;
 export class ApiError extends Error {
-    constructor(message: string, readonly status: number) { super(message); this.name = "ApiError"; }
+    constructor(message: string, readonly status: number, readonly code?: string) { super(message); this.name = "ApiError"; }
 }
 
 export function setBearer(token: string | null) { bearer = token; }
@@ -23,18 +23,20 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
     const body = await response.json().catch(() => null);
     if (!response.ok) {
         const error = body?.error;
-        throw new ApiError(typeof error?.message === "string" ? error.message : typeof error?.code === "string" ? error.code : `API ${response.status}`, response.status);
+        const code = typeof error?.code === "string" ? error.code : undefined;
+        throw new ApiError(typeof error?.message === "string" ? error.message : code || `API ${response.status}`, response.status, code);
     }
     return body as T;
 }
 
 export async function currentSession() {
-    const result = await apiRequest<{ authenticated: boolean; user?: { handle: string; steamId: string; steamAccountId: number; displayName: string; avatarUrl: string | null; createdAt: string; registeredDate: string; isSuperAdmin: boolean; hasPassword: boolean } }>("/api/auth/session");
-    if (!result.authenticated || !result.user) throw new Error("Session expired");
+    const result = await apiRequest<{ authenticated: boolean; user?: { handle: string; steamId: string; steamAccountId: number; displayName: string; avatarUrl: string | null; createdAt: string; registeredDate: string; isSuperAdmin: boolean; hasPassword: boolean; hasVerifiedEmail: boolean; onboardingCompletedAt: string | null; recoveryCodesSavedAt: string | null } }>("/api/auth/session");
+    if (!result.authenticated || !result.user) throw new ApiError("Session expired", 401);
     const user = result.user;
     return { mode: "player", username: user.handle, steamId: user.steamId, steamAccountId: user.steamAccountId,
         displayName: user.displayName, avatarUrl: user.avatarUrl, createdAt: user.createdAt,
-        registeredDate: user.registeredDate, isSuperAdmin: user.isSuperAdmin, hasPassword: user.hasPassword } satisfies Session;
+        registeredDate: user.registeredDate, isSuperAdmin: user.isSuperAdmin, hasPassword: user.hasPassword,
+        hasVerifiedEmail: user.hasVerifiedEmail, onboardingCompletedAt: user.onboardingCompletedAt, recoveryCodesSavedAt: user.recoveryCodesSavedAt } satisfies Session;
 }
 
 export interface MatchListResponse { ok: true; rows: HistoryMatch[]; total: number; page: number; pageSize: number; summary: Summary }

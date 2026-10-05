@@ -14,6 +14,9 @@ export interface SessionUser {
   avatarUrl: string | null;
   profileUrl: string | null;
   passwordHash: string | null;
+  onboardingCompletedAt: Date | null;
+  recoveryCodesSavedAt: Date | null;
+  recoveryEmailVerifiedAt: Date | null;
   isAdmin: boolean;
   isSuperAdmin: boolean;
   createdAt: Date;
@@ -51,6 +54,9 @@ export async function getSessionUser(token: string | undefined) {
       avatarUrl: users.avatarUrl,
       profileUrl: users.profileUrl,
       passwordHash: users.passwordHash,
+      onboardingCompletedAt: users.onboardingCompletedAt,
+      recoveryCodesSavedAt: users.recoveryCodesSavedAt,
+      recoveryEmailVerifiedAt: users.recoveryEmailVerifiedAt,
       isAdmin: users.isAdmin,
       createdAt: users.createdAt,
       lastManualSyncAt: users.lastManualSyncAt,

@@ -1,11 +1,19 @@
 :root {
   --cursor-x: -100px;
   --cursor-y: -100px;
-  --cursor-default: url("/cursors/acid-hydra/default.png") 3 3, auto;
-  --cursor-pointer: url("/cursors/acid-hydra/pointer.png") 3 3, pointer;
-  --cursor-busy: url("/cursors/acid-hydra/busy.png") 3 3, progress;
-  --cursor-danger: url("/cursors/acid-hydra/danger.png") 3 3, pointer;
-  --cursor-not-allowed: url("/cursors/acid-hydra/not-allowed.png") 3 3, not-allowed;
+  --cursor-default: auto;
+  --cursor-pointer: pointer;
+  --cursor-busy: progress;
+  --cursor-danger: pointer;
+  --cursor-not-allowed: not-allowed;
+}
+
+html[data-cursor-pack="system"] {
+  --cursor-default: auto;
+  --cursor-pointer: pointer;
+  --cursor-busy: progress;
+  --cursor-danger: pointer;
+  --cursor-not-allowed: not-allowed;
 }
 
 html[data-cursor-pack="acid-hydra"] {

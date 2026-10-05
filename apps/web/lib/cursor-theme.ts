@@ -1,4 +1,5 @@
 export const CURSOR_PACKS = [
+  { id: "system", label: "System" },
   { id: "acid-hydra", label: "Acid Hydra" },
   { id: "diretide-2020", label: "Diretide 2020" },
   { id: "ti-2017", label: "The International 2017" },
@@ -18,9 +19,9 @@ export const CURSOR_EFFECTS = [
 export type CursorPackId = (typeof CURSOR_PACKS)[number]["id"];
 export type CursorEffectId = (typeof CURSOR_EFFECTS)[number]["id"];
 
-export const CURSOR_PACK_STORAGE_KEY = "dota-notes.cursor-pack.v1";
+export const CURSOR_PACK_STORAGE_KEY = "dota-notes.cursor-pack.v2";
 export const CURSOR_EFFECT_STORAGE_KEY = "dota-notes.cursor-effect.v1";
-export const DEFAULT_CURSOR_PACK: CursorPackId = "acid-hydra";
+export const DEFAULT_CURSOR_PACK: CursorPackId = "system";
 export const DEFAULT_CURSOR_EFFECT: CursorEffectId = "none";
 
 export function isCursorPackId(value: unknown): value is CursorPackId {
@@ -30,4 +31,3 @@ export function isCursorPackId(value: unknown): value is CursorPackId {
 export function isCursorEffectId(value: unknown): value is CursorEffectId {
   return CURSOR_EFFECTS.some((effect) => effect.id === value);
 }
-

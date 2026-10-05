@@ -21,6 +21,7 @@ export async function GET(request: HttpRequest) {
       ...publicUser,
       registeredDate: toJournalDateKey(publicUser.createdAt),
       hasPassword: Boolean(passwordHash),
+      hasVerifiedEmail: Boolean(publicUser.recoveryEmailVerifiedAt),
     },
   });
 }
