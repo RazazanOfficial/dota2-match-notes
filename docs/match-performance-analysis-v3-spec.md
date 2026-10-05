@@ -86,7 +86,7 @@ Confidence پایین ضریب `0.55` و متوسط ضریب `0.82` دارد. He
 
 ## Map Engine 7.41
 
-- asset پایه `public/maps/dota-7.41.webp` یک WebP 4096×4096 از پروژه Sloppy است.
+- asset پایه `apps/web/public/maps/dota-7.41.webp` یک WebP 4096×4096 از پروژه Sloppy است.
 - Towers، Camps، Lotus Pools، Twin Gates، Tormentors، Bounty/Power/Wisdom Runes، Watchers و Roshan لایه‌های مستقل و قابل خاموش/روشن‌شدن هستند.
 - بازه‌های 0–5، 5–10، 10–20، 20–30، 30–40، کل Match و بازه دستی X تا Y پشتیبانی می‌شوند.
 - نقاط بدون timestamp فقط در نمای کل Match نمایش داده می‌شوند و نباید به بازه زمانی خاص نسبت داده شوند.

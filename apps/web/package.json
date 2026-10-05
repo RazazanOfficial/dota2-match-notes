@@ -1,0 +1,46 @@
+{
+  "name": "@dota-notes/web",
+  "version": "3.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "stratz:route-check": "node scripts/check-stratz-direct-route.mjs",
+    "heroes:sync": "node scripts/sync-hero-portraits.mjs",
+    "items:sync": "node scripts/sync-item-icons.mjs",
+    "inventory:frames": "node scripts/rebuild-inventory-frames.mjs",
+    "db:generate": "npm run db:generate -w @dota-notes/api",
+    "db:migrate": "npm run db:migrate -w @dota-notes/api",
+    "db:studio": "npm run db:studio -w @dota-notes/api"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1102.0",
+    "@tiptap/pm": "^3.30.2",
+    "@tiptap/react": "^3.30.2",
+    "@tiptap/starter-kit": "^3.30.2",
+    "bcryptjs": "^3.0.3",
+    "drizzle-orm": "^0.45.2",
+    "lucide-react": "^1.33.0",
+    "next": "16.3.6",
+    "pg": "^8.22.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-toastify": "^11.1.0",
+    "sharp": "^0.35.4",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@types/node": "24.10.1",
+    "@types/pg": "^8.20.3",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
+    "typescript": "5.9.3",
+    "vitest": "^4.1.10"
+  }
+}

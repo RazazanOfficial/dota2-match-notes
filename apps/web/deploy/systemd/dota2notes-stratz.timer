@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Dota2 Notes STRATZ enrichment worker every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+RandomizedDelaySec=10s
+Persistent=true
+Unit=dota2notes-stratz.service
+
+[Install]
+WantedBy=timers.target

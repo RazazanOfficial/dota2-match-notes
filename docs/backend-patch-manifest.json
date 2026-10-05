@@ -1,0 +1,2560 @@
+{
+  "sourceCommit": "dcb721e03174376eca62629d28c6cd12de0c1f8c",
+  "files": [
+    {
+      "path": "apps/api/drizzle.config.ts",
+      "sha256": "e1b2ed3a0164d1ec441921fcce6ff4befbb9b39b1fd9e3f09706ddaf634ad39b",
+      "bytes": 336
+    },
+    {
+      "path": "apps/api/drizzle/0000_lucky_red_shift.sql",
+      "sha256": "71ee7b8394cbe39fc1a9cf688bd8c7de2feaaa30f936ec1c695be57b10ec6af8",
+      "bytes": 9236
+    },
+    {
+      "path": "apps/api/drizzle/0001_add_legacy_bans.sql",
+      "sha256": "4a9a8ba90029f2b0603d60930c4412d589a16bd7975fe8f3acce258f9f76e5f3",
+      "bytes": 88
+    },
+    {
+      "path": "apps/api/drizzle/0002_add_match_image_uploads.sql",
+      "sha256": "8913a358bd7dbb2a7d5760fdff11582dde44abe44875c3d825e7e8e6888d1839",
+      "bytes": 1335
+    },
+    {
+      "path": "apps/api/drizzle/0003_server_generated_images.sql",
+      "sha256": "cee8699cbfae3092c2472d00159cc3b795eaf963468f2697c036cec8df25d277",
+      "bytes": 41
+    },
+    {
+      "path": "apps/api/drizzle/0004_add_external_api_rate_limits.sql",
+      "sha256": "a53e145ca3b6278624d8ed29727dfcb94692a87a3c381a248cb207fcd0acfb7b",
+      "bytes": 357
+    },
+    {
+      "path": "apps/api/drizzle/0005_add_admin_audit_logs.sql",
+      "sha256": "1878cb914a5f7774ce7174de14069f46fe837f8f695f9dbd4fd93721a0b7b84f",
+      "bytes": 1270
+    },
+    {
+      "path": "apps/api/drizzle/0006_add_dismissed_dota_matches.sql",
+      "sha256": "50ba8a544c7e7ca5d2a9ff8b9a0b3e3a89a1886b01a7ffded84506282029cc6c",
+      "bytes": 710
+    },
+    {
+      "path": "apps/api/drizzle/0007_add_match_image_jobs.sql",
+      "sha256": "96043a218dceec9ab595c02fef2850eccebac5a7d7d710756bf426fcc87a03a8",
+      "bytes": 1546
+    },
+    {
+      "path": "apps/api/drizzle/0008_add_manual_sync_ui_analytics.sql",
+      "sha256": "f3bf86a78d7a43f2d3867763effcb4a66a9c9d1e0088156b563471f2573990e9",
+      "bytes": 946
+    },
+    {
+      "path": "apps/api/drizzle/0009_add_player_development_suite.sql",
+      "sha256": "282584f3fe7e8218ea4822b4d7cd1f724fb5812a0372b1122f12ee2cebeb515b",
+      "bytes": 5453
+    },
+    {
+      "path": "apps/api/drizzle/0010_add_stratz_enrichment.sql",
+      "sha256": "f987de75f8c73eb529b4883702bce4802017185fe3d15886e26333423665df08",
+      "bytes": 1531
+    },
+    {
+      "path": "apps/api/drizzle/0011_light_shiva.sql",
+      "sha256": "15d22c61a5b2dbf8f1901eb8bd69774e9b1901ac99e8e7d5f04dd52040d52d7b",
+      "bytes": 1706
+    },
+    {
+      "path": "apps/api/drizzle/0012_sleepy_silver_sable.sql",
+      "sha256": "d14a1a6439babb656251cd6ba36c9a9c3bcbc7960c193b08324494033f9fcaa6",
+      "bytes": 97
+    },
+    {
+      "path": "apps/api/drizzle/0013_foamy_gabe_jones.sql",
+      "sha256": "6c2cb309a458046ba85997424bf86c46c95e201dc51139e265681f8abd0d11bc",
+      "bytes": 3831
+    },
+    {
+      "path": "apps/api/drizzle/0014_overjoyed_next_avengers.sql",
+      "sha256": "cf8ef12250f0b7f34df39b8e3f09f9b3795632e1dbefbaa0dddde70e76d98104",
+      "bytes": 2452
+    },
+    {
+      "path": "apps/api/drizzle/0015_local-replay.sql",
+      "sha256": "0fb720f3c81667106a6c314367d3546d2b54ceb3439d469a20c05da3c5976251",
+      "bytes": 177
+    },
+    {
+      "path": "apps/api/drizzle/0016_manual-ban-override.sql",
+      "sha256": "09101173fd33774c4d8340d0d387358e56e55aa1a1b3e25e80a7b648968fe62d",
+      "bytes": 298
+    },
+    {
+      "path": "apps/api/drizzle/0017_local-replay-queue.sql",
+      "sha256": "f76e915c5b0a0eaafde623528c16a379b636f842402828fd2bd89c24a720762f",
+      "bytes": 1361
+    },
+    {
+      "path": "apps/api/drizzle/0018_replay_archive.sql",
+      "sha256": "85ccd5d11b0e66f76a32de0d1cf6bca6afeb8f3157c675c667774211784af37b",
+      "bytes": 789
+    },
+    {
+      "path": "apps/api/drizzle/0019_replay_archive_status.sql",
+      "sha256": "aa2cfd677bda57ca76df97a0728f49e7dd3c90beb10ab2920513f41a8dca9649",
+      "bytes": 390
+    },
+    {
+      "path": "apps/api/drizzle/0020_monthly_performance_reference.sql",
+      "sha256": "ffaa4657dbd249aa4c93e6f7c1fe758785e047f48dae338bb4edaa27076467cb",
+      "bytes": 5748
+    },
+    {
+      "path": "apps/api/drizzle/0021_monthly-reference-observability.sql",
+      "sha256": "6dddfadb307dda83101e731c1a485e3d83e975be5f88b2985ee7f552aaabe1b6",
+      "bytes": 1685
+    },
+    {
+      "path": "apps/api/drizzle/0022_replay_resilience.sql",
+      "sha256": "8d08609953471b7c2e9154b4b9d78cd3e99b4d78c4f0bc0d2081a235877419b7",
+      "bytes": 3334
+    },
+    {
+      "path": "apps/api/drizzle/0023_replay_refresh_manual_sync.sql",
+      "sha256": "82cb79dfd951eb476ec584ac59aee2efd4bf796aa52a35f571624e06f08cfcd5",
+      "bytes": 724
+    },
+    {
+      "path": "apps/api/drizzle/0024_express_monthly_sync.sql",
+      "sha256": "b30b2948bb84b97b8ccb7dac28335f93ab18e268bb35d987a193be2dbd93ca17",
+      "bytes": 92
+    },
+    {
+      "path": "apps/api/drizzle/meta/0000_snapshot.json",
+      "sha256": "751c88421007400cc074b52487c5c6f07b9523bb331873a12e26ce818b0211a0",
+      "bytes": 32616
+    },
+    {
+      "path": "apps/api/drizzle/meta/0001_snapshot.json",
+      "sha256": "0c5b47c1dfd48d61d8d9f1f624302abfda2a598601d2d5bab28ceda44036eaab",
+      "bytes": 32803
+    },
+    {
+      "path": "apps/api/drizzle/meta/0002_snapshot.json",
+      "sha256": "ee156793e5b421bf0f11e72f76107e78eea8c01d2e011015f8d79e779a6e7f95",
+      "bytes": 37012
+    },
+    {
+      "path": "apps/api/drizzle/meta/0003_snapshot.json",
+      "sha256": "5b60012dd161cb269a9ef93f97c8aa2dbdf266c97d8a0bc984d891309f19beeb",
+      "bytes": 32803
+    },
+    {
+      "path": "apps/api/drizzle/meta/0004_snapshot.json",
+      "sha256": "6d4f63e5e2453d92bd732b25685bc6e6fda51551718e35ba7a67a6f9bc0fa24e",
+      "bytes": 34038
+    },
+    {
+      "path": "apps/api/drizzle/meta/0005_snapshot.json",
+      "sha256": "94e9ed5123543f2bab4259def46743b2a26deea6cd16586a8de80dc2fe759a34",
+      "bytes": 38169
+    },
+    {
+      "path": "apps/api/drizzle/meta/0006_snapshot.json",
+      "sha256": "9d73b97330d364634ed8ff987cc6bae0b2aecd9dd25f39d6b5309ccfa10be6a6",
+      "bytes": 40234
+    },
+    {
+      "path": "apps/api/drizzle/meta/0007_snapshot.json",
+      "sha256": "c9a60478e1ca9da9ebe585547ab6f1fe31655f6e0d2cc8d4fa9e08a9abcb57bf",
+      "bytes": 44346
+    },
+    {
+      "path": "apps/api/drizzle/meta/0008_snapshot.json",
+      "sha256": "c9ed25c6ae5f1c5ce393dd359c8467a4afc9c2e92c848ef671e449489ef242fd",
+      "bytes": 46520
+    },
+    {
+      "path": "apps/api/drizzle/meta/0009_snapshot.json",
+      "sha256": "1b11ba2903825902e792b277511e00197d563f0886ed60e77aae49cb8669c421",
+      "bytes": 60880
+    },
+    {
+      "path": "apps/api/drizzle/meta/0010_snapshot.json",
+      "sha256": "8d80a77a0250f11e6d90c5058f0741ab90a440c1aa8a1cbfb59e34065c5452ad",
+      "bytes": 65223
+    },
+    {
+      "path": "apps/api/drizzle/meta/0011_snapshot.json",
+      "sha256": "811ced6cf745a09a3a2b3dc9cee59efb0474065dfa1afabe70cfde2bda9c880f",
+      "bytes": 70991
+    },
+    {
+      "path": "apps/api/drizzle/meta/0012_snapshot.json",
+      "sha256": "1bd570052a87195a3f1d100c07ebb16cde68a40fd9127ecc41251a0859e7bac9",
+      "bytes": 71194
+    },
+    {
+      "path": "apps/api/drizzle/meta/0013_snapshot.json",
+      "sha256": "fdfd2c56be3931f3efcc8be7af8d93c766e65ae51ca40ca2cd4cb7e147f946a7",
+      "bytes": 83200
+    },
+    {
+      "path": "apps/api/drizzle/meta/0014_snapshot.json",
+      "sha256": "4996e5b576cfbb7ca6475611360d4c40822977b500bc863738640b58de0494b5",
+      "bytes": 89269
+    },
+    {
+      "path": "apps/api/drizzle/meta/0015_snapshot.json",
+      "sha256": "942bdf1820c2e027d936d0d6eab1f22881aa7ef2e75a77f055e279a984886f02",
+      "bytes": 89630
+    },
+    {
+      "path": "apps/api/drizzle/meta/0016_snapshot.json",
+      "sha256": "4002cafc027494c004c18ccd59a5f24403909d660ff7096a6684bd6b8889acd9",
+      "bytes": 89815
+    },
+    {
+      "path": "apps/api/drizzle/meta/0017_snapshot.json",
+      "sha256": "686904c6ccdcad3b81611af3eb8e3da428ea1cf03b532bc20f2981305bf03ab1",
+      "bytes": 94317
+    },
+    {
+      "path": "apps/api/drizzle/meta/0018_snapshot.json",
+      "sha256": "62ced5ee6c3fa6ae2eb48848fd6617cfa042d5608b3ab9a93ef8d8425a9ef54f",
+      "bytes": 95175
+    },
+    {
+      "path": "apps/api/drizzle/meta/0019_snapshot.json",
+      "sha256": "950a9604b5f986bbb60b00a74aaa10308b0b80331be25cbde87d55d30d092c87",
+      "bytes": 95593
+    },
+    {
+      "path": "apps/api/drizzle/meta/0020_snapshot.json",
+      "sha256": "16df6535b1c5081d99dc56917fff27780583828b531799198575bfd53e8ed3f7",
+      "bytes": 112923
+    },
+    {
+      "path": "apps/api/drizzle/meta/0021_snapshot.json",
+      "sha256": "d0c1bf595a677e4357ea8595af0779c2a6e39686cb677b975f3c68efa1c37098",
+      "bytes": 116865
+    },
+    {
+      "path": "apps/api/drizzle/meta/0022_snapshot.json",
+      "sha256": "c45c924cf17eae0d49c31a0bb0ff8b6b58769821d705d5b4047a44e9e4ea013e",
+      "bytes": 124935
+    },
+    {
+      "path": "apps/api/drizzle/meta/0023_snapshot.json",
+      "sha256": "a57e517264fe505bc6a21ed3d58c425112bba6e5a7bcf490b1b891f52040a35b",
+      "bytes": 125820
+    },
+    {
+      "path": "apps/api/drizzle/meta/0024_snapshot.json",
+      "sha256": "81b3407391435674c762fe8646f747926fa1467a3d6f14d1573e2009d679919b",
+      "bytes": 126008
+    },
+    {
+      "path": "apps/api/drizzle/meta/_journal.json",
+      "sha256": "f993b4add868f9ff3093dfc844d10e093d366838963c335498ba4093b7c644b9",
+      "bytes": 3805
+    },
+    {
+      "path": "apps/api/package-lock.json",
+      "sha256": "5dac7855c21ac5ec16579c5c47b25af8f4a6e15675f7cf710df78c3d974f1bce",
+      "bytes": 193021
+    },
+    {
+      "path": "apps/api/package.json",
+      "sha256": "7226458c03dd76ba570c942a46698a69708d8a12fd8656d69d060e9c4590fdd1",
+      "bytes": 1841
+    },
+    {
+      "path": "apps/api/public/heroes/abaddon.png",
+      "sha256": "4282e105a2b665002d1e22cc97c27b175b5bfc9d387886d09ac8f273a054f20c",
+      "bytes": 53683
+    },
+    {
+      "path": "apps/api/public/heroes/abyssal_underlord.png",
+      "sha256": "167a0372ae5c431bf746b13d9e8e4234e25907f52072ebd58d357a3a77792b15",
+      "bytes": 80064
+    },
+    {
+      "path": "apps/api/public/heroes/alchemist.png",
+      "sha256": "b16ba3595c2fb9fa981224f233563a34645a0c83aae8c0dddd72bdeefa3287bc",
+      "bytes": 82940
+    },
+    {
+      "path": "apps/api/public/heroes/ancient_apparition.png",
+      "sha256": "0fc47a8be78e738b42381f6b8e0daf1467299bd65075b065d848f2ced18d7f25",
+      "bytes": 67247
+    },
+    {
+      "path": "apps/api/public/heroes/antimage.png",
+      "sha256": "7e47a9f52f7f1cdcb77b38e1f3e26ce967a3ed0eceb4b0d808f5ea14d347ce39",
+      "bytes": 62893
+    },
+    {
+      "path": "apps/api/public/heroes/arc_warden.png",
+      "sha256": "4df3b186bb0bac2f9a4a3eb9ea6ca6769c1d9397afe8cdab09b209fac9c0f228",
+      "bytes": 79903
+    },
+    {
+      "path": "apps/api/public/heroes/axe.png",
+      "sha256": "9bf3a200b8d4ff797718a1615c3b3f3fa61c3bb4fb7abb0f51ee0597ae3f4138",
+      "bytes": 66782
+    },
+    {
+      "path": "apps/api/public/heroes/bane.png",
+      "sha256": "f00d1e4d4354da7f3c5bfd199642e4219de09c30e60adedd393ae1140eacdc6d",
+      "bytes": 69570
+    },
+    {
+      "path": "apps/api/public/heroes/batrider.png",
+      "sha256": "159b8b553506dd5181a3d3e03ae9b1b300308031d00d2f6d61f0655ad89b8e62",
+      "bytes": 68905
+    },
+    {
+      "path": "apps/api/public/heroes/beastmaster.png",
+      "sha256": "753b50e8897ffb4c9899ed81a49fef18aa57f3196031de8c41ed6c00c1b5b6c8",
+      "bytes": 74687
+    },
+    {
+      "path": "apps/api/public/heroes/bloodseeker.png",
+      "sha256": "3cc0b22a1f24219c4017703d78418f792a49a60e5d8c414971f1c495a52c4de5",
+      "bytes": 73984
+    },
+    {
+      "path": "apps/api/public/heroes/bounty_hunter.png",
+      "sha256": "7aa3e94c6151618fb2226f43d21adc3828704f886e5d1885a44b375eb7c536bb",
+      "bytes": 77585
+    },
+    {
+      "path": "apps/api/public/heroes/brewmaster.png",
+      "sha256": "649a12973e00edc5b1fba842596ed77ffbbe8cbe2b6ee3c377e66faa8ba73965",
+      "bytes": 66057
+    },
+    {
+      "path": "apps/api/public/heroes/bristleback.png",
+      "sha256": "59ed8e52bc5bb4cde02fb1b82175c0d468e9b042edc808ee0ea02652dce76bbf",
+      "bytes": 70311
+    },
+    {
+      "path": "apps/api/public/heroes/broodmother.png",
+      "sha256": "7e193beebadf7118ece47d40614623bf5fd01a5b1b10f6da910d3d868678899a",
+      "bytes": 81941
+    },
+    {
+      "path": "apps/api/public/heroes/centaur.png",
+      "sha256": "f9c3217cf10c0d56fd9666c90e46aada91b11c058d2fa201286c2cc4e96de484",
+      "bytes": 65216
+    },
+    {
+      "path": "apps/api/public/heroes/chaos_knight.png",
+      "sha256": "0ac22c4ce747c8286e8b1f597a6f1907b4b7284eec1b98b4b4f87b9020665246",
+      "bytes": 62091
+    },
+    {
+      "path": "apps/api/public/heroes/chen.png",
+      "sha256": "3ed9ceaf4062e6702db3c95ec31d3234124b2f17dd2314e0bfc5494360cff06f",
+      "bytes": 69542
+    },
+    {
+      "path": "apps/api/public/heroes/clinkz.png",
+      "sha256": "05877e115c2f9cf96fe8a9d205c3b32a10c9fa500a47109f75de1572e1eb310b",
+      "bytes": 82955
+    },
+    {
+      "path": "apps/api/public/heroes/crystal_maiden.png",
+      "sha256": "8ca577cff8dd8567b3c0a6fa185a83f4a2580a8b2c8fceff617720e894f5b5d5",
+      "bytes": 70190
+    },
+    {
+      "path": "apps/api/public/heroes/dark_seer.png",
+      "sha256": "ed63a948339e546971970efc73ceda46d5c189d9c30f9689487475cdadfe2a8b",
+      "bytes": 80697
+    },
+    {
+      "path": "apps/api/public/heroes/dark_willow.png",
+      "sha256": "bd50b13cb5e43054313ee5ecc69d0ceb564f1b9a601f38652e53a9de2cd07a23",
+      "bytes": 65168
+    },
+    {
+      "path": "apps/api/public/heroes/dawnbreaker.png",
+      "sha256": "d7aefe3ffb966e40d5c1fe560dc8ec1cf272f74f53a3150d80c8e534edb06a02",
+      "bytes": 69855
+    },
+    {
+      "path": "apps/api/public/heroes/dazzle.png",
+      "sha256": "8de9659c0db1e1c29f13ee83e658b80b5d98eae4949b122fd083503baa0e2a2c",
+      "bytes": 76471
+    },
+    {
+      "path": "apps/api/public/heroes/death_prophet.png",
+      "sha256": "32298900b2c34664a9f79d94628915e1d292a7c2aa7161c388f25a9b8431f40d",
+      "bytes": 60871
+    },
+    {
+      "path": "apps/api/public/heroes/disruptor.png",
+      "sha256": "3327e579d60e9ea23c9c8694d9a1f8c2139ed17001c9c0e09cbfffc873cdb5cc",
+      "bytes": 74406
+    },
+    {
+      "path": "apps/api/public/heroes/doom_bringer.png",
+      "sha256": "8ebcd074d6f7704f8374adbc6fefe0a3d517c9524e13997c73e3b8a76f2d0182",
+      "bytes": 62832
+    },
+    {
+      "path": "apps/api/public/heroes/dragon_knight.png",
+      "sha256": "152b92cbb49c548941baa2643c5e9b27a9ea211a75630edf072cc2c8131f6f28",
+      "bytes": 69702
+    },
+    {
+      "path": "apps/api/public/heroes/drow_ranger.png",
+      "sha256": "a8f905bc5d1e7d4cea6977d705f443e8b99918793c025608a2564532f816ce6f",
+      "bytes": 25318
+    },
+    {
+      "path": "apps/api/public/heroes/earth_spirit.png",
+      "sha256": "b94a84217ff937e617b9d8b21a1d5f56bbd8e0e26ae0dbac526eb5f2f66b6a46",
+      "bytes": 55356
+    },
+    {
+      "path": "apps/api/public/heroes/earthshaker.png",
+      "sha256": "6866d114db50a5e6e7766ef0f6f2bddda0394c9c6f05dbd9576a2160a8b0a213",
+      "bytes": 80360
+    },
+    {
+      "path": "apps/api/public/heroes/elder_titan.png",
+      "sha256": "0bad343555f0dc362fb2f2fa44d495fd45e5d0eee72b9d1f6862a2156bbe28e8",
+      "bytes": 79643
+    },
+    {
+      "path": "apps/api/public/heroes/ember_spirit.png",
+      "sha256": "f0d2a34608655f8a5c610e6a67e38748314d846f41d47e3a1ec34bc3ad6ea09d",
+      "bytes": 56176
+    },
+    {
+      "path": "apps/api/public/heroes/enchantress.png",
+      "sha256": "6d003bb1cdb9b8d6f03ba7d18ed95325c230420f7d06571c76869a5159c2b2e1",
+      "bytes": 69185
+    },
+    {
+      "path": "apps/api/public/heroes/enigma.png",
+      "sha256": "247f8afc1af16d47889160428ae6605bc41bce182e86007785f0ccfddc5ba774",
+      "bytes": 70114
+    },
+    {
+      "path": "apps/api/public/heroes/faceless_void.png",
+      "sha256": "9aa7cb89cfc089d35bbefec78ce14afb16566f833b133c381a9b9c68466761ec",
+      "bytes": 61954
+    },
+    {
+      "path": "apps/api/public/heroes/furion.png",
+      "sha256": "3fd8bb517361fa41656da44c35784055ed66856546cd85a67d72a5ce56c117c7",
+      "bytes": 70253
+    },
+    {
+      "path": "apps/api/public/heroes/grimstroke.png",
+      "sha256": "eddcead554817fb54383bdeffc8387832073e39024992d9dcaa30898c710d10d",
+      "bytes": 70549
+    },
+    {
+      "path": "apps/api/public/heroes/gyrocopter.png",
+      "sha256": "822c92ce056289df3aef7f25ce03b2576dd7dd8e39b4018290444155f2f21ef1",
+      "bytes": 66475
+    },
+    {
+      "path": "apps/api/public/heroes/hoodwink.png",
+      "sha256": "2ad15c1d2deb8e82ff69ee96166a5afd05885803f871c0da7cdcba99d0f0040f",
+      "bytes": 67237
+    },
+    {
+      "path": "apps/api/public/heroes/huskar.png",
+      "sha256": "63ac198d255bc6cf24d5dbe91eeac9d6cc9305d97e1f7ea7d57b00bd3a328d7a",
+      "bytes": 68205
+    },
+    {
+      "path": "apps/api/public/heroes/invoker.png",
+      "sha256": "b302dd999a0bad1c0295d98b02242a7530f27d5d449ee183d516d2cf79a31da6",
+      "bytes": 53692
+    },
+    {
+      "path": "apps/api/public/heroes/jakiro.png",
+      "sha256": "ac5932d6a4f56c1903415c1786ecde06c905e7e24817eefa70d286c885e4d8d3",
+      "bytes": 79414
+    },
+    {
+      "path": "apps/api/public/heroes/juggernaut.png",
+      "sha256": "d7df25261e20c8ef9f58f296b980e9eab89659d33b245f6b168114f9f52f8763",
+      "bytes": 61087
+    },
+    {
+      "path": "apps/api/public/heroes/keeper_of_the_light.png",
+      "sha256": "e590490ea0cca45a6d5b2009c44781d930301434d46f0d58b4011bdbc94f3f22",
+      "bytes": 62919
+    },
+    {
+      "path": "apps/api/public/heroes/kez.png",
+      "sha256": "7c816d8d306e7250fe125511c8e25018130118f39b99509196a1c0dff8dfd231",
+      "bytes": 61706
+    },
+    {
+      "path": "apps/api/public/heroes/kunkka.png",
+      "sha256": "0dbd3b33d2d425bf87f8a4639ebe752d4dbe862148451ef1170975c4f188e8fd",
+      "bytes": 65303
+    },
+    {
+      "path": "apps/api/public/heroes/largo.png",
+      "sha256": "5fa1ff41035b6d84886275c88df4f446a376e742d744509488291181a845fa78",
+      "bytes": 64925
+    },
+    {
+      "path": "apps/api/public/heroes/legion_commander.png",
+      "sha256": "40dcaf69610d5c126fa57efd59a627883f8a7cdf6e57168a83ba0c778550ef1b",
+      "bytes": 67661
+    },
+    {
+      "path": "apps/api/public/heroes/leshrac.png",
+      "sha256": "3db4abaebd148d916279f8ad1d5af5340757e7408d79395a90a046de5fee3831",
+      "bytes": 68927
+    },
+    {
+      "path": "apps/api/public/heroes/lich.png",
+      "sha256": "5fafd024c9be71e001345ede119450d92f708e16abfcb6dafcb49ddd7622a688",
+      "bytes": 73116
+    },
+    {
+      "path": "apps/api/public/heroes/life_stealer.png",
+      "sha256": "473bd4a7e2dfabd69a5bec516769ba78327825bc61caacfb0e9c5a519ff1fdce",
+      "bytes": 71483
+    },
+    {
+      "path": "apps/api/public/heroes/lina.png",
+      "sha256": "0e2576fc4fbe428b73cf802b79a39ce2ba997881a8b0690e60cb78c630b4ec7e",
+      "bytes": 65502
+    },
+    {
+      "path": "apps/api/public/heroes/lion.png",
+      "sha256": "339fdf43e15257a004e9a15c83a05eabcc9f86c08f2f9e02aecc2c7e5e45114a",
+      "bytes": 65825
+    },
+    {
+      "path": "apps/api/public/heroes/lone_druid.png",
+      "sha256": "2da2f60e208495db8c671778c5d2025d80589ae63efb8ded7edb3de1baf698e1",
+      "bytes": 70267
+    },
+    {
+      "path": "apps/api/public/heroes/luna.png",
+      "sha256": "8dc76ddc710ea0098a2c44b023aa19806ef7a35ec197a06fb6d82f7c9711b50a",
+      "bytes": 77108
+    },
+    {
+      "path": "apps/api/public/heroes/lycan.png",
+      "sha256": "306ba85032e7254996630c4a9157285cd23cdc2cf746dd9a3059f05a4952e064",
+      "bytes": 62015
+    },
+    {
+      "path": "apps/api/public/heroes/magnataur.png",
+      "sha256": "5fc60017a6b6f22884fa1ea7bd29e231e41a677c8403056a6185bae26116befd",
+      "bytes": 68910
+    },
+    {
+      "path": "apps/api/public/heroes/marci.png",
+      "sha256": "96116ad1b05b55f29f1dd2daa575dcd75edbb2bb6e71cead7cffbbc992392cdc",
+      "bytes": 59485
+    },
+    {
+      "path": "apps/api/public/heroes/mars.png",
+      "sha256": "35f0eba3f689d3946a4fd34b003b6c434ba19c54b95ffb907354c6d3a70f0ac0",
+      "bytes": 58906
+    },
+    {
+      "path": "apps/api/public/heroes/medusa.png",
+      "sha256": "e4e6888611b72bf2d5c309dcf1ba09409740ba87972327ea20a5e157dd341bf0",
+      "bytes": 79717
+    },
+    {
+      "path": "apps/api/public/heroes/meepo.png",
+      "sha256": "d3376b2bd54763ce708cd5e14de941c1d5b93f052e9921aa802b9b9a1015313a",
+      "bytes": 72686
+    },
+    {
+      "path": "apps/api/public/heroes/mirana.png",
+      "sha256": "a6c8805cfe11bbdfcefd8ef991a757c82bdffc622c902bf06a739e28d4fb1d45",
+      "bytes": 63933
+    },
+    {
+      "path": "apps/api/public/heroes/monkey_king.png",
+      "sha256": "52befefec39cadb305fda0545ff9f76e85a0a1f33476392e108dafb6f6101527",
+      "bytes": 71820
+    },
+    {
+      "path": "apps/api/public/heroes/morphling.png",
+      "sha256": "6090ada2f9eb0c08a0ced1b1074f28f8c246149cb53575057f317e41ee0353a3",
+      "bytes": 71884
+    },
+    {
+      "path": "apps/api/public/heroes/muerta.png",
+      "sha256": "b4d66833aec595c586d6a15eb25ba35d7aa441b4b717ab79ae17ae801dbdabea",
+      "bytes": 69294
+    },
+    {
+      "path": "apps/api/public/heroes/naga_siren.png",
+      "sha256": "50b612f6c5a27096d3ba463583a636ce7f2a8bcb6e12cf68350c23b47f38beef",
+      "bytes": 66085
+    },
+    {
+      "path": "apps/api/public/heroes/necrolyte.png",
+      "sha256": "11852e2d8a155bd728beb3e4675be3e9ff5594cd536b92106eab5247791538be",
+      "bytes": 71569
+    },
+    {
+      "path": "apps/api/public/heroes/nevermore.png",
+      "sha256": "cbdca84af28f2c904c16079f13483fe13c707dfa38e4994b578b5dfa624b6ec3",
+      "bytes": 59039
+    },
+    {
+      "path": "apps/api/public/heroes/night_stalker.png",
+      "sha256": "09cfe6b46970a42f7c1105cb465ec51b9131642101c501836e21c6f33b49d461",
+      "bytes": 65703
+    },
+    {
+      "path": "apps/api/public/heroes/nyx_assassin.png",
+      "sha256": "2a2e875062eddcfbe93e9a342a02a23c20bb033d05cf2b36b1bc376b09ad2e76",
+      "bytes": 64343
+    },
+    {
+      "path": "apps/api/public/heroes/obsidian_destroyer.png",
+      "sha256": "3be45497050944ea086b27705a81b37d9422f4265866519848220ba4334a2e97",
+      "bytes": 80767
+    },
+    {
+      "path": "apps/api/public/heroes/ogre_magi.png",
+      "sha256": "b58b7b36fb47afb576a32754fc07ffd3e38e3630dde54f538c30d140bbfc5e5e",
+      "bytes": 64011
+    },
+    {
+      "path": "apps/api/public/heroes/omniknight.png",
+      "sha256": "e86bf600ca3e75c7ad9be9cc1620e9610885e930b91b282886ede65ce1d048e2",
+      "bytes": 75856
+    },
+    {
+      "path": "apps/api/public/heroes/oracle.png",
+      "sha256": "9ded7e15e29dc6904d3da4820aee46cf4f8a901f6d78abfc95c6301c4adc078e",
+      "bytes": 113535
+    },
+    {
+      "path": "apps/api/public/heroes/pangolier.png",
+      "sha256": "bcfd3da12516742fa225f47b269e9496f33f1563a60713609716d135c491b7b3",
+      "bytes": 62437
+    },
+    {
+      "path": "apps/api/public/heroes/phantom_assassin.png",
+      "sha256": "e018eebb0ff95cf17aeae9ea8184f5b6b95c2238bd1de1fe59d83072f0808d49",
+      "bytes": 56606
+    },
+    {
+      "path": "apps/api/public/heroes/phantom_lancer.png",
+      "sha256": "5448f992f83d91033573caf183cbe7df592d094bf76783f77f7cbcab06c56005",
+      "bytes": 78214
+    },
+    {
+      "path": "apps/api/public/heroes/phoenix.png",
+      "sha256": "142aac171b38a581ddf5ad3805d6c04a4b05ada58023f8c1ffbfd380185b481d",
+      "bytes": 68649
+    },
+    {
+      "path": "apps/api/public/heroes/primal_beast.png",
+      "sha256": "f1b03b440349bbb9b5b7d0c88967d2584846137c2781775c23b6e6e74181c3af",
+      "bytes": 75164
+    },
+    {
+      "path": "apps/api/public/heroes/puck.png",
+      "sha256": "af3a26d62974d37f415d9c4e01913dd8f78f08b55a5d958e382b907dcb406cf8",
+      "bytes": 63209
+    },
+    {
+      "path": "apps/api/public/heroes/pudge.png",
+      "sha256": "a610c206ddabc1391d99050f8e07079a11bc7c589ad70930f7f371c96782e82b",
+      "bytes": 70682
+    },
+    {
+      "path": "apps/api/public/heroes/pugna.png",
+      "sha256": "fd785e0d2a64584de7679d057e22002ba6091c06869e07c7f33916640ed2d42e",
+      "bytes": 73090
+    },
+    {
+      "path": "apps/api/public/heroes/queenofpain.png",
+      "sha256": "b4641bdbe20bd22cefedab127fd4a8a6848383dd406ca9bd6b59529bcb9af6e8",
+      "bytes": 61291
+    },
+    {
+      "path": "apps/api/public/heroes/rattletrap.png",
+      "sha256": "41531f32f068e739612941655859f51c40ce652fddbed4f3d0a8a2ee5015f125",
+      "bytes": 72679
+    },
+    {
+      "path": "apps/api/public/heroes/razor.png",
+      "sha256": "d63138e3662c29f9482b2f80eccc29626aad74bde5aef1ca7097d43e31bf72f5",
+      "bytes": 60603
+    },
+    {
+      "path": "apps/api/public/heroes/riki.png",
+      "sha256": "66cc88ac6b77b496e9ad4809d235c8adbd76ecb7a12acd45429b8f9cc7e1951e",
+      "bytes": 73976
+    },
+    {
+      "path": "apps/api/public/heroes/ringmaster.png",
+      "sha256": "78dcf87ba363828f133f143836b02568daf0711a117f68b528a55ec3f8310f79",
+      "bytes": 52008
+    },
+    {
+      "path": "apps/api/public/heroes/rubick.png",
+      "sha256": "60cd3552d44584b1d2e73c0d10e1e567d918ef94846adfb83d3ab22b0cf37522",
+      "bytes": 68355
+    },
+    {
+      "path": "apps/api/public/heroes/sand_king.png",
+      "sha256": "d67efbea63013943f7ba436d2bb61c126429947198f22d8794afc5ae6758341f",
+      "bytes": 61751
+    },
+    {
+      "path": "apps/api/public/heroes/shadow_demon.png",
+      "sha256": "322ab51dd6ebf87b90083578d1472020b52fa3991fccaeb4f7aff07b6ec868c4",
+      "bytes": 58628
+    },
+    {
+      "path": "apps/api/public/heroes/shadow_shaman.png",
+      "sha256": "a0b56b8d329d9cc7683d3919689b9f00bfc82cf21f1370448fe97fa585037154",
+      "bytes": 70325
+    },
+    {
+      "path": "apps/api/public/heroes/shredder.png",
+      "sha256": "eb575910042e55ade7bbd825a89b71e62a67fe1d8f656371975a617f3ae8b871",
+      "bytes": 72759
+    },
+    {
+      "path": "apps/api/public/heroes/silencer.png",
+      "sha256": "f92c54a017103a38ddab75bd11d9ca20afccdf278abf0915e29949330518c5a7",
+      "bytes": 70947
+    },
+    {
+      "path": "apps/api/public/heroes/skeleton_king.png",
+      "sha256": "c43241daa9d212e0c0d94d3fc1c09ff55fc6fe92bf83d800ca5007426d5ae630",
+      "bytes": 83338
+    },
+    {
+      "path": "apps/api/public/heroes/skywrath_mage.png",
+      "sha256": "960fe5690d10301dd962c949bf9c0d912a13fa9fe72e0d8d4a38c4ce201cf1dd",
+      "bytes": 76673
+    },
+    {
+      "path": "apps/api/public/heroes/slardar.png",
+      "sha256": "13c577aa1344964aa26a6f2dbb6e4fade97247ee9bca0699a8117858cbe4250e",
+      "bytes": 63804
+    },
+    {
+      "path": "apps/api/public/heroes/slark.png",
+      "sha256": "3bc8eaeef1348281cad6d80ef7c54171548f8d1e37cd6cd6c807102268a4dc37",
+      "bytes": 85147
+    },
+    {
+      "path": "apps/api/public/heroes/snapfire.png",
+      "sha256": "7f09114864aba65189d7e0ee3deef03ce58ae90614e81cbafb5bcc91cec48cd8",
+      "bytes": 58444
+    },
+    {
+      "path": "apps/api/public/heroes/sniper.png",
+      "sha256": "d3af282eeb1f3e6e64d233b0829f002a023defb9e9dcc66a2ae066c4a187e329",
+      "bytes": 63018
+    },
+    {
+      "path": "apps/api/public/heroes/spectre.png",
+      "sha256": "0cadee22da010ca8ec382b66b006a2860e08547c0c5c81223856118d5c01e444",
+      "bytes": 56815
+    },
+    {
+      "path": "apps/api/public/heroes/spirit_breaker.png",
+      "sha256": "9445bef6712904450335d0dd51c19fcbb5237554338f9f3d1880567bb5f496b0",
+      "bytes": 66643
+    },
+    {
+      "path": "apps/api/public/heroes/storm_spirit.png",
+      "sha256": "da021d1d76290db5bee62a653dc8eb249017c35a71cf610d8400fb487f4b9630",
+      "bytes": 75930
+    },
+    {
+      "path": "apps/api/public/heroes/sven.png",
+      "sha256": "2ef4911b24269feaa1d8e49fb2af64ad48e3d3146863b20d692b17a81d207214",
+      "bytes": 62826
+    },
+    {
+      "path": "apps/api/public/heroes/techies.png",
+      "sha256": "6f09a52f38c2681f0a1d6ce29750884726435455d9850c3ba582cf2c96747a42",
+      "bytes": 75277
+    },
+    {
+      "path": "apps/api/public/heroes/templar_assassin.png",
+      "sha256": "5a1018d53998d80ec821f8d5d38db95e59fcba666fae882ed476e024d08d0fe3",
+      "bytes": 67666
+    },
+    {
+      "path": "apps/api/public/heroes/terrorblade.png",
+      "sha256": "1dc33fba18eec4c735811400f98f56ca3d55f16160ad912c00d76f8bcb31d251",
+      "bytes": 66458
+    },
+    {
+      "path": "apps/api/public/heroes/tidehunter.png",
+      "sha256": "db353ba7aff9c25191a39eec3d4c32271a2b9b97d95cd47e1725f48ae8bed468",
+      "bytes": 69013
+    },
+    {
+      "path": "apps/api/public/heroes/tinker.png",
+      "sha256": "df6b29f39dd3f15dce2d4124b96108827b86a3d8a20601fd1beb1ac6cf8034e8",
+      "bytes": 69282
+    },
+    {
+      "path": "apps/api/public/heroes/tiny.png",
+      "sha256": "35a3ad5489430bc533603290c08be163ffa159fe270b575544a787d3d1dcf634",
+      "bytes": 71304
+    },
+    {
+      "path": "apps/api/public/heroes/treant.png",
+      "sha256": "ff7e4940cd749f34d39d0428ea7b69855630685d879ebf106b6041a7fddc05f1",
+      "bytes": 78683
+    },
+    {
+      "path": "apps/api/public/heroes/troll_warlord.png",
+      "sha256": "aba5a7ce1c0f043d20d726ae87cb5e9b88921a9f4ab14b1267cb2d3802cb58f5",
+      "bytes": 72264
+    },
+    {
+      "path": "apps/api/public/heroes/tusk.png",
+      "sha256": "e88a2928724d94ea343b6131a4faa2455cc703eac70e7815489009f3aac07845",
+      "bytes": 69741
+    },
+    {
+      "path": "apps/api/public/heroes/undying.png",
+      "sha256": "be60e6a9681eb8b1503a69bbef481e02e921f5595903804f5b9416289629eb11",
+      "bytes": 66075
+    },
+    {
+      "path": "apps/api/public/heroes/ursa.png",
+      "sha256": "1c8cf5cd41cb1021c8b71fe46d0dbae3d454c74677900ec4e0170e7b95a30d09",
+      "bytes": 59997
+    },
+    {
+      "path": "apps/api/public/heroes/vengefulspirit.png",
+      "sha256": "495e903868656801ecdd115af2ef902bdfda51f8607371f251c3ac9c922d199a",
+      "bytes": 84089
+    },
+    {
+      "path": "apps/api/public/heroes/venomancer.png",
+      "sha256": "38784d74379d7a4eaab2dd484a860b6b3b87b9521ae6f7d40cb0adde50ddc60f",
+      "bytes": 70297
+    },
+    {
+      "path": "apps/api/public/heroes/viper.png",
+      "sha256": "8cd994aaf58120ee367305d06448a370f7f3b2713a80ef1c2e90c3578b33a4f9",
+      "bytes": 61176
+    },
+    {
+      "path": "apps/api/public/heroes/visage.png",
+      "sha256": "be5ad4e6e9f91007486ae00c3568111f4c9df6d377e394f1ea5a798a85ef47ef",
+      "bytes": 68935
+    },
+    {
+      "path": "apps/api/public/heroes/void_spirit.png",
+      "sha256": "43cf7b1e5f4aa0d8b2e5bde747e927ef28b3d9b6c2e5df82d730237c6de0bd52",
+      "bytes": 66944
+    },
+    {
+      "path": "apps/api/public/heroes/warlock.png",
+      "sha256": "3506327d6355935de965a9ddb52790f46d9b5602fc10e0c05ee59b83687a56c1",
+      "bytes": 61330
+    },
+    {
+      "path": "apps/api/public/heroes/weaver.png",
+      "sha256": "0dbe15dcaee8ce9aed3dec9d664a0c0a6b49e7b16bdd66786252ac01d4e50dcd",
+      "bytes": 63291
+    },
+    {
+      "path": "apps/api/public/heroes/windrunner.png",
+      "sha256": "930289266abff95335896a3cd9fb61242e039068182b8e16848e9850b7911fa6",
+      "bytes": 69977
+    },
+    {
+      "path": "apps/api/public/heroes/winter_wyvern.png",
+      "sha256": "23ebf845f662ab7784884a74e4f503a07904b01461d7bbc8d4730e0449dc89d2",
+      "bytes": 73617
+    },
+    {
+      "path": "apps/api/public/heroes/wisp.png",
+      "sha256": "2b7a2edc56d448ce03a90d340febe227a6d1371ea00b3536996344d0f844d23c",
+      "bytes": 54000
+    },
+    {
+      "path": "apps/api/public/heroes/witch_doctor.png",
+      "sha256": "fc5a6260b7028be27532d7f83cb7119948ad7cc4be83f6d4d9c79bff4b552364",
+      "bytes": 64617
+    },
+    {
+      "path": "apps/api/public/heroes/zuus.png",
+      "sha256": "b0979a371efe7c708040dacfda52e14130d7816b09be89ac302d85bfd64cc6e1",
+      "bytes": 78999
+    },
+    {
+      "path": "apps/api/scripts/audit-migration.ts",
+      "sha256": "8ed7f3ccc5ee7fa56d4f1f9d2787ef80fc47a97200992182519a084115a4a6ff",
+      "bytes": 5717
+    },
+    {
+      "path": "apps/api/scripts/check-database.ts",
+      "sha256": "bcdf4c4563b5c99023249bf2aa7bd91db089ef087bc4790478285c8adc9cc4d9",
+      "bytes": 223
+    },
+    {
+      "path": "apps/api/scripts/check-stratz-direct-route.mjs",
+      "sha256": "8c984a328d9ad45183d838120b41183b67dc87c08925f3a2bdfdacad61919ac4",
+      "bytes": 1719
+    },
+    {
+      "path": "apps/api/scripts/env.mjs",
+      "sha256": "2bf7fcf3781e9fc38d78c71970aa7b8ee8c3847adbe61bf60ab02e87424cfdf3",
+      "bytes": 198
+    },
+    {
+      "path": "apps/api/scripts/migrate.ts",
+      "sha256": "0ddabc43463e359b7a9b883007e305871b46bcf29de790783365c4f70b1cf098",
+      "bytes": 855
+    },
+    {
+      "path": "apps/api/scripts/rebuild-inventory-frames.mjs",
+      "sha256": "2153770b2b21afd425eb2695399cae395d1fe408c4e3cdc7039b38313bea3553",
+      "bytes": 2368
+    },
+    {
+      "path": "apps/api/scripts/replay-parser/LaneEvents.java",
+      "sha256": "02b5e0ff5cb8dda375d58278ea292122fbc3b2e211f41d5b9a6ffeb200dc3156",
+      "bytes": 437
+    },
+    {
+      "path": "apps/api/scripts/replay-parser/ReplayInspector.java",
+      "sha256": "e5881512fde17886f2677d7f0c926f309da3b7c5a9a61d53624390a37c4ce175",
+      "bytes": 1365
+    },
+    {
+      "path": "apps/api/scripts/replay-parser/backfill-lane.mjs",
+      "sha256": "1e35c1a738fec4a3cfa9980709b22aff55e4faa93acfd33a6f0181f75f483291",
+      "bytes": 2631
+    },
+    {
+      "path": "apps/api/scripts/replay-parser/build-parser.sh",
+      "sha256": "b5d727be7c3139e16576d207196a4ade30d1191551b586a51670029ae153f0d6",
+      "bytes": 1859
+    },
+    {
+      "path": "apps/api/scripts/replay-parser/import-replay.mjs",
+      "sha256": "b849dbae947315eb1f4474210490db940066b307cb0932bd4d3019f04a811ed9",
+      "bytes": 8863
+    },
+    {
+      "path": "apps/api/scripts/replay-parser/lane-events.mjs",
+      "sha256": "9b7d6ecd5245eb3ed577c4aa65f8b895feb9e389e6ce2173120b94389586b99a",
+      "bytes": 5425
+    },
+    {
+      "path": "apps/api/scripts/replay-parser/probe-metadata.mjs",
+      "sha256": "75183c9881c7f59e47e2bcc568743b7970fd9fb3bbb9147e7d9efc8bdd0bbb93",
+      "bytes": 1060
+    },
+    {
+      "path": "apps/api/scripts/replay-parser/probe-proxy.mjs",
+      "sha256": "1cbf427fd48be2f517abed9f8045f444e619dd9fbfbbb266940f4deade7e747c",
+      "bytes": 2599
+    },
+    {
+      "path": "apps/api/scripts/replay-parser/refresh-match-metadata.mjs",
+      "sha256": "ec67a94dc1564e7fd2a74290811b661d9c9aec941656c79c1575df31d533610c",
+      "bytes": 2483
+    },
+    {
+      "path": "apps/api/scripts/replay-parser/replay-archive.mjs",
+      "sha256": "29113533f5ff9c76589231a8212ff14cf4b700e2104c0426c9ab66d97854a82f",
+      "bytes": 6016
+    },
+    {
+      "path": "apps/api/scripts/replay-parser/replay-job-policy.mjs",
+      "sha256": "5585fb28b3252f32cbd386f22526888663dbc4e58d22be5dbb85cc7c7171b405",
+      "bytes": 1681
+    },
+    {
+      "path": "apps/api/scripts/replay-parser/replay-metadata.mjs",
+      "sha256": "d4e7c97e05c6f8b96705f7dd9742ba3ee46c8dd1bad831dabd3b2ad06442e674",
+      "bytes": 3970
+    },
+    {
+      "path": "apps/api/scripts/replay-parser/replay-queue-utils.mjs",
+      "sha256": "c208726346438e12004a8acf266ca2def125615e90ed4da6279641c6eaaac317",
+      "bytes": 7216
+    },
+    {
+      "path": "apps/api/scripts/replay-parser/replay-spool.mjs",
+      "sha256": "e9da21f773b9eda851abf7626e609c4aedd0bff0377b87c5ebb4519af290be2d",
+      "bytes": 3537
+    },
+    {
+      "path": "apps/api/scripts/replay-parser/replay-transport.mjs",
+      "sha256": "2134512d4fbbb42d97ad25f97f4ec8ecc62a2e8b64ab75bdffe6022630184cfa",
+      "bytes": 14371
+    },
+    {
+      "path": "apps/api/scripts/replay-parser/run-queue.mjs",
+      "sha256": "a49aaf6cc5ffba2b1da4dc019b251f781cb5e1727340e4bb4a9968a8819c8cfe",
+      "bytes": 21595
+    },
+    {
+      "path": "apps/api/scripts/replay-parser/verify-failover.mjs",
+      "sha256": "8f7a954f8cefbf5938203a03dcc465cfd01f1d86fc7243d00c7a76637f466f2b",
+      "bytes": 3279
+    },
+    {
+      "path": "apps/api/scripts/service-monitor/collect.mjs",
+      "sha256": "a19de86d55cbe5f1e93b636344ab6373f9f221ac3f865f1fc5142034a577b418",
+      "bytes": 4167
+    },
+    {
+      "path": "apps/api/scripts/sync-hero-portraits.mjs",
+      "sha256": "4ab113fce7c826b6442c0ca79882836fb3072360b9983a12f20245d7cd337d38",
+      "bytes": 2571
+    },
+    {
+      "path": "apps/api/scripts/sync-item-icons.mjs",
+      "sha256": "587cc4363e24475a5e9ee23fe613815c0aa941d1c02c34666a451542cfc148fd",
+      "bytes": 5231
+    },
+    {
+      "path": "apps/api/scripts/worker.ts",
+      "sha256": "a5e221e7a549becad2b36755dd79714126dc0600ecfd347c2e0aaf545041c81b",
+      "bytes": 1724
+    },
+    {
+      "path": "apps/api/src/app.ts",
+      "sha256": "5a6aa50d91d21f03f22ae0189c20eac8f4fc92679ea785ddafec3a557630b5c0",
+      "bytes": 4313
+    },
+    {
+      "path": "apps/api/src/data/heroes.ts",
+      "sha256": "a7f50c4edda98db28720ee9f6e00856a2a62c79c69615d821ba164e2ad2ccbfe",
+      "bytes": 7212
+    },
+    {
+      "path": "apps/api/src/data/items.generated.ts",
+      "sha256": "92870f6e716669cedacf21d108229d0e43e3b3c9dc616f210dda25377fab2cbf",
+      "bytes": 40689
+    },
+    {
+      "path": "apps/api/src/env.ts",
+      "sha256": "b2c1aa80b01be0b9c16a6c908dd32b6fe4de2f5c0351bbcf4dab3fae47cc0549",
+      "bytes": 286
+    },
+    {
+      "path": "apps/api/src/http/express-handler.ts",
+      "sha256": "6742fb07ef34a4b0ed7c152dc1683fd988067f570f1a004dfadcb73ee9ef2819",
+      "bytes": 2916
+    },
+    {
+      "path": "apps/api/src/http/log.ts",
+      "sha256": "fc9f8b43a8dd93cf0f1a51fdad8dd795962d4c9bcb5174502d46167e3c6f9d78",
+      "bytes": 783
+    },
+    {
+      "path": "apps/api/src/http/protocol.ts",
+      "sha256": "5b128097362a5e24dd16ff5185fbfd8278ea136d21ec1764c0ea853b5cfc4a7e",
+      "bytes": 1464
+    },
+    {
+      "path": "apps/api/src/http/security.ts",
+      "sha256": "fe0f800c52edb83eb6dfea2001bcea0932e649b6a6126765c029de62d0bd0f32",
+      "bytes": 2295
+    },
+    {
+      "path": "apps/api/src/lib/admin/auth.ts",
+      "sha256": "363209873b7ee71bc30d87966762558056ce555146235543c4b669895d1604fd",
+      "bytes": 511
+    },
+    {
+      "path": "apps/api/src/lib/admin/config.ts",
+      "sha256": "32a4ff0ab09e9e87f3f2ddc31e649d051c032fc58341ae2829c13ab990d27417",
+      "bytes": 548
+    },
+    {
+      "path": "apps/api/src/lib/admin/errors.ts",
+      "sha256": "bc62ba56fecdc424b5762437a1aaae6c672c8e66cea396a9fda6ee02ee1aeb9b",
+      "bytes": 1623
+    },
+    {
+      "path": "apps/api/src/lib/admin/password.ts",
+      "sha256": "71838815d90fa456eac856e9d0ff687c67c66ca72bef7d975e12a929189adef8",
+      "bytes": 1192
+    },
+    {
+      "path": "apps/api/src/lib/admin/replay-monitor.ts",
+      "sha256": "805f1dda0c9c274499dee8ceeaa4d3de870f4de933910940f015bf3689f73b97",
+      "bytes": 1341
+    },
+    {
+      "path": "apps/api/src/lib/admin/repository.ts",
+      "sha256": "c3a9f3f61ec0f3c01cff25383a3785f0718bd4526a966e4ce94b4d570eecae69",
+      "bytes": 9650
+    },
+    {
+      "path": "apps/api/src/lib/admin/reprocess-matches.ts",
+      "sha256": "a6fce1cf7c8e5a6077da665026f6441a5b8cee79efd7e48179085a187ce3f333",
+      "bytes": 3261
+    },
+    {
+      "path": "apps/api/src/lib/admin/service-monitor.ts",
+      "sha256": "a9052687868fc2adb49d742a45ac4136773b28a2dfe557744623079ee508509a",
+      "bytes": 4908
+    },
+    {
+      "path": "apps/api/src/lib/admin/service.ts",
+      "sha256": "2b5260ed0f85e0d18ab836a731bd3159a936ba2780b0f08e432cb3441184a60e",
+      "bytes": 2807
+    },
+    {
+      "path": "apps/api/src/lib/admin/validation.ts",
+      "sha256": "311b4cd15f724c3e8b5f37ba4393833ec3e6a1b9340f742a13e7e9ae692a9e72",
+      "bytes": 1527
+    },
+    {
+      "path": "apps/api/src/lib/api.ts",
+      "sha256": "8dbe640f44a81dfb792ff003849d84201023111ffe01df045ee342c9afd610b9",
+      "bytes": 7535
+    },
+    {
+      "path": "apps/api/src/lib/auth/client-address.ts",
+      "sha256": "a88f6536bdcdd02fc1b18d66460abcfe9e67b1881f51fdb524f7fe4be1402fae",
+      "bytes": 319
+    },
+    {
+      "path": "apps/api/src/lib/auth/config.ts",
+      "sha256": "39935096d5b8edaec1e0a3acad10cbda0cff0042c4af15dcc75829e183804030",
+      "bytes": 720
+    },
+    {
+      "path": "apps/api/src/lib/auth/password-response.ts",
+      "sha256": "c3a27f7f6da4ac5cd2ac31e925d31aabff24988421a734b78cef01b59db7c732",
+      "bytes": 1141
+    },
+    {
+      "path": "apps/api/src/lib/auth/password-validation.ts",
+      "sha256": "21bba8690b7a050b27f220176241cb49d86f6c33dc11c905777a3b83a1feade1",
+      "bytes": 1568
+    },
+    {
+      "path": "apps/api/src/lib/auth/password.ts",
+      "sha256": "c068b17daa9bb2c03f275cee6c107dbe095419fba610b32f4cf79c4f1bc01a3b",
+      "bytes": 4514
+    },
+    {
+      "path": "apps/api/src/lib/auth/request.ts",
+      "sha256": "eb791573f1f1019362ea587c32e1b0781a81e7dc7dec4c840c99e44c45b555a1",
+      "bytes": 888
+    },
+    {
+      "path": "apps/api/src/lib/auth/session-cookie.ts",
+      "sha256": "7a2532dafd146847ae0bc9c9a21bb10d953405efe6af64e71553d14e873dd127",
+      "bytes": 480
+    },
+    {
+      "path": "apps/api/src/lib/auth/session.ts",
+      "sha256": "55e9e3b65466d9513a32d3a42adc277d890cfc1381deeeda0a028730a5427fa8",
+      "bytes": 2274
+    },
+    {
+      "path": "apps/api/src/lib/auth/steam.ts",
+      "sha256": "3f71b2c1a216f85eb883426a83121bced44bcf18f881068a0b6aaba85a57d0fd",
+      "bytes": 6266
+    },
+    {
+      "path": "apps/api/src/lib/auth/user.ts",
+      "sha256": "e69b2ab0d61836b1982629de37e341c3d965ab53d93417299f23fa9c87a6fbd0",
+      "bytes": 1147
+    },
+    {
+      "path": "apps/api/src/lib/constants.ts",
+      "sha256": "4c422f059f4cadda64e6999e2dee481d1f160c376a04befba9ad7936ef1c9721",
+      "bytes": 840
+    },
+    {
+      "path": "apps/api/src/lib/cursor-theme.ts",
+      "sha256": "6f65c8475f1f377f3bf1497c5fba641783593f2ae74238f580eecad1add1fb63",
+      "bytes": 1258
+    },
+    {
+      "path": "apps/api/src/lib/date.ts",
+      "sha256": "120dc44c4b6a9cb53707c4411c15aefe2c38aa743701f930d5ed1ca5d56563f0",
+      "bytes": 16462
+    },
+    {
+      "path": "apps/api/src/lib/db/compatibility.ts",
+      "sha256": "3eb05c512a7bad9d4e9d90174f499c22e4b16a29b97261d2ab4f893c70f7bc41",
+      "bytes": 1070
+    },
+    {
+      "path": "apps/api/src/lib/db/index.ts",
+      "sha256": "894ebbd6643ed4901824c9d37e626f1668294d2bd678288783168db5e01c5284",
+      "bytes": 1051
+    },
+    {
+      "path": "apps/api/src/lib/db/schema.ts",
+      "sha256": "96f9cd78970e9af1274ec8b340ddffa1056175e39f47ebc50fe954dfb02eff25",
+      "bytes": 41542
+    },
+    {
+      "path": "apps/api/src/lib/dota/analysis-position-overrides.ts",
+      "sha256": "a39e6bb94eb048adebc7e9e039b71206971b1e5547bbc3fa826a07ae6ba738a1",
+      "bytes": 2017
+    },
+    {
+      "path": "apps/api/src/lib/dota/farm-kills.ts",
+      "sha256": "2093cb0b4a37d6137aa03b1abc36947fc3d6c61f3beb946a1cd4e3bcbd5b8690",
+      "bytes": 1836
+    },
+    {
+      "path": "apps/api/src/lib/dota/item-ownership-analysis.ts",
+      "sha256": "10def85deaac5a6253340efffaa3f3ab734f27a125664b8039159b693fe9b882",
+      "bytes": 3656
+    },
+    {
+      "path": "apps/api/src/lib/dota/item-timing-analysis.ts",
+      "sha256": "fc5392fbebed9aa64ba0ec4841877a1b3fcea28f2e4eeb9524e24a5498eaca64",
+      "bytes": 4135
+    },
+    {
+      "path": "apps/api/src/lib/dota/lane-efficiency.ts",
+      "sha256": "26fad41aec2ae55bd523484e43e75322baa3400c49e9d5eb457b261e51817621",
+      "bytes": 11501
+    },
+    {
+      "path": "apps/api/src/lib/dota/lane-impact-analysis.ts",
+      "sha256": "cebe9ea4508b59b6913c395851ea9b889355601ecc1b07b462321b8db9b7cb66",
+      "bytes": 6605
+    },
+    {
+      "path": "apps/api/src/lib/dota/map-landmarks.ts",
+      "sha256": "dfd5006161b27223f101df2892f24cb73c0bf7ec0cab0aa5371cc9f04d3b9d45",
+      "bytes": 3692
+    },
+    {
+      "path": "apps/api/src/lib/dota/match-analysis-repository.ts",
+      "sha256": "978dc39f9bee19e27a37039a6ac2341748f116045f28d635ac3a8f4981fe1e8e",
+      "bytes": 8635
+    },
+    {
+      "path": "apps/api/src/lib/dota/match-analysis.ts",
+      "sha256": "6008da7f82b5edf65fa9ace1821136d1595a00adbec71736647709828d3df79f",
+      "bytes": 19008
+    },
+    {
+      "path": "apps/api/src/lib/dota/match-details.ts",
+      "sha256": "02e3e629cae5aaddc224d6fa17d93b8c1cdc269c6dae98751dae53a9f4074bdb",
+      "bytes": 4710
+    },
+    {
+      "path": "apps/api/src/lib/dota/match-map-analysis.ts",
+      "sha256": "ed4c60fd4e0d5c6d0d0e032972cabc4b29363a2891904aad05e6bbe154249443",
+      "bytes": 18444
+    },
+    {
+      "path": "apps/api/src/lib/dota/modes.ts",
+      "sha256": "8359e1a660f2e240effdafba2f3b2778fd627f26d4aa2951c076d2284d05e722",
+      "bytes": 1840
+    },
+    {
+      "path": "apps/api/src/lib/dota/performance-cohort.ts",
+      "sha256": "e2e6e3e2be8b8e033eda48bff8550052b25fb4dba40fce43c9829b75f5f7ddea",
+      "bytes": 12881
+    },
+    {
+      "path": "apps/api/src/lib/dota/performance-presentation.ts",
+      "sha256": "af5c7c8697259d3f036261771ab3c1b75f9f2dc2cf670035b1f84938df50bb12",
+      "bytes": 1645
+    },
+    {
+      "path": "apps/api/src/lib/dota/performance-score.ts",
+      "sha256": "72f1bc09bdedb02a10623530d466b208971e57c85308d298b7655bbec3e588d8",
+      "bytes": 6059
+    },
+    {
+      "path": "apps/api/src/lib/dota/position-resolver.ts",
+      "sha256": "65377a92a32e563b5ee21d9f0dd885347773b5c397f620e576e47ad0a392aef2",
+      "bytes": 10772
+    },
+    {
+      "path": "apps/api/src/lib/hero-pool/repository.ts",
+      "sha256": "ac9c282ba3a6ff86f3717105dfc9fa5db880848677aa73658b04f3f37f81bdb5",
+      "bytes": 2401
+    },
+    {
+      "path": "apps/api/src/lib/hero-pool/rules.ts",
+      "sha256": "79bfdd540c4795551ffcf4e1797ce46e41b8191da8f0cb195d503fadc67f4243",
+      "bytes": 940
+    },
+    {
+      "path": "apps/api/src/lib/hero-pool/validation.ts",
+      "sha256": "cdc24d86da523352e840bf97eafd0444c6b03db666dc47c1e402595a3abc10de",
+      "bytes": 814
+    },
+    {
+      "path": "apps/api/src/lib/journal/ban-policy.ts",
+      "sha256": "914ded8e1fd929af8386f9a4c11d420bac13b945dfd784bde96d9b3c1bd87eec",
+      "bytes": 362
+    },
+    {
+      "path": "apps/api/src/lib/journal/dismissed.ts",
+      "sha256": "22915575ef079bf1606b5e41ad06adf84d4152efa278c04fb3c99d0ad78d57b8",
+      "bytes": 361
+    },
+    {
+      "path": "apps/api/src/lib/journal/http.ts",
+      "sha256": "235fa10b81d2e7098e590be043a9fb1e8dae1a447fcd877b826e1590b52b8ac3",
+      "bytes": 602
+    },
+    {
+      "path": "apps/api/src/lib/journal/match-summary.ts",
+      "sha256": "c5cbdf9d4ac13e291819d30f17d3ac392b21f65fcf8fc9a79020700e574624e7",
+      "bytes": 2341
+    },
+    {
+      "path": "apps/api/src/lib/journal/repository.ts",
+      "sha256": "0fa229f3553b865f9789278ec98b8832fd8af7666bf159c7661d702f25e362c4",
+      "bytes": 18833
+    },
+    {
+      "path": "apps/api/src/lib/journal/timezone.ts",
+      "sha256": "9e5e1f46363e28335975bc259157e8f8a8547dc69857b75892da12f9b2a3d18b",
+      "bytes": 779
+    },
+    {
+      "path": "apps/api/src/lib/journal/validation.ts",
+      "sha256": "60742c85f557a346e8768e3ec2ea2b806d56390c63e4945d3716a5163a6ea876",
+      "bytes": 5740
+    },
+    {
+      "path": "apps/api/src/lib/match-image-job/config.ts",
+      "sha256": "7ccd076b64572e87386c98db523dd345951f739f42bc73265b9bcf19ea1c2e4d",
+      "bytes": 956
+    },
+    {
+      "path": "apps/api/src/lib/match-image-job/errors.ts",
+      "sha256": "89209a553da820b56fc4b12d5a1e6aee4a0acb7db651cb2aec3213509b3285d1",
+      "bytes": 616
+    },
+    {
+      "path": "apps/api/src/lib/match-image-job/policy.ts",
+      "sha256": "7ec5f1b86207f4495f4f7234193b02c3e7c7472c053e7ff95081e197970a1177",
+      "bytes": 966
+    },
+    {
+      "path": "apps/api/src/lib/match-image-job/repository.ts",
+      "sha256": "97e6f335cac3a010ddba8fc08426b22beb3d8110042084329e310aeb1f939a35",
+      "bytes": 8358
+    },
+    {
+      "path": "apps/api/src/lib/match-image-job/service.ts",
+      "sha256": "2f767ae6e5b3a4ab1134147a9aba850f53c25dddfe85b2b2982dd91bce02de36",
+      "bytes": 3754
+    },
+    {
+      "path": "apps/api/src/lib/match-image/assets.ts",
+      "sha256": "1ef61f9c828e3562182c8826df51c1606cca55c13963885c05024781e52d014d",
+      "bytes": 1170
+    },
+    {
+      "path": "apps/api/src/lib/match-image/config.ts",
+      "sha256": "09abfdb5d6072784a6c2486a95e6da4420328689db94622d2e9c8a628ee6f984",
+      "bytes": 818
+    },
+    {
+      "path": "apps/api/src/lib/match-image/errors.ts",
+      "sha256": "2864ccd02746f48f7e770183f3d11edd74ae6a8126fdad8f94d7dc3afbe4232d",
+      "bytes": 182
+    },
+    {
+      "path": "apps/api/src/lib/match-image/model.ts",
+      "sha256": "578c16081602b9a8a70900a586d1a4cd79b6e0dbca9aa15c6bfacd7260a06f88",
+      "bytes": 3513
+    },
+    {
+      "path": "apps/api/src/lib/match-image/renderer.ts",
+      "sha256": "ea311e90bf116a88155d3a7b4557328b6feaf6ac12a041ba3a8c79f8e50328b5",
+      "bytes": 3895
+    },
+    {
+      "path": "apps/api/src/lib/match-image/templates.ts",
+      "sha256": "edbcdf26f8a4cfc0b9752b8c949d53c61c69d01e84e6d383fb68f23b18328d1d",
+      "bytes": 12314
+    },
+    {
+      "path": "apps/api/src/lib/match-preparation/repository.ts",
+      "sha256": "601b91caa367ea5570a835817d1ce8bf36fef946a11bf30b7f26e1e9aa7bd651",
+      "bytes": 3940
+    },
+    {
+      "path": "apps/api/src/lib/media/errors.ts",
+      "sha256": "82efce2551a920dd3865228de584cc9e4cf56165a98b87e34b0d9d066a8480c5",
+      "bytes": 1028
+    },
+    {
+      "path": "apps/api/src/lib/media/repository.ts",
+      "sha256": "210f5a237f485d0414e38823ebf348f0a2d49e16f524c6353ac6bff2047e33eb",
+      "bytes": 2103
+    },
+    {
+      "path": "apps/api/src/lib/media/service.ts",
+      "sha256": "d6c3626ff3a5664994148e2bcf350206c6bc45bf6cb92b60bc7816a65a54ce71",
+      "bytes": 3647
+    },
+    {
+      "path": "apps/api/src/lib/media/validation.ts",
+      "sha256": "52fb6293de1782376281d22730b307b05fad0493b8b83fc03d8b305702d9f5bd",
+      "bytes": 3299
+    },
+    {
+      "path": "apps/api/src/lib/monthly-reference/model.ts",
+      "sha256": "c43cd06a4283acfec7b3d69917e6c7365de76dcca3e0aa997b45af61ad400888",
+      "bytes": 3233
+    },
+    {
+      "path": "apps/api/src/lib/monthly-reference/providers.ts",
+      "sha256": "b7e0936154b5d1a9c88413f1c89a063302736b6ffbd18f7c8a0c21bdf9b3697e",
+      "bytes": 5802
+    },
+    {
+      "path": "apps/api/src/lib/monthly-reference/selection.ts",
+      "sha256": "3c5a8f4ce35b47ad58b32ea5f4b15090def51f278348829ff638305d48ef5891",
+      "bytes": 1913
+    },
+    {
+      "path": "apps/api/src/lib/monthly-reference/service.ts",
+      "sha256": "f2b7b7cebb3fa7e12be294dfd8d61db524cc4b0854fecdc03264321d76b8e663",
+      "bytes": 20436
+    },
+    {
+      "path": "apps/api/src/lib/opendota-parse/config.ts",
+      "sha256": "7341731a44b66870cd0db01bb30cd9e30b5ee21439332d625c320e13329806db",
+      "bytes": 1390
+    },
+    {
+      "path": "apps/api/src/lib/opendota-parse/repository.ts",
+      "sha256": "d8d3efed3d3eec62dd062e8ca8673e823885ad38a19ce8939d099fcaa881515d",
+      "bytes": 11279
+    },
+    {
+      "path": "apps/api/src/lib/opendota-parse/service.ts",
+      "sha256": "9ba1dd57b53af5ff7ab9030b2559a315b6bd028ddf2a69fae05be471046dbd15",
+      "bytes": 3939
+    },
+    {
+      "path": "apps/api/src/lib/opendota/analysis-policy.ts",
+      "sha256": "fb48fa416375963b035e379bd1fd39a5da814bc16bddc01ccee892b8c9fdc280",
+      "bytes": 1683
+    },
+    {
+      "path": "apps/api/src/lib/opendota/client.ts",
+      "sha256": "d38b1a1ed349bb49f7e11e6a274ff33171c8a1995ca8f7848909c5fbdd9ee452",
+      "bytes": 4903
+    },
+    {
+      "path": "apps/api/src/lib/opendota/config.ts",
+      "sha256": "5e527c2a49b8f777db0d51c0c36d517c3521b9f9d6ef94af62b7912a7798cbc5",
+      "bytes": 2780
+    },
+    {
+      "path": "apps/api/src/lib/opendota/errors.ts",
+      "sha256": "a8cf6d0ae91d7af89a4333f24366cfc383f1cc579e3ead8a8955311fb67cf7c2",
+      "bytes": 1428
+    },
+    {
+      "path": "apps/api/src/lib/opendota/match-derived.ts",
+      "sha256": "8c0578569a2bd1dda9cc07426633d97f9f13b8a3e32244e4d0bfa287baefaf85",
+      "bytes": 2120
+    },
+    {
+      "path": "apps/api/src/lib/opendota/recent.ts",
+      "sha256": "6323875565f421f08fd668e8900bf11fa42dc3a9b0b44141f1d93a8c0ccc44eb",
+      "bytes": 1141
+    },
+    {
+      "path": "apps/api/src/lib/opendota/repository.ts",
+      "sha256": "4c85f506906793213fc14bb79f044640e01e7256bd0626530bc07f12ee3a3e9d",
+      "bytes": 18529
+    },
+    {
+      "path": "apps/api/src/lib/opendota/service.ts",
+      "sha256": "133d637c7a20e6d71729c75a0ac6344ef6352786a591cbe28d578a9ad6cbc35e",
+      "bytes": 12259
+    },
+    {
+      "path": "apps/api/src/lib/opendota/sync-request.ts",
+      "sha256": "615ff3130f2759e0390ca63862b03db5131718f43a2924899f86ea7408ee3578",
+      "bytes": 3923
+    },
+    {
+      "path": "apps/api/src/lib/opendota/validation.ts",
+      "sha256": "e0d5b02b203a2ec31986434b6da7948e372f2159b7fddf7ac30fe1d0a368f90d",
+      "bytes": 5899
+    },
+    {
+      "path": "apps/api/src/lib/persian-calendar.ts",
+      "sha256": "28f588135e01a27ae8fc96439f77fed8ed8a89621d28f96740c486efeccaeee2",
+      "bytes": 3329
+    },
+    {
+      "path": "apps/api/src/lib/player-dashboard/repository.ts",
+      "sha256": "fcbfd19d9c59f44450567d1eda4f7e9cd306f4a0e3ccc86d5318d2c51bff6fa0",
+      "bytes": 7298
+    },
+    {
+      "path": "apps/api/src/lib/player-search/repository.ts",
+      "sha256": "3a14dcce4ba392b2221f7b03e94bf8c183818dc3885c2f2440b21ec7d5ec4ca6",
+      "bytes": 2007
+    },
+    {
+      "path": "apps/api/src/lib/player-search/validation.ts",
+      "sha256": "f9d9052833cb38833d06ef088ddc6810ed6cc8c0018cc29a4cf7081de1472d47",
+      "bytes": 257
+    },
+    {
+      "path": "apps/api/src/lib/releases/repository.ts",
+      "sha256": "933c5d6e5fe55bcd7fb9cfb22fcee16081a82028c453b4a7004eaa09125b31dc",
+      "bytes": 2991
+    },
+    {
+      "path": "apps/api/src/lib/releases/validation.ts",
+      "sha256": "eb6e62ba889f7074ac74eaeaf0ecf8925d2261bea45359938b663a3e3107a894",
+      "bytes": 1420
+    },
+    {
+      "path": "apps/api/src/lib/replay/archive-storage.ts",
+      "sha256": "e42994e9238b74bd3acad639ab9f5a3fb69ed547688fb139da15f5b967b2e559",
+      "bytes": 3059
+    },
+    {
+      "path": "apps/api/src/lib/replay/job-repository.ts",
+      "sha256": "49733e5a08cc4bf1fd21e89f619b7792444150c20ee4821a742c9118366b8f5a",
+      "bytes": 7038
+    },
+    {
+      "path": "apps/api/src/lib/replay/metadata-fields.ts",
+      "sha256": "f3a87a78c4a1d00367c149877fc80a2c608de340a676e059dda833212a230495",
+      "bytes": 2239
+    },
+    {
+      "path": "apps/api/src/lib/replay/monitor-types.ts",
+      "sha256": "c7a77dce7963116352f010d138fca5088e1398a73b284d83602b0b190f70ef09",
+      "bytes": 1149
+    },
+    {
+      "path": "apps/api/src/lib/replay/overlay.ts",
+      "sha256": "93e6642a7670d25f87edec5300fb9a9cc2a681c1dd6d1ec677050b3dc6d41d49",
+      "bytes": 5461
+    },
+    {
+      "path": "apps/api/src/lib/replay/progress.ts",
+      "sha256": "4d24936e76cc6d268bae97915a75ba375af2f461f6e04223452567b080482c2b",
+      "bytes": 3024
+    },
+    {
+      "path": "apps/api/src/lib/report.ts",
+      "sha256": "0d1b9d1b121cc57b316d5f84d374ff6ec3e9a71190da8a2f519001e4e0f17850",
+      "bytes": 1932
+    },
+    {
+      "path": "apps/api/src/lib/storage/client.ts",
+      "sha256": "a5c17a8ade61b2ec583fc6641e198c17e95b29a804f46a09eba0adc30afc1e0b",
+      "bytes": 1829
+    },
+    {
+      "path": "apps/api/src/lib/storage/config.ts",
+      "sha256": "63dee92edaf59f8f045d1191a6ea14f30f3c74fbcef4b15efec3872f80d8f752",
+      "bytes": 1964
+    },
+    {
+      "path": "apps/api/src/lib/storage/media.ts",
+      "sha256": "39bd5eb2d49263578c964754e2c080608414cbf6cc788a3a525d33c30966ee86",
+      "bytes": 1308
+    },
+    {
+      "path": "apps/api/src/lib/stratz/client.ts",
+      "sha256": "139f41b61f882341ec35fc64231b1bca73e8382728eab13262644b5aa2e6f607",
+      "bytes": 7675
+    },
+    {
+      "path": "apps/api/src/lib/stratz/config.ts",
+      "sha256": "062878072d42026f9db7ae99c4d893fdc5e1512bc331230e2ab672728f764bcf",
+      "bytes": 3441
+    },
+    {
+      "path": "apps/api/src/lib/stratz/diagnostics.ts",
+      "sha256": "12791b8e22dce6d6c99ce4c2e6d887f2e182daa186695344575a71866eed554c",
+      "bytes": 2079
+    },
+    {
+      "path": "apps/api/src/lib/stratz/direct-transport.ts",
+      "sha256": "a78418660dac1d473e5b3359fdee7cc9b734711704eb319778e4f9748afb7056",
+      "bytes": 2646
+    },
+    {
+      "path": "apps/api/src/lib/stratz/enrichment.ts",
+      "sha256": "e8d7426b088a527fa5f953cbf8a46811a96b4f98141ac2d538fa0042e2485dfa",
+      "bytes": 3736
+    },
+    {
+      "path": "apps/api/src/lib/stratz/errors.ts",
+      "sha256": "e174584ea852fbdcda960a541cc21313791499d0572c4946e30f046558089ea4",
+      "bytes": 1756
+    },
+    {
+      "path": "apps/api/src/lib/stratz/gateway.ts",
+      "sha256": "acd218a3b0428c60395a896141bf0e695c3a1c654bb38327e103cb51d927148f",
+      "bytes": 1931
+    },
+    {
+      "path": "apps/api/src/lib/stratz/job-repository.ts",
+      "sha256": "323caac5d6f518f5d284a4e2d0eed43fc5480a5c2297037a974ef57ef60323ad",
+      "bytes": 12771
+    },
+    {
+      "path": "apps/api/src/lib/stratz/job-service.ts",
+      "sha256": "b9862fea5e36ddbe9d00aed715a7f2e50c7486cacaec353b90efdbac29bf90ba",
+      "bytes": 3777
+    },
+    {
+      "path": "apps/api/src/lib/stratz/rate-limit.ts",
+      "sha256": "009fd26484d3fdf9bb697da738e65b76c67dd85178273300f02f30932aee8007",
+      "bytes": 2250
+    },
+    {
+      "path": "apps/api/src/lib/stratz/validation.ts",
+      "sha256": "28ec5c5b467bc78d4607a50867bff6a559b431181d5474c374a2ce0267793a84",
+      "bytes": 3768
+    },
+    {
+      "path": "apps/api/src/lib/sync/auth.ts",
+      "sha256": "65892c69ba4482c779af894b229553c58c4adc62ee9b53ffcebf895813d9e35e",
+      "bytes": 766
+    },
+    {
+      "path": "apps/api/src/lib/sync/config.ts",
+      "sha256": "0f03514e3de257920da3ffe34e4f2cc3b1af17552409ec6a8a89ea6c8197205a",
+      "bytes": 2209
+    },
+    {
+      "path": "apps/api/src/lib/sync/errors.ts",
+      "sha256": "bc916a8507bb9bf04b23685979387d92f200b2998b50a4595480d275d8abba81",
+      "bytes": 767
+    },
+    {
+      "path": "apps/api/src/lib/sync/job.ts",
+      "sha256": "1fb302ce711657ca24f66c533e3212e8d0c7e746a2c715fce91ed549b8dc9ac7",
+      "bytes": 338
+    },
+    {
+      "path": "apps/api/src/lib/sync/manual-service.ts",
+      "sha256": "6fae81e882a96dfe41b5fc6720e0dc88d6b344074da857af4511d9b36a268924",
+      "bytes": 7506
+    },
+    {
+      "path": "apps/api/src/lib/sync/repository.ts",
+      "sha256": "9103b4508a5cd6f56e69753f667c2d233dd56eb344632c57d772950ceed28479",
+      "bytes": 7724
+    },
+    {
+      "path": "apps/api/src/lib/sync/service.ts",
+      "sha256": "03951348211eaf165c478c397a0433ba6ad8d59d9be985f586286d1dfe9c6ad3",
+      "bytes": 2878
+    },
+    {
+      "path": "apps/api/src/lib/types.ts",
+      "sha256": "9703bc9b8c17fec1d5b3922e0bf90993e9bb92d5f9c40d9e8deaaf83310f5628",
+      "bytes": 14998
+    },
+    {
+      "path": "apps/api/src/lib/version.ts",
+      "sha256": "47b49ea69556ea969b2858deb57172fdfb4df9b8f9432d42df59406a3ccf3e6c",
+      "bytes": 53
+    },
+    {
+      "path": "apps/api/src/main.ts",
+      "sha256": "78279b9cd798c0d5f0aabfb069361c604a9cbb00bc32c746fa12b599ce5ba2f1",
+      "bytes": 1012
+    },
+    {
+      "path": "apps/api/src/routes/admin/monthly-references/route.ts",
+      "sha256": "5051cbb0d873f02c1ff9855cd97890612ab40cb48df0c81bf43e12f450e0b843",
+      "bytes": 3136
+    },
+    {
+      "path": "apps/api/src/routes/admin/overview/route.ts",
+      "sha256": "dcdafac2c0d68a4fe3135d531cccf5827279c6a46dbac2947331cce4cdf2408e",
+      "bytes": 776
+    },
+    {
+      "path": "apps/api/src/routes/admin/releases/[releaseId]/route.ts",
+      "sha256": "f4012e2ab533c45b31cfa94d058d1fd4496f0ef20698d6df5c711478e9a6185c",
+      "bytes": 1116
+    },
+    {
+      "path": "apps/api/src/routes/admin/releases/route.ts",
+      "sha256": "646a9abf0c1b6e79a470c8df450c909181b834aa274e6f86a803499cad996cd9",
+      "bytes": 1176
+    },
+    {
+      "path": "apps/api/src/routes/admin/replay-archive/route.ts",
+      "sha256": "c42d070c69d887c5f6fc3a2aec55eb4feb2b5f075e73e70f5a005f9f919a64b9",
+      "bytes": 4301
+    },
+    {
+      "path": "apps/api/src/routes/admin/replay-monitor/route.ts",
+      "sha256": "91b3e1857561a7c4799af20ced5ab38107e9ee831ecb3bfd023a1433835e76bb",
+      "bytes": 724
+    },
+    {
+      "path": "apps/api/src/routes/admin/service-monitor/route.ts",
+      "sha256": "23612f548233d1dc7f2f131cfdc0feb244ca8e74134f015eab311ac269a53a8a",
+      "bytes": 554
+    },
+    {
+      "path": "apps/api/src/routes/admin/stratz-diagnostics/route.ts",
+      "sha256": "6ba6070121390c524f42f8ecc9f69bc06dc5162aa5eb7e35fe6a4299c94e5b31",
+      "bytes": 1650
+    },
+    {
+      "path": "apps/api/src/routes/admin/users/[userId]/matches/reprocess/route.ts",
+      "sha256": "8ddcdc89c859b4b5dd5de532b20f01b7804bad0da98b799916b93a33ea9fb263",
+      "bytes": 1359
+    },
+    {
+      "path": "apps/api/src/routes/admin/users/[userId]/password/route.ts",
+      "sha256": "a16a821620a3aa764e9a4303d4a970bbf873b9f03a4b186379b8efa566bd748c",
+      "bytes": 2003
+    },
+    {
+      "path": "apps/api/src/routes/admin/users/route.ts",
+      "sha256": "b261812c09421f32f03fccb82eda74341e5a085c31e88a0336eaffa0176f68c2",
+      "bytes": 2120
+    },
+    {
+      "path": "apps/api/src/routes/auth/logout/route.ts",
+      "sha256": "ad109ca2a1b32fde3afff3d54a801c160cd3df2d05e52c5364494148420c2023",
+      "bytes": 866
+    },
+    {
+      "path": "apps/api/src/routes/auth/password/login/route.ts",
+      "sha256": "a449b1cd2dfdebc90ed651ddc2ceb9fc8865c8dae605d1dad8cbf4da7e1f9781",
+      "bytes": 2864
+    },
+    {
+      "path": "apps/api/src/routes/auth/password/me/route.ts",
+      "sha256": "393d45d78c4d621a3902470422c56c45fd6e02a6beed65306cfa9542fb3868a8",
+      "bytes": 1605
+    },
+    {
+      "path": "apps/api/src/routes/auth/session/route.ts",
+      "sha256": "5ef7894ad9b29aec82d9e97ba84e35c493f2ae11f328ed3d2d13f04b3c5f5805",
+      "bytes": 775
+    },
+    {
+      "path": "apps/api/src/routes/auth/steam/callback/route.ts",
+      "sha256": "27c5b0f572f7feb5cacc476e05ad93f07d64ae902397f14b675e34451b1c6703",
+      "bytes": 2252
+    },
+    {
+      "path": "apps/api/src/routes/auth/steam/route.ts",
+      "sha256": "cab2e32cb9b6e0018529d252f2630fe753f8d5807c36fd923070a008c0dac096",
+      "bytes": 645
+    },
+    {
+      "path": "apps/api/src/routes/health/route.ts",
+      "sha256": "a244e393fcbc1177de4e04e2e7c4414c13fab9d48206ae897b2560684b3014a9",
+      "bytes": 611
+    },
+    {
+      "path": "apps/api/src/routes/hero-pool/me/route.ts",
+      "sha256": "6a1696cab109621a2c823c5fbec32237e18fb97ce8bbc6769a6fc905e8fd6ce3",
+      "bytes": 1489
+    },
+    {
+      "path": "apps/api/src/routes/internal/images/tick/route.ts",
+      "sha256": "434f64fc1a22094f66aec26a2557ce6144e2a30b317963c9709bf9bace0a78a1",
+      "bytes": 956
+    },
+    {
+      "path": "apps/api/src/routes/internal/opendota-parse/tick/route.ts",
+      "sha256": "962ce6070f011159bdfc8318dab8c467460ec22701a4588f5719c4d22d224fe2",
+      "bytes": 588
+    },
+    {
+      "path": "apps/api/src/routes/internal/performance-reference/tick/route.ts",
+      "sha256": "180116c0dbcfa5b99d7b0b3cc64950ccaf05a7d880f516e55279b89fd179ad02",
+      "bytes": 1040
+    },
+    {
+      "path": "apps/api/src/routes/internal/stratz/tick/route.ts",
+      "sha256": "175a164d9f31a2add0d5bb58344e5e535953ad835238d0f964698061239c576a",
+      "bytes": 811
+    },
+    {
+      "path": "apps/api/src/routes/internal/sync/tick/route.ts",
+      "sha256": "846d6ba0c58e22ba65da4416f1b37269f6692eb294a31936b791e6e5ea566dc9",
+      "bytes": 882
+    },
+    {
+      "path": "apps/api/src/routes/journal/days/[date]/route.ts",
+      "sha256": "332073366b246319738ba256b82e04838e7c8d29f166f1f0c8c4ab008582c252",
+      "bytes": 1626
+    },
+    {
+      "path": "apps/api/src/routes/journal/matches/[matchId]/page/route.ts",
+      "sha256": "28d8ca4229c6fa80c7e703c30e0c3746cd58a09b8040f631a9f3370e89bf4373",
+      "bytes": 1549
+    },
+    {
+      "path": "apps/api/src/routes/journal/me/route.ts",
+      "sha256": "f84a3f340eac8d94aff2ad9ed3b45d131b93c58471e2ad7233976244a436b6ae",
+      "bytes": 1035
+    },
+    {
+      "path": "apps/api/src/routes/journal/users/[handle]/route.ts",
+      "sha256": "c8edc8ba432666706530d1157030666b31632e5040de998c8fec0190673a2ec0",
+      "bytes": 1199
+    },
+    {
+      "path": "apps/api/src/routes/matches/[matchId]/analysis/route.ts",
+      "sha256": "d8009aeb289363f1eb8dad665502f9df8de67b849514f690bac452d4ca89a0cd",
+      "bytes": 4425
+    },
+    {
+      "path": "apps/api/src/routes/matches/[matchId]/images/route.ts",
+      "sha256": "a2e5f65c7c771d0ef9fd12ae677782e1b527ffe14cfdb9bee2ab15d3d6b51fc6",
+      "bytes": 1033
+    },
+    {
+      "path": "apps/api/src/routes/matches/[matchId]/opendota/route.ts",
+      "sha256": "3ca76fd9c3b29b17bcd5eaa4e565ade9be0302ce9176678c7fabe3a419410560",
+      "bytes": 1916
+    },
+    {
+      "path": "apps/api/src/routes/matches/[matchId]/replay/route.ts",
+      "sha256": "98771fc84e616622c65fe5b647ed304e819d6d514ed46a02bbedbd5b7b2cb6f2",
+      "bytes": 2068
+    },
+    {
+      "path": "apps/api/src/routes/players/[identifier]/route.ts",
+      "sha256": "682575ae31509d8f7995cffec9b5a276450bede72d06eb3e27755534a853c430",
+      "bytes": 739
+    },
+    {
+      "path": "apps/api/src/routes/registry.ts",
+      "sha256": "d30986c344ac0dbead3597b1514c64fbd1d4a24130892f75d5b330ba34f85a9a",
+      "bytes": 5748
+    },
+    {
+      "path": "apps/api/src/routes/releases/[releaseId]/read/route.ts",
+      "sha256": "6a9f9fcf788e029fd89cf046ee988c5cc23c26b3d36717cdf0c16165bdefda34",
+      "bytes": 1072
+    },
+    {
+      "path": "apps/api/src/routes/releases/route.ts",
+      "sha256": "13a653f7ccb43070dee0988684bb2d0d40eed8d44de2ed7ccbb8188f4a1c06ed",
+      "bytes": 413
+    },
+    {
+      "path": "apps/api/src/routes/replays/[matchId]/analysis/route.ts",
+      "sha256": "f8820d91d32e26ce1e6f125b85b16068e30a637a9a9c52d08076f4876e432467",
+      "bytes": 2160
+    },
+    {
+      "path": "apps/api/src/routes/replays/[matchId]/file/route.ts",
+      "sha256": "44db6e73c1082a3467fca90293dae49d45354e0987490adef0e361686af1f0f6",
+      "bytes": 2376
+    },
+    {
+      "path": "apps/api/src/routes/replays/[matchId]/route.ts",
+      "sha256": "e3e6cfd1e103c4566dd746023bde65be767c9238070bb5618f8f9ea8aa89d05e",
+      "bytes": 3093
+    },
+    {
+      "path": "apps/api/src/routes/replays/lookup/route.ts",
+      "sha256": "220a7c7f0955692e13ce234a5adad5d129905c7eebf6401ad25ce3534b0985a9",
+      "bytes": 3978
+    },
+    {
+      "path": "apps/api/src/routes/sync/me/route.ts",
+      "sha256": "1c68370a13e25c2a4149c92aa81ce527243ff719040cd551715615910f16ce97",
+      "bytes": 2809
+    },
+    {
+      "path": "apps/api/src/routes/users/search/route.ts",
+      "sha256": "f3faeec9aa3190d48b463d9ff86885662655414daca307a98dd10714f4a87652",
+      "bytes": 1103
+    },
+    {
+      "path": "apps/api/tests/admin.test.ts",
+      "sha256": "5d8ab109340fbfa92573d1d8c8beede3b690fd209aedca5592a5294c83a78564",
+      "bytes": 2922
+    },
+    {
+      "path": "apps/api/tests/analysis-position-overrides.test.ts",
+      "sha256": "557497e9406a617490dc54b4c2be176e55a4ba3a000a992ea289b70aea2489a4",
+      "bytes": 1932
+    },
+    {
+      "path": "apps/api/tests/ban-display.test.tsx",
+      "sha256": "2d06e5d02094661ff8862757977ebf7483c20b74c76ce67821071e867c54b2e6",
+      "bytes": 597
+    },
+    {
+      "path": "apps/api/tests/ban-policy.test.ts",
+      "sha256": "0fed5ea9a7c89ca26eadf1d4b4ca80cf9fecbab34b345db2d430fb384f5b9bed",
+      "bytes": 783
+    },
+    {
+      "path": "apps/api/tests/client-address.test.ts",
+      "sha256": "7b54cd8e3f3dddc0063159b65a24ccacb85f43352956c4a718f948eb5849cd95",
+      "bytes": 788
+    },
+    {
+      "path": "apps/api/tests/client-api.test.ts",
+      "sha256": "9aed96b485852a6c0adf9ba85e8a242dec9cbc45b08b3d2deeadea93a02e08bd",
+      "bytes": 4892
+    },
+    {
+      "path": "apps/api/tests/core.test.ts",
+      "sha256": "95e1ef7e799d3b2bd69e9f13f0b3e534f9aa15bf54c1c2089c4f7b5fb54108e1",
+      "bytes": 5251
+    },
+    {
+      "path": "apps/api/tests/cursor-theme.test.ts",
+      "sha256": "53e6668f3c38548f093b39deadd50afc5cbd878a96f7a3d4e16c28c85fd707b1",
+      "bytes": 887
+    },
+    {
+      "path": "apps/api/tests/database-integration.test.ts",
+      "sha256": "3baf38155034724d79e544e62368a97d759378ae2a03be7cc33680dd35a9964f",
+      "bytes": 10203
+    },
+    {
+      "path": "apps/api/tests/deployment-config.test.ts",
+      "sha256": "1e59849a6d93b777c15b543943030d8d0da60fb30db56c8ca214d1acecfa6911",
+      "bytes": 3543
+    },
+    {
+      "path": "apps/api/tests/express-transport.test.ts",
+      "sha256": "3767acbd5eb0612b18071c33c169ff6916ac7339f4cba04da5968c6236187b01",
+      "bytes": 5980
+    },
+    {
+      "path": "apps/api/tests/farm-kills.test.ts",
+      "sha256": "5566e5f04663ec9b648f13705ff6182029340af6e907ec294a29184e1734f0bd",
+      "bytes": 1418
+    },
+    {
+      "path": "apps/api/tests/fixtures/farm-kills-sample.json",
+      "sha256": "2deb9fa5677c6ee6b2df602af8555b7d5fe2859f964f9b5f9a99a5dd15fc4f7e",
+      "bytes": 12667
+    },
+    {
+      "path": "apps/api/tests/fixtures/lane-9017352046.json",
+      "sha256": "3e9da52ed2b04a56949ef3124c48c65456344c2bc6985bb9c9fda42bc7af588f",
+      "bytes": 15744
+    },
+    {
+      "path": "apps/api/tests/fixtures/lane-9017779833.json",
+      "sha256": "3cf98e8b9e21d9f7a43f11db194374eaec5ba386e988fe16e7665502631aac35",
+      "bytes": 15787
+    },
+    {
+      "path": "apps/api/tests/fixtures/replay-tls/cert.pem",
+      "sha256": "0cba4aaad6dd067a9423a953f1e073a6e6a45582a7335e9358de5ade306f9ca1",
+      "bytes": 1164
+    },
+    {
+      "path": "apps/api/tests/fixtures/replay-tls/key.pem",
+      "sha256": "6f72de1386ad1a24b4e7baa98cc8e6ab9cec54953730ae038f8884da57651407",
+      "bytes": 1708
+    },
+    {
+      "path": "apps/api/tests/frontend-gateway.test.ts",
+      "sha256": "7e5e841ea5c9da3bf28b8f480b7f711cfc94eb812c39198da0d9a58d817b28b5",
+      "bytes": 2969
+    },
+    {
+      "path": "apps/api/tests/health.test.ts",
+      "sha256": "a1dc629715d37091823a7df3773d1aabbe705b9d6f53b59adbe84855da98fadd",
+      "bytes": 1369
+    },
+    {
+      "path": "apps/api/tests/hero-assets.test.ts",
+      "sha256": "872c6818a00cc5a4d6b6bfeacc8f4b30110d60fd9b8f943c044b6197be3c30f7",
+      "bytes": 701
+    },
+    {
+      "path": "apps/api/tests/hero-pool-rules.test.ts",
+      "sha256": "497cee55f8b1d1eeaf7446d3925306353699aeaffda0f55939aa595a30f47f64",
+      "bytes": 913
+    },
+    {
+      "path": "apps/api/tests/item-assets.test.ts",
+      "sha256": "7cbd7acd9eb8989713620cf1211ab3589fe7d2f9d5da4ad656939b7aef7c85f9",
+      "bytes": 1520
+    },
+    {
+      "path": "apps/api/tests/journal-timezone.test.ts",
+      "sha256": "9fe5465953d325504109a68badcf22b3e04973f4a3311c0ef07abe5ebf3bbe1d",
+      "bytes": 1058
+    },
+    {
+      "path": "apps/api/tests/journal-validation.test.ts",
+      "sha256": "648c9baada6efd669c3562da7aa65b9f10e5779ef59029ac0a6a13d1a820d785",
+      "bytes": 2916
+    },
+    {
+      "path": "apps/api/tests/lane-efficiency.test.ts",
+      "sha256": "6ff5ccbecb6b64ac88b063c5615a2c239b186c2c2ead1816d7b4a2b9fdaba871",
+      "bytes": 8032
+    },
+    {
+      "path": "apps/api/tests/lane-events.test.mjs",
+      "sha256": "bdc88a47e9e7c396ec26fd77207eba9c46413e0cbef59987968afc3c46435c5d",
+      "bytes": 1808
+    },
+    {
+      "path": "apps/api/tests/local-replay-queue.test.mjs",
+      "sha256": "22d25966e2230b6c5d67b685ba0ead295aebc48f4bd21a90dee57ae270046408",
+      "bytes": 7168
+    },
+    {
+      "path": "apps/api/tests/match-analysis-request.test.ts",
+      "sha256": "5ebe3590c1c947889e9f44cf12df1ccd0e47c6571dab7ee6a18c453bc17ea197",
+      "bytes": 3963
+    },
+    {
+      "path": "apps/api/tests/match-analysis.test.ts",
+      "sha256": "1023ec0ea6439b48e418dce7b93190ddedf8f6ce41f10fdc19138e432e04ba7c",
+      "bytes": 7741
+    },
+    {
+      "path": "apps/api/tests/match-contract.test.ts",
+      "sha256": "c5b8aa5747e62c9c4ba13ee48a2015b56fe1eb8be1a8919a8ca35f10218057b7",
+      "bytes": 2076
+    },
+    {
+      "path": "apps/api/tests/match-details.test.ts",
+      "sha256": "8df5c7c19377e83d55bb05d6dfb6dc57b5a3230c657d3141d1a3173d28e09710",
+      "bytes": 3531
+    },
+    {
+      "path": "apps/api/tests/match-image-job.test.ts",
+      "sha256": "29312837e4f701e4d2e393c70a88b7ddc34dfc58c761d4fd71f962870a59d1a1",
+      "bytes": 1958
+    },
+    {
+      "path": "apps/api/tests/match-image-renderer.test.ts",
+      "sha256": "167cf5e6d91e5959469e576d106707499402f1e639621bdde8a44285b34e3d54",
+      "bytes": 5339
+    },
+    {
+      "path": "apps/api/tests/media-storage.test.ts",
+      "sha256": "c316facd75c2714c2d11043dd2f4c69452736c58dc3a046e97a33e731287cfd4",
+      "bytes": 4111
+    },
+    {
+      "path": "apps/api/tests/monthly-reference.test.ts",
+      "sha256": "45703c47907222cca18f9964102db43fa7a9ad976479291b971dc3df0ac02bf3",
+      "bytes": 5344
+    },
+    {
+      "path": "apps/api/tests/opendota-match-derived.test.ts",
+      "sha256": "b18b5bcc076dca62c03d2307ffd50b313610821a2f5bdf3ed81876ef4eb72308",
+      "bytes": 1366
+    },
+    {
+      "path": "apps/api/tests/opendota-range-sync.test.ts",
+      "sha256": "7caadfd191afa92e1f26ee4deebab99725c5b3e581fa1d9900b558cf716d57ca",
+      "bytes": 4964
+    },
+    {
+      "path": "apps/api/tests/opendota.test.ts",
+      "sha256": "660472564798998d552811ca2e2bf287af11162f47842a50d8a5864e3541ef45",
+      "bytes": 9420
+    },
+    {
+      "path": "apps/api/tests/password-auth.test.ts",
+      "sha256": "8d97fbeb03f23fb1faf254d47077a85cff5f4c6765190717f9c983f62267deb7",
+      "bytes": 721
+    },
+    {
+      "path": "apps/api/tests/performance-intelligence.test.ts",
+      "sha256": "9435237b6f1c6c3c265162709bb7efd917a44201b84f41b7f41a6cd0049c7fc7",
+      "bytes": 6679
+    },
+    {
+      "path": "apps/api/tests/performance-phase2.test.ts",
+      "sha256": "8074c8e3ceffc054bc358abb51455200c035017dc5706d2f1fe6cc83a5d5eb6a",
+      "bytes": 7875
+    },
+    {
+      "path": "apps/api/tests/performance-presentation.test.ts",
+      "sha256": "87d2f271c97e1b75ce0acf8ace8b575438ec921ad986a5aca78db8138b8c886f",
+      "bytes": 1958
+    },
+    {
+      "path": "apps/api/tests/performance-recovery.test.ts",
+      "sha256": "0de2a21744f630775309593cf61fc2986e455c4de45c91eddd4d1106ab1cb405",
+      "bytes": 3011
+    },
+    {
+      "path": "apps/api/tests/persian-calendar.test.ts",
+      "sha256": "29dccc5c9b694de9d6d521250e1dd52139c679b6e531f21bfe16d4b6f95d5f4f",
+      "bytes": 1216
+    },
+    {
+      "path": "apps/api/tests/player-dashboard.test.ts",
+      "sha256": "ba18fbba851dc731076f2cf666e5cf978fbd98e5fdb60708bd94d6269a5186d0",
+      "bytes": 2082
+    },
+    {
+      "path": "apps/api/tests/player-search.test.ts",
+      "sha256": "deee601c1257e59c5db478aa216965be57f79653c1f26dda147212a05caaac12",
+      "bytes": 640
+    },
+    {
+      "path": "apps/api/tests/position-resolver.test.ts",
+      "sha256": "97ec5d207263f732dae99a53f2a800cda48b0e7695fb5023b934e2fe5fab19e3",
+      "bytes": 5875
+    },
+    {
+      "path": "apps/api/tests/replay-archive-storage.test.ts",
+      "sha256": "c591665c432072022c0174b56c943dcd9b16d530b29611950574ecfd5caa8da0",
+      "bytes": 2507
+    },
+    {
+      "path": "apps/api/tests/replay-archive.test.mjs",
+      "sha256": "3b7366caf2522524355b6e84863db9f0a009b9cf3483226479a54df094e1aabc",
+      "bytes": 3957
+    },
+    {
+      "path": "apps/api/tests/replay-metadata.test.mjs",
+      "sha256": "e43d796394cde2570459f3193c05f4ef54ce0ff3adc9d5fff30b01922bfeb4bc",
+      "bytes": 2296
+    },
+    {
+      "path": "apps/api/tests/replay-overlay.test.ts",
+      "sha256": "de4b1abbb7f0b6851728d4e408a0a0a3222a291bac5e2072623fea0050ce4d83",
+      "bytes": 3750
+    },
+    {
+      "path": "apps/api/tests/replay-proxy.test.mjs",
+      "sha256": "d61c393066d346faa5c7c99f81129334e32eeeb79469c0dccae240a70a3760c1",
+      "bytes": 10440
+    },
+    {
+      "path": "apps/api/tests/replay-queue-integration.test.mjs",
+      "sha256": "3f6ce832c3195bc6481766fdeb2c9386113573e4a634bd6c7e7eb123f17325c9",
+      "bytes": 14599
+    },
+    {
+      "path": "apps/api/tests/replay-refresh-match.test.mjs",
+      "sha256": "b502b06727552d602812b0804b6f56955c41dff5d4b82e1141f739472d05fc19",
+      "bytes": 2377
+    },
+    {
+      "path": "apps/api/tests/replay-resilience.test.mjs",
+      "sha256": "3959c9d1cfea4b16703418ecbe88437e9df7eabbcabf96b90d32e9379e695f07",
+      "bytes": 12439
+    },
+    {
+      "path": "apps/api/tests/scheduled-sync-toggle.test.ts",
+      "sha256": "6bb0b82a8cfb9c401c23c26182582e9e89d0b1c545146c9d1a920d86a4be8f44",
+      "bytes": 1959
+    },
+    {
+      "path": "apps/api/tests/schema.test.ts",
+      "sha256": "c2dec1653231643a50ef68f5828fb316cb49e40d88fefa74cf70a2b3e7841270",
+      "bytes": 6310
+    },
+    {
+      "path": "apps/api/tests/security-logging.test.ts",
+      "sha256": "b389636dadcc7fee1039a4621edaaa8f15da9d00d3cdafe0fabf5a3035b6d905",
+      "bytes": 822
+    },
+    {
+      "path": "apps/api/tests/service-monitor.test.mjs",
+      "sha256": "1cd36e8e730df754951ccee1a9b4e7c254940607e85b794d26c52b6694bb13b6",
+      "bytes": 1197
+    },
+    {
+      "path": "apps/api/tests/steam-auth.test.ts",
+      "sha256": "b05f0f8071dd65508461f590fbcdc88191c83655ed7fdd61356935320bf302f5",
+      "bytes": 1775
+    },
+    {
+      "path": "apps/api/tests/stratz.test.ts",
+      "sha256": "205a64b159d6b34c90566fde7fabb6863fb697cd9ee53ef76d2a911ae28237e5",
+      "bytes": 9290
+    },
+    {
+      "path": "apps/api/tests/streaming-response.test.ts",
+      "sha256": "79277f385df0b0e64ebd7e45ce2a99a01553cf0748f64100517046a16df28328",
+      "bytes": 2097
+    },
+    {
+      "path": "apps/api/tests/sync-worker.test.ts",
+      "sha256": "0956f0b451b416afb78f29a4d35021cc8334aaa762180531a25db3ec3840fbc3",
+      "bytes": 4562
+    },
+    {
+      "path": "apps/api/tsconfig.json",
+      "sha256": "c87920bc2bfd21647a37d629f32411981d4c58b07a69f83b5b5488968939b655",
+      "bytes": 551
+    },
+    {
+      "path": "apps/api/vitest.config.mjs",
+      "sha256": "8030f697b85942bdd76292240f685aaf60d1787a984af0f48fc07dfae4dde7e9",
+      "bytes": 276
+    },
+    {
+      "path": "apps/web/app/(journal)/match/[matchId]/page.tsx",
+      "sha256": "7672bac99b05bc0c707382de653248deb8df8567539e57c7898a794718d919ba",
+      "bytes": 1305
+    },
+    {
+      "path": "apps/web/app/(journal)/me/page.tsx",
+      "sha256": "83971d2c6941dc0640a56be91ddb550d47faafca27bee683c0a0a239a976081f",
+      "bytes": 297
+    },
+    {
+      "path": "apps/web/app/(journal)/user/[identifier]/page.tsx",
+      "sha256": "0bfadf00f3854db62eaeb9443a2127d459c9379ec58c998110a038c957c8c245",
+      "bytes": 1928
+    },
+    {
+      "path": "apps/web/app/api/admin/monthly-references/route.ts",
+      "sha256": "533f9ee5b650849c19b7c010223bdaaa78a56c48495e7444d9bb9388aeff8595",
+      "bytes": 207
+    },
+    {
+      "path": "apps/web/app/api/admin/overview/route.ts",
+      "sha256": "232df60112ede3f2d680df8dd205148fb0917cb1fdf46c3bb4d6ede23d0cdf6a",
+      "bytes": 168
+    },
+    {
+      "path": "apps/web/app/api/admin/releases/[releaseId]/route.ts",
+      "sha256": "14825cbc8ae4a02e66b42bb5f6f457c0664186581e9c1d76f5a80f6fa6972da7",
+      "bytes": 168
+    },
+    {
+      "path": "apps/web/app/api/admin/releases/route.ts",
+      "sha256": "533f9ee5b650849c19b7c010223bdaaa78a56c48495e7444d9bb9388aeff8595",
+      "bytes": 207
+    },
+    {
+      "path": "apps/web/app/api/admin/replay-archive/route.ts",
+      "sha256": "533f9ee5b650849c19b7c010223bdaaa78a56c48495e7444d9bb9388aeff8595",
+      "bytes": 207
+    },
+    {
+      "path": "apps/web/app/api/admin/replay-monitor/route.ts",
+      "sha256": "232df60112ede3f2d680df8dd205148fb0917cb1fdf46c3bb4d6ede23d0cdf6a",
+      "bytes": 168
+    },
+    {
+      "path": "apps/web/app/api/admin/service-monitor/route.ts",
+      "sha256": "232df60112ede3f2d680df8dd205148fb0917cb1fdf46c3bb4d6ede23d0cdf6a",
+      "bytes": 168
+    },
+    {
+      "path": "apps/web/app/api/admin/stratz-diagnostics/route.ts",
+      "sha256": "232df60112ede3f2d680df8dd205148fb0917cb1fdf46c3bb4d6ede23d0cdf6a",
+      "bytes": 168
+    },
+    {
+      "path": "apps/web/app/api/admin/users/[userId]/matches/reprocess/route.ts",
+      "sha256": "d62c2c6bae8f8766f7c38ad8a73eebd9296e1c2c2713ac090b31abd8490518df",
+      "bytes": 169
+    },
+    {
+      "path": "apps/web/app/api/admin/users/[userId]/password/route.ts",
+      "sha256": "df3277fb90545683c0612a79011f696804167137730c0f169672adabcc2dd17d",
+      "bytes": 209
+    },
+    {
+      "path": "apps/web/app/api/admin/users/route.ts",
+      "sha256": "533f9ee5b650849c19b7c010223bdaaa78a56c48495e7444d9bb9388aeff8595",
+      "bytes": 207
+    },
+    {
+      "path": "apps/web/app/api/auth/logout/route.ts",
+      "sha256": "d62c2c6bae8f8766f7c38ad8a73eebd9296e1c2c2713ac090b31abd8490518df",
+      "bytes": 169
+    },
+    {
+      "path": "apps/web/app/api/auth/password/login/route.ts",
+      "sha256": "d62c2c6bae8f8766f7c38ad8a73eebd9296e1c2c2713ac090b31abd8490518df",
+      "bytes": 169
+    },
+    {
+      "path": "apps/web/app/api/auth/password/me/route.ts",
+      "sha256": "df3277fb90545683c0612a79011f696804167137730c0f169672adabcc2dd17d",
+      "bytes": 209
+    },
+    {
+      "path": "apps/web/app/api/auth/session/route.ts",
+      "sha256": "232df60112ede3f2d680df8dd205148fb0917cb1fdf46c3bb4d6ede23d0cdf6a",
+      "bytes": 168
+    },
+    {
+      "path": "apps/web/app/api/auth/steam/callback/route.ts",
+      "sha256": "232df60112ede3f2d680df8dd205148fb0917cb1fdf46c3bb4d6ede23d0cdf6a",
+      "bytes": 168
+    },
+    {
+      "path": "apps/web/app/api/auth/steam/route.ts",
+      "sha256": "232df60112ede3f2d680df8dd205148fb0917cb1fdf46c3bb4d6ede23d0cdf6a",
+      "bytes": 168
+    },
+    {
+      "path": "apps/web/app/api/health/route.ts",
+      "sha256": "232df60112ede3f2d680df8dd205148fb0917cb1fdf46c3bb4d6ede23d0cdf6a",
+      "bytes": 168
+    },
+    {
+      "path": "apps/web/app/api/hero-pool/me/route.ts",
+      "sha256": "c24874297c03dcf7dc97217303a5c8f7c5889a3902e719ec47876accc7353b07",
+      "bytes": 206
+    },
+    {
+      "path": "apps/web/app/api/internal/images/tick/route.ts",
+      "sha256": "d62c2c6bae8f8766f7c38ad8a73eebd9296e1c2c2713ac090b31abd8490518df",
+      "bytes": 169
+    },
+    {
+      "path": "apps/web/app/api/internal/opendota-parse/tick/route.ts",
+      "sha256": "d62c2c6bae8f8766f7c38ad8a73eebd9296e1c2c2713ac090b31abd8490518df",
+      "bytes": 169
+    },
+    {
+      "path": "apps/web/app/api/internal/performance-reference/tick/route.ts",
+      "sha256": "d62c2c6bae8f8766f7c38ad8a73eebd9296e1c2c2713ac090b31abd8490518df",
+      "bytes": 169
+    },
+    {
+      "path": "apps/web/app/api/internal/stratz/tick/route.ts",
+      "sha256": "d62c2c6bae8f8766f7c38ad8a73eebd9296e1c2c2713ac090b31abd8490518df",
+      "bytes": 169
+    },
+    {
+      "path": "apps/web/app/api/internal/sync/tick/route.ts",
+      "sha256": "d62c2c6bae8f8766f7c38ad8a73eebd9296e1c2c2713ac090b31abd8490518df",
+      "bytes": 169
+    },
+    {
+      "path": "apps/web/app/api/journal/days/[date]/route.ts",
+      "sha256": "14825cbc8ae4a02e66b42bb5f6f457c0664186581e9c1d76f5a80f6fa6972da7",
+      "bytes": 168
+    },
+    {
+      "path": "apps/web/app/api/journal/me/route.ts",
+      "sha256": "232df60112ede3f2d680df8dd205148fb0917cb1fdf46c3bb4d6ede23d0cdf6a",
+      "bytes": 168
+    },
+    {
+      "path": "apps/web/app/api/journal/users/[handle]/route.ts",
+      "sha256": "232df60112ede3f2d680df8dd205148fb0917cb1fdf46c3bb4d6ede23d0cdf6a",
+      "bytes": 168
+    },
+    {
+      "path": "apps/web/app/api/matches/[matchId]/analysis/route.ts",
+      "sha256": "533f9ee5b650849c19b7c010223bdaaa78a56c48495e7444d9bb9388aeff8595",
+      "bytes": 207
+    },
+    {
+      "path": "apps/web/app/api/matches/[matchId]/images/route.ts",
+      "sha256": "232df60112ede3f2d680df8dd205148fb0917cb1fdf46c3bb4d6ede23d0cdf6a",
+      "bytes": 168
+    },
+    {
+      "path": "apps/web/app/api/matches/[matchId]/opendota/route.ts",
+      "sha256": "d62c2c6bae8f8766f7c38ad8a73eebd9296e1c2c2713ac090b31abd8490518df",
+      "bytes": 169
+    },
+    {
+      "path": "apps/web/app/api/matches/[matchId]/replay/route.ts",
+      "sha256": "d62c2c6bae8f8766f7c38ad8a73eebd9296e1c2c2713ac090b31abd8490518df",
+      "bytes": 169
+    },
+    {
+      "path": "apps/web/app/api/releases/[releaseId]/read/route.ts",
+      "sha256": "d62c2c6bae8f8766f7c38ad8a73eebd9296e1c2c2713ac090b31abd8490518df",
+      "bytes": 169
+    },
+    {
+      "path": "apps/web/app/api/releases/route.ts",
+      "sha256": "232df60112ede3f2d680df8dd205148fb0917cb1fdf46c3bb4d6ede23d0cdf6a",
+      "bytes": 168
+    },
+    {
+      "path": "apps/web/app/api/replays/[matchId]/analysis/route.ts",
+      "sha256": "232df60112ede3f2d680df8dd205148fb0917cb1fdf46c3bb4d6ede23d0cdf6a",
+      "bytes": 168
+    },
+    {
+      "path": "apps/web/app/api/replays/[matchId]/file/route.ts",
+      "sha256": "232df60112ede3f2d680df8dd205148fb0917cb1fdf46c3bb4d6ede23d0cdf6a",
+      "bytes": 168
+    },
+    {
+      "path": "apps/web/app/api/replays/[matchId]/route.ts",
+      "sha256": "533f9ee5b650849c19b7c010223bdaaa78a56c48495e7444d9bb9388aeff8595",
+      "bytes": 207
+    },
+    {
+      "path": "apps/web/app/api/replays/lookup/route.ts",
+      "sha256": "d62c2c6bae8f8766f7c38ad8a73eebd9296e1c2c2713ac090b31abd8490518df",
+      "bytes": 169
+    },
+    {
+      "path": "apps/web/app/api/sync/me/route.ts",
+      "sha256": "533f9ee5b650849c19b7c010223bdaaa78a56c48495e7444d9bb9388aeff8595",
+      "bytes": 207
+    },
+    {
+      "path": "apps/web/app/api/users/search/route.ts",
+      "sha256": "232df60112ede3f2d680df8dd205148fb0917cb1fdf46c3bb4d6ede23d0cdf6a",
+      "bytes": 168
+    },
+    {
+      "path": "apps/web/app/api/v1/[...path]/route.ts",
+      "sha256": "5cb2174a34253de306c27a75e880d744ee38ad5a16e23c9767c4a8e492f03286",
+      "bytes": 367
+    },
+    {
+      "path": "apps/web/drizzle.config.ts",
+      "sha256": "b26900ec8575cbcc5031463695e41922e4a9d482c240bfc32f63c9d7f4bf334c",
+      "bytes": 49
+    },
+    {
+      "path": "apps/web/lib/backend/proxy.ts",
+      "sha256": "d187c6933ca77926742c33ff791794bbf45efbf61c6f44a2adf404ffb09e8461",
+      "bytes": 2783
+    },
+    {
+      "path": "apps/web/lib/backend/server.ts",
+      "sha256": "11060aaa8cab1b65c954c0e6c104ab1a2db047c4d02f3d4b48716d2d0b4d2012",
+      "bytes": 1318
+    },
+    {
+      "path": "apps/web/package.json",
+      "sha256": "870872e37feecf6bf9a569e025a5b7631b613ba34faa1fbfa43b2b1576f6dcf0",
+      "bytes": 1374
+    },
+    {
+      "path": "deploy/env.production.example",
+      "sha256": "bc3ad9ab6ed9f7920a59dc344fdaf100d4ef7452049b453cab9106f215a1e5c8",
+      "bytes": 3965
+    },
+    {
+      "path": "deploy/nginx/dota2notes.ir.conf",
+      "sha256": "a9941bbc4c3bbdd0e0a860e6a28f6db40855c99e0992c1b9ea61183df969f37f",
+      "bytes": 2039
+    },
+    {
+      "path": "deploy/scripts/call-worker.sh",
+      "sha256": "01737cbc17bda1dfb39c830fade61df1dfe68cfa4add424f60f957236135933a",
+      "bytes": 1127
+    },
+    {
+      "path": "deploy/scripts/health-check.sh",
+      "sha256": "1c028f1370940f726917e58bf94ede965ccd61bf2f18fc511fa2ccea9bda8801",
+      "bytes": 220
+    },
+    {
+      "path": "deploy/systemd/dota2notes-api.service",
+      "sha256": "ea904998e78de034ec191a54235e584d361a2fa71b91f3cc2b2abd5b9db76c00",
+      "bytes": 975
+    },
+    {
+      "path": "deploy/systemd/dota2notes-replay.service",
+      "sha256": "4e0b07b4318739766fb2588db451708c51bbd57d040238970d6452a62583688c",
+      "bytes": 778
+    },
+    {
+      "path": "deploy/systemd/dota2notes-sync-manual.timer",
+      "sha256": "185d7bde964de0205ee068d31b48045708d91385846f0ca9f0014bc00630577c",
+      "bytes": 194
+    },
+    {
+      "path": "deploy/systemd/dota2notes.service",
+      "sha256": "539985e4038c8c5a357dbf48aa4b7b92ca5de109668f803a91ebed061ef09e7e",
+      "bytes": 1040
+    },
+    {
+      "path": "docs/backend-migration-coverage.json",
+      "sha256": "0e2cefed160905a6e3b819f936049cead93fea01bec44bd02cf6b5cdda67529e",
+      "bytes": 519
+    },
+    {
+      "path": "docs/backend-migration.md",
+      "sha256": "2717c39f0206ed26f9be7becf75e28833aff90bfe1ed4fdb61e964bd6238429a",
+      "bytes": 12866
+    },
+    {
+      "path": "docs/backend-source-inventory.json",
+      "sha256": "3ee467a4a25d877651e91c34bcbe0a4ac18a248b25623f8833e9494f453d2ff5",
+      "bytes": 53619
+    },
+    {
+      "path": "docs/backend-validation/api-production-dependencies.json",
+      "sha256": "c51d0180acab5aa0faab8bc80ddc2bf86bc944295b6ee2c71daafcbdd72475db",
+      "bytes": 366
+    },
+    {
+      "path": "docs/backend-validation/api-tests.log",
+      "sha256": "9456e7c07fdc3fc682d2dbc768ca8655c0e5c5a20fab86f9c9a6bd19bc0a4652",
+      "bytes": 3370
+    },
+    {
+      "path": "docs/backend-validation/web-build.log",
+      "sha256": "d6a5a940c99be53c6cde627b9cd8898c9852f17680fa70d01edfa0ce8a41400e",
+      "bytes": 2929
+    },
+    {
+      "path": "docs/backend-validation/web-tests.log",
+      "sha256": "51b892b7de2373a34143b7ba33d85b56a999d1763e427c3ca7bb763d735f51bd",
+      "bytes": 3370
+    },
+    {
+      "path": "docs/backend-validation/web-typecheck.log",
+      "sha256": "089dcde96517066dd4bf272bb3734bbb2f1bfbe3986ff93a57bbf91982bd854c",
+      "bytes": 358
+    },
+    {
+      "path": "docs/backend.env.example",
+      "sha256": "bc3ad9ab6ed9f7920a59dc344fdaf100d4ef7452049b453cab9106f215a1e5c8",
+      "bytes": 3965
+    },
+    {
+      "path": "scripts/service-monitor/collect.mjs",
+      "sha256": "a19de86d55cbe5f1e93b636344ab6373f9f221ac3f865f1fc5142034a577b418",
+      "bytes": 4167
+    }
+  ]
+}

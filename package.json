@@ -1,46 +1,43 @@
 {
   "name": "dota2-match-notes",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "test": "vitest run",
-    "typecheck": "tsc --noEmit",
-    "stratz:route-check": "node scripts/check-stratz-direct-route.mjs",
-    "heroes:sync": "node scripts/sync-hero-portraits.mjs",
-    "items:sync": "node scripts/sync-item-icons.mjs",
-    "inventory:frames": "node scripts/rebuild-inventory-frames.mjs",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
-  },
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.1102.0",
-    "@tiptap/pm": "^3.30.2",
-    "@tiptap/react": "^3.30.2",
-    "@tiptap/starter-kit": "^3.30.2",
-    "bcryptjs": "^3.0.3",
-    "drizzle-orm": "^0.45.2",
-    "lucide-react": "^1.33.0",
-    "next": "16.3.6",
-    "pg": "^8.22.0",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "react-toastify": "^11.1.0",
-    "sharp": "^0.35.4",
-    "zod": "^4.4.3"
+    "dev": "npm run dev -w @dota-notes/web",
+    "build": "npm run build -w @dota-notes/web",
+    "start": "npm run start -w @dota-notes/web",
+    "test": "npm run test -w @dota-notes/web && vitest run",
+    "stratz:route-check": "npm run stratz:route-check -w @dota-notes/web",
+    "heroes:sync": "npm run heroes:sync -w @dota-notes/web",
+    "items:sync": "npm run items:sync -w @dota-notes/web",
+    "inventory:frames": "npm run inventory:frames -w @dota-notes/web",
+    "db:generate": "npm run db:generate -w @dota-notes/web",
+    "db:migrate": "npm run db:migrate -w @dota-notes/web",
+    "db:studio": "npm run db:studio -w @dota-notes/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "web:dev": "npm run dev -w @dota-notes/web",
+    "desktop:dev": "npm run dev -w @dota-notes/desktop",
+    "desktop:build": "npm run build -w @dota-notes/desktop",
+    "desktop:tauri": "npm run tauri -w @dota-notes/desktop -- dev",
+    "desktop:bundle": "npm run tauri -w @dota-notes/desktop -- build",
+    "api:dev": "npm run dev -w @dota-notes/api",
+    "api:build": "npm run build -w @dota-notes/api",
+    "api:start": "npm run start -w @dota-notes/api",
+    "mobile:dev": "npm run start -w @dota-notes/mobile",
+    "mobile:android": "npm run android -w @dota-notes/mobile",
+    "mobile:ios": "npm run ios -w @dota-notes/mobile"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "0.5.8",
     "@types/node": "24.10.1",
-    "@types/pg": "^8.20.3",
-    "@types/react": "19.2.14",
-    "@types/react-dom": "19.2.3",
-    "dotenv": "^17.4.2",
-    "drizzle-kit": "^0.31.10",
     "typescript": "5.9.3",
     "vitest": "^4.1.10"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.13.0",
+    "npm": ">=10"
   }
 }

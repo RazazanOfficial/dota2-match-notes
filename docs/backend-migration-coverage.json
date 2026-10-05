@@ -1,0 +1,13 @@
+{
+  "sourceCommit": "dcb721e03174376eca62629d28c6cd12de0c1f8c",
+  "sourceRouteFiles": 39,
+  "sourceHttpOperations": 49,
+  "expressHttpOperations": 51,
+  "preservedDomainModules": 121,
+  "preservedCatalogs": 2,
+  "unchangedSqlMigrations": 24,
+  "standaloneServiceScripts": 22,
+  "checkScope": "Controller exports and registration, domain exports, immutable SQL/catalog hashes, script presence, and source dependency resolution; behavioral validation is provided by the test suite.",
+  "errors": [],
+  "complete": true
+}

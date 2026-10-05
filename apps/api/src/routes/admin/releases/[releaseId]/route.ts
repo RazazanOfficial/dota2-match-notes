@@ -1,0 +1,21 @@
+import type { HttpRequest } from "../../../../http/protocol";
+import { requireSuperAdmin } from "../../../../lib/admin/auth";
+import { hasValidRequestOrigin } from "../../../../lib/auth/request";
+import { AdminError, adminErrorResponse } from "../../../../lib/admin/errors";
+import { updateRelease } from "../../../../lib/releases/repository";
+import { releaseIdSchema, releaseInputSchema } from "../../../../lib/releases/validation";
+
+
+export async function PUT(request: HttpRequest, context: { params: Promise<{ releaseId: string }> }) {
+  try {
+    await requireSuperAdmin(request);
+    if (!hasValidRequestOrigin(request)) throw new AdminError(403, "invalid_origin", "مبدأ درخواست معتبر نیست");
+    const id = releaseIdSchema.parse((await context.params).releaseId);
+    const input = releaseInputSchema.parse(await request.json());
+    const release = await updateRelease(id, input);
+    if (!release) throw new AdminError(404, "release_not_found", "نسخه پیدا نشد");
+    return Response.json({ ok: true, release });
+  } catch (error) {
+    return adminErrorResponse(error);
+  }
+}

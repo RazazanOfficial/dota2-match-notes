@@ -1,0 +1,12 @@
+[Unit]
+Description=Advance Dota2 Notes monthly reference collection
+
+[Timer]
+OnBootSec=10m
+OnUnitActiveSec=1m
+RandomizedDelaySec=10s
+Persistent=true
+Unit=dota2notes-performance-reference.service
+
+[Install]
+WantedBy=timers.target

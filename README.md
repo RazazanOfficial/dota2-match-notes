@@ -1,292 +1,100 @@
-# Dota 2 Match Notes
+# Dota Notes
 
-دفتر فارسی و واکنش‌گرا برای ثبت، مرور و گزارش مچ‌های Dota 2 با Next.js و PostgreSQL.
+Monorepo اپ‌های Dota Notes: دفتر مچ، دریافت و تحلیل ریپلی و کلاینت‌های جدید دسکتاپ و موبایل.
+برای ادامهٔ توسعه ابتدا [فهرست مستندات](docs/README.md) و [HANDOFF](docs/HANDOFF.md) را بخوانید.
 
-برای تحویل کار به چت یا توسعه‌دهندهٔ بعدی، از [docs/HANDOFF.md](docs/HANDOFF.md)
-شروع کنید. [فهرست docs](docs/README.md) سندهای جاری را از گزارش‌های مرحله‌ای جدا می‌کند.
+## ساختار
 
-## امکانات
+| مسیر | مسئولیت | وضعیت این مرحله |
+| --- | --- | --- |
+| `apps/web` | Next.js 16: سایت معرفی و دفتر وب فعلی | `/` معرفی؛ `/journal` دفتر؛ API و Workerهای فعلی حفظ شده‌اند |
+| `apps/desktop` | Tauri 2 + React + Vite + Tailwind 4 | پوستهٔ ویندوز و فضای تحلیل با دادهٔ نمونه |
+| `apps/mobile` | React Native + Expo SDK 57 | پایهٔ مشترک Android و iOS؛ صفحهٔ آغاز و تنظیمات نمایشی |
+| `apps/api` | Express 5 | پایهٔ مستقل، فقط `GET /api/v1/health`؛ مهاجرت قابلیت‌ها هنوز انجام نشده |
+| `packages/contracts` | قرارداد TypeScript و اعتبارسنجی Zod | قرارداد سلامت v1 و نوع تنظیمات |
+| `packages/api-client` | HTTP client مشترک | سلامت API، اعتبارسنجی پاسخ و لغو درخواست |
+| `packages/design-tokens` | رنگ، فاصله و منطق تنظیمات | Obsidian / Radiant / Nebula × Light / Dark / System |
+| `deploy` و `docs` | عملیات سرور و مستندات | در ریشه باقی می‌مانند |
 
-- تقویم شمسی هفتگی از شنبه ۳ مرداد ۱۴۰۵
-- جست‌وجو و انتخاب همه هیروها همراه تصویر
-- انتخاب چندگانه هیروهای بن‌شده
-- ثبت Role و Queue Type هر بازی
-- دریافت مچ‌های حساب Steam برای روز یا هفتهٔ انتخابی و ثبت یادداشت و نقش بازی
-- ورود بازیکن با Steam OpenID و نشست امن ۳۰روزه
-- مشاهده عمومی و فقط‌خواندنی مچ‌ها با Handle بازیکن
-- گزارش هفتگی با باکس مستقل برای هر روز
-- ذخیره اطلاعات در PostgreSQL از طریق API داخلی Next.js
-- انتشار تصاویر تولیدشده مچ توسط بک‌اند در Object Storage سازگار با S3 پارس‌پک
-- دریافت و ذخیره آمار واقعی مچ از OpenDota با محدودیت همگام‌سازی دستی
-- هفت ست نشانگر Dota 2 با پنج حالت کاربردی و افکت‌های ظریف Gold، Fire و Ice
+Expo ابزار توسعهٔ React Native است؛ این دو یک اپ موبایل‌اند. Tauri هم میزبان رابط React دسکتاپ است.
+پوشه‌ها بر اساس برنامهٔ قابل‌اجرا جدا شده‌اند، نه تعداد frameworkها.
 
-## آماده‌سازی محلی
+## شروع محلی
 
-ابتدا `.env.example` را با نام `.env.local` کپی و مقادیر واقعی را فقط در فایل محلی وارد
-کنید:
-
-```dotenv
-APP_URL=http://localhost:3000
-STEAM_WEB_API_KEY=YOUR_STEAM_WEB_API_KEY
-SUPER_ADMIN_STEAM_IDS=YOUR_STEAM_ID_64
-DATABASE_URL=postgresql://dota_notes_app:YOUR_PASSWORD@127.0.0.1:5432/dota_notes
-JOURNAL_TIME_ZONE=Asia/Tehran
-
-OPENDOTA_API_BASE_URL=https://api.opendota.com/api
-OPENDOTA_API_KEY=
-OPENDOTA_TIMEOUT_MS=30000
-OPENDOTA_MAX_RESPONSE_BYTES=8388608
-OPENDOTA_MANUAL_SYNC_COOLDOWN_SECONDS=300
-OPENDOTA_MANUAL_DAY_COOLDOWN_SECONDS=90
-OPENDOTA_MANUAL_SYNC_LOOKBACK_SECONDS=21600
-OPENDOTA_MINUTE_REQUEST_LIMIT=50
-OPENDOTA_DAILY_REQUEST_LIMIT=2900
-OPENDOTA_MAX_NEW_MATCHES_PER_SYNC=20
-OPENDOTA_PARSE_ENABLED=true
-OPENDOTA_PARSE_PROCESS_BATCH_SIZE=2
-OPENDOTA_PARSE_POLL_INTERVAL_SECONDS=45
-OPENDOTA_PARSE_MAX_POLL_ATTEMPTS=40
-
-SYNC_WORKER_SECRET=GENERATE_A_RANDOM_32_PLUS_CHARACTER_SECRET
-SCHEDULED_SYNC_ENABLED=off
-SCHEDULED_SYNC_INTERVAL_SECONDS=3600
-SCHEDULED_SYNC_ENQUEUE_BATCH_SIZE=25
-SCHEDULED_SYNC_PROCESS_BATCH_SIZE=1
-SCHEDULED_SYNC_STALE_LOCK_SECONDS=900
-SCHEDULED_SYNC_MAX_ATTEMPTS=3
-SCHEDULED_SYNC_RETRY_BASE_SECONDS=60
-SCHEDULED_SYNC_LOOKBACK_SECONDS=21600
-SCHEDULED_SYNC_INITIAL_MATCHES=1
-
-CLOUD_SPACE_END_POINT_URL=https://YOUR_ENDPOINT
-CLOUD_SPACE_BUCKET=YOUR_BUCKET
-CLOUD_SPACE_PUBLIC_BASE_URL=https://YOUR_PUBLIC_BUCKET_ROOT
-CLOUD_SPACE_ACCESS_KEY=YOUR_ACCESS_KEY
-CLOUD_SPACE_SECRET_KEY=YOUR_SECRET_KEY
-CLOUD_SPACE_REGION=us-east-1
-CLOUD_SPACE_FORCE_PATH_STYLE=true
-GENERATED_IMAGE_MAX_BYTES=12582912
-```
-
-سپس وابستگی‌ها و migrationهای دیتابیس را آماده کنید:
+Node.js **24** و npm 10 یا بالاتر پیشنهاد می‌شود؛ حداقل Node موردنیاز 22.13 است.
+تمام فرمان‌های زیر از **ریشهٔ مخزن** اجرا می‌شوند و یک `package-lock.json` مشترک داریم.
 
 ```bash
 npm ci
-npm run db:migrate
+```
+
+برای وب و API نمونهٔ `.env.example` را به `.env.local` در **ریشه** کپی کنید.
+کلیدها و دیتابیس فقط برای وب فعلی لازم‌اند؛ رابط نمونهٔ دسکتاپ بدون آن‌ها اجرا می‌شود.
+فایل production را به دسکتاپ یا موبایل کپی نکنید.
+
+```bash
+npm run desktop:dev
+```
+
+رابط دسکتاپ در مرورگر: `http://127.0.0.1:1420`. پنجرهٔ Native ویندوز:
+
+```bash
+npm run desktop:tauri
+```
+
+اجرای Native به Rust با toolchain MSVC، ابزار C++ ویژوال‌استودیو و WebView2 نیاز دارد.
+[راهنمای دسکتاپ و مهاجرت](docs/monorepo-desktop-foundation.md) مراحل و محدودیت‌ها را توضیح می‌دهد.
+
+```bash
+npm run api:dev
+npm run mobile:dev
 npm run dev
 ```
 
-سایت محلی روی `http://localhost:3000` اجرا می‌شود.
+این سه برنامه را در ترمینال‌های جدا اجرا کنید: API روی `127.0.0.1:4100`، Expo با QR، وب روی `localhost:3000`.
+برای بازکردن simulator آیفون با `npm run mobile:ios` به macOS/Xcode نیاز است؛ Expo مسیر مشترک هر دو پلتفرم است.
 
-## بررسی
+## وضعیت محصول
+
+وب فعلی: Steam OpenID، ژورنال شخصی و عمومی، همگام‌سازی OpenDota، صف ریپلی محلی و آرشیو ParsPack،
+مرجع آماری و پنل نظارت. قرارداد داده و migrationهای دیتابیس تغییر نکرده‌اند.
+دسکتاپ: ناوبری، تب‌های تحلیل، فیلتر تیم/بازیکن و یادداشت **محلی نمونه**؛ سه تم، سه حالت نمایش و فارسی/انگلیسی با RTL.
+دادهٔ دسکتاپ ساختگی است؛ ورود Steam، تحلیل واقعی، همگام‌سازی ژورنال و پرداخت هنوز به آن متصل نشده‌اند.
+موبایل فعلاً scaffold است و تنظیماتش فقط در نشست جاری باقی می‌ماند.
+
+دکمهٔ دانلود سایت تا انتشار installer غیرفعال است. بعد از انتشار و بررسی فایل، URL عمومی HTTPS را
+در `NEXT_PUBLIC_DOWNLOAD_WINDOWS_URL` تنظیم و وب را دوباره build کنید.
+
+## بررسی و build
 
 ```bash
 npm test
 npm run typecheck
+npm run desktop:build
+npm run api:build
 npm run build
 ```
 
-برای مشاهده دیتابیس در رابط Drizzle Studio:
+`npm run build` فقط وبِ مستقر روی VPS را build می‌کند؛ روی VPS نیازی به ساخت Rust یا اپ موبایل نیست.
 
 ```bash
+npm run desktop:bundle
+```
+
+Installer آزمایشی Windows در `apps/desktop/src-tauri/target/release/bundle/nsis` ساخته می‌شود.
+Workflow دستی `Windows desktop test installer` فایل را به‌صورت artifact تحویل می‌دهد و release عمومی منتشر نمی‌کند.
+امضای installer و auto-update در این مرحله پیاده نشده‌اند. `Cargo.lock` پس از اولین build واقعی تولید و باید commit شود.
+
+## دیتابیس و استقرار
+
+```bash
+npm run db:migrate
 npm run db:studio
 ```
 
-راهنمای استقرار بدون Docker روی Ubuntu، شامل PostgreSQL، systemd، Timerهای Worker، Nginx و
-TLS در [`docs/deployment-ubuntu.md`](docs/deployment-ubuntu.md) قرار دارد. فایل‌های آماده‌ی
-سرور داخل پوشه `deploy` هستند و برای دامنه `dota2notes.ir` تنظیم شده‌اند.
+مقادیر `.env.local` ریشه برای Drizzle و Next خوانده می‌شوند؛ در production فایل ریشهٔ `.env.production` حفظ شده است.
+`DOTENV_CONFIG_PATH=.env.production` برای migration از ریشه resolve می‌شود.
 
-تصمیم معماری و نقشه مهاجرت تدریجی Web، Android و Windows در
-[`docs/multiplatform-architecture.md`](docs/multiplatform-architecture.md) ثبت شده است.
-راهنمای زبان بصری و بررسی بازطراحی نیز در
-[`docs/ui-ux-redesign.md`](docs/ui-ux-redesign.md) قرار دارد.
-نگاشت حالت‌ها، ساختار فایل‌ها و رفتار پنل نشانگر در
-[`docs/cursor-themes.md`](docs/cursor-themes.md) مستند شده است.
-
-## API ژورنال
-
-- `GET /api/journal/me?from=YYYY-MM-DD&to=YYYY-MM-DD`
-- `PUT /api/journal/days/YYYY-MM-DD`
-- `GET /api/journal/users/HANDLE?from=YYYY-MM-DD&to=YYYY-MM-DD`
-
-Handle عمومی را می‌توان به شکل کامل مانند `steam_123456789` یا فقط Steam Account ID
-مانند `123456789` وارد کرد.
-
-هر مچ در پاسخ خواندن ژورنال علاوه بر یادداشت‌های قابل ویرایش، فیلدهای فقط‌خواندنی منبع،
-Match ID، زمان و مدت، K/D/A، GPM، XPM، Net Worth، Damageها و شناسه و نام Game Mode و
-Lobby Type را نیز برمی‌گرداند. Match ID در JSON به‌شکل رشته ارسال می‌شود تا دقت عددی در
-مرورگر از بین نرود. مچ دستی برای این فیلدها مقدار `null` دارد.
-
-## API تصاویر مچ
-
-- `GET /api/matches/MATCH_ID/images`
-
-کاربر API آپلود فایل ندارد. بک‌اند می‌تواند برای هر مچ یک تا سه تصویر تولیدشده را از حافظه
-مستقیماً به پارس‌پک منتشر کند؛ فایل موقت دائمی روی VPS ساخته نمی‌شود. هنگام تولید دوباره،
-رکوردها و فایل‌های نسخه قبلی جایگزین و پاک می‌شوند. فقط کلید پایدار و metadata در PostgreSQL
-نگهداری می‌شود و API عمومی بالا تصاویر نهایی را به‌ترتیب برمی‌گرداند.
-
-تابع داخلی `publishGeneratedMatchImages` قرارداد اتصال مولد تصویر به فضای ذخیره‌سازی است.
-Image Worker بعد از دریافت داده کامل مچ از OpenDota این تابع را فراخوانی می‌کند.
-
-موتور `renderGeneratedMatchImages` از داده معتبر OpenDota سه تصویر WebP با ابعاد
-`1280x720` می‌سازد: نمای کلی مچ، Scoreboard دو تیم و کارت عملکرد بازیکن. تمام SVG و WebPها
-در حافظه ساخته می‌شوند و موتور هیچ فایل موقتی روی دیسک ایجاد نمی‌کند. پرتره هیروها فقط از
-URLهای ثابت Steam CDN که از فهرست داخلی هیروها ساخته شده‌اند دریافت می‌شوند؛ اندازه و زمان
-دریافت محدود است و در صورت خطای CDN، تصویر با Placeholder امن تولید می‌شود.
-
-تنظیمات موتور تصویر:
-
-```dotenv
-MATCH_IMAGE_ASSET_TIMEOUT_MS=5000
-MATCH_IMAGE_ASSET_MAX_BYTES=1572864
-MATCH_IMAGE_WEBP_QUALITY=88
-```
-
-هر مچ OpenDota یک Job پایدار و یکتا در `match_image_jobs` دارد. ثبت مچ و ایجاد Job در یک
-Transaction انجام می‌شود، اما رندر و انتشار جدا از Sync اجرا می‌شوند؛ بنابراین خطای Sharp،
-Steam CDN یا پارس‌پک ثبت مچ و Worker همگام‌سازی را Rollback نمی‌کند. Migration مچ‌های
-OpenDota موجود را نیز به‌صورت `pending` وارد این صف می‌کند.
-
-### Worker تصاویر مچ
-
-- `POST /api/internal/images/tick`
-- Header اجباری: `Authorization: Bearer SYNC_WORKER_SECRET`
-
-هر Tick تعداد محدودی Job را با `FOR UPDATE SKIP LOCKED` دریافت می‌کند، سه تصویر را در RAM
-می‌سازد و مستقیم در پارس‌پک منتشر می‌کند. نسخه قبلی فقط پس از موفقیت نسخه جدید پاک می‌شود.
-خطاهای موقت با تأخیر نمایی Retry می‌شوند و Jobهای دارای قفل قدیمی در Tick بعدی بازیابی
-می‌شوند. خطاهای دائمی داده بدون Retry بی‌فایده به `failed` می‌روند.
-
-```dotenv
-MATCH_IMAGE_PROCESS_BATCH_SIZE=1
-MATCH_IMAGE_STALE_LOCK_SECONDS=900
-MATCH_IMAGE_MAX_ATTEMPTS=3
-MATCH_IMAGE_RETRY_BASE_SECONDS=60
-```
-
-## API همگام‌سازی OpenDota
-
-- `POST /api/matches/JOURNAL_MATCH_UUID/opendota`
-- بدنه: `{ "dotaMatchId": "8981928176" }`
-
-این مسیر فقط برای صاحب مچ و با نشست Steam قابل استفاده است و درخواست مرورگر باید از Origin
-خود سایت ارسال شود. جست‌وجو/اتصال یک Match و دریافت هفتگی cooldown پنج‌دقیقه‌ای دارند؛ دریافت روزانه
-هر ۹۰ ثانیه ممکن است. پاسخ کامل
-OpenDota در `dota_matches.raw_data` ذخیره می‌شود و آمار همان بازیکن شامل نتیجه، هیرو، K/D/A،
-GPM، XPM، Net Worth و Damageها در `journal_matches` ثبت می‌شود. Match ID به‌شکل رشته ارسال
-می‌شود تا تبدیل عددی ناخواسته در کلاینت‌های مختلف رخ ندهد.
-
-کلید `OPENDOTA_API_KEY` اختیاری است و نباید با پیشوند `NEXT_PUBLIC_` تعریف یا Commit شود.
-علاوه بر Cooldown هر کاربر، شمارنده‌های سراسری دقیقه و روز در PostgreSQL نگهداری می‌شوند تا
-مجموع درخواست کاربران از سقف پلن OpenDota عبور نکند. مقادیر پیش‌فرض کمی پایین‌تر از سقف
-عمومی ۶۰ درخواست در دقیقه و ۳۰۰۰ درخواست در روز انتخاب شده‌اند.
-
-### دریافت مچ‌های روز یا هفتهٔ انتخابی
-
-- `POST /api/sync/me`
-
-این مسیر بدون دریافت Match ID، مچ‌های حساب Steam را برای تاریخ انتخابی بررسی می‌کند:
-در حالت روزانه فقط همان روز و در حالت هفتگی، هفتهٔ شنبه تا جمعه؛ هفتهٔ جاری فقط تا امروز.
-OpenDota برای تاریخ پایان فیلتر مستقیمی ندارد؛ تاریخچه در صفحه‌های محدود خوانده می‌شود
-و با `significant=0` مودهای غیر استاندارد مانند Turbo نیز در پاسخ اولیه می‌آیند.
-فقط مچ‌های داخل بازهٔ انتخابی برای ثبت بررسی می‌شوند. اگر تاریخچه بیش از سقف بررسی باشد،
-درخواست خطا می‌دهد و روزهای بررسی‌نشده تکمیل‌شده علامت نمی‌خورند. مچ‌های تکراری نادیده گرفته
-می‌شوند و در صف پس‌زمینه، هر بار پنج مچ با اطلاعات کامل در تاریخ واقعی ثبت می‌شود.
-نوبت‌ها تا بررسی تمام مچ‌های بازه ادامه دارند؛ سقف `OPENDOTA_MAX_NEW_MATCHES_PER_SYNC`
-فقط مربوط به همگام‌سازی زمان‌بندی‌شده است. Cooldown درخواست روزانه ۹۰ ثانیه
-و درخواست هفتگی پنج دقیقه است؛ سهمیه‌های سراسری OpenDota نیز اعمال می‌شوند.
-
-`POST /api/sync/me` شناسهٔ کار را برمی‌گرداند؛ `GET /api/sync/me` پیشرفت و نتیجه را می‌دهد.
-timer جدید `dota2notes-sync-manual.timer` برای ادامهٔ صف ضروری است. نتیجه شامل تعداد
-مچ‌های بررسی‌شده، تکراری، ثبت‌شده و ناموفق است. روز مچ با منطقه
-زمانی `JOURNAL_TIME_ZONE` محاسبه می‌شود که مقدار پیش‌فرض آن `Asia/Tehran` است؛ بنابراین ساعت
-UTC سرور VPS تاریخ دفتر را جابه‌جا نمی‌کند. وضعیت Cooldown و صف ساخت تصاویر با
-`GET /api/sync/me` برای رابط کاربری خوانده می‌شود.
-
-اگر Replay یک مچ هنوز Parse نشده باشد، همان مچ در صف مستقل OpenDota Parse قرار می‌گیرد.
-ارسال درخواست Parse فقط یک‌بار انجام می‌شود و ۱۰ واحد از سهمیه OpenDota مصرف می‌کند؛ هر
-بررسی بعدی یک واحد است. تا کامل‌شدن Replay، Worker تصاویر مچ را کنار می‌گذارد و Attempt
-ساخت تصویر مصرف نمی‌شود. برای مچ‌های قدیمی Backfill خودکار و انبوه انجام نمی‌شود.
-
-## Worker مرجع آماری Performance
-
-- `POST /api/internal/performance-reference/tick`
-- Header اجباری: `Authorization: Bearer SYNC_WORKER_SECRET`
-
-این Worker هر دقیقه یک بخش کوچک از آمار ماهانه را دریافت می‌کند: Meta هر Hero/Position/Rank/Mode
-و میانگین‌های زمانی STRATZ برای Hero/Position و fallback کلی Position. نسخهٔ هر ماه پس از
-تکمیل هر دو بخش فعال می‌شود؛ نسخه‌های قبلی حفظ می‌شوند. زمان‌بندی، جدول‌ها، فرض Game Mode
-و محدودیت داده در [`docs/monthly-reference-services.md`](docs/monthly-reference-services.md) آمده است.
-
-جزئیات قواعد Score، وزن Position، Lane Impact و محدودیت Timeline آیتم‌ها در
-[`docs/performance-scoring-phase2.md`](docs/performance-scoring-phase2.md) ثبت شده است.
-قرارداد پچ تحویلی Lane Efficiency دقیقهٔ ۱۲ و بازپردازش Replayهای قدیمی در
-[`docs/lane-efficiency-next-step.md`](docs/lane-efficiency-next-step.md) است؛
-Lane Impact و Denies @10 ده‌دقیقه‌ای باقی مانده‌اند. وضعیت merge و استقرار
-پچ را مطابق `docs/HANDOFF.md` بررسی کنید.
-
-## Worker آماده‌سازی Replay در OpenDota
-
-- `POST /api/internal/opendota-parse/tick`
-- Header اجباری: `Authorization: Bearer SYNC_WORKER_SECRET`
-
-این Worker فقط مچ ناقصی را که هنگام آماده‌سازی به Replay نیاز دارد Parse می‌کند. درخواست
-تکراری برای یک مچ ساخته نمی‌شود و Pollها با صف، قفل دیتابیس و محدودکننده OpenDota کنترل می‌شوند.
-
-## Worker همگام‌سازی زمان‌بندی‌شده
-
-- `POST /api/internal/sync/tick`
-- Header اجباری: `Authorization: Bearer SYNC_WORKER_SECRET`
-
-این Worker با `SCHEDULED_SYNC_ENABLED=off` غیرفعال است. در این حالت Tick داخلی
-بدون ساخت یا پردازش Job برمی‌گردد و هیچ درخواستی به OpenDota نمی‌فرستد. برای فعال‌کردن
-بررسی دوره‌ای مقدار را روی `on` قرار دهید. این گزینه روی Sync دستی کاربر اثری ندارد.
-
-هر Tick ابتدا Jobهای گیرکرده را بازیابی می‌کند، کاربران موعدرسیده را با رعایت Job فعال یکتا
-در صف می‌گذارد و سپس تعداد محدودی Job را پردازش می‌کند. Claim هر Job با قفل ردیفی
-`FOR UPDATE SKIP LOCKED` انجام می‌شود؛ بنابراین اجرای هم‌زمان دو Tick باعث پردازش دوباره یک
-کاربر نمی‌شود. خطاهای موقت OpenDota با تأخیر نمایی Retry می‌شوند و بعد از سقف تلاش، Job به
-`failed` می‌رود. زمان آخرین بررسی کاربر نیز پس از موفقیت یا شکست نهایی ثبت می‌شود تا Worker
-در هر Tick همان کاربر را دوباره صف نکند.
-
-اگر کاربر قبلاً Sync دستی یا زمان‌بندی‌شده داشته باشد، Worker فقط مچ‌های جدیدتر از آن زمان را
-با هم‌پوشانی `SCHEDULED_SYNC_LOOKBACK_SECONDS` بررسی می‌کند. برای حسابی که هیچ Sync قبلی
-ندارد، فقط `SCHEDULED_SYNC_INITIAL_MATCHES` مچ اول وارد می‌شود تا تاریخچه قدیمی ناخواسته
-Backfill نشود. همه درخواست‌های Worker از همان سهمیه سراسری OpenDota عبور می‌کنند و در صورت
-پرشدن سهمیه، پردازش Batch زودتر متوقف می‌شود.
-
-برای ساخت Secret محلی:
-
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
-```
-
-این Secret فقط در `.env.local` یا تنظیمات سرویس VPS قرار می‌گیرد و نباید به Git، مرورگر یا
-متغیرهای `NEXT_PUBLIC_` وارد شود. فعال‌بودن Timer به‌تنهایی Scheduler را فعال نمی‌کند؛
-تصمیم نهایی با `SCHEDULED_SYNC_ENABLED` است.
-
-اطلاعات ثابت هیروها از پروژه MIT
-[`odota/dotaconstants`](https://github.com/odota/dotaconstants) تهیه شده و تصاویر هیروها
-از CDN رسمی Steam دریافت می‌شوند.
-
-## API مدیریت
-
-دسترسی Super Admin از طریق allowlist متغیر `SUPER_ADMIN_STEAM_IDS` تعیین می‌شود. مقدار آن
-یک یا چند SteamID64 با جداکننده ویرگول است و به رمز، Session یا API Token شخصی کاربر دیگری
-نیاز ندارد. بعد از تغییر این متغیر، سرور را دوباره اجرا کنید و با همان حساب Steam وارد شوید.
-
-- `GET /api/admin/overview`
-- `GET /api/admin/users?query=&limit=25&offset=0`
-- `POST /api/admin/users`
-- بدنه ساخت/به‌روزرسانی کاربر: `{ "steamIdentifier": "988195076" }`
-
-شناسه ورودی می‌تواند Steam Account ID کوتاه یا SteamID64 باشد. بک‌اند با کلید سروری Steam
-پروفایل عمومی را دریافت می‌کند، حساب را بدون ساخت Session ثبت می‌کند و ورود واقعی کاربر فقط
-بعد از تأیید OpenID توسط خود Steam اتفاق می‌افتد. ساخت و تازه‌سازی کاربر در جدول
-`admin_audit_logs` ثبت می‌شود. API نمای کلی نیز تعداد کاربران، Sessionهای فعال، مچ‌ها، تصاویر،
-Jobهای همگام‌سازی، Jobهای تصویر و مصرف پنجره‌های OpenDota را برمی‌گرداند. هیچ‌کدام از این
-مسیرها اطلاعات نشست یا کلیدهای محرمانه را نمایش نمی‌دهند.
-
-
-راهنمای پایداری دانلود Replay، استقرار و تست failover: [Replay resilience](docs/replay-resilience.md).
+**برای اولین استقرار این تغییر فولدربندی، فقط pull کافی نیست:** unit سایت و Replay باید از مخزن دوباره نصب شوند.
+[راهنمای این انتشار](docs/monorepo-desktop-foundation.md) و [راهنمای کامل Ubuntu](docs/deployment-ubuntu.md) را دنبال کنید.
+Worker Cloudflare در این مرحله تغییر نکرده است.

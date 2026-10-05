@@ -8,6 +8,8 @@
 `/var/www/dota2notes` نوشته شده است. دستورها را به‌ترتیب اجرا کنید. رمزها و کلیدهای واقعی
 نباید داخل Git ثبت شوند.
 
+**از مرحلهٔ monorepo:** فرمان‌های npm در ریشه اجرا می‌شوند؛ برنامهٔ Next و parser در `apps/web` هستند. env و `deploy` در ریشه باقی می‌مانند. برای اولین انتقال، [راهنمای اختصاصی](monorepo-desktop-foundation.md) مرجع ترتیب نصب unitهاست.
+
 ## ۱. آماده‌کردن DNS
 
 در پنل دامنه یک رکورد `A` برای `dota2notes.ir` بسازید و آن را به IPv4 سرور متصل کنید.
@@ -305,6 +307,7 @@ sudo systemctl disable --now dota2notes-stratz.timer 2>/dev/null || true
 sudo systemctl stop dota2notes-replay.timer 2>/dev/null || true
 sudo systemctl stop dota2notes-sync-manual.timer 2>/dev/null || true
 sudo systemctl stop dota2notes-images.timer dota2notes-performance-reference.timer dota2notes-opendota-parse.timer
+sudo systemctl stop dota2notes-replay.service dota2notes-sync.service dota2notes-images.service dota2notes-performance-reference.service dota2notes-opendota-parse.service
 sudo systemctl stop dota2notes.service
 sudo -u dota2notes -H git pull --ff-only origin main
 sudo -u dota2notes -H npm ci
@@ -312,6 +315,7 @@ sudo -u dota2notes -H env DOTENV_CONFIG_PATH=.env.production npm run db:migrate
 sudo -u dota2notes -H npm test
 sudo -u dota2notes -H npm run typecheck
 sudo -u dota2notes -H npm run build
+sudo cp deploy/systemd/dota2notes.service deploy/systemd/dota2notes-replay.service /etc/systemd/system/
 sudo cp deploy/systemd/dota2notes-sync.service deploy/systemd/dota2notes-sync-manual.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl start dota2notes.service

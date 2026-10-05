@@ -9,7 +9,7 @@
 ```bash
 cd /var/www/dota2notes
 sudo install -d -o root -g root -m 755 /usr/local/libexec/dota2notes
-sudo install -o root -g root -m 644 scripts/service-monitor/collect.mjs /usr/local/libexec/dota2notes/collect.mjs
+sudo install -o root -g root -m 644 apps/web/scripts/service-monitor/collect.mjs /usr/local/libexec/dota2notes/collect.mjs
 sudo install -d -o root -g dota2notes -m 750 /var/lib/dota2notes/monitor
 getent group dota2notes | cut -d: -f3
 ```

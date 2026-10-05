@@ -16,7 +16,7 @@
 ## ست‌ها و فایل‌ها
 
 هفت ست `acid-hydra`، `diretide-2020`، `ti-2017`، `ti-2018`، `ti-2019`، `warcog` و
-`wrath-of-ka` در مسیر `public/cursors/<pack>/` قرار دارند. هر پوشه دقیقاً این پنج PNG شفاف
+`wrath-of-ka` در مسیر `apps/web/public/cursors/<pack>/` قرار دارند. هر پوشه دقیقاً این پنج PNG شفاف
 و ۶۴ در ۶۴ پیکسل را دارد:
 
 ```text

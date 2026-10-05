@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Dota2 Notes OpenDota parse worker every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+RandomizedDelaySec=8s
+Persistent=true
+Unit=dota2notes-opendota-parse.service
+
+[Install]
+WantedBy=timers.target

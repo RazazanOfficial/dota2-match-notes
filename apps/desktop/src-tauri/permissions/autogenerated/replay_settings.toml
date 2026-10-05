@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-replay-settings"
+description = "Enables the replay_settings command without any pre-configured scope."
+commands.allow = ["replay_settings"]
+
+[[permission]]
+identifier = "deny-replay-settings"
+description = "Denies the replay_settings command without any pre-configured scope."
+commands.deny = ["replay_settings"]

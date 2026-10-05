@@ -1,5 +1,5 @@
 [Unit]
-Description=Continue requested day and week match sync in small batches
+Description=Continue requested day, week and month match sync in small batches
 
 [Timer]
 OnBootSec=30s

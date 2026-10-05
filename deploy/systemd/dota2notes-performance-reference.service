@@ -1,6 +1,6 @@
 [Unit]
 Description=Dota2 Notes monthly reference collection (one batch)
-After=network-online.target dota2notes.service
+After=network-online.target dota2notes-api.service
 Wants=network-online.target
 
 [Service]
@@ -9,7 +9,8 @@ User=dota2notes
 Group=dota2notes
 WorkingDirectory=/var/www/dota2notes
 EnvironmentFile=/var/www/dota2notes/.env.production
-Environment=PORT=3000
+Environment=API_PORT=4100
+ExecStartPre=/usr/bin/node /var/www/dota2notes/apps/api/release/dist/preflight.js --role=performance-reference
 ExecStart=/usr/bin/bash /var/www/dota2notes/deploy/scripts/call-worker.sh performance-reference
 TimeoutStartSec=330s
 UMask=0077

@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "session-vault"
+description = "Keep the authenticated session in the operating system credential store."
+commands.allow = ["save_session_token", "load_session_token", "clear_session_token"]

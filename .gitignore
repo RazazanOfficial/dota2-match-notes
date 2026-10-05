@@ -9,3 +9,9 @@ apps-script/Code.gs
 !.env.example
 *.tsbuildinfo
 next-env.d.ts
+# Monorepo / native build output
+apps/*/dist/
+apps/mobile/.expo/
+apps/mobile/android/
+apps/mobile/ios/
+apps/desktop/src-tauri/target/

@@ -80,14 +80,14 @@ GPM یا تعداد Ward کل بازی به‌تنهایی نباید یک Posit
 به VPS منتقل کنید. اجرای build جزو راه‌اندازی و با تأیید مرحلهٔ استقرار است.
 
 ```bash
-bash scripts/replay-parser/build-parser.sh /var/www/dota2notes/var/replay-parser/parser.jar
+bash apps/web/scripts/replay-parser/build-parser.sh /var/www/dota2notes/var/replay-parser/parser.jar
 ```
 
 پس از نصب کد و اجرای migration، برای نمونهٔ دستی و بدون اتصال به DB:
 
 ```bash
 REPLAY_PARSER_JAR=/var/www/dota2notes/var/replay-parser/parser.jar \
-  node scripts/replay-parser/import-replay.mjs \
+  node apps/web/scripts/replay-parser/import-replay.mjs \
     --match 9008411473 --file /path/to/9008411473_68543098.dem.bz2 --dry-run
 ```
 

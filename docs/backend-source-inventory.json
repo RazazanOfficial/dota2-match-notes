@@ -1,0 +1,1810 @@
+{
+  "sourceCommit": "dcb721e03174376eca62629d28c6cd12de0c1f8c",
+  "routes": [
+    {
+      "path": "/api/admin/monthly-references",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "source": "app/api/admin/monthly-references/route.ts",
+      "sha256": "d8f3dea96dc5ba1e394fc12d68fad26b02154f07911b9c7a839c9613ec725459"
+    },
+    {
+      "path": "/api/admin/overview",
+      "methods": [
+        "GET"
+      ],
+      "source": "app/api/admin/overview/route.ts",
+      "sha256": "459abd450f7c0615efddd4fa172a4e64873370b648ac70df29b93522e350d90b"
+    },
+    {
+      "path": "/api/admin/releases/[releaseId]",
+      "methods": [
+        "PUT"
+      ],
+      "source": "app/api/admin/releases/[releaseId]/route.ts",
+      "sha256": "1174a0eeb3f9beb2cabfc375a6144138c7cedbcc83114b0284450564169911f4"
+    },
+    {
+      "path": "/api/admin/releases",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "source": "app/api/admin/releases/route.ts",
+      "sha256": "7e735d121a4d6b085f1ffe5cdc0cc62be934375dba704a13dac1cb74d7642e2a"
+    },
+    {
+      "path": "/api/admin/replay-archive",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "source": "app/api/admin/replay-archive/route.ts",
+      "sha256": "b8aaf05ba29778dd7212eb171c6b45a475153fa5b605353d7430e19860b06ab1"
+    },
+    {
+      "path": "/api/admin/replay-monitor",
+      "methods": [
+        "GET"
+      ],
+      "source": "app/api/admin/replay-monitor/route.ts",
+      "sha256": "c0c3d1a8c314580cd04e619e513c01325700209c50df6026a4a115e7af4323eb"
+    },
+    {
+      "path": "/api/admin/service-monitor",
+      "methods": [
+        "GET"
+      ],
+      "source": "app/api/admin/service-monitor/route.ts",
+      "sha256": "ec586758e6770e88cfaf7f0c59f06f37a550dad9ec59d00105156f92be5d88b7"
+    },
+    {
+      "path": "/api/admin/stratz-diagnostics",
+      "methods": [
+        "GET"
+      ],
+      "source": "app/api/admin/stratz-diagnostics/route.ts",
+      "sha256": "f2f355062e0249d8e6edefb080cd8d8d67378dcf47730e7d5b18400774f26420"
+    },
+    {
+      "path": "/api/admin/users/[userId]/matches/reprocess",
+      "methods": [
+        "POST"
+      ],
+      "source": "app/api/admin/users/[userId]/matches/reprocess/route.ts",
+      "sha256": "47e718d47c551708361d7f0df7a2b6cb7cfcc414578632ed336a74a0b2db8af9"
+    },
+    {
+      "path": "/api/admin/users/[userId]/password",
+      "methods": [
+        "PUT",
+        "DELETE"
+      ],
+      "source": "app/api/admin/users/[userId]/password/route.ts",
+      "sha256": "41c8cc0f91835341a0ebcdb5824a4d76508eb43d8d9ff605f38a06fbe279428c"
+    },
+    {
+      "path": "/api/admin/users",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "source": "app/api/admin/users/route.ts",
+      "sha256": "ecd5b988dbe2438905f7c274b30e266c60e404a83ceb37ea2e6719aa2dd7a664"
+    },
+    {
+      "path": "/api/auth/logout",
+      "methods": [
+        "POST"
+      ],
+      "source": "app/api/auth/logout/route.ts",
+      "sha256": "2d125da40d7ff24ac938e1ad445eef964e85400696f44c4db1106030aa9951ef"
+    },
+    {
+      "path": "/api/auth/password/login",
+      "methods": [
+        "POST"
+      ],
+      "source": "app/api/auth/password/login/route.ts",
+      "sha256": "9803a7a271444deffa9e3e16295938ac1647124aff018d6e5e0cfe1f9a65ed06"
+    },
+    {
+      "path": "/api/auth/password/me",
+      "methods": [
+        "PUT",
+        "DELETE"
+      ],
+      "source": "app/api/auth/password/me/route.ts",
+      "sha256": "8511dac9dc5b1b2ea4a3db41b3d858454ac3f15a55483588f0cdb55ade98897a"
+    },
+    {
+      "path": "/api/auth/session",
+      "methods": [
+        "GET"
+      ],
+      "source": "app/api/auth/session/route.ts",
+      "sha256": "e2c482406226e59accb47ca7ca9e0aea3a8f07c47b3f9293ae5239133ee820cf"
+    },
+    {
+      "path": "/api/auth/steam/callback",
+      "methods": [
+        "GET"
+      ],
+      "source": "app/api/auth/steam/callback/route.ts",
+      "sha256": "47579b3aef1c98c8b080369eed63dcac107d0a10e2421f6cafaa48d04c13acc7"
+    },
+    {
+      "path": "/api/auth/steam",
+      "methods": [
+        "GET"
+      ],
+      "source": "app/api/auth/steam/route.ts",
+      "sha256": "aaddf0e126365199aec33bb18f400ad43be3a7873e663cd94fbe2cafed478ee4"
+    },
+    {
+      "path": "/api/health",
+      "methods": [
+        "GET"
+      ],
+      "source": "app/api/health/route.ts",
+      "sha256": "9e413e81b9dd3e235dcb02dc4885782b35843a4a37c8bb6ec9385f01ccf99a0d"
+    },
+    {
+      "path": "/api/hero-pool/me",
+      "methods": [
+        "GET",
+        "PUT"
+      ],
+      "source": "app/api/hero-pool/me/route.ts",
+      "sha256": "1aebb92bcbde9b4b518a5223bb238ca437d0f54222bad48a39c5e720a83713dc"
+    },
+    {
+      "path": "/api/internal/images/tick",
+      "methods": [
+        "POST"
+      ],
+      "source": "app/api/internal/images/tick/route.ts",
+      "sha256": "55ea444983984796f2fe45f1bb20a91bdd250c6a220aed6724ae6cf5ec58ca15"
+    },
+    {
+      "path": "/api/internal/opendota-parse/tick",
+      "methods": [
+        "POST"
+      ],
+      "source": "app/api/internal/opendota-parse/tick/route.ts",
+      "sha256": "896c2c57d09e04feb9dacaa19ea437455998ffd17c76850dd69ba5c681b3188b"
+    },
+    {
+      "path": "/api/internal/performance-reference/tick",
+      "methods": [
+        "POST"
+      ],
+      "source": "app/api/internal/performance-reference/tick/route.ts",
+      "sha256": "3a4cd2e4eb1e31273b6796d8ce3ae65ac89d70716aa24e74772c726a60032b1e"
+    },
+    {
+      "path": "/api/internal/stratz/tick",
+      "methods": [
+        "POST"
+      ],
+      "source": "app/api/internal/stratz/tick/route.ts",
+      "sha256": "3b991f0d86a5003e17019fda2ec9e8dcca4b8d33de4d9e33ac9e52856c5f827e"
+    },
+    {
+      "path": "/api/internal/sync/tick",
+      "methods": [
+        "POST"
+      ],
+      "source": "app/api/internal/sync/tick/route.ts",
+      "sha256": "a8838633be76dda8e715f5a9b09ab46ebd71119cc1b49408172114bc2f6477c4"
+    },
+    {
+      "path": "/api/journal/days/[date]",
+      "methods": [
+        "PUT"
+      ],
+      "source": "app/api/journal/days/[date]/route.ts",
+      "sha256": "dbd8c86cc0c0abe7095aaaef183780753da4c23bec2594bb25cdbc43aa83240e"
+    },
+    {
+      "path": "/api/journal/me",
+      "methods": [
+        "GET"
+      ],
+      "source": "app/api/journal/me/route.ts",
+      "sha256": "08d2d56d2b51dd98ee7cbc2e3ea0d6c109b1c4af173cc759cd433a82795870ca"
+    },
+    {
+      "path": "/api/journal/users/[handle]",
+      "methods": [
+        "GET"
+      ],
+      "source": "app/api/journal/users/[handle]/route.ts",
+      "sha256": "d14cf7814a233222e3bff5c72792d6d30e800263820fdc0a273f7eaf2d13ff7e"
+    },
+    {
+      "path": "/api/matches/[matchId]/analysis",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "source": "app/api/matches/[matchId]/analysis/route.ts",
+      "sha256": "716ad73bb5f1998601c2b15a98cd9f0b549d6d82fb8ff9fcc384b23ae1f0c0bc"
+    },
+    {
+      "path": "/api/matches/[matchId]/images",
+      "methods": [
+        "GET"
+      ],
+      "source": "app/api/matches/[matchId]/images/route.ts",
+      "sha256": "2ff550a5b28526191a949913d2587ba5ebd78d65a4768900fbbba6e665cc3dc0"
+    },
+    {
+      "path": "/api/matches/[matchId]/opendota",
+      "methods": [
+        "POST"
+      ],
+      "source": "app/api/matches/[matchId]/opendota/route.ts",
+      "sha256": "5d24d950d75eef3175e10a7dfb4240c92c8689980517e2ddd0a9746ad3ae65fb"
+    },
+    {
+      "path": "/api/matches/[matchId]/replay",
+      "methods": [
+        "POST"
+      ],
+      "source": "app/api/matches/[matchId]/replay/route.ts",
+      "sha256": "8071b3f166f82694d0cf83e4954fe9d4035baee3998524035651c67247270719"
+    },
+    {
+      "path": "/api/releases/[releaseId]/read",
+      "methods": [
+        "POST"
+      ],
+      "source": "app/api/releases/[releaseId]/read/route.ts",
+      "sha256": "b89bbba79ea7ccfe157f6f3718e1db7ca6bff627b28758e4b0c3c36e38131cbb"
+    },
+    {
+      "path": "/api/releases",
+      "methods": [
+        "GET"
+      ],
+      "source": "app/api/releases/route.ts",
+      "sha256": "76822987b6732784ecd6a15d81ed2c2d01ef340fdfbbda3333ffb6281664bde8"
+    },
+    {
+      "path": "/api/replays/[matchId]/analysis",
+      "methods": [
+        "GET"
+      ],
+      "source": "app/api/replays/[matchId]/analysis/route.ts",
+      "sha256": "d46cceec002d2d311597812d43386488980c3e0d021ad85d9a13b7f1393dedc1"
+    },
+    {
+      "path": "/api/replays/[matchId]/file",
+      "methods": [
+        "GET"
+      ],
+      "source": "app/api/replays/[matchId]/file/route.ts",
+      "sha256": "828a518b2589ad36099d0d3f2808f9e6306e9a0e7babe9e38a63a8e54ea944e0"
+    },
+    {
+      "path": "/api/replays/[matchId]",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "source": "app/api/replays/[matchId]/route.ts",
+      "sha256": "d37615da355dd2cc0355d354fd2f3474a3ba2895af10f673679f5a0be3253255"
+    },
+    {
+      "path": "/api/replays/lookup",
+      "methods": [
+        "POST"
+      ],
+      "source": "app/api/replays/lookup/route.ts",
+      "sha256": "07808d539c89826ede0c309f4805b052ccce5fcd24228ad26f2971dec2e5f6ca"
+    },
+    {
+      "path": "/api/sync/me",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "source": "app/api/sync/me/route.ts",
+      "sha256": "664e465c9d31cbbd95cf6ae8e3722310e194a6d7a5a6b1d72bf21a19c5894446"
+    },
+    {
+      "path": "/api/users/search",
+      "methods": [
+        "GET"
+      ],
+      "source": "app/api/users/search/route.ts",
+      "sha256": "b1f889bfc96d83c8e1850abdfc6e58a698c5b3a19857f0815975f28256da1619"
+    }
+  ],
+  "domainFiles": [
+    {
+      "path": "lib/admin/auth.ts",
+      "sha256": "cdcbb85abad6132b091c2666790b7fce9e8cbc54fd70b89ea68c964089050137",
+      "exports": [
+        "requireSuperAdmin"
+      ]
+    },
+    {
+      "path": "lib/admin/config.ts",
+      "sha256": "32a4ff0ab09e9e87f3f2ddc31e649d051c032fc58341ae2829c13ab990d27417",
+      "exports": [
+        "parseSuperAdminSteamIds",
+        "isSuperAdminSteamId"
+      ]
+    },
+    {
+      "path": "lib/admin/errors.ts",
+      "sha256": "2d7de7ba45d1e1f04bb2ab6558f657050141a0454933a899afd9493b90c824ab",
+      "exports": [
+        "AdminError",
+        "adminErrorResponse"
+      ]
+    },
+    {
+      "path": "lib/admin/password.ts",
+      "sha256": "b9287771ef52f1316edd34f6eabc6fd0cdb113e4277a254dec8807751404bad2",
+      "exports": [
+        "setAdminManagedPassword"
+      ]
+    },
+    {
+      "path": "lib/admin/replay-monitor.ts",
+      "sha256": "d53dd40188016c3c4331f5c1c29719e53f60a0fdceaadb187e9f7bef84abf855",
+      "exports": [
+        "getReplayMonitor"
+      ]
+    },
+    {
+      "path": "lib/admin/repository.ts",
+      "sha256": "32bcda00eeb54ddf2f843d1036687624fbc6bb3f95ba929eb0cf4297a7fde829",
+      "exports": [
+        "listAdminUsers",
+        "provisionAdminUser",
+        "getAdminOverviewData"
+      ]
+    },
+    {
+      "path": "lib/admin/reprocess-matches.ts",
+      "sha256": "784a605942d02d11cf25b7fdc5fa934105d39cc93361c21e04b1cddcff937472",
+      "exports": [
+        "reprocessRecentUserMatches"
+      ]
+    },
+    {
+      "path": "lib/admin/service-monitor.ts",
+      "sha256": "8e4bfb42d45d273932ce5d71fa0297bb048a6f2772a9065fdb3df32d36d220c0",
+      "exports": [
+        "MonitorUnit",
+        "parseMonitorSnapshot",
+        "getServiceMonitor"
+      ]
+    },
+    {
+      "path": "lib/admin/service.ts",
+      "sha256": "c923aee9ff3748e3f538200599aff63ebcca729f054c11bdcb830ad6dc74cd8a",
+      "exports": [
+        "getAdminUsers",
+        "provisionUserFromSteam",
+        "getAdminOverview"
+      ]
+    },
+    {
+      "path": "lib/admin/validation.ts",
+      "sha256": "311b4cd15f724c3e8b5f37ba4393833ec3e6a1b9340f742a13e7e9ae692a9e72",
+      "exports": [
+        "normalizeSteamIdentifier",
+        "provisionUserInputSchema",
+        "listUsersQuerySchema",
+        "overviewQuerySchema",
+        "reprocessMatchesSchema"
+      ]
+    },
+    {
+      "path": "lib/api.ts",
+      "sha256": "8dbe640f44a81dfb792ff003849d84201023111ffe01df045ee342c9afd610b9",
+      "exports": [
+        "ApiError",
+        "loginPlayer",
+        "loginWithPassword",
+        "updateAccountPassword",
+        "removeAccountPassword",
+        "restorePlayer",
+        "getPlayerSyncStatus",
+        "syncPlayerMatches",
+        "viewPlayer",
+        "viewCoach",
+        "searchPlayers",
+        "saveDay",
+        "logout",
+        "purgeLegacyBrowserCache",
+        "getHeroPool",
+        "updateHeroPool"
+      ]
+    },
+    {
+      "path": "lib/auth/client-address.ts",
+      "sha256": "10093416b99e3125c2c366d95f3745eec63a0a562fb38cbe9edd906cb22fad7c",
+      "exports": [
+        "clientAddress"
+      ]
+    },
+    {
+      "path": "lib/auth/config.ts",
+      "sha256": "e01b88f061a5b21d9a66683cf0463e81523d3bd90c6466e48e1c4b9f2c8416ab",
+      "exports": [
+        "SESSION_COOKIE",
+        "STEAM_STATE_COOKIE",
+        "SESSION_DURATION_SECONDS",
+        "STEAM_STATE_DURATION_SECONDS",
+        "getAppUrl",
+        "useSecureCookies"
+      ]
+    },
+    {
+      "path": "lib/auth/password-response.ts",
+      "sha256": "24487a7c35be9fd2664df73c5f721ccf4c74adae02584accfad642ca7863318e",
+      "exports": [
+        "passwordAuthErrorResponse"
+      ]
+    },
+    {
+      "path": "lib/auth/password-validation.ts",
+      "sha256": "6d2722f1c39d3bee5f7bc76a92094b99dfbf3af69375cecb9a8ebfdde2e2cda1",
+      "exports": [
+        "normalizePasswordSteamIdentifier",
+        "passwordLoginSchema",
+        "passwordChangeSchema"
+      ]
+    },
+    {
+      "path": "lib/auth/password.ts",
+      "sha256": "52972fe08cc6d466f4312949a57b64e7f26dfc7d755c378918ee1810018a2b66",
+      "exports": [
+        "PasswordAuthError",
+        "passwordLoginKey",
+        "hashPassword",
+        "verifyPassword",
+        "findPasswordUser",
+        "assertPasswordLoginAllowed",
+        "recordPasswordLoginFailure",
+        "clearPasswordLoginFailures",
+        "markPasswordLoginSuccess",
+        "setUserPassword",
+        "removeUserPassword",
+        "revokeUserSessions",
+        "prunePasswordLoginAttempts"
+      ]
+    },
+    {
+      "path": "lib/auth/request.ts",
+      "sha256": "69c321a5a715e27cfcd4dc3daede84fee2b6f0e35535987f01f6f19e1498e571",
+      "exports": [
+        "getRequestUser",
+        "hasValidRequestOrigin"
+      ]
+    },
+    {
+      "path": "lib/auth/session-cookie.ts",
+      "sha256": "a205c479cc512780331b2422beeb1dfaa736a3a5c98ad23c998bbb9b5aad2a24",
+      "exports": [
+        "setSessionCookie"
+      ]
+    },
+    {
+      "path": "lib/auth/session.ts",
+      "sha256": "d9dd8df2fdf21cf9874f877ea499ad6cab7239cead553227455ffc81ee7f5100",
+      "exports": [
+        "SessionUser",
+        "createSession",
+        "getSessionUser",
+        "deleteSession"
+      ]
+    },
+    {
+      "path": "lib/auth/steam.ts",
+      "sha256": "12f0594de9b4108d5b592b4c6412fa9e6297668f392649c0fc10e2133d75792a",
+      "exports": [
+        "STEAM_OPENID_ENDPOINT",
+        "SteamProfile",
+        "steamIdToAccountId",
+        "steamAccountIdToSteamId",
+        "buildSteamReturnUrl",
+        "buildSteamLoginUrl",
+        "extractSteamId",
+        "verifySteamOpenId",
+        "fetchSteamProfile",
+        "fetchSteamProfileRequired"
+      ]
+    },
+    {
+      "path": "lib/auth/user.ts",
+      "sha256": "792db6bf15f44f73228d95b5612c1dc5b8570baf9b50c221564f3066ee311f63",
+      "exports": [
+        "upsertSteamUser"
+      ]
+    },
+    {
+      "path": "lib/constants.ts",
+      "sha256": "4c422f059f4cadda64e6999e2dee481d1f160c376a04befba9ad7936ef1c9721",
+      "exports": [
+        "ANCHOR_DATE",
+        "ROLE_OPTIONS",
+        "QUEUE_OPTIONS",
+        "roleLabel",
+        "queueLabel"
+      ]
+    },
+    {
+      "path": "lib/cursor-theme.ts",
+      "sha256": "6f65c8475f1f377f3bf1497c5fba641783593f2ae74238f580eecad1add1fb63",
+      "exports": [
+        "CURSOR_PACKS",
+        "CURSOR_EFFECTS",
+        "CursorPackId",
+        "CursorEffectId",
+        "CURSOR_PACK_STORAGE_KEY",
+        "CURSOR_EFFECT_STORAGE_KEY",
+        "DEFAULT_CURSOR_PACK",
+        "DEFAULT_CURSOR_EFFECT",
+        "isCursorPackId",
+        "isCursorEffectId"
+      ]
+    },
+    {
+      "path": "lib/date.ts",
+      "sha256": "120dc44c4b6a9cb53707c4411c15aefe2c38aa743701f930d5ed1ca5d56563f0",
+      "exports": [
+        "faNumber",
+        "faPercent",
+        "parseDateKey",
+        "toDateKey",
+        "toJournalDateKey",
+        "addDays",
+        "getWeekAnchorDate",
+        "getWeekDates",
+        "getCurrentWeekIndex",
+        "getWeekLabel",
+        "formatWeekday",
+        "formatDayDate",
+        "formatFullDate",
+        "formatWeekRange",
+        "summarizeMatches",
+        "summarizeWeek",
+        "normalizeUsername",
+        "normalizePublicHandle",
+        "normalizePublicPlayerIdentifier",
+        "isValidPublicPlayerIdentifier",
+        "isValidUsername",
+        "newMatchId",
+        "sanitizeMatch",
+        "normalizeProfile",
+        "mergeProfiles"
+      ]
+    },
+    {
+      "path": "lib/db/index.ts",
+      "sha256": "f841e0de6b8f693c8b38e7d5b5ecc7f3f572a3222b3466cdd0b8122c45d8ee7d",
+      "exports": [
+        "getDb"
+      ]
+    },
+    {
+      "path": "lib/db/schema.ts",
+      "sha256": "e5173b3005f84f654b710427ec13dcc458bad1aa8fef41c5ac2fde34c21cfb2a",
+      "exports": [
+        "matchResultEnum",
+        "matchRoleEnum",
+        "queueTypeEnum",
+        "matchSourceEnum",
+        "syncJobKindEnum",
+        "syncJobStatusEnum",
+        "matchImageJobStatusEnum",
+        "matchBanSourceEnum",
+        "matchRoleSourceEnum",
+        "releaseStatusEnum",
+        "users",
+        "sessions",
+        "journalDays",
+        "dotaMatches",
+        "localReplayJobs",
+        "replayTransportRoutes",
+        "replayJobEvents",
+        "performanceReferenceSnapshots",
+        "heroPositionMeta",
+        "heroBenchmarkDistributions",
+        "monthlyReferenceVersions",
+        "monthlyReferenceEvents",
+        "monthlyHeroPositionMeta",
+        "monthlyHeroPerformance",
+        "monthlyPositionPerformance",
+        "heroPoolVersions",
+        "heroPoolEntries",
+        "journalMatches",
+        "dismissedDotaMatches",
+        "matchBans",
+        "matchPicks",
+        "passwordLoginAttempts",
+        "releaseNotes",
+        "releaseNoteReads",
+        "matchImages",
+        "externalApiRateLimits",
+        "externalApiDailyUsage",
+        "adminAuditLogs",
+        "syncJobs",
+        "matchImageJobs",
+        "openDotaParseJobs",
+        "stratzEnrichmentJobs",
+        "usersRelations",
+        "heroPoolVersionsRelations",
+        "heroPoolEntriesRelations",
+        "sessionsRelations",
+        "journalDaysRelations",
+        "dotaMatchesRelations",
+        "journalMatchesRelations",
+        "matchBansRelations",
+        "matchPicksRelations",
+        "matchImagesRelations",
+        "releaseNotesRelations",
+        "releaseNoteReadsRelations",
+        "dismissedDotaMatchesRelations",
+        "syncJobsRelations",
+        "matchImageJobsRelations",
+        "openDotaParseJobsRelations",
+        "stratzEnrichmentJobsRelations"
+      ]
+    },
+    {
+      "path": "lib/dota/analysis-position-overrides.ts",
+      "sha256": "a39e6bb94eb048adebc7e9e039b71206971b1e5547bbc3fa826a07ae6ba738a1",
+      "exports": [
+        "buildPositionSwapUpdates",
+        "applyAnalysisPositionOverrides"
+      ]
+    },
+    {
+      "path": "lib/dota/farm-kills.ts",
+      "sha256": "2093cb0b4a37d6137aa03b1abc36947fc3d6c61f3beb946a1cd4e3bcbd5b8690",
+      "exports": [
+        "classifyFarmKills"
+      ]
+    },
+    {
+      "path": "lib/dota/item-ownership-analysis.ts",
+      "sha256": "10def85deaac5a6253340efffaa3f3ab734f27a125664b8039159b693fe9b882",
+      "exports": [
+        "buildItemOwnershipAnalysis"
+      ]
+    },
+    {
+      "path": "lib/dota/item-timing-analysis.ts",
+      "sha256": "fc5392fbebed9aa64ba0ec4841877a1b3fcea28f2e4eeb9524e24a5498eaca64",
+      "exports": [
+        "buildItemTimings"
+      ]
+    },
+    {
+      "path": "lib/dota/lane-efficiency.ts",
+      "sha256": "26fad41aec2ae55bd523484e43e75322baa3400c49e9d5eb457b261e51817621",
+      "exports": [
+        "LANE_WEIGHTS",
+        "LaneKey",
+        "LaneMean",
+        "LaneReferenceRow",
+        "LaneReference",
+        "LaneEvents",
+        "LanePart",
+        "LaneEfficiencyResult",
+        "calculateLaneEfficiency"
+      ]
+    },
+    {
+      "path": "lib/dota/lane-impact-analysis.ts",
+      "sha256": "cebe9ea4508b59b6913c395851ea9b889355601ecc1b07b462321b8db9b7cb66",
+      "exports": [
+        "buildLaneImpact"
+      ]
+    },
+    {
+      "path": "lib/dota/map-landmarks.ts",
+      "sha256": "dfd5006161b27223f101df2892f24cb73c0bf7ec0cab0aa5371cc9f04d3b9d45",
+      "exports": [
+        "DotaMapLayer",
+        "DotaMapLandmark",
+        "DOTA_741_LANDMARKS",
+        "DOTA_MAP_LAYER_LABELS",
+        "DOTA_MAP_LAYER_ICONS"
+      ]
+    },
+    {
+      "path": "lib/dota/match-analysis-repository.ts",
+      "sha256": "4501b64b83cf58f1a66966e34d7048573ac3133b91af21e31f53b0a2654440f2",
+      "exports": [
+        "loadPublicMatchAnalysis",
+        "loadStandaloneMatchAnalysis"
+      ]
+    },
+    {
+      "path": "lib/dota/match-analysis.ts",
+      "sha256": "6008da7f82b5edf65fa9ace1821136d1595a00adbec71736647709828d3df79f",
+      "exports": [
+        "buildMatchAnalysis"
+      ]
+    },
+    {
+      "path": "lib/dota/match-details.ts",
+      "sha256": "02e3e629cae5aaddc224d6fa17d93b8c1cdc269c6dae98751dae53a9f4074bdb",
+      "exports": [
+        "ExtractedMatchDetails",
+        "extractMatchDetails"
+      ]
+    },
+    {
+      "path": "lib/dota/match-map-analysis.ts",
+      "sha256": "ed4c60fd4e0d5c6d0d0e032972cabc4b29363a2891904aad05e6bbe154249443",
+      "exports": [
+        "dotaCoordinate",
+        "playerEvents",
+        "buildPlayerMapAnalysis"
+      ]
+    },
+    {
+      "path": "lib/dota/modes.ts",
+      "sha256": "8359e1a660f2e240effdafba2f3b2778fd627f26d4aa2951c076d2284d05e722",
+      "exports": [
+        "gameModeName",
+        "lobbyTypeName",
+        "matchCardGameModeName"
+      ]
+    },
+    {
+      "path": "lib/dota/performance-cohort.ts",
+      "sha256": "e2e6e3e2be8b8e033eda48bff8550052b25fb4dba40fce43c9829b75f5f7ddea",
+      "exports": [
+        "CohortMetricKey",
+        "HeroPositionMetaReference",
+        "BenchmarkDistributionReference",
+        "PerformanceReferenceData",
+        "HeroPositionTier",
+        "classifyHeroPosition",
+        "buildCohortAnalysis"
+      ]
+    },
+    {
+      "path": "lib/dota/performance-presentation.ts",
+      "sha256": "af5c7c8697259d3f036261771ab3c1b75f9f2dc2cf670035b1f84938df50bb12",
+      "exports": [
+        "MetricTotal",
+        "benchmarkMetricTotal",
+        "formatBenchmarkMetricTotal"
+      ]
+    },
+    {
+      "path": "lib/dota/performance-score.ts",
+      "sha256": "72f1bc09bdedb02a10623530d466b208971e57c85308d298b7655bbec3e588d8",
+      "exports": [
+        "PerformanceDomainResult",
+        "performanceTone",
+        "metricScoreWeight",
+        "positionMetricRelevance",
+        "calculatePerformanceDomains",
+        "calculatePerformanceScore",
+        "calculatePerformanceScoreOrNull"
+      ]
+    },
+    {
+      "path": "lib/dota/position-resolver.ts",
+      "sha256": "65377a92a32e563b5ee21d9f0dd885347773b5c397f620e576e47ad0a392aef2",
+      "exports": [
+        "resolveMatchPositions"
+      ]
+    },
+    {
+      "path": "lib/hero-pool/repository.ts",
+      "sha256": "c9ade5dd9dfcb1a8abba052131c99ba593f9d85785e2e34418929dabe3d55e95",
+      "exports": [
+        "loadActiveHeroPool",
+        "saveHeroPool"
+      ]
+    },
+    {
+      "path": "lib/hero-pool/rules.ts",
+      "sha256": "f9ef478873ed57cff97d10353527800b6aec75a8184167e958a87bffd6761334",
+      "exports": [
+        "HERO_POOL_ROLES",
+        "HeroPoolSizeState",
+        "heroPoolSizeState",
+        "isHeroPoolEligibleMode",
+        "isHeroInRolePool"
+      ]
+    },
+    {
+      "path": "lib/hero-pool/validation.ts",
+      "sha256": "da53ee46c683e96e63b25c6105dd0cc7accc6866725631d4b5f1c86d5e44eb0c",
+      "exports": [
+        "heroPoolInputSchema",
+        "HeroPoolInput"
+      ]
+    },
+    {
+      "path": "lib/journal/ban-policy.ts",
+      "sha256": "914ded8e1fd929af8386f9a4c11d420bac13b945dfd784bde96d9b3c1bd87eec",
+      "exports": [
+        "selectVisibleBans"
+      ]
+    },
+    {
+      "path": "lib/journal/dismissed.ts",
+      "sha256": "22915575ef079bf1606b5e41ad06adf84d4152efa278c04fb3c99d0ad78d57b8",
+      "exports": [
+        "collectDismissedDotaMatchIds"
+      ]
+    },
+    {
+      "path": "lib/journal/http.ts",
+      "sha256": "0dd203b976524f7b7e0dfcd284240c58a8e22ef5495bb9651bc7489bed5ff5ec",
+      "exports": [
+        "jsonError",
+        "journalErrorResponse"
+      ]
+    },
+    {
+      "path": "lib/journal/match-summary.ts",
+      "sha256": "6de2b74a3083678fc1e36fdbe09d2caed85221ee072af2fa8d5aac35a484fe93",
+      "exports": [
+        "journalMatchSummary"
+      ]
+    },
+    {
+      "path": "lib/journal/repository.ts",
+      "sha256": "e5193dde42d06b0cb7c866d44621eca243af3300dbcbe222d7852ae3ba2be14b",
+      "exports": [
+        "JournalOwner",
+        "JournalMatchPageData",
+        "findJournalOwnerById",
+        "findJournalOwnerByIdentifier",
+        "loadJournalProfile",
+        "loadJournalMatchPage",
+        "saveJournalDay"
+      ]
+    },
+    {
+      "path": "lib/journal/timezone.ts",
+      "sha256": "9e5e1f46363e28335975bc259157e8f8a8547dc69857b75892da12f9b2a3d18b",
+      "exports": [
+        "getJournalTimeZone",
+        "toJournalDateKey"
+      ]
+    },
+    {
+      "path": "lib/journal/validation.ts",
+      "sha256": "60742c85f557a346e8768e3ec2ea2b806d56390c63e4945d3716a5163a6ea876",
+      "exports": [
+        "dayInputSchema",
+        "DayInput",
+        "parseDateKey",
+        "parseDateRange",
+        "parseHandle",
+        "PublicPlayerIdentifier",
+        "parsePublicPlayerIdentifier"
+      ]
+    },
+    {
+      "path": "lib/match-image/assets.ts",
+      "sha256": "eca95fdb8b773fbdc6acb4408a2745ec7c9ed1c09b2a9a5df7dea972aaa21d26",
+      "exports": [
+        "HeroPortraitLoader",
+        "createHeroPortraitLoader"
+      ]
+    },
+    {
+      "path": "lib/match-image/config.ts",
+      "sha256": "09abfdb5d6072784a6c2486a95e6da4420328689db94622d2e9c8a628ee6f984",
+      "exports": [
+        "MatchImageConfig",
+        "getMatchImageConfig"
+      ]
+    },
+    {
+      "path": "lib/match-image/errors.ts",
+      "sha256": "2864ccd02746f48f7e770183f3d11edd74ae6a8126fdad8f94d7dc3afbe4232d",
+      "exports": [
+        "MatchImageError"
+      ]
+    },
+    {
+      "path": "lib/match-image/model.ts",
+      "sha256": "578c16081602b9a8a70900a586d1a4cd79b6e0dbca9aa15c6bfacd7260a06f88",
+      "exports": [
+        "MatchImagePlayer",
+        "MatchImageModel",
+        "buildMatchImageModel"
+      ]
+    },
+    {
+      "path": "lib/match-image/renderer.ts",
+      "sha256": "ea311e90bf116a88155d3a7b4557328b6feaf6ac12a041ba3a8c79f8e50328b5",
+      "exports": [
+        "renderGeneratedMatchImages"
+      ]
+    },
+    {
+      "path": "lib/match-image/templates.ts",
+      "sha256": "edbcdf26f8a4cfc0b9752b8c949d53c61c69d01e84e6d383fb68f23b18328d1d",
+      "exports": [
+        "MATCH_IMAGE_WIDTH",
+        "MATCH_IMAGE_HEIGHT",
+        "headerTemplate",
+        "overviewTemplate",
+        "scoreboardTemplate",
+        "performanceTemplate"
+      ]
+    },
+    {
+      "path": "lib/match-image-job/config.ts",
+      "sha256": "7ccd076b64572e87386c98db523dd345951f739f42bc73265b9bcf19ea1c2e4d",
+      "exports": [
+        "MatchImageJobConfig",
+        "getMatchImageJobConfig"
+      ]
+    },
+    {
+      "path": "lib/match-image-job/errors.ts",
+      "sha256": "c2313eb788a00a74bff7ad1656a246f7bb89540cf1de9d45255181c13948a943",
+      "exports": [
+        "matchImageJobErrorResponse"
+      ]
+    },
+    {
+      "path": "lib/match-image-job/policy.ts",
+      "sha256": "5f45b099a937a4d9834bbc0eef55062dc1e11bbd9a0b99bc805db31bb6878d75",
+      "exports": [
+        "describeMatchImageJobError"
+      ]
+    },
+    {
+      "path": "lib/match-image-job/repository.ts",
+      "sha256": "97e6f335cac3a010ddba8fc08426b22beb3d8110042084329e310aeb1f939a35",
+      "exports": [
+        "ClaimedMatchImageJob",
+        "recoverStaleMatchImageJobs",
+        "claimNextMatchImageJob",
+        "getMatchImageJobSource",
+        "completeMatchImageJob",
+        "rescheduleOrFailMatchImageJob",
+        "updateMatchImageJobProgress",
+        "deferMatchImageJobUntilReplayParsed"
+      ]
+    },
+    {
+      "path": "lib/match-image-job/service.ts",
+      "sha256": "2f767ae6e5b3a4ab1134147a9aba850f53c25dddfe85b2b2982dd91bce02de36",
+      "exports": [
+        "runMatchImageJobTick"
+      ]
+    },
+    {
+      "path": "lib/match-preparation/repository.ts",
+      "sha256": "c4801c72ad6eae4f3026c8ced513df16983373bbed8b1c5c867ebd32f97fa73d",
+      "exports": [
+        "getMatchPreparationProgress"
+      ]
+    },
+    {
+      "path": "lib/media/errors.ts",
+      "sha256": "c520fedba2672d37ff265e67c95033f8b06a4cd35ed6997d5841ade4c2734361",
+      "exports": [
+        "MediaError",
+        "mediaErrorResponse"
+      ]
+    },
+    {
+      "path": "lib/media/repository.ts",
+      "sha256": "4bc5e2a2b76876264d919be3bc4de8b36eee8d15180c3918195f9cf2e74e33ca",
+      "exports": [
+        "GeneratedImageRecordInput",
+        "replaceGeneratedMatchImages",
+        "listMatchImages"
+      ]
+    },
+    {
+      "path": "lib/media/service.ts",
+      "sha256": "46a9dfdba27fa6d9470785cbd02c5b96df1ee53bb3543b5cecacd1c1d8a93cde",
+      "exports": [
+        "publishGeneratedMatchImages",
+        "getPublicMatchImages"
+      ]
+    },
+    {
+      "path": "lib/media/validation.ts",
+      "sha256": "52fb6293de1782376281d22730b307b05fad0493b8b83fc03d8b305702d9f5bd",
+      "exports": [
+        "GeneratedMatchImageArtifact",
+        "validateGeneratedMatchImages",
+        "parseUuid"
+      ]
+    },
+    {
+      "path": "lib/monthly-reference/model.ts",
+      "sha256": "c43cd06a4283acfec7b3d69917e6c7365de76dcca3e0aa997b45af61ad400888",
+      "exports": [
+        "RANKS",
+        "MODES",
+        "RANK_GROUPS",
+        "REFERENCE_POLICY",
+        "shouldResetLatestMonth",
+        "METRICS",
+        "Metric",
+        "Means",
+        "monthStart",
+        "previousMonth",
+        "referenceMonthsForMatch",
+        "monthKey",
+        "monthDate",
+        "weekStartsInMonth",
+        "monthIsSettled",
+        "HERO_CHUNKS",
+        "performanceJobs",
+        "weightedMean",
+        "readMeans"
+      ]
+    },
+    {
+      "path": "lib/monthly-reference/providers.ts",
+      "sha256": "b7e0936154b5d1a9c88413f1c89a063302736b6ffbd18f7c8a0c21bdf9b3697e",
+      "exports": [
+        "MetaRow",
+        "metaQuery",
+        "parseMeta",
+        "fetchMonthlyMeta",
+        "PerformanceRow",
+        "performanceQuery",
+        "parsePerformance",
+        "fetchMonthlyPerformance"
+      ]
+    },
+    {
+      "path": "lib/monthly-reference/selection.ts",
+      "sha256": "3c5a8f4ce35b47ad58b32ea5f4b15090def51f278348829ff638305d48ef5891",
+      "exports": [
+        "poolDivineImmortalMeta"
+      ]
+    },
+    {
+      "path": "lib/monthly-reference/service.ts",
+      "sha256": "f2b7b7cebb3fa7e12be294dfd8d61db524cc4b0854fecdc03264321d76b8e663",
+      "exports": [
+        "ensureMonthlyReference",
+        "runMonthlyMetaTick",
+        "qualifiesHeroPosition",
+        "runMonthlyPerformanceTick",
+        "listMonthlyReferences",
+        "getMonthlyReferenceEvents",
+        "getMonthlyHeroDetails",
+        "recordMonthlyFailure"
+      ]
+    },
+    {
+      "path": "lib/opendota/analysis-policy.ts",
+      "sha256": "fb48fa416375963b035e379bd1fd39a5da814bc16bddc01ccee892b8c9fdc280",
+      "exports": [
+        "ANALYSIS_TOKEN_COST",
+        "REPLAY_WARNING_AFTER_DAYS",
+        "REPLAY_REQUEST_MAX_AGE_DAYS",
+        "ReplayAgeState",
+        "StoredParseStatus",
+        "replayAgeInDays",
+        "replayAgeState",
+        "canRequestReplayAnalysis",
+        "matchAnalysisStatus"
+      ]
+    },
+    {
+      "path": "lib/opendota/client.ts",
+      "sha256": "d38b1a1ed349bb49f7e11e6a274ff33171c8a1995ca8f7848909c5fbdd9ee452",
+      "exports": [
+        "fetchOpenDotaJson",
+        "fetchOpenDotaMatch",
+        "requestOpenDotaParse",
+        "fetchOpenDotaRecentMatches",
+        "fetchOpenDotaPlayerMatchesSince"
+      ]
+    },
+    {
+      "path": "lib/opendota/config.ts",
+      "sha256": "fa3f022de31b570f50eafa9d39e92562701614d9e97a86938154351dbea6a860",
+      "exports": [
+        "OpenDotaConfig",
+        "getOpenDotaConfig"
+      ]
+    },
+    {
+      "path": "lib/opendota/errors.ts",
+      "sha256": "09a39558fea917dde5593b8fa38c75c92c61986d9448071c9bee7fecef4e7927",
+      "exports": [
+        "OpenDotaError",
+        "openDotaErrorResponse"
+      ]
+    },
+    {
+      "path": "lib/opendota/match-derived.ts",
+      "sha256": "dfbe3a9c24aceebdc4d4277aca0b5f9f8d5f65435c1abd8878147f04110703d8",
+      "exports": [
+        "estimatedOpenDotaRole",
+        "openDotaDraft"
+      ]
+    },
+    {
+      "path": "lib/opendota/recent.ts",
+      "sha256": "6323875565f421f08fd668e8900bf11fa42dc3a9b0b44141f1d93a8c0ccc44eb",
+      "exports": [
+        "excludeKnownRecentMatches",
+        "selectRecentSyncMatches"
+      ]
+    },
+    {
+      "path": "lib/opendota/repository.ts",
+      "sha256": "ca218a60ccd74bfa36d909704776a1743cc33b1fa1d772bd712ac8af3a6f641f",
+      "exports": [
+        "findOpenDotaSyncTarget",
+        "claimManualOpenDotaSync",
+        "releaseManualOpenDotaSyncClaim",
+        "advanceManualOpenDotaSyncCursor",
+        "claimOpenDotaRequestQuota",
+        "findKnownOpenDotaMatchIds",
+        "markJournalRangeCompleted",
+        "saveDiscoveredOpenDotaMatch",
+        "saveOpenDotaMatch"
+      ]
+    },
+    {
+      "path": "lib/opendota/service.ts",
+      "sha256": "0a4a5498566f7ad0fbc995b25125697d04bcae138e238183e43d9f9a9829895d",
+      "exports": [
+        "syncJournalMatchFromOpenDota",
+        "syncRecentMatchesFromOpenDota",
+        "syncManualRangeBatch",
+        "syncScheduledMatchesFromOpenDota"
+      ]
+    },
+    {
+      "path": "lib/opendota/sync-request.ts",
+      "sha256": "9cb422dcf30547ee60b1f801b6fcf7be6f6aba114f9b51fbb4b6e2a4125e1946",
+      "exports": [
+        "MATCH_SYNC_GAME_MODES",
+        "matchesSyncGameMode",
+        "saturdayWeekStart",
+        "manualMatchSyncInputSchema",
+        "ManualMatchSyncInput"
+      ]
+    },
+    {
+      "path": "lib/opendota/validation.ts",
+      "sha256": "e0d5b02b203a2ec31986434b6da7948e372f2159b7fddf7ac30fe1d0a368f90d",
+      "exports": [
+        "openDotaMatchSchema",
+        "openDotaSyncInputSchema",
+        "parseJournalMatchId",
+        "parseOpenDotaMatch",
+        "parseOpenDotaRecentMatches",
+        "hasParsedOpenDotaReplay",
+        "OpenDotaMatch",
+        "OpenDotaPlayer",
+        "OpenDotaRecentMatch"
+      ]
+    },
+    {
+      "path": "lib/opendota-parse/config.ts",
+      "sha256": "7341731a44b66870cd0db01bb30cd9e30b5ee21439332d625c320e13329806db",
+      "exports": [
+        "OpenDotaParseConfig",
+        "getOpenDotaParseConfig"
+      ]
+    },
+    {
+      "path": "lib/opendota-parse/repository.ts",
+      "sha256": "8e83562e4cf61a624da032383ab27743615100039911cbfd3a4d6bb52f1d9197",
+      "exports": [
+        "ClaimedOpenDotaParseJob",
+        "getOpenDotaAnalysisState",
+        "requestOpenDotaAnalysis",
+        "requestOpenDotaAnalysisRange",
+        "recoverStaleOpenDotaParseJobs",
+        "claimNextOpenDotaParseJob",
+        "getOpenDotaParseJobSource",
+        "markOpenDotaParseRequested",
+        "rescheduleOpenDotaParsePoll",
+        "completeOpenDotaParseJob",
+        "failOrRetryOpenDotaParseJob"
+      ]
+    },
+    {
+      "path": "lib/opendota-parse/service.ts",
+      "sha256": "584ab90426de646d58fbeea052797348b2c35756ac85fa950e7a8efced5d9e40",
+      "exports": [
+        "runOpenDotaParseTick"
+      ]
+    },
+    {
+      "path": "lib/persian-calendar.ts",
+      "sha256": "28f588135e01a27ae8fc96439f77fed8ed8a89621d28f96740c486efeccaeee2",
+      "exports": [
+        "PERSIAN_WEEKDAYS",
+        "PersianCalendarDay",
+        "PersianCalendarMonth",
+        "buildPersianCalendarMonth",
+        "selectedWeekRange"
+      ]
+    },
+    {
+      "path": "lib/player-dashboard/repository.ts",
+      "sha256": "4ae8472e218e636456d138427b581177ec22cd49dbbe9cf7df5e002c3fc85e52",
+      "exports": [
+        "buildQueueAheadExpression",
+        "buildParseQueueAheadExpression",
+        "getPlayerSyncSnapshot",
+        "serializePlayerSyncSnapshot"
+      ]
+    },
+    {
+      "path": "lib/player-search/repository.ts",
+      "sha256": "8f7e3d83aaa6f549fce7f4f7de1406e3b2818f5a58a2050b2bef2e5ad0b148a9",
+      "exports": [
+        "searchPublicPlayers"
+      ]
+    },
+    {
+      "path": "lib/player-search/validation.ts",
+      "sha256": "f9d9052833cb38833d06ef088ddc6810ed6cc8c0018cc29a4cf7081de1472d47",
+      "exports": [
+        "PLAYER_SEARCH_MIN_LENGTH",
+        "PLAYER_SEARCH_MAX_LENGTH",
+        "PLAYER_SEARCH_RESULT_LIMIT",
+        "normalizePlayerSearchQuery"
+      ]
+    },
+    {
+      "path": "lib/releases/repository.ts",
+      "sha256": "1f01e0d1ffeaa78c32dbc779e7923bbb5dcc90ef992ffe8cc5daf682d5014f43",
+      "exports": [
+        "listPublishedReleases",
+        "markReleaseRead",
+        "listAdminReleases",
+        "createRelease",
+        "updateRelease"
+      ]
+    },
+    {
+      "path": "lib/releases/validation.ts",
+      "sha256": "eb6e62ba889f7074ac74eaeaf0ecf8925d2261bea45359938b663a3e3107a894",
+      "exports": [
+        "releaseInputSchema",
+        "releaseIdSchema",
+        "ReleaseInput"
+      ]
+    },
+    {
+      "path": "lib/replay/archive-storage.ts",
+      "sha256": "66f27bcdbe84facb39b547d045c3b100f744a1fc92c5bdbd19c0e9876c371117",
+      "exports": [
+        "REPLAY_MAX_BYTES",
+        "REPLAY_ROOT",
+        "validReplayKey",
+        "validReplayFolder",
+        "replayObjectHead",
+        "replayObjectStream",
+        "listReplayFolder",
+        "deleteReplayObject",
+        "listReplayObjects"
+      ]
+    },
+    {
+      "path": "lib/replay/job-repository.ts",
+      "sha256": "60da88de67ba1eca571d34e75b7e27e35241007bf475940e854d9873735017f7",
+      "exports": [
+        "ReplayIntent",
+        "getReplayJobState",
+        "getReplayArchive",
+        "requestReplayJob",
+        "requestReplayByDotaId",
+        "replayStatusForMatch"
+      ]
+    },
+    {
+      "path": "lib/replay/metadata-fields.ts",
+      "sha256": "f3a87a78c4a1d00367c149877fc80a2c608de340a676e059dda833212a230495",
+      "exports": [
+        "normalizedReplayRaw",
+        "hasCompleteReplayMetadata",
+        "preserveVerifiedReplayRaw"
+      ]
+    },
+    {
+      "path": "lib/replay/monitor-types.ts",
+      "sha256": "c7a77dce7963116352f010d138fca5088e1398a73b284d83602b0b190f70ef09",
+      "exports": [
+        "ReplayMonitorJob",
+        "ReplayMonitorRoute",
+        "ReplayMonitorEvent",
+        "ReplayMonitorSnapshot"
+      ]
+    },
+    {
+      "path": "lib/replay/overlay.ts",
+      "sha256": "93e6642a7670d25f87edec5300fb9a9cc2a681c1dd6d1ec677050b3dc6d41d49",
+      "exports": [
+        "REPLAY_PLAYER_FIELDS",
+        "validateReplayBlob",
+        "overlayReplayData"
+      ]
+    },
+    {
+      "path": "lib/replay/progress.ts",
+      "sha256": "4d24936e76cc6d268bae97915a75ba375af2f461f6e04223452567b080482c2b",
+      "exports": [
+        "ReplayProgress",
+        "replayPhaseLabels",
+        "replayErrorMessage",
+        "progressFromRow"
+      ]
+    },
+    {
+      "path": "lib/report.ts",
+      "sha256": "0cbb71506cc0eacd8dbc3d3aec8802e63ed9ee984c98036df7411ae05d1dec41",
+      "exports": [
+        "buildWeekReport"
+      ]
+    },
+    {
+      "path": "lib/storage/client.ts",
+      "sha256": "a5c17a8ade61b2ec583fc6641e198c17e95b29a804f46a09eba0adc30afc1e0b",
+      "exports": [
+        "getClient",
+        "uploadStoredObject",
+        "deleteStoredObject",
+        "isStorageNotFound"
+      ]
+    },
+    {
+      "path": "lib/storage/config.ts",
+      "sha256": "63dee92edaf59f8f045d1191a6ea14f30f3c74fbcef4b15efec3872f80d8f752",
+      "exports": [
+        "StorageConfig",
+        "getStorageConfig"
+      ]
+    },
+    {
+      "path": "lib/storage/media.ts",
+      "sha256": "39bd5eb2d49263578c964754e2c080608414cbf6cc788a3a525d33c30966ee86",
+      "exports": [
+        "GENERATED_IMAGE_MIME_TYPES",
+        "GeneratedImageMimeType",
+        "createGeneratedMatchImageKey",
+        "makePublicImageUrl",
+        "isMatchImageKey"
+      ]
+    },
+    {
+      "path": "lib/stratz/client.ts",
+      "sha256": "139f41b61f882341ec35fc64231b1bca73e8382728eab13262644b5aa2e6f607",
+      "exports": [
+        "fetchStratzGraphqlOnce",
+        "fetchStratzMatchOnce"
+      ]
+    },
+    {
+      "path": "lib/stratz/config.ts",
+      "sha256": "062878072d42026f9db7ae99c4d893fdc5e1512bc331230e2ab672728f764bcf",
+      "exports": [
+        "StratzConfig",
+        "getStratzConfig"
+      ]
+    },
+    {
+      "path": "lib/stratz/diagnostics.ts",
+      "sha256": "12791b8e22dce6d6c99ce4c2e6d887f2e182daa186695344575a71866eed554c",
+      "exports": [
+        "buildStratzMatchDiagnostics"
+      ]
+    },
+    {
+      "path": "lib/stratz/direct-transport.ts",
+      "sha256": "a78418660dac1d473e5b3359fdee7cc9b734711704eb319778e4f9748afb7056",
+      "exports": [
+        "fetchWithDirectIp"
+      ]
+    },
+    {
+      "path": "lib/stratz/enrichment.ts",
+      "sha256": "e8d7426b088a527fa5f953cbf8a46811a96b4f98141ac2d538fa0042e2485dfa",
+      "exports": [
+        "roleFromStratzPosition",
+        "buildStratzEnrichment"
+      ]
+    },
+    {
+      "path": "lib/stratz/errors.ts",
+      "sha256": "cf558b0b3fbb4f02e4e65df96400dbbaef31bfa854f8b4488062a37f0f9cafe1",
+      "exports": [
+        "StratzErrorDetails",
+        "StratzError",
+        "stratzErrorResponse"
+      ]
+    },
+    {
+      "path": "lib/stratz/gateway.ts",
+      "sha256": "acd218a3b0428c60395a896141bf0e695c3a1c654bb38327e103cb51d927148f",
+      "exports": [
+        "shouldImmediatelyRetryStratz",
+        "fetchStratzMatch",
+        "fetchStratzGraphql",
+        "fetchStratzMatches"
+      ]
+    },
+    {
+      "path": "lib/stratz/job-repository.ts",
+      "sha256": "323caac5d6f518f5d284a4e2d0eed43fc5480a5c2297037a974ef57ef60323ad",
+      "exports": [
+        "ClaimedStratzJob",
+        "enqueueStratzBackfillForUser",
+        "recoverStaleStratzJobs",
+        "claimNextStratzJob",
+        "getStratzJobSource",
+        "saveStratzEnrichment",
+        "saveStratzRawSnapshot",
+        "completeStratzJob",
+        "rescheduleOrFailStratzJob"
+      ]
+    },
+    {
+      "path": "lib/stratz/job-service.ts",
+      "sha256": "dabc6a4412c8963488cd481624daf2de30c28a6f1ce8c78a1a1ee7583c606a21",
+      "exports": [
+        "describeStratzJobError",
+        "runStratzEnrichmentTick"
+      ]
+    },
+    {
+      "path": "lib/stratz/rate-limit.ts",
+      "sha256": "009fd26484d3fdf9bb697da738e65b76c67dd85178273300f02f30932aee8007",
+      "exports": [
+        "nextStratzReservationAt",
+        "reserveStratzRequestSlot"
+      ]
+    },
+    {
+      "path": "lib/stratz/validation.ts",
+      "sha256": "28ec5c5b467bc78d4607a50867bff6a559b431181d5474c374a2ce0267793a84",
+      "exports": [
+        "stratzDiagnosticsQuerySchema",
+        "stratzPositionSchema",
+        "parseStratzResponse",
+        "StratzMatch",
+        "StratzPosition"
+      ]
+    },
+    {
+      "path": "lib/sync/auth.ts",
+      "sha256": "7068494c4187a6f0cbfae5d9f8b01158af975270d2cf50e98b29d8fde57526d7",
+      "exports": [
+        "requireSyncWorkerSecret"
+      ]
+    },
+    {
+      "path": "lib/sync/config.ts",
+      "sha256": "0f03514e3de257920da3ffe34e4f2cc3b1af17552409ec6a8a89ea6c8197205a",
+      "exports": [
+        "SyncWorkerConfig",
+        "getSyncWorkerConfig"
+      ]
+    },
+    {
+      "path": "lib/sync/errors.ts",
+      "sha256": "efaff8e8548f72cae1f3b14c35dd6d58d41536f1651af5708f6d3d842576c1d2",
+      "exports": [
+        "SyncWorkerError",
+        "syncWorkerErrorResponse"
+      ]
+    },
+    {
+      "path": "lib/sync/job.ts",
+      "sha256": "1fb302ce711657ca24f66c533e3212e8d0c7e746a2c715fce91ed549b8dc9ac7",
+      "exports": [
+        "scheduledSyncUserFromJob"
+      ]
+    },
+    {
+      "path": "lib/sync/manual-service.ts",
+      "sha256": "a1ceaf7187c73cf97c8b443323895fa4a8e42ae54be2ada1c7904f09d0c0abde",
+      "exports": [
+        "enqueueManualRangeSync",
+        "latestManualRangeJob",
+        "runManualRangeSyncTick"
+      ]
+    },
+    {
+      "path": "lib/sync/repository.ts",
+      "sha256": "15de873872b9cb401307f302d343088331d759ae4891f53ebca06b8b9f5c44d4",
+      "exports": [
+        "ClaimedScheduledJob",
+        "enqueueDueScheduledSyncJobs",
+        "recoverStaleScheduledJobs",
+        "claimNextScheduledSyncJob",
+        "completeScheduledSyncJob",
+        "rescheduleOrFailScheduledSyncJob"
+      ]
+    },
+    {
+      "path": "lib/sync/service.ts",
+      "sha256": "b2aab7b685d775ed74114f14a7798a6f7a12984cc45c4990abe4b954b0a8bb68",
+      "exports": [
+        "runScheduledSyncTick"
+      ]
+    },
+    {
+      "path": "lib/types.ts",
+      "sha256": "9703bc9b8c17fec1d5b3922e0bf90993e9bb92d5f9c40d9e8deaaf83310f5628",
+      "exports": [
+        "AccessMode",
+        "MatchResult",
+        "MatchSource",
+        "DotaTeam",
+        "MatchRole",
+        "QueueType",
+        "ImageJobStatus",
+        "MatchAnalysisStatus",
+        "MatchSyncScope",
+        "MatchSyncMode",
+        "MatchSyncGameMode",
+        "MatchSyncRequest",
+        "MatchImage",
+        "Hero",
+        "MatchBan",
+        "MatchPick",
+        "MatchParticipant",
+        "PerformanceTone",
+        "TimelineState",
+        "AnalysisAvailability",
+        "MatchPositionEvidence",
+        "MatchPositionResolution",
+        "MatchAnalysisEvent",
+        "MatchMapPoint",
+        "MatchFarmWindow",
+        "MatchObjectiveEvent",
+        "MatchItemTiming",
+        "MatchMapAnalysis",
+        "MatchCohortProfile",
+        "MatchBenchmarkMetric",
+        "MatchLaneImpact",
+        "MatchItemOwnershipEvent",
+        "MatchMinuteSnapshot",
+        "MatchPlayerAnalysis",
+        "MatchTeamMinute",
+        "MatchAnalysis",
+        "Match",
+        "Day",
+        "Profile",
+        "HeroPoolData",
+        "Session",
+        "PlayerSearchResult",
+        "ImageQueueJob",
+        "MatchPreparationProgress",
+        "PlayerSyncStatus",
+        "ManualSyncResult",
+        "Summary"
+      ]
+    },
+    {
+      "path": "lib/version.ts",
+      "sha256": "47b49ea69556ea969b2858deb57172fdfb4df9b8f9432d42df59406a3ccf3e6c",
+      "exports": [
+        "APP_VERSION"
+      ]
+    }
+  ],
+  "dataFiles": [
+    {
+      "path": "data/heroes.ts",
+      "sha256": "a7f50c4edda98db28720ee9f6e00856a2a62c79c69615d821ba164e2ad2ccbfe"
+    },
+    {
+      "path": "data/items.generated.ts",
+      "sha256": "92870f6e716669cedacf21d108229d0e43e3b3c9dc616f210dda25377fab2cbf"
+    }
+  ],
+  "migrations": [
+    {
+      "path": "drizzle/0000_lucky_red_shift.sql",
+      "sha256": "71ee7b8394cbe39fc1a9cf688bd8c7de2feaaa30f936ec1c695be57b10ec6af8"
+    },
+    {
+      "path": "drizzle/0001_add_legacy_bans.sql",
+      "sha256": "4a9a8ba90029f2b0603d60930c4412d589a16bd7975fe8f3acce258f9f76e5f3"
+    },
+    {
+      "path": "drizzle/0002_add_match_image_uploads.sql",
+      "sha256": "8913a358bd7dbb2a7d5760fdff11582dde44abe44875c3d825e7e8e6888d1839"
+    },
+    {
+      "path": "drizzle/0003_server_generated_images.sql",
+      "sha256": "cee8699cbfae3092c2472d00159cc3b795eaf963468f2697c036cec8df25d277"
+    },
+    {
+      "path": "drizzle/0004_add_external_api_rate_limits.sql",
+      "sha256": "a53e145ca3b6278624d8ed29727dfcb94692a87a3c381a248cb207fcd0acfb7b"
+    },
+    {
+      "path": "drizzle/0005_add_admin_audit_logs.sql",
+      "sha256": "1878cb914a5f7774ce7174de14069f46fe837f8f695f9dbd4fd93721a0b7b84f"
+    },
+    {
+      "path": "drizzle/0006_add_dismissed_dota_matches.sql",
+      "sha256": "50ba8a544c7e7ca5d2a9ff8b9a0b3e3a89a1886b01a7ffded84506282029cc6c"
+    },
+    {
+      "path": "drizzle/0007_add_match_image_jobs.sql",
+      "sha256": "96043a218dceec9ab595c02fef2850eccebac5a7d7d710756bf426fcc87a03a8"
+    },
+    {
+      "path": "drizzle/0008_add_manual_sync_ui_analytics.sql",
+      "sha256": "f3bf86a78d7a43f2d3867763effcb4a66a9c9d1e0088156b563471f2573990e9"
+    },
+    {
+      "path": "drizzle/0009_add_player_development_suite.sql",
+      "sha256": "282584f3fe7e8218ea4822b4d7cd1f724fb5812a0372b1122f12ee2cebeb515b"
+    },
+    {
+      "path": "drizzle/0010_add_stratz_enrichment.sql",
+      "sha256": "f987de75f8c73eb529b4883702bce4802017185fe3d15886e26333423665df08"
+    },
+    {
+      "path": "drizzle/0011_light_shiva.sql",
+      "sha256": "15d22c61a5b2dbf8f1901eb8bd69774e9b1901ac99e8e7d5f04dd52040d52d7b"
+    },
+    {
+      "path": "drizzle/0012_sleepy_silver_sable.sql",
+      "sha256": "d14a1a6439babb656251cd6ba36c9a9c3bcbc7960c193b08324494033f9fcaa6"
+    },
+    {
+      "path": "drizzle/0013_foamy_gabe_jones.sql",
+      "sha256": "6c2cb309a458046ba85997424bf86c46c95e201dc51139e265681f8abd0d11bc"
+    },
+    {
+      "path": "drizzle/0014_overjoyed_next_avengers.sql",
+      "sha256": "cf8ef12250f0b7f34df39b8e3f09f9b3795632e1dbefbaa0dddde70e76d98104"
+    },
+    {
+      "path": "drizzle/0015_local-replay.sql",
+      "sha256": "0fb720f3c81667106a6c314367d3546d2b54ceb3439d469a20c05da3c5976251"
+    },
+    {
+      "path": "drizzle/0016_manual-ban-override.sql",
+      "sha256": "09101173fd33774c4d8340d0d387358e56e55aa1a1b3e25e80a7b648968fe62d"
+    },
+    {
+      "path": "drizzle/0017_local-replay-queue.sql",
+      "sha256": "f76e915c5b0a0eaafde623528c16a379b636f842402828fd2bd89c24a720762f"
+    },
+    {
+      "path": "drizzle/0018_replay_archive.sql",
+      "sha256": "85ccd5d11b0e66f76a32de0d1cf6bca6afeb8f3157c675c667774211784af37b"
+    },
+    {
+      "path": "drizzle/0019_replay_archive_status.sql",
+      "sha256": "aa2cfd677bda57ca76df97a0728f49e7dd3c90beb10ab2920513f41a8dca9649"
+    },
+    {
+      "path": "drizzle/0020_monthly_performance_reference.sql",
+      "sha256": "ffaa4657dbd249aa4c93e6f7c1fe758785e047f48dae338bb4edaa27076467cb"
+    },
+    {
+      "path": "drizzle/0021_monthly-reference-observability.sql",
+      "sha256": "6dddfadb307dda83101e731c1a485e3d83e975be5f88b2985ee7f552aaabe1b6"
+    },
+    {
+      "path": "drizzle/0022_replay_resilience.sql",
+      "sha256": "8d08609953471b7c2e9154b4b9d78cd3e99b4d78c4f0bc0d2081a235877419b7"
+    },
+    {
+      "path": "drizzle/0023_replay_refresh_manual_sync.sql",
+      "sha256": "82cb79dfd951eb476ec584ac59aee2efd4bf796aa52a35f571624e06f08cfcd5"
+    }
+  ],
+  "scripts": [
+    {
+      "path": "scripts/check-stratz-direct-route.mjs",
+      "sha256": "8c984a328d9ad45183d838120b41183b67dc87c08925f3a2bdfdacad61919ac4"
+    },
+    {
+      "path": "scripts/rebuild-inventory-frames.mjs",
+      "sha256": "da8da3fb8c089fbf403f7b490aedff853e2304e1cf9f4e31326db7cde0610c73"
+    },
+    {
+      "path": "scripts/replay-parser/LaneEvents.java",
+      "sha256": "02b5e0ff5cb8dda375d58278ea292122fbc3b2e211f41d5b9a6ffeb200dc3156"
+    },
+    {
+      "path": "scripts/replay-parser/ReplayInspector.java",
+      "sha256": "e5881512fde17886f2677d7f0c926f309da3b7c5a9a61d53624390a37c4ce175"
+    },
+    {
+      "path": "scripts/replay-parser/backfill-lane.mjs",
+      "sha256": "59cad4313fa6894782a1cd0e96573df6341d3034c37b839d31c12f1d24124897"
+    },
+    {
+      "path": "scripts/replay-parser/build-parser.sh",
+      "sha256": "b5d727be7c3139e16576d207196a4ade30d1191551b586a51670029ae153f0d6"
+    },
+    {
+      "path": "scripts/replay-parser/import-replay.mjs",
+      "sha256": "5bf43ae4d7dfaf1343eb240247bb6ad02e6d7598f61f5f691683c6803540e01b"
+    },
+    {
+      "path": "scripts/replay-parser/lane-events.mjs",
+      "sha256": "9b7d6ecd5245eb3ed577c4aa65f8b895feb9e389e6ce2173120b94389586b99a"
+    },
+    {
+      "path": "scripts/replay-parser/probe-metadata.mjs",
+      "sha256": "6ec59ffdd80636832d20622962b9ee0c9a12936933a263c9c5e68543215250f6"
+    },
+    {
+      "path": "scripts/replay-parser/probe-proxy.mjs",
+      "sha256": "7e5edaf3618dc0da756018da6f023f8de590d4c8ba45934ff334bc92cf1090cd"
+    },
+    {
+      "path": "scripts/replay-parser/refresh-match-metadata.mjs",
+      "sha256": "ec67a94dc1564e7fd2a74290811b661d9c9aec941656c79c1575df31d533610c"
+    },
+    {
+      "path": "scripts/replay-parser/replay-archive.mjs",
+      "sha256": "29113533f5ff9c76589231a8212ff14cf4b700e2104c0426c9ab66d97854a82f"
+    },
+    {
+      "path": "scripts/replay-parser/replay-job-policy.mjs",
+      "sha256": "5585fb28b3252f32cbd386f22526888663dbc4e58d22be5dbb85cc7c7171b405"
+    },
+    {
+      "path": "scripts/replay-parser/replay-metadata.mjs",
+      "sha256": "d4e7c97e05c6f8b96705f7dd9742ba3ee46c8dd1bad831dabd3b2ad06442e674"
+    },
+    {
+      "path": "scripts/replay-parser/replay-queue-utils.mjs",
+      "sha256": "c208726346438e12004a8acf266ca2def125615e90ed4da6279641c6eaaac317"
+    },
+    {
+      "path": "scripts/replay-parser/replay-spool.mjs",
+      "sha256": "e9da21f773b9eda851abf7626e609c4aedd0bff0377b87c5ebb4519af290be2d"
+    },
+    {
+      "path": "scripts/replay-parser/replay-transport.mjs",
+      "sha256": "2134512d4fbbb42d97ad25f97f4ec8ecc62a2e8b64ab75bdffe6022630184cfa"
+    },
+    {
+      "path": "scripts/replay-parser/run-queue.mjs",
+      "sha256": "fef942a6f3d13397107120bf31d083700dfd8f05a2972cfc321f6d478c7d00c6"
+    },
+    {
+      "path": "scripts/replay-parser/verify-failover.mjs",
+      "sha256": "277266797c77b202b00bb5a448e31fcbb61c963bce9257638217f28ffc01736e"
+    },
+    {
+      "path": "scripts/service-monitor/collect.mjs",
+      "sha256": "62fe48c312c570490e79af73b9a5aad9c37f3a23d46e570abc12133bd8e4ed4b"
+    },
+    {
+      "path": "scripts/sync-hero-portraits.mjs",
+      "sha256": "1256acf44964cbbfb80e567a4f8b50ea8d244d4165c23d43b29063eeab4c4790"
+    },
+    {
+      "path": "scripts/sync-item-icons.mjs",
+      "sha256": "14bff21961216ac6da9e864069399cc3ea1451c89bc98e225ea592423847472a"
+    }
+  ]
+}
