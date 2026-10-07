@@ -162,6 +162,13 @@ describe("PostgreSQL schema migration and real Express services", () => {
       const full = await loadPublicMatchAnalysis(entries[0].id), profile = full.analysis!.players.find(p => p.isProfilePlayer)!;
       expect(profile.performanceScore).toBeTypeOf("number"); expect(profile.position).toBe(2);
       expect(result.body.rows.find((row: {id:string}) => row.id === String(ids[0]))).toMatchObject({ analyzed: true, position: 2, score: profile.performanceScore, analysisStatus: "ready" });
+      // An algorithm update must replace old compact summaries, even though
+      // the raw replay/reference/overrides did not change.
+      const [oldProjection] = await db.select({ value: journalMatches.analysisSummary }).from(journalMatches).where(eq(journalMatches.id, entries[0].id));
+      await db.update(journalMatches).set({ analysisSummary: { ...oldProjection.value!, version: 1, position: 0, score: -1 } }).where(eq(journalMatches.id, entries[0].id));
+      expect((await get()).body.rows.find((row:{id:string})=>row.id===String(ids[0]))).toMatchObject({ position: 2, score: profile.performanceScore });
+      const [refreshedProjection] = await db.select({ value: journalMatches.analysisSummary }).from(journalMatches).where(eq(journalMatches.id, entries[0].id));
+      expect(refreshedProjection.value?.version).toBe(2);
       expect(result.body.rows.find((row: {id:string}) => row.id === String(ids[1]))).toMatchObject({ analyzed: false, position: null, score: null, analysisStatus: "pending" });
       expect(result.body.rows.find((row: {id:string}) => row.id === String(ids[1])).analysisPreparation).toMatchObject({ replay: "pending", progress: { phase: "queued" } });
       await db.update(localReplayJobs).set({ status: "processing", phase: "downloading", downloadedBytes: 512, totalBytes: 1024 }).where(eq(localReplayJobs.matchId, ids[1]));

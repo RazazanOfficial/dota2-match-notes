@@ -10,6 +10,7 @@ interface PositionCandidate {
   evidence: MatchPositionEvidence[];
   source: MatchPositionResolution["source"];
   preferred: number | null;
+  sidePresence: { safe: number; off: number } | null;
 }
 
 const num = (value: unknown) => typeof value === "number" && Number.isFinite(value) ? value : null;
@@ -19,7 +20,7 @@ const atMinute = (value: unknown, minute: number) => Array.isArray(value) && val
 // OpenDota's parser aggregates lane_pos only over the first ten minutes.
 // The keys are map grid coordinates; ignore the fountain and jungle so early
 // walking paths do not count as occupying a lane.
-function replayLane(value: unknown, slot: number): Lane | null {
+function replayLanePresence(value: unknown, slot: number) {
   const positions = rec(value);
   if (!positions) return null;
   let mid = 0, top = 0, bottom = 0;
@@ -36,12 +37,10 @@ function replayLane(value: unknown, slot: number): Lane | null {
   }
   const total = mid + top + bottom;
   if (total < 60) return null;
-  if (mid / total >= 0.6) return "mid";
   const side = slot < 128 ? bottom : top;
   const off = slot < 128 ? top : bottom;
-  if (side / total >= 0.6) return "safe";
-  if (off / total >= 0.6) return "off";
-  return null;
+  const lane: Lane | null = mid / total >= 0.6 ? "mid" : side / total >= 0.6 ? "safe" : off / total >= 0.6 ? "off" : null;
+  return { lane, safe: side, off };
 }
 
 function earlyWardCount(player: Raw) {
@@ -63,7 +62,7 @@ function evidence(player: Raw, manualPosition: number | null): PositionCandidate
   };
   if (manualPosition !== null && Number.isInteger(manualPosition) && manualPosition >= 1 && manualPosition <= 5) {
     add("manual", "Position توسط کاربر تأیید شده", 100, [manualPosition]);
-    return { slot, lane: null, scores, evidence: items, source: "manual", preferred: manualPosition };
+    return { slot, lane: null, scores, evidence: items, source: "manual", preferred: manualPosition, sidePresence: null };
   }
 
   const openPosition = num(player.position_est);
@@ -71,7 +70,8 @@ function evidence(player: Raw, manualPosition: number | null): PositionCandidate
   if (validOpenPosition) {
     add("opendota-position", "Position تخمینی OpenDota", 58, [openPosition]);
   }
-  const lane = replayLane(player.lane_pos, slot);
+  const presence = replayLanePresence(player.lane_pos, slot);
+  const lane = presence?.lane ?? null;
   if (lane === "mid") add("replay-mid", "Mid در ده دقیقه اول Replay", 110, [2]);
   if (lane === "safe") add("replay-safe", "Safe Lane در ده دقیقه اول Replay", 95, [1, 5]);
   if (lane === "off") add("replay-off", "Off Lane در ده دقیقه اول Replay", 95, [3, 4]);
@@ -90,7 +90,7 @@ function evidence(player: Raw, manualPosition: number | null): PositionCandidate
   const wards = earlyWardCount(player);
   if (wards >= 2) add("early-vision", "Ward در ده دقیقه اول", 12, [4, 5]);
   const preferred = Object.entries(scores).sort((left, right) => right[1] - left[1])[0];
-  return { slot, lane, scores, evidence: items, source: validOpenPosition ? "opendota" : "heuristic", preferred: preferred && preferred[1] > 0 ? Number(preferred[0]) : null };
+  return { slot, lane, scores, evidence: items, source: validOpenPosition ? "opendota" : "heuristic", preferred: preferred && preferred[1] > 0 ? Number(preferred[0]) : null, sidePresence: presence };
 }
 
 function permutations(values: number[]): number[][] {
@@ -139,6 +139,33 @@ function resolveTeam(candidates: PositionCandidate[]) {
     resolved.set(candidate.slot, { position, candidate, confidence: reliable ? Math.min(86, Math.round(base + Math.min(18, margin / 2))) : 0 });
   });
   if (candidates.length === 5) {
+    const unknownSupports = [...resolved.values()].filter(item => item.position === null);
+    const cores = [...resolved.values()].filter(item => item.position !== null && item.position <= 3);
+    // Once all three cores are independently identified, mid rotations do not
+    // distinguish the remaining two supports. Compare their side-lane shares
+    // in the replay's first-ten-minute aggregate instead. Do not use hero IDs,
+    // match IDs, total-match GPM or player ordering to break an ambiguous tie.
+    if (unknownSupports.length === 2 && cores.length === 3 &&
+        new Set(cores.map(item => item.position)).size === 3 && cores.every(item => item.confidence >= 60)) {
+      const supports = unknownSupports.map(item => {
+        const side = item.candidate.sidePresence;
+        const total = side ? side.safe + side.off : 0;
+        return { item, total, safeShare: side && total > 0 ? side.safe / total : 0.5 };
+      }).sort((a, b) => b.safeShare - a.safeShare);
+      const [safe, off] = supports;
+      const contrast = safe.safeShare - off.safeShare;
+      if (supports.every(item => item.total >= 60) && safe.safeShare >= 0.55 && off.safeShare <= 0.45 && contrast >= 0.2) {
+        for (const [support, position] of [[safe, 5], [off, 4]] as const) {
+          support.item.position = position;
+          support.item.confidence = Math.min(78, ...cores.map(item => item.confidence), Math.round(58 + contrast * 25));
+          support.item.candidate.source = "heuristic";
+          support.item.candidate.evidence.push(
+            { key: "support-team-context", label: "سه Core تیم با اطمینان مشخص شده‌اند", weight: 0, supports: [4, 5] },
+            { key: "support-side-lane", label: position === 5 ? "سهم بیشتر Safe Lane بین دو ساپورت، بدون اثر چرخش به Mid" : "سهم بیشتر Off Lane بین دو ساپورت، بدون اثر چرخش به Mid", weight: Math.round(contrast * 30), supports: [position] },
+          );
+        }
+      }
+    }
     const unknown = [...resolved.entries()].filter(([, item]) => item.position === null);
     const known = [...resolved.values()].flatMap((item) => item.position === null ? [] : [item.position]);
     if (unknown.length === 1 && new Set(known).size === 4) {

@@ -3139,6 +3139,18 @@ details .fact-grid {
 .persian-digits { font-family:Vazir,"Segoe UI",sans-serif !important; }
 .metric-help { display:inline-flex; align-items:center; color:var(--muted); cursor:help; outline-offset:4px; }
 .metric-help:hover,.metric-help:focus { color:var(--accent); }
+.metric-help-action { padding:0; border:0; background:transparent; }
+.position-unknown { min-width:32px; min-height:32px; padding:4px; justify-content:center; border:1px solid color-mix(in srgb,var(--accent) 48%,var(--line)); border-radius:8px; background:color-mix(in srgb,var(--accent) 12%,var(--panel)); color:var(--accent); }
+.position-unknown svg { stroke-width:2.5; }
+.position-unknown.is-unresolved { color:#ef4444; border-color:#ef444480; background:color-mix(in srgb,#ef4444 12%,var(--panel)); }
+.metric-tooltip.metric-tooltip-action { pointer-events:auto; width:260px; max-width:calc(100vw - 24px); }
+.metric-tooltip.metric-tooltip-below { transform:translateX(-50%); }
+.metric-tooltip.metric-tooltip-below::after { bottom:auto; top:-5px; transform:rotate(225deg); }
+.position-report { display:grid; gap:8px; margin-top:9px; }
+.position-report small { color:var(--muted); font-size:11px; }
+.position-report-button { display:flex; align-items:center; justify-content:center; gap:7px; padding:8px 10px; border:1px solid #ef44446b; border-radius:7px; background:color-mix(in srgb,#ef4444 12%,var(--panel)); color:var(--text); font-size:12px; font-weight:600; }
+.position-report-button:hover:not(:disabled) { border-color:#ef4444; background:color-mix(in srgb,#ef4444 20%,var(--panel)); }
+.position-report-button:disabled { cursor:default; opacity:.8; }
 .metric-tooltip { position:fixed; transform:translate(-50%,-100%); z-index:1000; width:210px; padding:10px 12px; border:1px solid var(--line); border-radius:9px; background:var(--panel); color:var(--text); font-size:12px; line-height:1.8; text-align:start; pointer-events:none; box-shadow:0 8px 24px #0005; animation:tooltip-reveal .14s ease-out; }
 .metric-tooltip::after { content:""; position:absolute; bottom:-5px; left:calc(50% - 4px); width:8px; height:8px; transform:rotate(45deg); border-right:1px solid var(--line); border-bottom:1px solid var(--line); background:var(--panel); }
 .match-table { width:max-content; min-width:100%; }

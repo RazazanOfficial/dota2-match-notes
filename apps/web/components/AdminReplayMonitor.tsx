@@ -4,7 +4,7 @@ import type { ReplayMonitorSnapshot } from "@/lib/replay/monitor-types";
 import { replayPhaseLabels } from "@/lib/replay/progress";
 import styles from "./replay-progress.module.css";
 const size = (v: string | number | null) => v === null ? "—" : `${(Number(v) / 1048576).toFixed(1)} MB`;
-const when = (v: string | null) => v ? new Date(v).toLocaleString("fa-IR") : "—";
+const when = (v: string | null) => v ? new Date(v).toLocaleString("fa-IR", { hourCycle: "h23" }) : "—";
 export const replayMonitorPreview: ReplayMonitorSnapshot = {
   capturedAt: "2026-09-29T06:00:00Z",
   jobs: [{ match_id: "9019098197", status: "processing", intent: "analysis", phase: "downloading", attempts: 2,

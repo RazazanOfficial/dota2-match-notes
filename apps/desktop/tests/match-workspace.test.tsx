@@ -10,6 +10,7 @@ import { LiveDashboard } from "../src/components/LiveWorkspace";
 import { App } from "../src/App";
 import { AnalysisProgress } from "../src/components/AnalysisProgress";
 import { ApiError } from "../src/api";
+import { formatClock24 } from "../src/time";
 import type { MatchListResponse, SyncJob } from "../src/api";
 const mocks = vi.hoisted(() => ({ api: vi.fn(), list: vi.fn(), sync: vi.fn(), enqueue: vi.fn(), auth: vi.fn() }));
 vi.mock("../src/api", async () => ({ ...await vi.importActual("../src/api"), apiRequest: mocks.api, listMatches: mocks.list, getSyncStatus: mocks.sync, requestMatchSync: mocks.enqueue }));
@@ -25,6 +26,58 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup();vi.unstubAllGlobals();vi.restoreAllMocks(); });
 describe("match workspace regressions",()=>{
+    it.each([messages.fa, messages.en])("shows a visible unresolved position and a report preview after analysis", t => {
+        const view = render(<MatchTable matches={[{ ...row, analyzed: true, analysisStatus: "ready" }]} t={t} onOpen={vi.fn()} live/>);
+        const trigger = screen.getByRole("button", { name: t.unknownPosition });
+        expect(view.container.querySelector('.position-unknown.is-unresolved')).toBeTruthy();
+        fireEvent.mouseEnter(trigger);
+        const popup = screen.getByRole("dialog", { name: t.unknownPosition });
+        expect(popup.textContent).toContain(t.positionUnresolved);
+        expect(popup.textContent).not.toContain(t.analyzeForPosition);
+        expect(view.container.contains(popup)).toBe(false);
+        fireEvent.mouseLeave(trigger); fireEvent.mouseEnter(popup);
+        fireEvent.click(within(popup).getByRole("button", { name: t.reportPosition }));
+        expect(within(popup).getByRole("button", { name: t.reportPreviewDone }).disabled).toBe(true);
+        expect(popup.textContent).toContain(t.reportPreview);
+        expect(mocks.api).not.toHaveBeenCalled();
+        fireEvent.keyDown(document, { key: "Escape" });
+        expect(screen.queryByRole("dialog", { name: t.unknownPosition })).toBeNull();
+    });
+    it("allows keyboard access to the report action and returns focus on Escape", async () => {
+        vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => window.setTimeout(() => callback(0), 0));
+        render(<MatchTable matches={[{ ...row, analyzed: true }]} t={messages.en} onOpen={vi.fn()} live/>);
+        const trigger = screen.getByRole("button", { name: messages.en.unknownPosition });
+        act(() => trigger.focus());
+        fireEvent.keyDown(trigger, { key: "Tab" });
+        const report = screen.getByRole("button", { name: messages.en.reportPosition });
+        await waitFor(() => expect(document.activeElement).toBe(report));
+        fireEvent.keyDown(report, { key: "Escape" });
+        expect(document.activeElement).toBe(trigger);
+        expect(screen.queryByRole("dialog")).toBeNull();
+    });
+    it("keeps the interactive report popup open while crossing from the icon to its button", () => {
+        vi.useFakeTimers();
+        try {
+            render(<MatchTable matches={[{ ...row, analyzed: true }]} t={messages.en} onOpen={vi.fn()} live/>);
+            const trigger = screen.getByRole("button", { name: messages.en.unknownPosition });
+            fireEvent.focus(trigger); const popup = screen.getByRole("dialog");
+            fireEvent.mouseLeave(trigger); fireEvent.mouseEnter(popup);
+            act(() => vi.advanceTimersByTime(250));
+            expect(screen.getByRole("dialog")).toBeTruthy();
+            fireEvent.mouseLeave(popup); act(() => vi.advanceTimersByTime(250));
+            expect(screen.queryByRole("dialog")).toBeNull();
+        } finally { vi.useRealTimers(); }
+    });
+    it.each([messages.fa, messages.en])("formats retry details with a localized 24-hour clock", t => {
+        const nextTryAt = "2026-10-07T18:05:00Z";
+        const prep = { replay: "pending", progress: { phase: "retry_wait", attempts: 3, nextTryAt, bytes: 0, totalBytes: null, bytesPerSecond: 0, phaseStartedAt: null, heartbeatAt: null, retryDeadlineAt: null, errorCode: null } };
+        const view = render(<AnalysisProgress preparation={prep} t={t}/>);
+        const details = view.container.querySelector('.analysis-retry-details')!.textContent!;
+        expect(details).toContain(formatClock24(nextTryAt, t));
+        expect(details).toContain(t === messages.fa ? "تعداد دفعات تلاش: ۳" : "Attempt 3");
+        if (t === messages.fa) expect(details).toContain("ساعت تلاش بعدی:");
+        expect(details).not.toMatch(/AM|PM|ق\.ظ|ب\.ظ/);
+    });
     it("restores persisted processing immediately and refreshes its stage from history", () => {
         const processing = { ...row, analysisStatus: "processing" as const, analysisPreparation: { replay: "processing", progress: { phase: "parsing", bytes: 1024, totalBytes: 1024, bytesPerSecond: 0, attempts: 1, nextTryAt: null, phaseStartedAt: null, heartbeatAt: null, retryDeadlineAt: null, errorCode: null } } };
         const view = render(<MatchTable matches={[processing]} t={messages.fa} onOpen={vi.fn()} live/>);

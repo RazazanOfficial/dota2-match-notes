@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Download, Search, Swords, X, Sparkles, Trophy, Activity, ArrowUpRight, Zap, Shield, Gamepad2, Brain, Sprout, TrendingUp, CircleHelp, Check, LoaderCircle, Eye } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Download, Search, Swords, X, Sparkles, Trophy, Activity, ArrowUpRight, Zap, Shield, Gamepad2, Brain, Sprout, TrendingUp, CircleHelp, Check, LoaderCircle, Eye, Send } from "lucide-react";
 import { heroById, heroImage, heroIcon } from "@/data/heroes";
 import { positionImage } from "@/data/positions";
 import { buildPersianCalendarMonth } from "@/lib/persian-calendar";
 import type { Session } from "@/lib/types";
 import { COOLDOWNS, durationText, filterHistory, loadHistoryPage, matchDateKey, PAGE_SIZE, periodRange, roles, SAMPLE_DATE, summarize, type HistoryMatch, type Period, type Scope, type Summary } from "../history";
-import { isPersian, type Messages } from "../i18n";
+import { isPersian, messages, type Messages } from "../i18n";
 import { Avatar, CopyValue, previewProfile, profileRegistrationDate } from "./Shared";
 import { Hint } from "./Hint";
 import { LoadingView } from "./LoadingView";
@@ -16,8 +16,11 @@ import type { ReplayProgress } from "@/lib/replay/progress";
 import { Calendar, requestRange, trackingStart } from "./Calendar";
 export { Replay } from "./Replay";
 export type ShortcutPage = "matches" | "replay" | "reports" | "coach" | "farm" | "meta";
-export function Position({ value, title = true, t }: { value: number | null | undefined; title?: boolean; t?: Messages }) {
-    if (!value || value < 1 || value > 5) return <Hint label={t?.unknownPosition || "Unknown position"} text={t?.analyzeForPosition || "Analyze this match to identify your position."}><span className="position-badge"><CircleHelp size={21}/>{title && <span>—</span>}</span></Hint>;
+export function Position({ value, title = true, t = messages.en, analyzed = false, reportable = false }: { value: number | null | undefined; title?: boolean; t?: Messages; analyzed?: boolean; reportable?: boolean }) {
+    const [reported, setReported] = useState(false);
+    if (!value || value < 1 || value > 5) return <Hint label={t.unknownPosition} text={analyzed ? t.positionUnresolved : t.analyzeForPosition}
+        action={analyzed && reportable ? <span className="position-report"><small>{t.reportPreview}</small><button type="button" className="position-report-button" disabled={reported} onClick={event => { event.stopPropagation(); setReported(true); }}>{reported ? <Check size={16}/> : <Send size={16}/>}<span>{reported ? t.reportPreviewDone : t.reportPosition}</span></button></span> : undefined}>
+        <span className={`position-badge position-unknown ${analyzed ? "is-unresolved" : ""}`}><CircleHelp size={24}/>{title && <span>—</span>}</span></Hint>;
     return <span className="position-badge" title={`Pos ${value} · ${roles[value]}`}><img src={positionImage(value)} alt={roles[value]} width={22} height={22}/>{title && <span>{roles[value]}</span>}</span>;
 }
 export function PeriodControls({ period, setPeriod, anchor, setAnchor, t, compact = false, registration = previewProfile.registeredDate!, maxDate = SAMPLE_DATE }: {
@@ -140,7 +143,7 @@ export function MatchRow({ match, t, onOpen, live = false }: { match: HistoryMat
     return <><div role="row" className={`match-row ${isPersian(t) ? "details-last" : "details-first"}`} data-match-row={match.id}>
         <span role="cell" className="details-cell"><button className="match-details-button" onClick={() => onOpen(match)} aria-label={`${t.details} ${match.id}`}><Eye size={16}/></button></span>
         <span role="cell"><button className="row-hero" onClick={() => onOpen(match)} aria-label={`${hero?.name || t.heroColumn} · ${t.details} ${match.id}`}><img src={hero ? heroImage(hero) : ""} alt={hero?.name} width={64} height={36} loading="lazy"/></button></span>
-        <span role="cell"><Position value={match.position} title={false} t={t}/></span><span role="cell" className={`result-pill ${match.won ? "win" : "loss"}`}>{match.won ? "W" : "L"}</span>
+        <span role="cell"><Position value={match.position} title={false} t={t} analyzed={match.analyzed || ready} reportable/></span><span role="cell" className={`result-pill ${match.won ? "win" : "loss"}`}>{match.won ? "W" : "L"}</span>
         <bdi role="cell" className="row-kda">{match.k} / {match.d} / {match.a}</bdi><span role="cell"><Score value={match.score} t={t}/></span><span role="cell"><ModeIcon mode={match.mode}/></span>
         <span role="cell"><button className={`analysis-action ${analyzed ? "ready" : running ? "running" : "pending"}`} disabled={running} onClick={() => void analyze()}>{analyzed ? <Check size={15}/> : running ? <LoaderCircle className="spin" size={15}/> : <Sparkles size={14}/>}<span>{analyzed ? t.analysisDone : running ? t.analysisQueued : t.analyze}</span></button></span>
         <bdi role="cell" className="row-duration">{durationText(match.duration)}</bdi><span role="cell"><CopyValue value={match.id} t={t}/></span>
