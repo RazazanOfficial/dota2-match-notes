@@ -293,48 +293,21 @@ sudo certbot renew --dry-run
 
 ## ۱۲. روال هر انتشار بعدی
 
-قبل از این مرحله، شاخهٔ پچ باید با merge commit در `main` باشد. برای تغییر
-صرفاً README/docs، Build و restart سایت لازم نیست؛ دریافت کد روی VPS فقط
-اگر می‌خواهید فایل‌های مستندات آنجا هم به‌روز شوند انجام می‌شود. هر تغییر
-در `deploy/cloudflare/replay-proxy/worker.mjs` انتشار مستقل Wrangler دارد.
+**وضعیت تأییدشدهٔ ۷ اکتبر ۲۰۲۶:** Git main در خود `/var/www/dota2notes`؛ Express runtime در `apps/api/release` و وب Next در `apps/web`. دامنهٔ API `api.dota2notes.ir` است. مراحل نصب اولیهٔ قدیمی این سند برای تغییر معماری دوباره اجرا نشوند. فولدر source جدا نداریم.
 
-در روال ساده فعلی، سایت هنگام Pull، Migration و Build برای مدت کوتاهی متوقف است. این توقف
-عمدی است تا فایل‌های `.next` در حال استفاده هم‌زمان بازنویسی نشوند:
+ابتدا تغییرات هر تسک در branch جدا تست، commit و push و با merge commit (`--no-ff`) وارد main شوند؛ سپس VPS `git pull --ff-only origin main` می‌گیرد. تغییرات محلی VPS را reset/clean نکنید؛ اول بررسی و نگهداری کنید.
 
-```bash
-cd /var/www/dota2notes
-sudo systemctl disable --now dota2notes-stratz.timer 2>/dev/null || true
-sudo systemctl stop dota2notes-replay.timer 2>/dev/null || true
-sudo systemctl stop dota2notes-sync-manual.timer 2>/dev/null || true
-sudo systemctl stop dota2notes-images.timer dota2notes-performance-reference.timer dota2notes-opendota-parse.timer
-sudo systemctl stop dota2notes-replay.service dota2notes-sync.service dota2notes-images.service dota2notes-performance-reference.service dota2notes-opendota-parse.service
-sudo systemctl stop dota2notes.service
-sudo -u dota2notes -H git pull --ff-only origin main
-sudo -u dota2notes -H npm ci
-sudo -u dota2notes -H env DOTENV_CONFIG_PATH=.env.production npm run db:migrate
-sudo -u dota2notes -H npm test
-sudo -u dota2notes -H npm run typecheck
-sudo -u dota2notes -H npm run build
-sudo cp deploy/systemd/dota2notes.service deploy/systemd/dota2notes-replay.service /etc/systemd/system/
-sudo cp deploy/systemd/dota2notes-sync.service deploy/systemd/dota2notes-sync-manual.timer /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl start dota2notes.service
-sudo -u dota2notes -H bash deploy/scripts/health-check.sh
-sudo systemctl start dota2notes-images.timer dota2notes-performance-reference.timer dota2notes-opendota-parse.timer
-sudo systemctl enable --now dota2notes-sync-manual.timer
-if systemctl is-enabled --quiet dota2notes-replay.timer; then
-  sudo systemctl start dota2notes-replay.timer
-fi
-```
+فرمان‌های کامل انتشار API و ریپلی، توقف/راه‌اندازی شش timer فعال و تست سلامت در [راهنمای جاری](replay-validation-progress.fa.md#استقرار-روی-vps-موجود-پس-از-push-به-main) هستند. خلاصهٔ ترتیب:
 
-برای صف replay محلی، migration `0017` و unit جداگانه لازم است؛ مراحل
-تست و فعال‌کردن timer در [راهنمای صف replay](replay-queue-stage2.md) آمده
-است. این worker به‌صورت پیش‌فرض غیرفعال است. پس از فعال‌شدن، در انتشارهای
-بعدی timer آن را پیش از توقف برنامه متوقف کنید؛ دستور بالا فقط در صورتی
-دوباره آن را راه می‌اندازد که قبلاً فعال کرده باشید.
+1. وضعیت Git؛ توقف timerها، workerهای مربوط، API و هنگام npm ci ریشه، وب.
+2. Pull main؛ npm ci؛ build API؛ `release:prepare`؛ نصب production dependencies در release.
+3. فقط اگر migration جدید دارد، migration را با ENV production اجرا کنید. سپس preflight `--check-db` و preflight نقش replay.
+4. اگر وب/dependencyهای آن تغییر کرده‌اند، build Next قبل از start لازم است. برای پچ API-only نیازی به بازنویسی `.next` نیست.
+5. Start API و وب؛ readiness محلی و liveness عمومی؛ سپس timerهای قبلاً فعال.
 
-اگر هر فرمان قبل از `systemctl start` شکست خورد، ادامه ندهید و Log همان فرمان را بررسی
-کنید. قبل از تغییرات بزرگ دیتابیس نیز از PostgreSQL نسخه پشتیبان بگیرید.
+برای docs-only توقف/build لازم نیست. unitها تنها در صورت تغییر خودشان نصب و daemon-reload شوند. فایل Worker Cloudflare انتشار مستقل Wrangler دارد. backup cutover در `/var/backups/dota2notes-20261007-135840` و ENV فعلی حفظ شوند؛ قبل از migration بزرگ از دیتابیس backup تازه بگیرید.
+
+اگر فرمانی شکست خورد قبل از بخش بعد همان خطا را بررسی کنید. `health/ready` عمومی در nginx فعلی عمداً 404 است؛ محلی `http://127.0.0.1:4100/health/ready` و عمومی `https://api.dota2notes.ir/health/live` را بررسی کنید.
 
 ## عیب‌یابی سریع
 

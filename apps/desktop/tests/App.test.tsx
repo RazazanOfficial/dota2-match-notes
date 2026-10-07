@@ -193,7 +193,8 @@ describe("native replay library", () => {
         fireEvent.click(within(screen.getByRole("navigation")).getByRole("button", { name: "Replay", exact: true }));
         await screen.findByText("C:/Steam/steamapps/common/dota 2 beta/game/dota/replays");
         fireEvent.click(screen.getAllByRole("button", { name: "Download replay" })[0]);
-        expect(await screen.findByText("Error: Replay expired")).toBeTruthy();
+        expect((await screen.findByRole("alert")).textContent).toContain("This step couldn't finish");
+        expect(screen.queryByText("Error: Replay expired")).toBeNull();
         fireEvent.click(screen.getByRole("tab", { name: /Downloaded replays/ }));
         expect(screen.getByText("No .dem replays in this folder yet.")).toBeTruthy();
     });

@@ -38,68 +38,7 @@ npm run release:prepare -w @dota-notes/api
 
 ## VPS deployment from GitHub
 
-First commit and push the patch to `main` on your computer. These commands must run **after** that push.
-
-Use a separate source checkout so building does not replace the files of the currently running website. The live Express runtime remains `/var/www/dota2notes/apps/api/release` and uses `/var/www/dota2notes/.env.production`.
-
-Only on the first Git-based deployment, create the source checkout:
-
-```bash
-cd /var/www
-git clone --branch main --single-branch https://github.com/RazazanOfficial/dota2-match-notes.git dota2notes-source
-sudo chown -R dota2notes:dota2notes /var/www/dota2notes-source
-```
-
-On this and subsequent deployments:
-
-```bash
-cd /var/www/dota2notes-source
-sudo -u dota2notes -H git pull --ff-only origin main
-sudo -u dota2notes -H npm ci
-sudo -u dota2notes -H npm run api:build
-sudo -u dota2notes -H npm run release:prepare -w @dota-notes/api
-```
-
-If any command above fails, stop before the next block. Migrate and verify the staged runtime before replacing the live runtime:
-
-```bash
-sudo -u dota2notes -H env DOTENV_CONFIG_PATH=/var/www/dota2notes/.env.production npm run db:migrate --prefix /var/www/dota2notes-source/apps/api/release --workspaces=false
-sudo -u dota2notes -H env DOTENV_CONFIG_PATH=/var/www/dota2notes/.env.production npm run preflight --prefix /var/www/dota2notes-source/apps/api/release --workspaces=false -- --check-db
-```
-
-Both must succeed. The migration is additive and retains existing users and matches.
-
-In the same VPS terminal, pause the replay timer if it is running, update the runtime and restart the API:
-
-```bash
-DOTA_DEPLOY_REPLAY_TIMER_ACTIVE=0
-if systemctl is-active --quiet dota2notes-replay.timer; then
-  DOTA_DEPLOY_REPLAY_TIMER_ACTIVE=1
-  sudo systemctl stop dota2notes-replay.timer
-  sudo systemctl stop dota2notes-replay.service
-fi
-
-sudo cp -a /var/www/dota2notes-source/apps/api/release/. /var/www/dota2notes/apps/api/release/
-sudo chown -R dota2notes:dota2notes /var/www/dota2notes/apps/api/release
-sudo systemctl restart dota2notes-api.service
-
-if [ "$DOTA_DEPLOY_REPLAY_TIMER_ACTIVE" = 1 ]; then
-  sudo systemctl start dota2notes-replay.timer
-fi
-unset DOTA_DEPLOY_REPLAY_TIMER_ACTIVE
-
-sudo systemctl status dota2notes-api.service --no-pager -l
-curl -fS http://127.0.0.1:4100/health/ready
-curl -fS https://api.dota2notes.ir/health/live
-```
-
-Do not use the public `/health/ready` URL: the existing nginx configuration intentionally returns 404 there. Readiness is checked locally.
-
-If the API fails to restart:
-
-```bash
-sudo journalctl -u dota2notes-api.service --since "10 minutes ago" --no-pager -o cat | tail -80
-```
+This update was deployed on October 7 in the existing `/var/www/dota2notes` Git checkout. The previous separate-source-directory instructions are obsolete. Use [the current deployment routine](deployment-ubuntu.md#۱۲-روال-هر-انتشار-بعدی) and [the replay task commands](replay-validation-progress.fa.md). The live API runtime is `apps/api/release`; the existing Next website remains in `apps/web`.
 
 ## Real-data acceptance checks
 
