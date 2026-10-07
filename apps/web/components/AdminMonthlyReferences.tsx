@@ -28,7 +28,7 @@ const metrics = [
   ["healingAllies", "Heal"], ["campsStacked", "Stack"], ["neutrals", "Jungle"], ["ancients", "Ancient"],
   ["teamKills", "Team Kill"],
 ] as const;
-const formatDate = (value: string | null) => value ? new Date(value).toLocaleString("fa-IR") : "هنوز ثبت نشده";
+const formatDate = (value: string | null) => value ? new Date(value).toLocaleString("fa-IR", { hourCycle: "h23" }) : "هنوز ثبت نشده";
 const label = (status: string) => status === "active" ? "آماده" : status === "building" ? "در حال ساخت" : status === "failed" ? "خطا" : "نسخهٔ قبلی";
 async function get(url: string): Promise<Reply> {
   const response = await fetch(url, { cache: "no-store", credentials: "same-origin" });

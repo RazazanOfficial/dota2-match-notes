@@ -6,6 +6,7 @@
 
 | موضوع | فایل |
 | --- | --- |
+| پوزیشن ساپورت‌های چرخشی، ساعت ۲۴ ساعته، گزارش نمایشی و Git/VPS | [support-position-time-ui.fa.md](support-position-time-ui.fa.md) |
 | اعتبارسنجی ID صفر ریپلی، خطا/پیشرفت تحلیل و استقرار روی VPS موجود | [replay-validation-progress.fa.md](replay-validation-progress.fa.md) |
 | فولدربندی جدید، دسکتاپ و اولین انتشار monorepo | [monorepo-desktop-foundation.md](monorepo-desktop-foundation.md) |
 | نسخه‌گذاری، tag و انتشار قطعی | [releasing.md](releasing.md) |

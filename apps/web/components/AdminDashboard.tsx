@@ -89,7 +89,7 @@ interface AdminUser {
 const number = new Intl.NumberFormat("fa-IR");
 const compactNumber = new Intl.NumberFormat("fa-IR", { notation: "compact" });
 const date = new Intl.DateTimeFormat("fa-IR", { month: "short", day: "numeric" });
-const dateTime = new Intl.DateTimeFormat("fa-IR", { dateStyle: "short", timeStyle: "short" });
+const dateTime = new Intl.DateTimeFormat("fa-IR", { dateStyle: "short", timeStyle: "short", hourCycle: "h23" });
 
 async function adminRequest<T>(input: string, init?: RequestInit) {
   const response = await fetch(input, {

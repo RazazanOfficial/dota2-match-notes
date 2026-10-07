@@ -36,6 +36,7 @@ import { GameIcon } from "./GameIcon";
 const faDateTime = new Intl.DateTimeFormat("fa-IR", {
   dateStyle: "medium",
   timeStyle: "short",
+  hourCycle: "h23",
 });
 const ALL_SYNC_GAME_MODES: MatchSyncGameMode[] = ["ranked", "turbo", "all_pick", "captains", "other"];
 const SYNC_GAME_MODE_OPTIONS: Array<{

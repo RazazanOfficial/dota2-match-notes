@@ -17,6 +17,46 @@ function player(slot: number, lane: "top" | "mid" | "bottom", lh10: number, ward
 }
 
 describe("position resolution from the first ten minutes of a replay", () => {
+  const roamingTeam = (dire = false) => {
+    const start = dire ? 128 : 0;
+    const safe = dire ? "top" : "bottom", off = dire ? "bottom" : "top";
+    const mixed = (safeCount: number, offCount: number) => ({
+      "128": { "128": 430 },
+      "90": { "165": dire ? safeCount : offCount },
+      "165": { "90": dire ? offCount : safeCount },
+    });
+    return [player(start, safe, 48, 0), player(start + 1, "mid", 42, 0), player(start + 2, off, 35, 0),
+      { ...player(start + 3, safe, 5, 2), lane_pos: mixed(210, 20) },
+      { ...player(start + 4, off, 7, 2), lane_pos: mixed(15, 200) }];
+  };
+  it.each([false, true])("separates roaming supports by side-lane shares after identifying three cores (dire=%s)", dire => {
+    const players = roamingTeam(dire), start = dire ? 128 : 0;
+    const result = resolveMatchPositions({ players: [...players].reverse(), profileSlot: null, profileAssignedPosition: null });
+    expect([0,1,2,3,4].map(i => result.get(start+i)?.detectedPosition)).toEqual([1,2,3,5,4]);
+    for (const slot of [start+3,start+4]) {
+      expect(result.get(slot)?.evidence).toContainEqual(expect.objectContaining({ key: "support-side-lane" }));
+      expect(result.get(slot)?.source).toBe("heuristic");
+    }
+  });
+  it("keeps indistinguishable roaming supports unknown instead of using player order", () => {
+    const players = roamingTeam(); players[4].lane_pos = players[3].lane_pos;
+    const result = resolveMatchPositions({ players, profileSlot: null, profileAssignedPosition: null });
+    expect(result.get(3)?.detectedPosition).toBeNull(); expect(result.get(4)?.detectedPosition).toBeNull();
+  });
+  it("does not use support-pair inference without three reliable cores or enough side-lane samples", () => {
+    for (const missingCore of [true, false]) {
+      const players = roamingTeam();
+      if (missingCore) players[0].lh_t = [];
+      else players[3].lane_pos = { "128": { "128": 600 }, "165": { "90": 25 } };
+      const result = resolveMatchPositions({ players, profileSlot: null, profileAssignedPosition: null });
+      expect(result.get(3)?.evidence?.some(e => e.key === "support-side-lane")).toBe(false);
+      expect(result.get(4)?.evidence?.some(e => e.key === "support-side-lane")).toBe(false);
+    }
+  });
+  it("keeps a manual support correction ahead of the roaming evidence", () => {
+    const result = resolveMatchPositions({ players: roamingTeam(), positionOverrides: { "3": 4 }, profileSlot: null, profileAssignedPosition: null });
+    expect(result.get(3)).toMatchObject({ detectedPosition: 4, confirmedPosition: 4, source: "manual", confidence: 100 });
+  });
   it("matches all ten confirmed positions in match 9013078038 using the replay lane counts", () => {
     // Read-only aggregates from the imported replay. Only the coordinates
     // within each lane change here; the resolver sees the same bin totals.

@@ -9,7 +9,7 @@ import {
   monthlyReferenceVersions,
   users,
 } from "../db/schema";
-import { referenceRevisionSql } from "./analysis-summary-version";
+import { ANALYSIS_SUMMARY_VERSION, referenceRevisionSql } from "./analysis-summary-version";
 import { buildMatchAnalysis } from "./match-analysis";
 import type { PerformanceReferenceData } from "./performance-cohort";
 import { hasParsedOpenDotaReplay } from "../opendota/validation";
@@ -150,7 +150,7 @@ export async function loadPublicMatchAnalysis(journalMatchId: string, requestedP
   if (!requestedPositionOverrides && source.sourceUpdatedAt) {
     const player = replayParsed ? analysis?.players.find(entry => entry.isProfilePlayer) : undefined;
     await getDb().update(journalMatches).set({ analysisSummary: {
-      version: 1, sourceUpdatedAt: source.sourceUpdatedAt.toISOString(), referenceRevision: source.referenceRevision,
+      version: ANALYSIS_SUMMARY_VERSION, sourceUpdatedAt: source.sourceUpdatedAt.toISOString(), referenceRevision: source.referenceRevision,
       positionOverrides: source.positionOverrides || {}, assignedRole: source.profileAssignedRole,
       heroId: source.profileHeroId, position: player?.position || null,
       score: typeof player?.performanceScore === "number" ? player.performanceScore : null, ready: replayParsed && Boolean(analysis),

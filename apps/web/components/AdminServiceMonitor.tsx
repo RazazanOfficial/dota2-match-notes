@@ -20,7 +20,7 @@ const preview: Monitor = { capturedAt: "2026-09-28T09:15:00Z", stale: false, sna
   ], queues: [{ source: "replay", status: "pending", total: 2 }, { source: "replay", status: "completed", total: 85 },
     { source: "images", status: "completed", total: 73 }, { source: "opendota_parse", status: "pending", total: 1 }], failures: [] };
 const names: Record<string, string> = { replay: "Replay", images: "Match Images", opendota_parse: "OpenDota Parse", sync: "Journal Sync" };
-const when = (value: string | null | undefined) => value ? new Date(value).toLocaleString("fa-IR") : "—";
+const when = (value: string | null | undefined) => value ? new Date(value).toLocaleString("fa-IR", { hourCycle: "h23" }) : "—";
 function state(unit: Unit) {
   const p = unit.properties;
   if (unit.error || p.LoadState === "not-found" || p.Result === "failed" || p.ActiveState === "failed") return { label: "خطا", tone: "bad" };

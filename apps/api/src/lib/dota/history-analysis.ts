@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { dotaMatches, journalDays, journalMatches } from "../db/schema";
-import { referenceRevisionSql } from "./analysis-summary-version";
+import { ANALYSIS_SUMMARY_VERSION, referenceRevisionSql } from "./analysis-summary-version";
 import { loadPublicMatchAnalysis } from "./match-analysis-repository";
 
 const players = sql`case when jsonb_typeof(${dotaMatches.rawData}->'players') = 'array' then ${dotaMatches.rawData}->'players' else '[]'::jsonb end`;
@@ -13,8 +13,10 @@ export const replayParsedSql = sql<boolean>`coalesce((
     jsonb_array_length(case when jsonb_typeof(p->'times') = 'array' then p->'times' else '[]'::jsonb end) > 1
     and (jsonb_typeof(p->'gold_t') = 'array' or jsonb_typeof(p->'xp_t') = 'array' or jsonb_typeof(p->'lh_t') = 'array'))
 ), false)`;
+// This expression is reused in SELECT/GROUP BY. A constant literal keeps both
+// expressions identical; separate bind parameters would break that grouping.
 export const summaryCurrentSql = sql<boolean>`coalesce((
-  ${journalMatches.analysisSummary}->>'version' = '1'
+  ${journalMatches.analysisSummary}->>'version' = ${sql.raw(`'${ANALYSIS_SUMMARY_VERSION}'`)}
   and (${journalMatches.analysisSummary}->>'sourceUpdatedAt')::timestamptz = date_trunc('milliseconds', ${dotaMatches.updatedAt})
   and ${journalMatches.analysisSummary}->>'referenceRevision' = ${referenceRevisionSql}
   and ${journalMatches.analysisSummary}->'positionOverrides' = ${journalMatches.positionOverrides}

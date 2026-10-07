@@ -42,7 +42,7 @@ export default function ReplayLookup({ previewMode = false }: { previewMode?: bo
     {error && <p role="alert" className="replay-page-error">{error}</p>}
     {match && found && <section className="replay-result">
       <h2>Match #{found.matchId}</h2>
-      <p>{new Date(found.startedAt).toLocaleString("fa-IR")} · {Math.round(found.duration / 60)} دقیقه · {found.radiantScore ?? "?"} – {found.direScore ?? "?"}</p>
+      <p>{new Date(found.startedAt).toLocaleString("fa-IR", { hourCycle: "h23" })} · {Math.round(found.duration / 60)} دقیقه · {found.radiantScore ?? "?"} – {found.direScore ?? "?"}</p>
       {found.heroName && <p>Hero شما: {found.heroName}</p>}
       <ReplayDownloadAction key={found.matchId} matchId={String(found.matchId)} previewMode={previewMode} />
       <h2>Performance</h2>
