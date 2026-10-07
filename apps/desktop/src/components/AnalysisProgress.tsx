@@ -1,5 +1,6 @@
 import type { ReplayProgress } from "@/lib/replay/progress";
 import type { Messages } from "../i18n";
+import { ErrorNotice } from "./ErrorNotice";
 
 const phaseIndex: Record<string, number> = {
     queued: 0, checking_archive: 1, resolving_metadata: 1, restoring_archive: 1, connecting: 1,
@@ -14,17 +15,22 @@ export function AnalysisProgress({ preparation, t }: {
     if (!preparation || preparation.replay === "basic" || preparation.replay === "expired") return null;
     const progress = preparation.progress;
     const phase = progress?.phase || (preparation.replay === "failed" ? "failed" : "queued");
-    const active = phaseIndex[phase] ?? (phase === "retry_wait" ? 1 : 0);
-    const stages = [t.analysisQueued, t.analysisConnect, t.analysisDownload, t.analysisParse, t.analysisSave];
+    const code = progress?.errorCode || preparation.errorCode;
     const failed = preparation.replay === "failed" || phase === "failed";
+    const failedStage = code?.includes("parser") || code?.startsWith("replay_identity_") ? 3
+        : code?.includes("upload") || code?.includes("archive") ? 4
+        : code?.includes("download") || code?.includes("checksum") || code?.includes("checkpoint") ? 2 : 1;
+    const active = failed ? failedStage : phaseIndex[phase] ?? (phase === "retry_wait" ? 1 : 0);
+    const stages = [t.analysisQueued, t.analysisConnect, t.analysisDownload, t.analysisParse, t.analysisSave];
     const downloading = phase === "downloading";
     const percent = downloading && progress?.totalBytes ? Math.min(100, Math.max(0, Math.round(progress.bytes / progress.totalBytes * 100))) : null;
     const label = phase === "retry_wait" ? t.analysisRetry : stages[Math.min(active, stages.length - 1)];
     return <div className={`analysis-progress ${failed ? "is-failed" : ""}`} role="status" aria-live="polite">
         <div className="analysis-progress-heading"><strong>{failed ? t.analysisFailed : active === 5 ? t.analysisReady : label}</strong>{!failed && <small>{t.analysisRefresh}</small>}</div>
-        <ol className="analysis-steps" dir="ltr">{stages.map((stage, index) => <li key={stage} className={active > index ? "done" : active === index ? "active" : "waiting"}><span>{index + 1}</span><b>{stage}</b></li>)}</ol>
+        <ol className="analysis-steps" dir="ltr">{stages.map((stage, index) => <li key={stage} aria-current={active === index ? "step" : undefined} className={active > index ? "done" : active === index ? failed ? "failed" : "active" : "waiting"}><span>{index + 1}</span><b>{stage}</b></li>)}</ol>
         {downloading && progress && <div className="analysis-transfer"><div><bdi>{t.analysisBytes}: {mb(progress.bytes)}{progress.totalBytes ? ` / ${mb(progress.totalBytes)}` : ""}</bdi><bdi>{percent === null ? t.analysisUnknownSize : `${percent}%`}</bdi></div><progress value={percent ?? undefined} max={100} aria-label={t.analysisDownload}/>{progress.bytesPerSecond > 0 && <small dir="ltr">{mb(progress.bytesPerSecond)}/s</small>}</div>}
         {phase === "retry_wait" && <small>{t.analysisRetry} · {t.analysisAttempts} {progress?.attempts || 1}{progress?.nextTryAt ? ` · ${new Date(progress.nextTryAt).toLocaleTimeString()}` : ""}</small>}
-        {failed && <small>{progress?.errorCode || preparation.errorCode || ""}</small>}
+        {failed && <ErrorNotice code={code} title={`${t.analysisFailed} · ${stages[failedStage]}`} t={t}/>}
+        {!failed && phase === "retry_wait" && code && <ErrorNotice code={code} title={t.analysisRetry} t={t}/>}
     </div>;
 }

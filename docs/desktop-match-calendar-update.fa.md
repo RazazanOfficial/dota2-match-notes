@@ -30,68 +30,7 @@ npm run desktop:installer
 
 ## استقرار VPS از Git
 
-اول روی کامپیوتر، تغییرات را commit و به `main` پوش کن. مراحل زیر را **بعد از push** در ترمینال VPS داخل MobaXterm اجرا کن.
-
-برای اینکه build سورس به فایل‌های سایت در حال اجرا دست نزند، سورس Git را در `/var/www/dota2notes-source` نگه می‌داریم. بک‌اند فعال همچنان در `/var/www/dota2notes/apps/api/release` اجرا می‌شود.
-
-اگر هنوز فولدر `dota2notes-source` را با Git نساخته‌ای، این بخش را فقط یک بار اجرا کن:
-
-```bash
-cd /var/www
-git clone --branch main --single-branch https://github.com/RazazanOfficial/dota2-match-notes.git dota2notes-source
-sudo chown -R dota2notes:dota2notes /var/www/dota2notes-source
-```
-
-سپس برای این استقرار و دفعات بعد:
-
-```bash
-cd /var/www/dota2notes-source
-sudo -u dota2notes -H git pull --ff-only origin main
-sudo -u dota2notes -H npm ci
-sudo -u dota2notes -H npm run api:build
-sudo -u dota2notes -H npm run release:prepare -w @dota-notes/api
-```
-
-اگر دستوری خطا داد، قبل از اجرای بخش بعد همان خطا را بررسی کن. پس از build، دیتابیس را با خروجی جدید migrate و بررسی کن:
-
-```bash
-sudo -u dota2notes -H env DOTENV_CONFIG_PATH=/var/www/dota2notes/.env.production npm run db:migrate --prefix /var/www/dota2notes-source/apps/api/release --workspaces=false
-sudo -u dota2notes -H env DOTENV_CONFIG_PATH=/var/www/dota2notes/.env.production npm run preflight --prefix /var/www/dota2notes-source/apps/api/release --workspaces=false -- --check-db
-```
-
-باید migration موفق باشد و preflight مقدار `ok: true` داشته باشد. migration حساب‌ها و مچ‌های قبلی را نگه می‌دارد.
-
-حالا در **همان ترمینال VPS** خروجی را جایگزین کن. بخش اول فقط تایمر ریپلی را، در صورت فعال‌بودن، موقتاً متوقف می‌کند و آخر کار دوباره فعالش می‌کند:
-
-```bash
-DOTA_DEPLOY_REPLAY_TIMER_ACTIVE=0
-if systemctl is-active --quiet dota2notes-replay.timer; then
-  DOTA_DEPLOY_REPLAY_TIMER_ACTIVE=1
-  sudo systemctl stop dota2notes-replay.timer
-  sudo systemctl stop dota2notes-replay.service
-fi
-
-sudo cp -a /var/www/dota2notes-source/apps/api/release/. /var/www/dota2notes/apps/api/release/
-sudo chown -R dota2notes:dota2notes /var/www/dota2notes/apps/api/release
-sudo systemctl restart dota2notes-api.service
-
-if [ "$DOTA_DEPLOY_REPLAY_TIMER_ACTIVE" = 1 ]; then
-  sudo systemctl start dota2notes-replay.timer
-fi
-unset DOTA_DEPLOY_REPLAY_TIMER_ACTIVE
-
-sudo systemctl status dota2notes-api.service --no-pager -l
-curl -fS http://127.0.0.1:4100/health/ready
-curl -fS https://api.dota2notes.ir/health/live
-```
-
-`/health/ready` را با آدرس محلی بالا بررسی کن. در تنظیم nginx فعلی، آدرس عمومی این مسیر عمداً `404` می‌دهد.
-
-اگر API بالا نیامد، لاگ این دستور را بفرست:
-
-```bash
-sudo journalctl -u dota2notes-api.service --since "10 minutes ago" --no-pager -o cat | tail -80
-```
+این پچ در ۷ اکتبر روی checkout موجود `/var/www/dota2notes` مستقر شده است. راهنمای قبلی ایجاد فولدر source جدا منسوخ است. برای انتشارهای بعدی از [روال VPS فعلی](deployment-ubuntu.md#۱۲-روال-هر-انتشار-بعدی) و [فرمان‌های تسک ریپلی](replay-validation-progress.fa.md) استفاده کن. API runtime در `apps/api/release` و Next فعال در `apps/web` هستند.
 
 ## تست نسخهٔ نصب‌شده با دادهٔ واقعی
 

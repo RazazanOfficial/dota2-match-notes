@@ -11,6 +11,7 @@ import { Hint } from "./Hint";
 import { LoadingView } from "./LoadingView";
 import { apiRequest } from "../api";
 import { AnalysisProgress } from "./AnalysisProgress";
+import { ErrorNotice } from "./ErrorNotice";
 import type { ReplayProgress } from "@/lib/replay/progress";
 import { Calendar, requestRange, trackingStart } from "./Calendar";
 export { Replay } from "./Replay";
@@ -102,34 +103,40 @@ export function Score({ value, t }: { value: number | null | undefined; t?: Mess
 }
 type Preparation = { replay: string; progress?: ReplayProgress | null; errorCode?: string | null };
 export function MatchRow({ match, t, onOpen, live = false }: { match: HistoryMatch; t: Messages; onOpen: (m: HistoryMatch) => void; live?: boolean }) {
-    const hero = heroById(match.heroId), [preparation, setPreparation] = useState<Preparation | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState(""), [ready, setReady] = useState(false);
-    useEffect(() => { if (match.analyzed) { setPreparation(null); setReady(true); } }, [match.analyzed]);
-    const running = !ready && !match.analyzed && (busy || ["pending", "queued", "processing"].includes(preparation?.replay || match.analysisStatus || ""));
+    const hero = heroById(match.heroId), [preparation, setPreparation] = useState<Preparation | null>(match.analysisPreparation || null), [busy, setBusy] = useState(false), [error, setError] = useState<unknown>(null), [ready, setReady] = useState(false);
     useEffect(() => {
-        if (!live || !running || busy) return;
+        if (match.analysisPreparation) { setPreparation(match.analysisPreparation); setReady(false); }
+        else if (match.analyzed) { setPreparation(null); setReady(true); }
+        else {
+            setReady(false);
+        }
+    }, [match.analyzed, match.analysisPreparation]);
+    const running = busy || ["pending", "queued", "processing"].includes(preparation?.replay || (!ready && !match.analyzed ? match.analysisStatus || "" : ""));
+    useEffect(() => {
+        if (!live || !running || busy || match.analysisPreparation) return;
         const controller = new AbortController(); let timer = 0;
         const poll = async () => {
             try {
                 const result = await apiRequest<{ analysis: unknown; preparation?: Preparation }>(`/api/matches/${encodeURIComponent(match.journalId || match.id)}/analysis`, { signal: controller.signal });
                 if (controller.signal.aborted) return;
                 if (result.analysis) { setReady(true); setPreparation(null); window.dispatchEvent(new Event("dota-notes:matches-updated")); return; }
-                setPreparation(result.preparation || null); setError("");
-            } catch (failure) { if (!controller.signal.aborted) setError(String(failure)); }
+                setPreparation(result.preparation || null); setError(null);
+            } catch (failure) { if (!controller.signal.aborted) setError(failure); }
             if (!controller.signal.aborted) timer = window.setTimeout(poll, 3_000);
         };
         void poll(); return () => { controller.abort(); window.clearTimeout(timer); };
-    }, [live, running, busy, match.id, match.journalId]);
+    }, [live, running, busy, match.id, match.journalId, Boolean(match.analysisPreparation)]);
     async function analyze() {
         if (running) return;
         if (match.analyzed || ready || !live) { onOpen(match); return; }
-        setBusy(true); setError("");
+        setBusy(true); setError(null);
         try {
             const result = await apiRequest<{ analysis?: unknown; preparation?: Preparation }>(`/api/matches/${encodeURIComponent(match.journalId || match.id)}/analysis`, { method: "POST", body: "{}" });
-            if (result.analysis || result.preparation?.replay === "ready") { setReady(true); window.dispatchEvent(new Event("dota-notes:matches-updated")); }
+            if (result.analysis || result.preparation?.replay === "ready") { setReady(true); setPreparation(null); window.dispatchEvent(new Event("dota-notes:matches-updated")); }
             else setPreparation(result.preparation || { replay: "pending" });
-        } catch (failure) { setError(String(failure)); } finally { setBusy(false); }
+        } catch (failure) { setError(failure); } finally { setBusy(false); }
     }
-    const analyzed = match.analyzed || ready;
+    const analyzed = !running && (match.analyzed || ready);
     return <><div role="row" className={`match-row ${isPersian(t) ? "details-last" : "details-first"}`} data-match-row={match.id}>
         <span role="cell" className="details-cell"><button className="match-details-button" onClick={() => onOpen(match)} aria-label={`${t.details} ${match.id}`}><Eye size={16}/></button></span>
         <span role="cell"><button className="row-hero" onClick={() => onOpen(match)} aria-label={`${hero?.name || t.heroColumn} · ${t.details} ${match.id}`}><img src={hero ? heroImage(hero) : ""} alt={hero?.name} width={64} height={36} loading="lazy"/></button></span>
@@ -137,7 +144,7 @@ export function MatchRow({ match, t, onOpen, live = false }: { match: HistoryMat
         <bdi role="cell" className="row-kda">{match.k} / {match.d} / {match.a}</bdi><span role="cell"><Score value={match.score} t={t}/></span><span role="cell"><ModeIcon mode={match.mode}/></span>
         <span role="cell"><button className={`analysis-action ${analyzed ? "ready" : running ? "running" : "pending"}`} disabled={running} onClick={() => void analyze()}>{analyzed ? <Check size={15}/> : running ? <LoaderCircle className="spin" size={15}/> : <Sparkles size={14}/>}<span>{analyzed ? t.analysisDone : running ? t.analysisQueued : t.analyze}</span></button></span>
         <bdi role="cell" className="row-duration">{durationText(match.duration)}</bdi><span role="cell"><CopyValue value={match.id} t={t}/></span>
-    </div>{preparation && <div className="row-analysis-progress"><AnalysisProgress preparation={preparation} t={t}/></div>}{error && <p className="row-analysis-error" role="alert">{error}</p>}</>;
+    </div>{preparation && <div className="row-analysis-progress"><AnalysisProgress preparation={preparation} t={t}/></div>}{!!error && <ErrorNotice error={error} title={t.analysisFailed} t={t}/>}</>;
 }
 export function MatchTable({ matches, t, onOpen, groupDays = false, live = false }: { matches: HistoryMatch[]; t: Messages; onOpen: (m: HistoryMatch) => void; groupDays?: boolean; live?: boolean }) {
     return <div className="table-scroll"><div role="table" aria-label={t.matches} className="match-table"><div role="row" className={`match-row table-head ${isPersian(t) ? "details-last" : "details-first"}`}><span className="details-cell" role="columnheader" aria-label={t.details}><Eye size={14}/></span>{[t.heroColumn, t.posColumn, t.result, "K / D / A", "IMP", t.mode, t.analysis, t.duration, t.matchId].map(label => <span role="columnheader" key={label}>{label}</span>)}</div>{matches.map((m, i) => <div role="rowgroup" key={m.id}>{groupDays && (i === 0 || matchDateKey(m) !== matchDateKey(matches[i - 1])) && <div className="day-divider"><span>{new Intl.DateTimeFormat(isPersian(t) ? "fa-IR" : "en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "Asia/Tehran" }).format(new Date(m.startedAt))}</span><i /></div>}<MatchRow match={m} t={t} onOpen={onOpen} live={live}/></div>)}</div></div>;

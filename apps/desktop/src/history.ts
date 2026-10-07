@@ -5,6 +5,8 @@ import { LANE_WEIGHTS, type LaneKey } from "@/lib/dota/lane-efficiency";
 import type { Match, MatchParticipant } from "@/lib/types";
 import { mockAnalysis } from "./analysisFixture";
 import { buildPersianCalendarMonth } from "@/lib/persian-calendar";
+import type { ReplayProgress } from "@/lib/replay/progress";
+export type AnalysisPreparation = { replay: string; progress?: ReplayProgress | null; errorCode?: string | null };
 export type Period = "week" | "month";
 export type Scope = "day" | Period;
 export const COOLDOWNS: Record<Scope, number> = { day: 90000, week: 180000, month: 7200000 };
@@ -27,6 +29,7 @@ export interface HistoryMatch {
     startedAt: string;
     analyzed: boolean;
     analysisStatus?: "basic" | "pending" | "processing" | "failed" | "ready";
+    analysisPreparation?: AnalysisPreparation | null;
 }
 // Lightweight rows only. Full analysis is created lazily for the selected match.
 export const sampleHistory: HistoryMatch[] = Array.from({ length: 72 }, (_, index) => {

@@ -163,6 +163,17 @@ describe("PostgreSQL schema migration and real Express services", () => {
       expect(profile.performanceScore).toBeTypeOf("number"); expect(profile.position).toBe(2);
       expect(result.body.rows.find((row: {id:string}) => row.id === String(ids[0]))).toMatchObject({ analyzed: true, position: 2, score: profile.performanceScore, analysisStatus: "ready" });
       expect(result.body.rows.find((row: {id:string}) => row.id === String(ids[1]))).toMatchObject({ analyzed: false, position: null, score: null, analysisStatus: "pending" });
+      expect(result.body.rows.find((row: {id:string}) => row.id === String(ids[1])).analysisPreparation).toMatchObject({ replay: "pending", progress: { phase: "queued" } });
+      await db.update(localReplayJobs).set({ status: "processing", phase: "downloading", downloadedBytes: 512, totalBytes: 1024 }).where(eq(localReplayJobs.matchId, ids[1]));
+      expect((await get()).body.rows.find((row:{id:string})=>row.id===String(ids[1])).analysisPreparation).toMatchObject({ replay: "processing", progress: { phase: "downloading", bytes: 512, totalBytes: 1024 } });
+      await db.update(localReplayJobs).set({ status: "failed", phase: "failed", errorCode: "replay_identity_mismatch", errorMessage: "private operator diagnostic" }).where(eq(localReplayJobs.matchId, ids[1]));
+      const failed = (await get()).body;
+      expect(failed.rows.find((row:{id:string})=>row.id===String(ids[1])).analysisPreparation).toMatchObject({ replay: "failed", errorCode: "replay_identity_mismatch" });
+      expect(JSON.stringify(failed)).not.toContain("private operator diagnostic");
+      // A parsed result does not hide the worker's remaining save stage.
+      await db.insert(localReplayJobs).values({ matchId: ids[0], intent: "analysis", status: "processing", phase: "uploading" });
+      expect((await get()).body.rows.find((row:{id:string})=>row.id===String(ids[0]))).toMatchObject({ analyzed: true, analysisStatus: "processing", analysisPreparation: { replay: "processing", progress: { phase: "uploading" } } });
+      await db.delete(localReplayJobs).where(eq(localReplayJobs.matchId, ids[0]));
       expect(result.body.summary.positions).toEqual(expect.arrayContaining([{ id: 0, count: 2, wins: 2, losses: 0 }, { id: 2, count: 1, wins: 1, losses: 0 }]));
       expect((await get("&position=0")).body.total).toBe(2);
       expect((await get("&mode=Captains%20Mode")).body.rows.map((row:{id:string})=>row.id)).toEqual([String(ids[2])]);

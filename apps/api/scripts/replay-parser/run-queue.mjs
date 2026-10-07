@@ -6,7 +6,8 @@ import { lstat, rename, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
-import { archivedReplayExists, replayArchiveKey, retrieveReplay, uploadReplay } from "./replay-archive.mjs";
+// Loading the S3 SDK is unnecessary for an empty queue (the common timer tick).
+const archive = () => import("./replay-archive.mjs");
 import { replayDescriptor } from "./replay-queue-utils.mjs";
 import { fetchReplayMetadata } from "./replay-metadata.mjs";
 import { refreshMatchMetadata } from "./refresh-match-metadata.mjs";
@@ -93,20 +94,37 @@ async function claim(client) {
 async function importReplay(job, path) {
   if (!process.env.REPLAY_PARSER_JAR) throw new ReplayError("parser_not_configured", "REPLAY_PARSER_JAR is required", { retryable: false });
   const child = spawn(process.execPath, [join(scriptDir, "import-replay.mjs"), "--match", String(job.match_id), "--file", path],
-    { cwd: join(scriptDir, "../.."), env: process.env, stdio: ["ignore", "pipe", "pipe"] });
+    { cwd: join(scriptDir, "../.."), env: process.env, detached: process.platform !== "win32", stdio: ["ignore", "pipe", "pipe"] });
   let output = "", errorOutput = "";
   child.stdout.on("data", chunk => { output = (output + chunk.toString()).slice(-2000); });
   child.stderr.on("data", chunk => { errorOutput = (errorOutput + chunk.toString()).slice(-2000); });
-  const stop = () => child.kill("SIGKILL");
+  // The importer spawns Java/decompression children. Stop the whole Linux
+  // process group so a timeout cannot leave an orphan JVM consuming CPU.
+  const stop = () => stopParserProcess(child);
   abort.signal.addEventListener("abort", stop, { once: true });
+  if (abort.signal.aborted) stop();
   const timeout = setTimeout(stop, 330_000);
   try {
     const code = await new Promise((resolve, reject) => { child.once("error", reject); child.once("close", resolve); });
-    if (code !== 0) throw new ReplayError("replay_parser_failed", "Parser failed or exceeded its time budget", { retryable: false });
+    if (abort.signal.aborted) throw new ReplayError("worker_interrupted", "Worker stopped; recovering checkpoint", { retryAfter: 20 });
+    if (code !== 0) {
+      const diagnostic = parserFailure(code, errorOutput);
+      // Keep only a bounded, scrubbed operator diagnostic; never return this to the UI.
+      log({ matchId: Number(job.match_id), phase: "parsing", code: diagnostic.code, exitCode: code,
+        diagnostic: diagnostic.detail });
+      throw new ReplayError(diagnostic.code, diagnostic.message, { retryable: false });
+    }
     const result = JSON.parse(output.trim());
     if (result.matchId !== Number(job.match_id) || result.mode !== "stored" || result.players !== 10) throw new ReplayError("replay_parser_invalid", "Parser did not confirm ten players", { retryable: false });
     if (errorOutput.includes("Lane events unavailable")) log({ matchId: Number(job.match_id), phase: "parsing", code: "lane_events_unavailable" });
+    if (errorOutput.includes("Replay identity verified by full roster")) log({ matchId: Number(job.match_id), phase: "parsing", code: "replay_identity_roster_verified" });
   } finally { clearTimeout(timeout); abort.signal.removeEventListener("abort", stop); }
+}
+export function stopParserProcess(child) {
+  if (!child.pid) return;
+  if (process.platform === "win32") { child.kill("SIGKILL"); return; }
+  try { process.kill(-child.pid, "SIGKILL"); }
+  catch (error) { if (error.code !== "ESRCH") throw error; }
 }
 async function removeCheckpoint(client, job) {
   if (job.spool_name) await rm(spoolPath(incoming, job.spool_name), { force: true });
@@ -128,7 +146,7 @@ async function handle(client, job, hooks) {
   const parsed = match.local_replay_data?.match_id === Number(job.match_id) && match.local_replay_data?.players?.length === 10;
   let archived = false;
   if (job.archive_key && job.archive_status !== "deleted") {
-    archived = await archivedReplayExists(job.archive_key, job.archive_bytes); // only 404 means missing
+    archived = await (await archive()).archivedReplayExists(job.archive_key, job.archive_bytes); // only 404 means missing
     if (!archived) await updateJob(client, job, "archive_status='missing'");
     else if (job.archive_status !== "active") await updateJob(client, job, "archive_status='active',archived_at=now()");
   }
@@ -200,7 +218,7 @@ async function handle(client, job, hooks) {
     await ensureCapacity(incoming, file?.bytes || 0);
     if (plan === "restore-archive") {
       await hooks.phase("restoring_archive");
-      const restored = await retrieveReplay(job.archive_key, job.archive_bytes, incoming);
+      const restored = await (await archive()).retrieveReplay(job.archive_key, job.archive_bytes, incoming);
       await rename(restored, path);
       const hash = await sha256File(path);
       await hooks.checkpoint({ etag: null, total: job.archive_bytes, complete: true, sha256: hash });
@@ -222,9 +240,10 @@ async function handle(client, job, hooks) {
   if (!archived) {
     await hooks.phase("uploading");
     await hooks.event("uploading", "upload_started", "Uploading verified replay to archive");
-    const key = descriptor ? replayArchiveKey(match.started_at, descriptor) : job.archive_key;
+    const storage = await archive();
+    const key = descriptor ? storage.replayArchiveKey(match.started_at, descriptor) : job.archive_key;
     if (!key) throw new ReplayError("archive_key_invalid", "Archive key could not be built", { retryable: false });
-    const result = await uploadReplay(path, key, { signal: abort.signal,
+    const result = await storage.uploadReplay(path, key, { signal: abort.signal,
       onUploaded: result => updateJob(client, job, "archive_key=$3,archive_bytes=$4", [result.key, result.bytes]),
       onProgress: delta => updateJob(client, job, "upload_bytes=upload_bytes+$3", [delta]) });
     await updateJob(client, job, "archive_key=$3,archive_bytes=$4,archive_status='active',archived_at=now()", [result.key, result.bytes]);
@@ -278,6 +297,14 @@ async function main() {
     if (locked) await client.query("SELECT pg_advisory_unlock($1)", [WORKER_LOCK]);
     client.release(); await pool.end();
   }
+}
+export function parserFailure(exitCode, stderr) {
+  const code = stderr.includes("replay_identity_mismatch") ? "replay_identity_mismatch"
+    : stderr.includes("replay_identity_unavailable") ? "replay_identity_unavailable"
+    : stderr.includes("timeout") || exitCode === null ? "replay_parser_timeout" : "replay_parser_failed";
+  const detail = stderr.replace(/(?:https?|postgres(?:ql)?):\/\/\S+/gi, "[redacted-url]")
+    .replace(/((?:token|password|secret|api[_-]?key)\s*[=:]\s*)\S+/gi, "$1[redacted]").slice(-1600);
+  return { code, detail, message: code.startsWith("replay_identity_") ? "Replay identity could not be verified" : code === "replay_parser_timeout" ? "Replay parser exceeded its time budget" : "Replay parser failed; consult the private worker log" };
 }
 export { enqueueOne, claim, hooksFor, complete, handle, updateJob, failJob };
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

@@ -116,7 +116,7 @@ function verifyBlob(blob, matchId) {
       throw new Error(`Incomplete replay timelines for player slot ${player.player_slot}`);
     }
   }
-  blob.match_id = matchId; // identity was verified in CDemoFileInfo before parsing
+  blob.match_id = matchId; // embedded ID or a strict roster comparison was verified before parsing
   return blob;
 }
 
@@ -157,7 +157,22 @@ async function main() {
   try {
     const dem = await prepareDem(file, work);
     await run("java", ["com.sun.tools.javac.Main", "-cp", jar, "-d", work, join(scriptDir, "ReplayInspector.java")], { timeoutMs: 30_000 });
-    const result = await run("java", ["-Xmx1200m", "-cp", `${jar}:${work}`, "ReplayInspector", String(matchId), dem], { timeoutMs: 120_000, outputLimit: MAX_JSON });
+    const inspect = await run("java", ["-Xmx512m", "-cp", `${jar}:${work}`, "ReplayInspector", "inspect", dem], { timeoutMs: 120_000 });
+    const identity = JSON.parse(inspect.toString("utf8"));
+    const { validateReplayIdentity } = await import(new URL("../../dist/replay-identity.js", import.meta.url).href);
+    let summary = null;
+    if (!identity.matchIds?.some(id => id !== "0")) {
+      if (!process.env.DATABASE_URL) throw new Error("replay_identity_unavailable: Full match summary is required");
+      const { default: pg } = await import("pg");
+      const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 1, connectionTimeoutMillis: 5000, statement_timeout: 10000 });
+      try { summary = (await pool.query("SELECT raw_data FROM dota_matches WHERE match_id=$1", [matchId])).rows[0]?.raw_data; }
+      finally { await pool.end(); }
+    }
+    let verified;
+    try { verified = validateReplayIdentity(identity, summary, matchId); }
+    catch (error) { throw new Error(`${error.code || "replay_identity_mismatch"}: ${error.message}`); }
+    if (verified === "verified-roster") console.error("Replay identity verified by full roster");
+    const result = await run("java", ["-Xmx1200m", "-cp", `${jar}:${work}`, "ReplayInspector", "parse", dem], { timeoutMs: 120_000, outputLimit: MAX_JSON });
     const blob = verifyBlob(JSON.parse(result.toString("utf8")), matchId);
     try {
       await run("java", ["com.sun.tools.javac.Main", "-cp", jar, "-d", work, join(scriptDir, "LaneEvents.java")], { timeoutMs: 30_000 });

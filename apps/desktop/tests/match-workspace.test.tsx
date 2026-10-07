@@ -8,6 +8,8 @@ import { Calendar } from "../src/components/Calendar";
 import { MatchTable } from "../src/components/Workspace";
 import { LiveDashboard } from "../src/components/LiveWorkspace";
 import { App } from "../src/App";
+import { AnalysisProgress } from "../src/components/AnalysisProgress";
+import { ApiError } from "../src/api";
 import type { MatchListResponse, SyncJob } from "../src/api";
 const mocks = vi.hoisted(() => ({ api: vi.fn(), list: vi.fn(), sync: vi.fn(), enqueue: vi.fn(), auth: vi.fn() }));
 vi.mock("../src/api", async () => ({ ...await vi.importActual("../src/api"), apiRequest: mocks.api, listMatches: mocks.list, getSyncStatus: mocks.sync, requestMatchSync: mocks.enqueue }));
@@ -23,6 +25,43 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup();vi.unstubAllGlobals();vi.restoreAllMocks(); });
 describe("match workspace regressions",()=>{
+    it("restores persisted processing immediately and refreshes its stage from history", () => {
+        const processing = { ...row, analysisStatus: "processing" as const, analysisPreparation: { replay: "processing", progress: { phase: "parsing", bytes: 1024, totalBytes: 1024, bytesPerSecond: 0, attempts: 1, nextTryAt: null, phaseStartedAt: null, heartbeatAt: null, retryDeadlineAt: null, errorCode: null } } };
+        const view = render(<MatchTable matches={[processing]} t={messages.fa} onOpen={vi.fn()} live/>);
+        expect(screen.getByRole("button", { name: messages.fa.analysisQueued }).disabled).toBe(true);
+        expect(view.container.querySelector('.analysis-steps [aria-current="step"]')?.textContent).toContain(messages.fa.analysisParse);
+        expect(mocks.api).not.toHaveBeenCalled();
+        view.rerender(<MatchTable matches={[{ ...processing, analyzed: true, analysisPreparation: { ...processing.analysisPreparation, progress: { ...processing.analysisPreparation.progress, phase: "uploading" } } }]} t={messages.fa} onOpen={vi.fn()} live/>);
+        expect(screen.getByRole("button", { name: messages.fa.analysisQueued }).disabled).toBe(true);
+        expect(view.container.querySelector('.analysis-steps [aria-current="step"]')?.textContent).toContain(messages.fa.analysisSave);
+    });
+    it.each([messages.fa, messages.en])("shows a readable red failure at the parser stage without developer codes", t => {
+        const prep = { replay: "failed", errorCode: "replay_parser_failed" };
+        const view = render(<AnalysisProgress preparation={prep} t={t}/>);
+        expect(screen.getByRole("alert").textContent).toContain(t.analysisFailed);
+        expect(view.container.textContent).not.toContain("replay_parser_failed");
+        expect(view.container.textContent).not.toContain(t.analysisReady);
+        expect(view.container.querySelector('.analysis-steps li.failed')?.textContent).toContain(t.analysisParse);
+    });
+    it("restores a failed request and keeps retry available", () => {
+        render(<MatchTable matches={[{ ...row, analysisStatus: "failed", analysisPreparation: { replay: "failed", errorCode: "replay_identity_mismatch" } }]} t={messages.en} onOpen={vi.fn()} live/>);
+        expect(screen.getByRole("alert").textContent).toContain("verify");
+        expect(screen.getByRole("button", { name: messages.en.analyze }).disabled).toBe(false);
+    });
+    it("translates an API request failure without leaking its technical message", async () => {
+        mocks.api.mockRejectedValue(new ApiError("private stack trace", 500, "analysis_request_failed"));
+        render(<MatchTable matches={[row]} t={messages.en} onOpen={vi.fn()} live/>);
+        fireEvent.click(screen.getByRole("button", { name: messages.en.analyze }));
+        expect((await screen.findByRole("alert")).textContent).not.toContain("private stack trace");
+        expect(screen.getByRole("alert").textContent).toContain("try again");
+    });
+    it("uses localized error cards when loading the match history fails", async () => {
+        mocks.list.mockRejectedValue(new ApiError("private request details", 502, "upstream_failed"));
+        render(<LiveDashboard session={previewProfile} t={messages.en} onOpen={vi.fn()} onNavigate={vi.fn()}/>);
+        const errors = await screen.findAllByRole("alert");
+        expect(errors[0].textContent).toContain("This step couldn't finish");
+        expect(document.body.textContent).not.toContain("private request details");
+    });
     it("shows loading instead of Login while restoring a saved native session",()=>{
         mocks.auth.mockReturnValue({ restoring:true,session:null });
         render(<App/>);expect(screen.getByRole("status").textContent).toContain(messages.en.restoringSession);

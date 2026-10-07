@@ -5,6 +5,7 @@ import { getDb } from "../../../lib/db";
 import { dotaMatches, journalDays, journalMatches, localReplayJobs } from "../../../lib/db/schema";
 import { parseDateRange } from "../../../lib/journal/validation";
 import { historyPositionSql, historyScoreSql, refreshHistoryAnalysis, replayParsedSql, summaryCurrentSql } from "../../../lib/dota/history-analysis";
+import { progressFromRow } from "../../../lib/replay/progress";
 
 const PAGE_SIZE = 8;
 
@@ -51,6 +52,11 @@ export async function GET(request: HttpRequest) {
     gameMode: dotaMatches.gameMode, lobbyType: dotaMatches.lobbyType,
     parsed: replayParsedSql, projectionCurrent: summaryCurrentSql, projectionReady: sql<boolean>`${summaryCurrentSql} and coalesce((${journalMatches.analysisSummary}->>'ready')::boolean, false)`,
     jobStatus: localReplayJobs.status, jobIntent: localReplayJobs.intent,
+    phase: localReplayJobs.phase, downloadedBytes: localReplayJobs.downloadedBytes,
+    totalBytes: localReplayJobs.totalBytes, downloadBps: localReplayJobs.downloadBps,
+    attempts: localReplayJobs.attempts, runAfter: localReplayJobs.runAfter,
+    phaseStartedAt: localReplayJobs.phaseStartedAt, heartbeatAt: localReplayJobs.heartbeatAt,
+    retryDeadlineAt: localReplayJobs.retryDeadlineAt, errorCode: localReplayJobs.errorCode,
   }).from(journalMatches).innerJoin(journalDays, eq(journalMatches.dayId, journalDays.id))
     .leftJoin(dotaMatches, eq(journalMatches.dotaMatchId, dotaMatches.matchId))
     .leftJoin(localReplayJobs, eq(journalMatches.dotaMatchId, localReplayJobs.matchId)).where(condition);
@@ -80,7 +86,9 @@ export async function GET(request: HttpRequest) {
       mode: row.gameMode === 23 ? "Turbo" : [5, 6, 7].includes(row.lobbyType || 0) ? "Ranked" : [1,22].includes(row.gameMode || 0) ? "All Pick" : Object.entries(modes).find(([, ids]) => ids.includes(row.gameMode || 0))?.[0] || "Other",
       duration: row.duration, startedAt: row.startedAt?.toISOString() || `${row.day}T12:00:00.000Z`,
       analyzed: row.parsed && row.projectionReady,
-      analysisStatus: row.parsed ? (!row.projectionCurrent ? "processing" : row.projectionReady ? "ready" : "failed") : row.jobIntent === "analysis" && ["pending", "processing", "failed"].includes(row.jobStatus || "") ? row.jobStatus : "basic",
+      analysisStatus: row.jobIntent === "analysis" && ["pending", "processing"].includes(row.jobStatus || "") ? row.jobStatus : row.parsed ? (!row.projectionCurrent ? "processing" : row.projectionReady ? "ready" : "failed") : row.jobIntent === "analysis" && row.jobStatus === "failed" ? "failed" : "basic",
+      analysisPreparation: row.jobIntent === "analysis" && ["pending", "processing", "failed"].includes(row.jobStatus || "")
+        ? { replay: row.jobStatus, errorCode: row.errorCode, progress: progressFromRow(row) } : null,
     })),
     summary: { total, wins, losses: total - wins, winRate: total ? wins / total * 100 : 0, score: totals[0]?.score == null ? null : Number(totals[0].score),
       heroes: segments(heroes), positions: segments(positions) },

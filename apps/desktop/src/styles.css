@@ -3211,3 +3211,7 @@ details .fact-grid {
 .fetch-error { color:var(--bad); font-size:12px; }
 :root[lang=fa] .period-range>button:not(.date-trigger)>svg { transform:rotate(180deg); }
 @media (prefers-reduced-motion:reduce) { .loading-orbit i,.spin,.sync-activity i,.live-pill i { animation:none; } .loading-view,.metric-tooltip { animation:none; } }
+
+/* Clear, compact failures; operator diagnostics stay in server logs. */
+.error-notice{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid color-mix(in srgb,#ef4444 55%,transparent);border-radius:12px;background:color-mix(in srgb,#ef4444 10%,var(--panel));color:var(--text);max-width:640px;margin-block:10px}
+.error-notice>svg{flex:none;color:#ef4444;margin-top:2px}.error-notice strong{display:block;color:#ef4444;font-size:13px}.error-notice p{margin:5px 0 0;font-size:13px;line-height:1.7}.analysis-steps li.failed span{border-color:#ef4444;color:#ef4444;background:color-mix(in srgb,#ef4444 14%,transparent)}.analysis-steps li.failed b{color:#ef4444}.analysis-progress.is-failed .analysis-progress-heading strong{color:#ef4444}
