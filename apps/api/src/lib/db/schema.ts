@@ -537,6 +537,10 @@ export const journalMatches = pgTable(
     heroDamage: integer("hero_damage"),
     towerDamage: integer("tower_damage"),
     analyzedAt: timestamp("analyzed_at", { withTimezone: true }),
+    analysisSummary: jsonb("analysis_summary").$type<{
+      version: number; sourceUpdatedAt: string; referenceRevision: string; positionOverrides: Record<string, number>;
+      assignedRole: string | null; heroId: number | null; position: number | null; score: number | null; ready: boolean;
+    }>(),
     generatedImageKey: text("generated_image_key"),
     generatedImageAt: timestamp("generated_image_at", { withTimezone: true }),
     ...timestamps,

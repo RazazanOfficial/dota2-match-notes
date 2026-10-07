@@ -39,12 +39,12 @@ export async function currentSession() {
         hasVerifiedEmail: user.hasVerifiedEmail, onboardingCompletedAt: user.onboardingCompletedAt, recoveryCodesSavedAt: user.recoveryCodesSavedAt } satisfies Session;
 }
 
-export interface MatchListResponse { ok: true; rows: HistoryMatch[]; total: number; page: number; pageSize: number; summary: Summary }
+export interface MatchListResponse { ok: true; rows: HistoryMatch[]; total: number; page: number; pageSize: number; summary: Summary; summaryPending?: boolean }
 export async function listMatches(query: HistoryQuery, signal?: AbortSignal): Promise<MatchListResponse> {
     const { from, to } = periodRange(query.period, query.anchor);
     const params = new URLSearchParams({ from, to, page: String(query.page), query: query.query, mode: query.mode, position: query.position });
     const result = await apiRequest<MatchListResponse>(`/api/matches/me?${params}`, { signal });
-    return { ...result, rows: result.rows.map(row => ({ ...row, heroId: row.heroId || 0, duration: row.duration || 0,
+    return { ...result, rows: result.rows.map(row => ({ ...row, heroId: row.heroId || 0, position: row.position || 0, duration: row.duration || 0,
         k: row.k ?? 0, d: row.d ?? 0, a: row.a ?? 0 })) };
 }
 
@@ -56,7 +56,8 @@ export interface SyncJob {
     id: string;
     status: string;
     attempted?: string[];
-    result?: { imported?: string[] };
+    request?: { scope: "day" | "week" | "month"; from: string; to: string };
+    result?: { imported?: string[]; checked?: number; failed?: unknown[] };
 }
 export async function getSyncStatus() {
     return apiRequest<{ ok: true; status: { nextAllowedAt: string | null; nextDayAllowedAt: string | null; nextWeekAllowedAt: string | null; nextMonthAllowedAt: string | null; manualJob?: SyncJob | null } }>("/api/sync/me");

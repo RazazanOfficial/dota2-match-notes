@@ -10,6 +10,7 @@ await build({
     migrate: "scripts/migrate.ts",
     "check-database": "scripts/check-database.ts",
     preflight: "scripts/preflight.ts",
+    "analysis-summary": "scripts/analysis-summary.ts",
   },
   outdir: "dist", bundle: true, platform: "node", format: "esm", packages: "external",
   target: "node22", logLevel: "info",

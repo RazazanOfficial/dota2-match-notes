@@ -27,7 +27,8 @@ for (const directory of ["dist", "drizzle", "public"]) {
   await rm(join(release, directory), { recursive: true, force: true });
   await cp(sourcePath, join(release, directory), { recursive: true });
 }
-await rm(join(release, "scripts"), { recursive: true, force: true });
+// Keep standalone maintenance scripts that are distributed only with the runtime.
+await rm(join(release, "scripts/replay-parser"), { recursive: true, force: true });
 await mkdir(join(release, "scripts"), { recursive: true });
 await cp(join(root, "scripts/env.mjs"), join(release, "scripts/env.mjs"));
 await cp(join(root, "scripts/replay-parser"), join(release, "scripts/replay-parser"), { recursive: true });

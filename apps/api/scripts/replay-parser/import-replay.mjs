@@ -137,6 +137,14 @@ async function store(matchId, blob) {
     await db.query("COMMIT");
   } catch (error) { await db.query("ROLLBACK"); throw error; }
   finally { db.release(); await pool.end(); }
+  // Warm compact history values after a successful parse. A later history request can retry this projection.
+  let summaries;
+  try {
+    summaries = await import(new URL("../../dist/analysis-summary.js", import.meta.url).href);
+    await summaries.refreshMatchAnalysisSummaries(matchId);
+  } catch (error) {
+    console.warn("Replay imported; history projection will retry", { name: error?.name || "Error" });
+  } finally { try { await summaries?.closeDatabase(); } catch { /* Replay import already committed. */ } }
 }
 
 async function main() {

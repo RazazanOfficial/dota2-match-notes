@@ -12,7 +12,8 @@ import request from "supertest";
 const state = vi.hoisted(() => ({ db: undefined as unknown }));
 vi.mock("../src/lib/db", () => ({ getDb: () => state.db, closeDatabase: async () => {} }));
 import { createApp } from "../src/app";
-import { users, sessions, syncJobs, journalDays, journalMatches, dotaMatches } from "../src/lib/db/schema";
+import { users, sessions, syncJobs, journalDays, journalMatches, dotaMatches, localReplayJobs, monthlyReferenceVersions } from "../src/lib/db/schema";
+import { loadPublicMatchAnalysis } from "../src/lib/dota/match-analysis-repository";
 import { createSession } from "../src/lib/auth/session";
 import { createDesktopAuthCode } from "../src/lib/auth/desktop";
 import { createHash } from "node:crypto";
@@ -135,6 +136,64 @@ describe("PostgreSQL schema migration and real Express services", () => {
     await db.delete(journalMatches).where(eq(journalMatches.id,entry.id));
     await db.delete(dotaMatches).where(eq(dotaMatches.matchId,9000001234));
   });
+  it("projects the real replay score/position, keeps unknown matches and refreshes invalidated results", async () => {
+    const [owner] = await db.insert(users).values({ steamId: "76561197960265828", steamAccountId: 100, handle: "analysis_history_test", displayName: "History test", createdAt: new Date("2026-09-15"), onboardingCompletedAt: new Date() }).returning({ id: users.id });
+    const [day] = await db.insert(journalDays).values({ userId: owner.id, day: "2026-09-15" }).returning({ id: journalDays.id });
+    const token = (await createSession(owner.id)).token, app = createApp();
+    const ids = [9100001001, 9100001002, 9100001003];
+    let snapshotId = "";
+    try {
+      const start = new Date("2026-09-15T12:00:00Z");
+      const players = Array.from({ length: 10 }, (_, i) => ({ account_id: 100 + i, hero_id: i + 1, player_slot: i < 5 ? i : 123 + i,
+        kills: 8, deaths: 2, assists: 10, last_hits: 150, denies: 10, gold_per_min: 450, xp_per_min: 520,
+        times: [0,60,120], gold_t: [600,1000,1400], xp_t: [0,500,1000], lh_t: [0,5,10],
+        benchmarks: { gold_per_min: { raw: 450, pct: .8 }, xp_per_min: { raw: 520, pct: .7 }, last_hits_per_min: { raw: 5, pct: .75 } } }));
+      await db.insert(dotaMatches).values([
+        { matchId: ids[0], startedAt: start, rawData: { match_id: ids[0], start_time: start.getTime()/1000, duration: 1800, radiant_win: true, version: 1, game_mode: 22, lobby_type: 7, players }, gameMode: 22, lobbyType: 7 },
+        { matchId: ids[1], startedAt: start, rawData: { match_id: ids[1], players: [] }, gameMode: 23, lobbyType: 0 },
+        { matchId: ids[2], startedAt: start, rawData: { match_id: ids[2], players: [] }, gameMode: 2, lobbyType: 0 },
+      ]);
+      const entries = await db.insert(journalMatches).values(ids.map((id, i) => ({ userId: owner.id, dayId: day.id, number: i+1, dotaMatchId: id,
+        heroId: 1, heroName: "Anti-Mage", result: "win" as const, startedAt: start, durationSeconds: 1800, analyzedAt: new Date(), positionOverrides: i === 0 ? { "0": 2 } : {} }))).returning({ id: journalMatches.id });
+      await db.insert(localReplayJobs).values({ matchId: ids[1], status: "pending", intent: "analysis" });
+      const base = "/api/matches/me?from=2026-09-12&to=2026-09-18";
+      const get = (extra = "") => request(app).get(base+extra).auth(token,{type:"bearer"});
+      const result = await get(); expect(result.status).toBe(200); expect(result.body.summaryPending).toBe(false);
+      const full = await loadPublicMatchAnalysis(entries[0].id), profile = full.analysis!.players.find(p => p.isProfilePlayer)!;
+      expect(profile.performanceScore).toBeTypeOf("number"); expect(profile.position).toBe(2);
+      expect(result.body.rows.find((row: {id:string}) => row.id === String(ids[0]))).toMatchObject({ analyzed: true, position: 2, score: profile.performanceScore, analysisStatus: "ready" });
+      expect(result.body.rows.find((row: {id:string}) => row.id === String(ids[1]))).toMatchObject({ analyzed: false, position: null, score: null, analysisStatus: "pending" });
+      expect(result.body.summary.positions).toEqual(expect.arrayContaining([{ id: 0, count: 2, wins: 2, losses: 0 }, { id: 2, count: 1, wins: 1, losses: 0 }]));
+      expect((await get("&position=0")).body.total).toBe(2);
+      expect((await get("&mode=Captains%20Mode")).body.rows.map((row:{id:string})=>row.id)).toEqual([String(ids[2])]);
+      expect(JSON.stringify(result.body)).not.toContain("gold_t");
+      await db.update(journalMatches).set({ positionOverrides: { "0": 3 } }).where(eq(journalMatches.id, entries[0].id));
+      expect((await get("&position=3")).body.rows[0]).toMatchObject({ position: 3, analyzed: true });
+      const [snapshot] = await db.insert(monthlyReferenceVersions).values({ referenceMonth: "2026-08-01", status: "active", completedAt: new Date() }).returning({ id: monthlyReferenceVersions.id }); snapshotId = snapshot.id;
+      expect((await get()).body.summaryPending).toBe(false);
+      const [projected] = await db.select({ value: journalMatches.analysisSummary }).from(journalMatches).where(eq(journalMatches.id, entries[0].id));
+      expect(projected.value!.referenceRevision).toContain(snapshotId);
+      // PostgreSQL retains microseconds; the projection must not be perpetually stale after conversion to JS milliseconds.
+      await client.query("update dota_matches set updated_at = '2026-10-07T10:00:00.123456Z' where match_id = $1", [ids[0]]);
+      expect((await get()).body.summaryPending).toBe(false);
+      // Malformed local replay and an absent source must never claim analysis completion or loop hydration forever.
+      await db.update(dotaMatches).set({ localReplayData: { match_id: ids[2], version: 1, players: Array.from({length:10},()=>({})) } }).where(eq(dotaMatches.matchId,ids[2]));
+      const malformed = await get(); expect(malformed.body.summaryPending).toBe(false);
+      expect(malformed.body.rows.find((row:{id:string})=>row.id===String(ids[2])).analyzed).toBe(false);
+      // A cold period is hydrated in bounded batches rather than rebuilding every replay in a single request.
+      const extras = Array.from({length:9},(_,i)=>9100001010+i); ids.push(...extras);
+      await db.insert(dotaMatches).values(extras.map(matchId=>({matchId,startedAt:start,gameMode:22,lobbyType:7,rawData:{match_id:matchId,start_time:start.getTime()/1000,duration:1800,radiant_win:true,version:1,players}})));
+      await db.insert(journalMatches).values(extras.map((dotaMatchId,i)=>({userId:owner.id,dayId:day.id,number:20+i,dotaMatchId,heroId:1,heroName:"Anti-Mage",result:"win" as const,startedAt:start,positionOverrides:{"0":2}})));
+      const cold = await get(); expect(cold.body.summaryPending).toBe(true);
+      const warm = await get(); expect(warm.body.summaryPending).toBe(false); expect(warm.body.total).toBe(12);
+      expect(warm.body.summary.positions.reduce((sum:number,segment:{count:number})=>sum+segment.count,0)).toBe(12);
+
+    } finally {
+      await db.delete(users).where(eq(users.id,owner.id));
+      for (const id of ids) await db.delete(dotaMatches).where(eq(dotaMatches.matchId,id));
+      if (snapshotId) await db.delete(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.id,snapshotId));
+    }
+  }, 30_000);
   it("uses the same public error for missing accounts and incorrect passwords", async () => {
     const app=createApp();
     const bad=await request(app).post("/api/auth/password/login").send({steamIdentifier:"1",password:"incorrect-password"});

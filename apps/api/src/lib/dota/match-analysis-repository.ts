@@ -9,6 +9,7 @@ import {
   monthlyReferenceVersions,
   users,
 } from "../db/schema";
+import { referenceRevisionSql } from "./analysis-summary-version";
 import { buildMatchAnalysis } from "./match-analysis";
 import type { PerformanceReferenceData } from "./performance-cohort";
 import { hasParsedOpenDotaReplay } from "../opendota/validation";
@@ -110,6 +111,8 @@ export async function loadPublicMatchAnalysis(journalMatchId: string, requestedP
       profileAccountId: users.steamAccountId,
       rawData: dotaMatches.rawData,
       localReplayData: dotaMatches.localReplayData,
+      sourceUpdatedAt: dotaMatches.updatedAt,
+      referenceRevision: referenceRevisionSql,
     })
     .from(journalMatches)
     .innerJoin(users, eq(journalMatches.userId, users.id))
@@ -132,10 +135,7 @@ export async function loadPublicMatchAnalysis(journalMatchId: string, requestedP
   } catch (error) {
     console.warn("External performance reference unavailable; using embedded payload only", error);
   }
-  return {
-    found: true as const,
-    replayParsed,
-    analysis: buildMatchAnalysis({
+  const analysis = buildMatchAnalysis({
       rawData: overlaid.match,
       replaySource: overlaid.source,
       profileAccountId: source.profileAccountId,
@@ -145,7 +145,24 @@ export async function loadPublicMatchAnalysis(journalMatchId: string, requestedP
         ? { ...(source.positionOverrides || {}), ...requestedPositionOverrides }
         : source.positionOverrides,
       performanceReference,
-    }),
+    });
+  // Persist the same values used by the analysis screen. History queries only read this small projection.
+  if (!requestedPositionOverrides && source.sourceUpdatedAt) {
+    const player = replayParsed ? analysis?.players.find(entry => entry.isProfilePlayer) : undefined;
+    await getDb().update(journalMatches).set({ analysisSummary: {
+      version: 1, sourceUpdatedAt: source.sourceUpdatedAt.toISOString(), referenceRevision: source.referenceRevision,
+      positionOverrides: source.positionOverrides || {}, assignedRole: source.profileAssignedRole,
+      heroId: source.profileHeroId, position: player?.position || null,
+      score: typeof player?.performanceScore === "number" ? player.performanceScore : null, ready: replayParsed && Boolean(analysis),
+    } }).where(and(eq(journalMatches.id, journalMatchId),
+      sql`${journalMatches.positionOverrides} = ${JSON.stringify(source.positionOverrides || {})}::jsonb`,
+      sql`${journalMatches.heroId} is not distinct from ${source.profileHeroId}`,
+      sql`(case when ${journalMatches.roleSource} = 'manual' then ${journalMatches.role}::text else null end) is not distinct from ${source.profileAssignedRole}`));
+  }
+  return {
+    found: true as const,
+    replayParsed,
+    analysis,
   };
 }
 
