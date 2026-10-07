@@ -74,7 +74,7 @@ describe("original match analysis retained", () => {
         const view = render(<App session={previewProfile}/> );
         fireEvent.click(within(screen.getByRole("navigation")).getByRole("button", { name: "Matches", exact: true }));
         await waitFor(() => expect(view.container.querySelectorAll('[data-match-row]')).toHaveLength(8));
-        fireEvent.click(screen.getAllByRole('button', { name: 'Review analysis' })[0]);
+        fireEvent.click(screen.getAllByRole('button', { name: 'Analyzed' })[0]);
         // Lazy views may need extra transform time on a cold Windows run.
         await waitFor(() => expect(view.container.querySelectorAll('.hero-card')).toHaveLength(10), { timeout: 5000 });
         expect(view.container.querySelectorAll('.match-inventory')).toHaveLength(1);

@@ -26,6 +26,7 @@ export interface HistoryMatch {
     duration: number;
     startedAt: string;
     analyzed: boolean;
+    analysisStatus?: "basic" | "pending" | "processing" | "failed" | "ready";
 }
 // Lightweight rows only. Full analysis is created lazily for the selected match.
 export const sampleHistory: HistoryMatch[] = Array.from({ length: 72 }, (_, index) => {
