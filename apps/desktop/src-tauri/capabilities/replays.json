@@ -1,0 +1,16 @@
+{
+  "identifier": "replays",
+  "description": "Local replay commands for the main desktop window.",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "replay-library",
+    "steam-login",
+    "session-vault",
+    "recovery-export",
+    "deep-link:default",
+    "core:event:allow-listen",
+    "core:event:allow-unlisten"
+  ]
+}

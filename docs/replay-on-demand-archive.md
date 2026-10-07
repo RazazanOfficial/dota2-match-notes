@@ -58,7 +58,7 @@ job را پردازش می‌کند و اجرای فایل ممکن است بی�
 ```bash
 cd /var/www/dota2notes
 sudo -u dota2notes -H node --env-file=.env.production \
-  scripts/replay-parser/run-queue.mjs --enqueue MATCH_ID --download-only
+  apps/web/scripts/replay-parser/run-queue.mjs --enqueue MATCH_ID --download-only
 sudo systemctl start dota2notes-replay.service
 ```
 

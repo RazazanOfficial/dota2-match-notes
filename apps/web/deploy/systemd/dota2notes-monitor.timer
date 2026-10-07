@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh Dota2 Notes service monitor snapshot
+
+[Timer]
+OnBootSec=2m
+OnUnitActiveSec=1m
+Unit=dota2notes-monitor.service
+
+[Install]
+WantedBy=timers.target

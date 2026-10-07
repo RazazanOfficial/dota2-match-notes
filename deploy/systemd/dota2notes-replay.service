@@ -9,7 +9,8 @@ User=dota2notes
 Group=dota2notes
 WorkingDirectory=/var/www/dota2notes
 EnvironmentFile=/var/www/dota2notes/.env.production
-ExecStart=/usr/bin/node /var/www/dota2notes/scripts/replay-parser/run-queue.mjs
+ExecStartPre=/usr/bin/node /var/www/dota2notes/apps/api/release/dist/preflight.js --role=replay
+ExecStart=/usr/bin/node /var/www/dota2notes/apps/api/release/scripts/replay-parser/run-queue.mjs
 TimeoutStartSec=1800s
 UMask=0077
 

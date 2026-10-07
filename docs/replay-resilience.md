@@ -206,14 +206,14 @@ sudoedit /etc/hosts
 ```bash
 cd /var/www/dota2notes
 sudo -u dota2notes -H node --env-file=/var/www/dota2notes/.env.production \
-  scripts/replay-parser/probe-proxy.mjs 272 9019098197 1090002789
+  apps/web/scripts/replay-parser/probe-proxy.mjs 272 9019098197 1090002789
 ```
 
 برای اثبات failover، این تست **یک فایل کامل** دریافت می‌کند؛ به همان اندازه ترافیک دانلود VPS مصرف می‌شود:
 
 ```bash
 sudo -u dota2notes -H node --env-file=/var/www/dota2notes/.env.production \
-  scripts/replay-parser/verify-failover.mjs 272 9019098197 1090002789 --full-test-failover
+  apps/web/scripts/replay-parser/verify-failover.mjs 272 9019098197 1090002789 --full-test-failover
 ```
 
 در این تست همان downloader اصلی استفاده می‌شود. فقط مسیر اول داخل همین process عمداً خطا می‌دهد؛ مسیر بعدی باید واقعاً کل Replay را بگیرد. به IP آزمایشی token یا درخواست ارسال نمی‌شود و hosts، firewall، دیتابیس، صف و ParsPack تغییر نمی‌کنند. فایل موقت در پایان پاک می‌شود.

@@ -1,0 +1,27 @@
+name: Monorepo checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  checks:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      # Verify the older npm resolver that ships with supported Node 24 installs.
+      - run: npx --yes --package=npm@11.6.2 npm ci
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run api:build
+      - run: npm run desktop:build
+      - run: npm run build

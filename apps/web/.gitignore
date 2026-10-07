@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+coverage/
+*.log
+apps-script/Code.gs
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+next-env.d.ts

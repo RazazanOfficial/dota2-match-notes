@@ -1,8 +1,13 @@
 # تصمیم معماری چندسکویی Dota Notes
 
+**وضعیت فعلی:** مرحلهٔ اول monorepo اجرا شده است؛ [راهنمای این مرحله](monorepo-desktop-foundation.md)
+مرجع ساختار واقعی و اولین استقرار است. وب فعلی به `apps/web` منتقل شده؛ Express فقط health v1 دارد،
+Tauri فضای کار نمونه دارد و React Native/Expo یک scaffold مشترک Android/iOS هستند.
+بخش‌های بعدی این سند نقشهٔ هدف‌اند، نه ادعای انتقال کامل backend.
+
 ## نتیجه
 
-معماری هدف شامل Web با Next.js، Android با React Native، Windows با Tauri و یک API مستقل
+معماری هدف شامل Web با Next.js، Android/iOS با React Native و Expo، Windows با Tauri و یک API مستقل
 Node.js/Express است. این جهت درست است، اما انتقال فوری تمام API Routeهای موجود به Express
 در این مرحله توصیه نمی‌شود. ابتدا مرزهای مشترک ساخته می‌شوند و مهاجرت Backend هم‌زمان با شروع
 اولین کلاینت Native انجام می‌شود.
@@ -31,7 +36,7 @@ Node.js/Express است. این جهت درست است، اما انتقال فو
 apps/
   web/              Next.js
   api/              Node.js + Express 5
-  mobile/           React Native (Android first)
+  mobile/           React Native + Expo (Android/iOS)
   desktop/          Tauri 2 + React/Vite shell
 packages/
   contracts/        Zod schemas, DTOs, error codes, API version

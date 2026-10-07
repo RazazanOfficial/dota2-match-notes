@@ -6,13 +6,15 @@
 
 | موضوع | فایل |
 | --- | --- |
+| فولدربندی جدید، دسکتاپ و اولین انتشار monorepo | [monorepo-desktop-foundation.md](monorepo-desktop-foundation.md) |
+| نسخه‌گذاری، tag و انتشار قطعی | [releasing.md](releasing.md) |
 | استقرار و انتشار Ubuntu | [deployment-ubuntu.md](deployment-ubuntu.md) |
 | دریافت Replay، آرشیو و ParsPack | [replay-on-demand-archive.md](replay-on-demand-archive.md)، [replay-download-admin-stage.md](replay-download-admin-stage.md) |
 | بازسازی metadata ناقص و retry | [replay-metadata-recovery.md](replay-metadata-recovery.md) |
 | پایداری اتصال و checkpoint دانلود | [replay-resilience.md](replay-resilience.md)، فقط بخش «رفتار و محدودیت‌ها»؛ دستورات Git و نصب تاریخی‌اند |
 | Worker خصوصی Cloudflare | [replay-proxy-cloudflare.md](replay-proxy-cloudflare.md)، با تطبیق کد Worker و وضعیت واقعی حساب |
 | مرجع آماری ماهانه | [monthly-reference-services.md](monthly-reference-services.md)، [service-monitoring.md](service-monitoring.md) |
-| قرارداد پچ Lane Efficiency دقیقهٔ ۱۲ | [lane-efficiency-next-step.md](lane-efficiency-next-step.md)؛ حضور پچ در `main` را بررسی کنید. برای پوزیشن و نقش، `lib/dota/position-resolver.ts` و `lib/journal/repository.ts` |
+| قرارداد پچ Lane Efficiency دقیقهٔ ۱۲ | [lane-efficiency-next-step.md](lane-efficiency-next-step.md)؛ حضور پچ در `main` را بررسی کنید. برای پوزیشن و نقش، `apps/web/lib/dota/position-resolver.ts` و `apps/web/lib/journal/repository.ts` |
 | محصول و رابط | [ui-ux-redesign.md](ui-ux-redesign.md)، [cursor-themes.md](cursor-themes.md)، [multiplatform-architecture.md](multiplatform-architecture.md) |
 
 ## سندهای مرحله‌ای و تاریخی

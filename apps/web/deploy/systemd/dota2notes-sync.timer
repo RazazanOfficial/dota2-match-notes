@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Dota2 Notes OpenDota sync hourly
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=2m
+Persistent=true
+Unit=dota2notes-sync.service
+
+[Install]
+WantedBy=timers.target

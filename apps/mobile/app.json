@@ -1,0 +1,8 @@
+{
+  "expo": {
+    "name": "Dota Notes", "slug": "dota-notes", "version": "0.1.0",
+    "orientation": "portrait", "userInterfaceStyle": "automatic",
+    "ios": { "supportsTablet": true, "bundleIdentifier": "ir.dota2notes.mobile" },
+    "android": { "package": "ir.dota2notes.mobile" }
+  }
+}

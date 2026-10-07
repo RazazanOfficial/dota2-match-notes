@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "replay-library"
+description = "Select the Dota folder, read local demos and download a numeric match ID."
+commands.allow = ["replay_settings", "choose_dota_folder", "list_replays", "download_replay"]

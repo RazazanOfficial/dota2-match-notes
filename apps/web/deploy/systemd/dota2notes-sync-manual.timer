@@ -1,0 +1,10 @@
+[Unit]
+Description=Continue requested day and week match sync in small batches
+
+[Timer]
+OnBootSec=30s
+OnUnitInactiveSec=30s
+Unit=dota2notes-sync.service
+
+[Install]
+WantedBy=timers.target

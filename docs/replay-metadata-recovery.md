@@ -32,7 +32,7 @@
 ```bash
 cd /var/www/dota2notes
 sudo -u dota2notes -H node --env-file=/var/www/dota2notes/.env.production \
-  scripts/replay-parser/probe-metadata.mjs 9023606320 271
+  apps/web/scripts/replay-parser/probe-metadata.mjs 9023606320 271
 ```
 
 این probe فقط Worker را می‌سنجد؛ مسیر تازهٔ GET مستقیمِ VPS که پیش از آن در job اجرا می‌شود ممکن است موفق باشد، حتی اگر probe خطای ۴۲۹ بدهد. نتیجهٔ `ok:true` برای همین مچ باید `cluster:271` و `salt:349414436` باشد. وضعیت واقعی با درخواست دانلود یا تحلیل در سایت و سپس لاگ `dota2notes-replay.service` مشخص می‌شود. در `local_replay_jobs` مرحلهٔ `resolving_metadata` و سپس `downloading` دیده می‌شود. هیچ ردیفی را دستی پاک یا ویرایش نکنید.

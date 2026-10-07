@@ -1,0 +1,366 @@
+import { logFailure } from "../../http/log";
+import type { SessionUser } from "../auth/session";
+import {
+  fetchOpenDotaMatch,
+  fetchOpenDotaPlayerMatchesSince,
+  fetchOpenDotaRecentMatches,
+} from "./client";
+import { ANALYSIS_TOKEN_COST } from "./analysis-policy";
+import type { ManualMatchSyncInput } from "./sync-request";
+import { MATCH_SYNC_GAME_MODES, matchesSyncGameMode, saturdayWeekStart } from "./sync-request";
+import { toJournalDateKey } from "../journal/timezone";
+import { getOpenDotaConfig } from "./config";
+import { OpenDotaError } from "./errors";
+import {
+  excludeKnownRecentMatches,
+  selectRecentSyncMatches,
+} from "./recent";
+import {
+  claimManualOpenDotaSync,
+  claimOpenDotaRequestQuota,
+  findKnownOpenDotaMatchIds,
+  findOpenDotaSyncTarget,
+  markJournalRangeCompleted,
+  releaseManualOpenDotaSyncClaim,
+  saveDiscoveredOpenDotaMatch,
+  saveOpenDotaMatch,
+} from "./repository";
+
+function quotaConfig(config: ReturnType<typeof getOpenDotaConfig>) {
+  return {
+    minuteRequestLimit: config.minuteRequestLimit,
+    dailyRequestLimit: config.dailyRequestLimit,
+  };
+}
+
+function failedMatch(dotaMatchId: number, error: unknown) {
+  if (error instanceof OpenDotaError) {
+    return {
+      dotaMatchId,
+      code: error.code,
+      message: error.message,
+      ...(error.retryAfterSeconds
+        ? { retryAfterSeconds: error.retryAfterSeconds }
+        : {}),
+    };
+  }
+  logFailure("Unable to import discovered OpenDota match", {
+    dotaMatchId,
+    error,
+  });
+  return {
+    dotaMatchId,
+    code: "match_import_failed",
+    message: "ثبت این مچ انجام نشد",
+  };
+}
+
+interface RecentSyncUser {
+  id: string;
+  steamAccountId: number;
+}
+
+interface RecentSyncOptions {
+  maxNewMatches: number;
+  since?: Date | null;
+  lookbackSeconds?: number;
+  initialMatches?: number;
+  throwOnRetryableError?: boolean;
+  onExternalRequestClaimed?: () => void;
+  range?: { from: string; to: string };
+  gameModes?: ManualMatchSyncInput["gameModes"];
+  skipMatchIds?: ReadonlySet<number>;
+}
+
+const HISTORY_PAGE_SIZE = 100;
+const MAX_HISTORY_PAGES = 30;
+
+async function fetchSelectedHistory(user: RecentSyncUser, range: { from: string; to: string }, onClaim?: () => void) {
+  // OpenDota offers a lower age bound and offset, but no end-date parameter.
+  // Read bounded pages until the selected dates are covered; never mark an
+  // incomplete scan as completed when the safety cap is reached.
+  const since = new Date(`${range.from}T00:00:00.000Z`);
+  since.setUTCDate(since.getUTCDate() - 1);
+  const matches: Awaited<ReturnType<typeof fetchOpenDotaPlayerMatchesSince>> = [];
+  const config = getOpenDotaConfig();
+  for (let page = 0; page < MAX_HISTORY_PAGES; page += 1) {
+    await claimOpenDotaRequestQuota(quotaConfig(config));
+    onClaim?.();
+    const batch = await fetchOpenDotaPlayerMatchesSince(user.steamAccountId, since, page * HISTORY_PAGE_SIZE, HISTORY_PAGE_SIZE);
+    matches.push(...batch);
+    if (batch.length < HISTORY_PAGE_SIZE || batch[batch.length - 1].start_time * 1_000 < since.getTime()) return matches;
+  }
+  throw new OpenDotaError(503, "opendota_history_too_large", "تاریخچه بازی‌ها برای این بازه خیلی بزرگ است؛ لطفاً بعداً دوباره تلاش کنید");
+}
+
+async function discoverRecentMatches(
+  user: RecentSyncUser,
+  options: RecentSyncOptions,
+) {
+  const config = getOpenDotaConfig();
+  // The compact recent feed is best for the scheduled cursor. An explicit
+  // day/week request uses player history so the user can retrieve an older week.
+  let fetchedMatches: Awaited<ReturnType<typeof fetchOpenDotaRecentMatches>>;
+  if (options.range) {
+    fetchedMatches = await fetchSelectedHistory(user, options.range, options.onExternalRequestClaimed);
+  } else {
+    await claimOpenDotaRequestQuota(quotaConfig(config));
+    options.onExternalRequestClaimed?.();
+    fetchedMatches = await fetchOpenDotaRecentMatches(user.steamAccountId);
+  }
+  const recentMatches = options.range
+    ? fetchedMatches.filter((match) => {
+        const day = toJournalDateKey(new Date(match.start_time * 1_000));
+        return day >= options.range!.from && day <= options.range!.to &&
+          // The compact player feed can omit mode fields. Verify the full
+          // match before excluding Turbo or another selected game mode.
+          (match.game_mode == null || match.lobby_type == null ||
+            matchesSyncGameMode(options.gameModes, match.game_mode, match.lobby_type));
+      })
+    : fetchedMatches;
+  const { importedIds, dismissedIds } = await findKnownOpenDotaMatchIds(
+    user.id,
+    recentMatches.map((match) => match.match_id),
+  );
+  const newMatches = excludeKnownRecentMatches(
+    recentMatches,
+    importedIds,
+    dismissedIds,
+  ).filter((match) => !options.skipMatchIds?.has(match.match_id));
+  const selection = selectRecentSyncMatches(
+    newMatches,
+    options.range
+      ? { maxNewMatches: options.maxNewMatches }
+      : options,
+  );
+  const imported: Array<{
+    journalMatchId: string;
+    dotaMatchId: number;
+    day: string;
+  }> = [];
+  const failed: ReturnType<typeof failedMatch>[] = [];
+  let attempted = 0;
+
+  for (const candidate of selection.candidates) {
+    attempted += 1;
+    try {
+      await claimOpenDotaRequestQuota(quotaConfig(config));
+      options.onExternalRequestClaimed?.();
+      const match = await fetchOpenDotaMatch(candidate.match_id);
+      if (options.range && !matchesSyncGameMode(options.gameModes, match.game_mode, match.lobby_type)) continue;
+      const player =
+        match.players.find(
+          (item) => item.account_id === user.steamAccountId,
+        ) ||
+        match.players.find(
+          (item) => item.player_slot === candidate.player_slot,
+        );
+      if (!player) {
+        throw new OpenDotaError(
+          422,
+          "player_not_found_in_match",
+          "بازیکن داخل اطلاعات کامل مچ پیدا نشد",
+        );
+      }
+
+      const saved = await saveDiscoveredOpenDotaMatch({
+        userId: user.id,
+        match,
+        player,
+      });
+      if (saved.created) {
+        imported.push({
+          journalMatchId: saved.journalMatchId,
+          dotaMatchId: saved.dotaMatchId,
+          day: saved.day,
+        });
+      } else if (saved.dismissed) dismissedIds.add(saved.dotaMatchId);
+      else importedIds.add(saved.dotaMatchId);
+    } catch (error) {
+      if (!(error instanceof OpenDotaError)) throw error;
+      const retryable = error.status === 429 || error.status >= 500;
+      if (retryable && options.throwOnRetryableError) throw error;
+      failed.push(failedMatch(candidate.match_id, error));
+      if (error.status === 429) break;
+    }
+  }
+
+  return {
+    checked: recentMatches.length,
+    alreadyImported: importedIds.size,
+    dismissedByUser: dismissedIds.size,
+    imported,
+    failed,
+    deferred: Math.max(0, selection.eligible.length - attempted),
+    attemptedIds: selection.candidates.slice(0, attempted).map((candidate) => candidate.match_id),
+    ignoredOlder: selection.ignoredOlder,
+  };
+}
+
+export async function syncJournalMatchFromOpenDota(
+  user: SessionUser,
+  journalMatchId: string,
+  dotaMatchId: number,
+) {
+  const target = await findOpenDotaSyncTarget(user.id, journalMatchId);
+  if (!target) {
+    throw new OpenDotaError(404, "match_not_found", "مچ دفتر پیدا نشد");
+  }
+
+  const config = getOpenDotaConfig();
+  const claimedAt = await claimManualOpenDotaSync(
+    user.id,
+    config.manualSyncCooldownSeconds,
+  );
+  let completed = false;
+  try {
+    await claimOpenDotaRequestQuota(quotaConfig(config));
+    const match = await fetchOpenDotaMatch(dotaMatchId);
+    const player = match.players.find(
+      (candidate) => candidate.account_id === target.steamAccountId,
+    );
+    if (!player) {
+      throw new OpenDotaError(
+        422,
+        "player_not_found_in_match",
+        "حساب Steam شما در این مچ پیدا نشد؛ Match ID یا تنظیمات حریم خصوصی را بررسی کنید",
+      );
+    }
+
+    const saved = await saveOpenDotaMatch({
+      userId: user.id,
+      journalMatchId,
+      match,
+      player,
+    });
+    completed = true;
+    return {
+      journalMatchId: saved.id,
+      dotaMatchId: saved.dotaMatchId,
+      source: saved.source,
+      heroId: saved.heroId,
+      heroName: saved.heroName,
+      result: saved.result,
+      startedAt: saved.startedAt?.toISOString() || null,
+      durationSeconds: saved.durationSeconds,
+      kills: saved.kills,
+      deaths: saved.deaths,
+      assists: saved.assists,
+      goldPerMinute: saved.goldPerMinute,
+      xpPerMinute: saved.xpPerMinute,
+      netWorth: saved.netWorth,
+      heroDamage: saved.heroDamage,
+      towerDamage: saved.towerDamage,
+      fetchedAt: new Date().toISOString(),
+    };
+  } finally {
+    if (!completed) {
+      await releaseManualOpenDotaSyncClaim(user.id, claimedAt).catch(() => {});
+    }
+  }
+}
+
+function emptyAnalysisSummary() {
+  return {
+    tokenCostPerMatch: ANALYSIS_TOKEN_COST,
+    totalTokenCost: 0,
+    queued: 0,
+    alreadyReady: 0,
+    alreadyQueued: 0,
+    failed: 0,
+    skippedOld: 0,
+    skippedOldDays: [] as string[],
+  };
+}
+
+export async function syncRecentMatchesFromOpenDota(
+  user: SessionUser,
+  request: ManualMatchSyncInput,
+) {
+  const config = getOpenDotaConfig();
+  const trackedFrom = saturdayWeekStart(toJournalDateKey(user.createdAt));
+  if (request.from < trackedFrom) {
+    throw new OpenDotaError(
+      400,
+      "before_tracking_window",
+      "دریافت مچ فقط از ابتدای هفته ثبت‌نام امکان‌پذیر است",
+    );
+  }
+  const cooldownSeconds = request.scope === "day"
+    ? config.manualDayCooldownSeconds
+    : request.scope === "month"
+      ? config.manualMonthCooldownSeconds
+      : config.manualSyncCooldownSeconds;
+  const claimedAt = await claimManualOpenDotaSync(
+    user.id,
+    cooldownSeconds,
+    request.scope,
+  );
+  let externalRequestClaimed = false;
+
+  try {
+    const sync = await discoverRecentMatches(user, {
+      maxNewMatches: config.maxNewMatchesPerSync,
+      range: { from: request.from, to: request.to },
+      gameModes: request.gameModes,
+      onExternalRequestClaimed: () => {
+        externalRequestClaimed = true;
+      },
+    });
+    const checkedEveryGameMode = !request.gameModes || new Set(request.gameModes).size === MATCH_SYNC_GAME_MODES.length;
+    if (!sync.failed.length && sync.deferred === 0 && checkedEveryGameMode) {
+      await markJournalRangeCompleted(user.id, request.from, request.to);
+    }
+    const analysis = emptyAnalysisSummary();
+    return {
+      ...sync,
+      registeredAt: user.createdAt.toISOString(),
+      trackedFrom: `${trackedFrom}T00:00:00.000Z`,
+      request,
+      analysis,
+      nextAllowedAt: new Date(
+        claimedAt.getTime() + cooldownSeconds * 1_000,
+      ).toISOString(),
+    };
+  } catch (error) {
+    if (!externalRequestClaimed || error instanceof OpenDotaError && error.code === "opendota_timeout") {
+      await releaseManualOpenDotaSyncClaim(user.id, claimedAt, request.scope).catch(() => {});
+    }
+    throw error;
+  }
+}
+
+// Manual selected ranges run in bounded worker batches. Every candidate is
+// visited, including matches older than the former per-request limit of 20.
+export async function syncManualRangeBatch(
+  user: Pick<SessionUser, "id" | "steamAccountId" | "createdAt">,
+  request: ManualMatchSyncInput,
+  attempted: readonly number[],
+  batchSize = 5,
+) {
+  const config = getOpenDotaConfig();
+  return discoverRecentMatches(user, {
+    maxNewMatches: batchSize,
+    range: { from: request.from, to: request.to },
+    gameModes: request.gameModes,
+    skipMatchIds: new Set(attempted),
+    throwOnRetryableError: true,
+  });
+}
+
+export async function syncScheduledMatchesFromOpenDota(
+  user: RecentSyncUser & {
+    lastManualSyncAt: Date | null;
+    lastScheduledSyncAt: Date | null;
+  },
+  options: { lookbackSeconds: number; initialMatches: number },
+) {
+  const config = getOpenDotaConfig();
+  return discoverRecentMatches(user, {
+    maxNewMatches: config.maxNewMatchesPerSync,
+    since: user.lastScheduledSyncAt || user.lastManualSyncAt,
+    lookbackSeconds: options.lookbackSeconds,
+    initialMatches: options.initialMatches,
+    throwOnRetryableError: true,
+  });
+}

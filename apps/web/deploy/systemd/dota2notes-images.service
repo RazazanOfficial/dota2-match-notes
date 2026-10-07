@@ -1,0 +1,27 @@
+[Unit]
+Description=Dota2 Notes generated match image tick
+After=network-online.target dota2notes.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=dota2notes
+Group=dota2notes
+WorkingDirectory=/var/www/dota2notes
+EnvironmentFile=/var/www/dota2notes/.env.production
+Environment=PORT=3000
+ExecStart=/usr/bin/bash /var/www/dota2notes/deploy/scripts/call-worker.sh images
+TimeoutStartSec=330s
+UMask=0077
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=

@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "recovery-export"
+description = "Save the six recovery codes to a user-selected text file."
+commands.allow = ["export_recovery_codes"]

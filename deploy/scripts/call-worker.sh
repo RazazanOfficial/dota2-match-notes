@@ -24,9 +24,9 @@ case "${1:-}" in
 esac
 
 : "${SYNC_WORKER_SECRET:?SYNC_WORKER_SECRET is required}"
-worker_port="${PORT:-3000}"
+worker_port="${API_PORT:-4100}"
 if [[ ! "$worker_port" =~ ^[0-9]{1,5}$ ]] || (( worker_port < 1 || worker_port > 65535 )); then
-  echo "PORT is invalid" >&2
+  echo "API_PORT is invalid" >&2
   exit 64
 fi
 

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Dota Notes",
+  "version": "0.1.0",
+  "identifier": "ir.dota2notes.desktop",
+  "plugins": { "deep-link": { "desktop": { "schemes": ["dota-notes"] } } },
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://127.0.0.1:1420",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Dota Notes",
+        "width": 1440,
+        "height": 920,
+        "minWidth": 1024,
+        "minHeight": 700,
+        "center": true,
+        "decorations": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost https://avatars.steamstatic.com https://avatars.akamai.steamstatic.com https://steamcdn-a.akamaihd.net; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:4100 https://api.dota2notes.ir; object-src 'none'; base-uri 'self'; frame-src 'none'",
+      "capabilities": [
+        "replays"
+      ],
+      "devCsp": "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost https://avatars.steamstatic.com https://avatars.akamai.steamstatic.com https://steamcdn-a.akamaihd.net; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:4100 https://api.dota2notes.ir http://127.0.0.1:1420 ws://127.0.0.1:1420; object-src 'none'; base-uri 'self'; frame-src 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico"
+    ]
+  }
+}
