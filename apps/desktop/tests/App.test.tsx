@@ -8,6 +8,7 @@ import { replayNative, playCommand, validReplayId } from "../src/replays";
 import { previewProfile, profileRegistrationDate } from "../src/components/Shared";
 import { messages } from "../src/i18n";
 import { Distribution } from "../src/components/Workspace";
+import { CURSOR_PACK_STORAGE_KEY } from "@/lib/cursor-theme";
 import { COOLDOWNS, filterHistory, loadHistoryPage, PAGE_SIZE, SAMPLE_DATE, summarize, periodRange } from "../src/history";
 let mediaListener: ((event: {
     matches: boolean;
@@ -19,7 +20,7 @@ describe("redesigned desktop", () => {
         const app = render(<App session={previewProfile}/> );
         expect(screen.queryByLabelText("Theme")).toBeNull();
         fireEvent.click(screen.getByRole("button", { name: "Settings", exact: true }));
-        fireEvent.change(screen.getByLabelText("Theme"), { target: { value: "nebula" } });
+        fireEvent.click(within(screen.getByRole("group", { name: "Theme" })).getByRole("button", { name: "Nebula" }));
         fireEvent.click(screen.getByRole("button", { name: "فارسی", exact: true }));
         expect(document.documentElement.dir).toBe("rtl");
         act(() => mediaListener?.({ matches: true }));
@@ -28,8 +29,8 @@ describe("redesigned desktop", () => {
         app.unmount();
         render(<App session={previewProfile}/> );
         fireEvent.click(screen.getByRole("button", { name: "تنظیمات", exact: true }));
-        expect(screen.getByLabelText("تم")).toHaveProperty("value", "nebula");
-        fireEvent.change(screen.getByLabelText("حالت نمایش"), { target: { value: "light" } });
+        expect(within(screen.getByRole("group", { name: "تم" })).getByRole("button", { name: "Nebula" }).getAttribute("aria-pressed")).toBe("true");
+        fireEvent.click(within(screen.getByRole("group", { name: "حالت نمایش" })).getByRole("button", { name: "روشن" }));
         act(() => mediaListener?.({ matches: true }));
         expect(document.documentElement.style.colorScheme).toBe("light");
     });
@@ -44,7 +45,7 @@ describe("redesigned desktop", () => {
         await waitFor(() => expect(view.container.querySelectorAll('[data-match-row]')).toHaveLength(5));
         expect(within(view.container.querySelector(".pagination") as HTMLElement).getByRole("button", { name: "Next", exact: true })).toHaveProperty("disabled", true);
         fireEvent.click(within(view.container.querySelector(".history-toolbar") as HTMLElement).getByRole("button", { name: "Monthly", exact: true }));
-        await waitFor(() => expect(view.container.querySelectorAll('[data-match-row]')).toHaveLength(2));
+        await waitFor(() => expect(view.container.querySelectorAll('[data-match-row]')).toHaveLength(7));
     });
     it("keeps independent cooldowns across reopening and leaves untouched scopes ready", async () => {
         render(<App session={previewProfile}/> );
@@ -61,10 +62,10 @@ describe("redesigned desktop", () => {
         expect(stored.week).toBe(0);
         expect(stored.month - stored.day).toBeGreaterThan(7000000);
     });
-    it("restores cursor packs and shows reports as coming soon", () => { render(<App session={previewProfile}/> ); fireEvent.click(screen.getByRole("button", { name: "Settings", exact: true })); fireEvent.click(screen.getByRole("button", { name: "The International 2019" })); expect(document.documentElement.dataset.cursorPack).toBe("ti-2019"); expect(localStorage.getItem('dota-notes.cursor-pack.v1')).toBe('ti-2019'); fireEvent.click(within(screen.getByRole("navigation")).getByRole("button", { name: "Smart reports", exact: true })); expect(screen.getByText('Coming soon')).toBeTruthy(); });
+    it("restores cursor packs and shows reports as coming soon", async () => { render(<App session={previewProfile}/> ); fireEvent.click(screen.getByRole("button", { name: "Settings", exact: true })); fireEvent.click(screen.getByRole("button", { name: "The International 2019" })); await waitFor(() => expect(document.documentElement.dataset.cursorPack).toBe("ti-2019")); expect(localStorage.getItem(CURSOR_PACK_STORAGE_KEY)).toBe('ti-2019'); fireEvent.click(within(screen.getByRole("navigation")).getByRole("button", { name: "Smart reports", exact: true })); expect(screen.getByText('Coming soon')).toBeTruthy(); });
 });
 describe("history data contract", () => {
-    it("separates Saturday weeks and calendar months", () => { expect(periodRange('week', '2026-10-02')).toEqual({ from: '2026-09-26', to: '2026-10-02' }); expect(periodRange('month', '2026-10-02')).toEqual({ from: '2026-10-01', to: '2026-10-31' }); expect(COOLDOWNS).toEqual({ day: 90000, week: 180000, month: 7200000 }); });
+    it("separates Saturday weeks and Persian calendar months", () => { expect(periodRange('week', '2026-10-02')).toEqual({ from: '2026-09-26', to: '2026-10-02' }); expect(periodRange('month', '2026-10-02')).toEqual({ from: '2026-09-23', to: '2026-10-22' }); expect(COOLDOWNS).toEqual({ day: 90000, week: 180000, month: 7200000 }); });
     it("returns bounded distinct pages with summary for the whole period", async () => { const query = { period: 'week' as const, anchor: SAMPLE_DATE, query: '', mode: 'all', position: 'all', page: 1 }; const signal = new AbortController().signal; const a = await loadHistoryPage(query, signal), b = await loadHistoryPage({ ...query, page: 2 }, signal); expect(a.rows).toHaveLength(8); expect(a.total).toBe(28); expect(a.summary.positions.reduce((s, x) => s + x.count, 0)).toBe(a.total); expect(a.summary.heroes.reduce((s, x) => s + x.count, 0)).toBe(a.total); expect(new Set([...a.rows, ...b.rows].map(m => m.id)).size).toBe(16); const controller = new AbortController(); controller.abort(); await expect(loadHistoryPage(query, controller.signal)).rejects.toHaveProperty('name', 'AbortError'); });
     it("uses the same filters for list and chart totals, and handles empty periods", () => { const rows = filterHistory('week', SAMPLE_DATE, '', 'Turbo', 'all'); expect(rows.every(r => r.mode === 'Turbo')).toBe(true); expect(summarize(rows).total).toBe(rows.length); expect(summarize([]).winRate).toBe(0); });
 });
@@ -115,7 +116,7 @@ describe("compact dashboard and independent chart", () => {
         const chart = view.container.querySelector(".distribution") as HTMLElement;
         expect(chart.querySelector(".ring-center strong")?.textContent).toBe("28");
         fireEvent.click(within(chart).getByRole("button", { name: "Monthly", exact: true }));
-        expect(chart.querySelector(".ring-center strong")?.textContent).toBe("8");
+        expect(chart.querySelector(".ring-center strong")?.textContent).toBe("40");
         expect(view.container.querySelectorAll("[data-match-row]")).toHaveLength(8);
         const segment = chart.querySelector('svg g[aria-label^="Carry:"]')!;
         fireEvent.mouseEnter(segment);
@@ -148,7 +149,7 @@ describe("registration calendar", () => {
         expect(trackingStart("2026-09-15")).toBe("2026-09-12");
         expect(requestRange("week", "2026-09-12", "2026-09-15", SAMPLE_DATE)).toEqual({ from: "2026-09-12", to: "2026-09-18" });
         expect(requestRange("week", "2026-09-11", "2026-09-15", SAMPLE_DATE)).toBeNull();
-        expect(requestRange("month", "2026-09-15", "2026-09-15", SAMPLE_DATE)).toEqual({ from: "2026-09-12", to: "2026-09-30" });
+        expect(requestRange("month", "2026-09-15", "2026-09-15", SAMPLE_DATE)).toEqual({ from: "2026-09-12", to: "2026-09-22" });
         expect(requestRange("month", SAMPLE_DATE, "2026-09-15", SAMPLE_DATE)?.to).toBe(SAMPLE_DATE);
         expect(requestRange("day", "2026-10-03", "2026-09-15", SAMPLE_DATE)).toBeNull();
     });

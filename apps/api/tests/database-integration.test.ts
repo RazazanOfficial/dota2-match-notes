@@ -179,7 +179,7 @@ describe("PostgreSQL schema migration and real Express services", () => {
     const friday=new Date(`${saturday}T00:00:00Z`);friday.setUTCDate(friday.getUTCDate()-1);
     const priorDay=friday.toISOString().slice(0,10);
     const [lateUser]=await db.insert(users).values({steamId:"76561197960265730",steamAccountId:2,
-      handle:"tehran_boundary",displayName:"Timezone boundary",createdAt:new Date(`${priorDay}T21:15:00Z`)}).returning({id:users.id});
+      handle:"tehran_boundary",displayName:"Timezone boundary",createdAt:new Date(`${priorDay}T21:15:00Z`),onboardingCompletedAt:new Date()}).returning({id:users.id});
     const session=await createSession(lateUser.id);const app=createApp();
     const rejected=await request(app).post("/api/sync/me").auth(session.token,{type:"bearer"}).send({scope:"day",from:priorDay,to:priorDay,mode:"basic"});
     expect(rejected.status).toBe(400);expect(rejected.body.error.code).toBe("before_tracking_window");
@@ -187,7 +187,8 @@ describe("PostgreSQL schema migration and real Express services", () => {
     expect(accepted.status).toBe(202);
   });
   it("rejects month boundaries and bcrypt inputs exceeding 72 UTF-8 bytes", async () => {
-    expect(manualMatchSyncInputSchema.safeParse({scope:"month",from:"2026-08-31",to:"2026-09-01",mode:"basic"}).success).toBe(false);
+    expect(manualMatchSyncInputSchema.safeParse({scope:"month",from:"2026-08-31",to:"2026-09-01",mode:"basic"}).success).toBe(true);
+    expect(manualMatchSyncInputSchema.safeParse({scope:"month",from:"2026-09-22",to:"2026-10-01",mode:"basic"}).success).toBe(false);
     const result=await request(createApp()).post("/api/auth/password/login").send({steamIdentifier:"1",password:"ی".repeat(40)});
     expect(result.status).toBe(400);
   });

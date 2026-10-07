@@ -37,7 +37,7 @@ export const passwordLoginSchema = z
   .object({
     steamIdentifier: steamIdentifierSchema,
     // Registration accepts six characters when the other strength rules pass.
-    password: z.string().min(6).max(72),
+    password: z.string().min(6).max(72).refine(value => Buffer.byteLength(value, "utf8") <= 72, "رمز عبور نمی‌تواند بیشتر از ۷۲ بایت باشد"),
   })
   .strict();
 
