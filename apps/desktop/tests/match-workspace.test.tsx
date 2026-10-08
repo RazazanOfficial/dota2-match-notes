@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { messages } from "../src/i18n";
+import { messages, modeLabel } from "../src/i18n";
 import { previewProfile } from "../src/components/Shared";
 import { sampleHistory } from "../src/history";
 import { Calendar } from "../src/components/Calendar";
@@ -81,11 +81,11 @@ describe("match workspace regressions",()=>{
     it("restores persisted processing immediately and refreshes its stage from history", () => {
         const processing = { ...row, analysisStatus: "processing" as const, analysisPreparation: { replay: "processing", progress: { phase: "parsing", bytes: 1024, totalBytes: 1024, bytesPerSecond: 0, attempts: 1, nextTryAt: null, phaseStartedAt: null, heartbeatAt: null, retryDeadlineAt: null, errorCode: null } } };
         const view = render(<MatchTable matches={[processing]} t={messages.fa} onOpen={vi.fn()} live/>);
-        expect(screen.getByRole("button", { name: messages.fa.analysisQueued }).disabled).toBe(true);
+        expect(screen.getByRole("button", { name: messages.fa.analysisQueued }).getAttribute("aria-expanded")).toBe("true");
         expect(view.container.querySelector('.analysis-steps [aria-current="step"]')?.textContent).toContain(messages.fa.analysisParse);
         expect(mocks.api).not.toHaveBeenCalled();
         view.rerender(<MatchTable matches={[{ ...processing, analyzed: true, analysisPreparation: { ...processing.analysisPreparation, progress: { ...processing.analysisPreparation.progress, phase: "uploading" } } }]} t={messages.fa} onOpen={vi.fn()} live/>);
-        expect(screen.getByRole("button", { name: messages.fa.analysisQueued }).disabled).toBe(true);
+        expect(screen.getByRole("button", { name: messages.fa.analysisQueued }).getAttribute("aria-expanded")).toBe("true");
         expect(view.container.querySelector('.analysis-steps [aria-current="step"]')?.textContent).toContain(messages.fa.analysisSave);
     });
     it.each([messages.fa, messages.en])("shows a readable red failure at the parser stage without developer codes", t => {
@@ -126,7 +126,7 @@ describe("match workspace regressions",()=>{
         mocks.list.mockReturnValue(new Promise<MatchListResponse>(resolve=>{complete=resolve}));
         const view=render(<LiveDashboard session={previewProfile} t={messages.en} onOpen={vi.fn()} onNavigate={vi.fn()}/>);
         expect(view.container.querySelector(".stat-grid")).toBeNull();expect(screen.queryByText(messages.en.noData)).toBeNull();
-        expect(screen.getByRole("status").textContent).toBe(messages.en.loading);
+        expect(screen.getAllByRole("status").some(element=>element.textContent===messages.en.loading)).toBe(true);
         await act(async()=>complete(data));expect(await screen.findByRole("table")).toBeTruthy();
     });
     it("starts analysis directly with the journal ID, displays progress and preserves separate details navigation",async()=>{
@@ -135,10 +135,10 @@ describe("match workspace regressions",()=>{
         await waitFor(()=>expect(mocks.api).toHaveBeenCalledWith(`/api/matches/${row.journalId}/analysis`,expect.objectContaining({method:"POST"})));
         expect(open).not.toHaveBeenCalled();expect((await screen.findAllByText(messages.en.analysisDownload)).length).toBeGreaterThan(0);
         fireEvent.click(screen.getByRole("button",{name:`${messages.en.details} ${row.id}`}));expect(open).toHaveBeenCalledWith(row);
-        expect(view.container.querySelector(".match-row")?.classList.contains("details-first")).toBe(true);
+        expect(view.container.querySelector("[data-match-row]")?.children[9].classList.contains("details-cell")).toBe(true);
         view.rerender(<MatchTable matches={[{...row,analyzed:true,position:2,score:83,analysisStatus:"ready"}]} t={messages.fa} onOpen={open} live/>);
         expect(screen.getByRole("button",{name:messages.fa.analysisDone}).classList.contains("ready")).toBe(true);
-        expect(view.container.querySelector(".match-row")?.classList.contains("details-last")).toBe(true);
+        expect(view.container.querySelector("[data-match-row]")?.children[9].classList.contains("details-cell")).toBe(true);
         expect(view.container.querySelector('.imp-score')?.textContent).toBe("83");
     });
     it("handles an already-ready analysis POST without leaving the row pending",async()=>{
@@ -154,7 +154,7 @@ describe("match workspace regressions",()=>{
         expect(view.container.contains(screen.getByRole("tooltip"))).toBe(false);
         fireEvent.mouseLeave(screen.getByLabelText(messages.fa.unknownPosition));
         fireEvent.focus(screen.getByLabelText("IMP"));expect(screen.getByRole("tooltip").textContent).toBe(messages.fa.analyzeForScore);
-        expect(view.container.querySelector('.mode-chip')?.textContent).toBe(row.mode);
+        expect(view.container.querySelector('.mode-chip')?.textContent).toBe(modeLabel(row.mode,messages.fa));
     });
     it("closes the calendar after enqueue, shows live status and includes the unknown ring segment",async()=>{
         const view=render(<LiveDashboard session={previewProfile} t={messages.en} onOpen={vi.fn()} onNavigate={vi.fn()}/>);
@@ -162,7 +162,7 @@ describe("match workspace regressions",()=>{
         const chart=view.container.querySelector('.distribution') as HTMLElement;
         expect(within(chart).queryByRole('button',{name:messages.en.selectedDate})).toBeNull();
         expect(await within(chart).findByRole('button',{name:/Unknown position: 1/})).toBeTruthy();
-        fireEvent.click(within(chart).getByRole('button',{name:/Unknown position: 1/}));expect(within(chart).getByText('100.0%')).toBeTruthy();
+        fireEvent.click(within(chart).getByRole('button',{name:/Unknown position: 1/}));expect(await within(chart).findByText('100.0%')).toBeTruthy();
         fireEvent.click(screen.getByRole('button',{name:messages.en.fetchMatches}));
         const dialog=await screen.findByRole('dialog');await waitFor(()=>expect(within(dialog).getByRole('button',{name:messages.en.fetchMatches}).disabled).toBe(false));
         expect(within(dialog).queryByText(messages.en.syncCompleted)).toBeNull();expect(within(dialog).getByRole('checkbox',{name:/Turbo/})).toBeTruthy();

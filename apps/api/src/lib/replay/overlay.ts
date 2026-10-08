@@ -19,6 +19,7 @@ export const REPLAY_PLAYER_FIELDS = [
   "damage_targets", "hero_hits", "damage", "damage_taken",
   "damage_inflictor", "runes", "killed_by", "kill_streaks",
   "multi_kills", "life_state", "healing", "damage_inflictor_received",
+  "track_gold", "permanent_buffs",
   "neutral_tokens_log", "neutral_item_history", "max_hero_hit",
 ] as const;
 

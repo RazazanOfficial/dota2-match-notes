@@ -4,6 +4,8 @@ import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import type { Session } from "@/lib/types";
 import { API_ORIGIN, ApiError, apiRequest, currentSession, logout, setBearer } from "./api";
 
+import { clearOfflineAccount, restoreOfflineSession } from "./offlineCache";
+
 const pendingKey = "dota-notes.desktop-login.pending";
 export const signupKey = "dota-notes.desktop-signup.pending";
 export const signupChoiceKey = "dota-notes.desktop-signup.choice";
@@ -46,21 +48,29 @@ export function useDesktopAuth() {
                 const token = await invoke<string | null>("load_session_token");
                 if (!active || generation !== authGeneration.current || !token) return;
                 setBearer(token);
+                const cached = await restoreOfflineSession(token);
+                if (!active || generation !== authGeneration.current) return;
+                if (cached) { setSession(cached); setRestoring(false); }
                 try {
                     const user = await currentSession();
                     if (active && generation === authGeneration.current) setSession(user);
                 } catch (failure) {
                     if (failure instanceof ApiError && failure.status === 401) {
                         if (active && generation === authGeneration.current) {
-                            setBearer(null);
+                            clearOfflineAccount(); setSession(null); setBearer(null);
                             try { await invoke("clear_session_token"); }
                             catch { /* Retrying the stale token next launch is harmless. */ }
                         }
-                    } else if (active) setError(String(failure));
+                    } else if (active && !cached) setError(String(failure));
                 }
             } catch (failure) { if (active) setError(String(failure)); }
             finally { if (active) setRestoring(false); }
         };
+        const invalidate = () => {
+            authGeneration.current += 1; clearOfflineAccount(); setBearer(null); setSession(null);
+            void invoke("clear_session_token").catch(() => {});
+        };
+        window.addEventListener("dota-notes:auth-invalid", invalidate);
         void restore();
         const handle = async (urls: string[]) => {
             for (const value of urls) {
@@ -91,7 +101,7 @@ export function useDesktopAuth() {
             else stop();
             return getCurrent();
         }).then(urls => { if (active && urls) void handle(urls); }).catch(failure => { if (active) setError(String(failure)); });
-        return () => { active = false; unlisten?.(); };
+        return () => { active = false; unlisten?.(); window.removeEventListener("dota-notes:auth-invalid", invalidate); };
     }, []);
 
     async function signIn(signup = false) {
@@ -132,11 +142,11 @@ export function useDesktopAuth() {
     async function signOut() {
         authGeneration.current += 1;
         try { await logout(); }
-        catch (failure) { setError(String(failure)); }
+        catch (failure) { if (!(failure instanceof ApiError && failure.code === "offline_mode")) setError(String(failure)); }
         finally {
             try { await invoke("clear_session_token"); }
             catch (failure) { setError(String(failure)); }
-            setBearer(null); setSession(null);
+            clearOfflineAccount(); setBearer(null); setSession(null);
         }
     }
     return { session, signIn, signInWithPassword, signOut, refreshSession: async () => setSession(await currentSession()), clearError: () => setError(""), busy, restoring, error };

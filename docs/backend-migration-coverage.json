@@ -2,7 +2,7 @@
   "sourceCommit": "dcb721e03174376eca62629d28c6cd12de0c1f8c",
   "sourceRouteFiles": 39,
   "sourceHttpOperations": 49,
-  "expressHttpOperations": 51,
+  "expressHttpOperations": 62,
   "preservedDomainModules": 121,
   "preservedCatalogs": 2,
   "unchangedSqlMigrations": 24,

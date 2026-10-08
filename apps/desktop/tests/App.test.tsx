@@ -66,14 +66,14 @@ describe("redesigned desktop", () => {
 });
 describe("history data contract", () => {
     it("separates Saturday weeks and Persian calendar months", () => { expect(periodRange('week', '2026-10-02')).toEqual({ from: '2026-09-26', to: '2026-10-02' }); expect(periodRange('month', '2026-10-02')).toEqual({ from: '2026-09-23', to: '2026-10-22' }); expect(COOLDOWNS).toEqual({ day: 90000, week: 180000, month: 7200000 }); });
-    it("returns bounded distinct pages with summary for the whole period", async () => { const query = { period: 'week' as const, anchor: SAMPLE_DATE, query: '', mode: 'all', position: 'all', page: 1 }; const signal = new AbortController().signal; const a = await loadHistoryPage(query, signal), b = await loadHistoryPage({ ...query, page: 2 }, signal); expect(a.rows).toHaveLength(8); expect(a.total).toBe(28); expect(a.summary.positions.reduce((s, x) => s + x.count, 0)).toBe(a.total); expect(a.summary.heroes.reduce((s, x) => s + x.count, 0)).toBe(a.total); expect(new Set([...a.rows, ...b.rows].map(m => m.id)).size).toBe(16); const controller = new AbortController(); controller.abort(); await expect(loadHistoryPage(query, controller.signal)).rejects.toHaveProperty('name', 'AbortError'); });
+    it("returns bounded distinct pages with summary for the whole period", async () => { const query = { period: 'week' as const, anchor: SAMPLE_DATE, query: '', mode: 'all', position: 'all', page: 1 }; const signal = new AbortController().signal; const a = await loadHistoryPage(query, signal), b = await loadHistoryPage({ ...query, page: 2 }, signal); expect(a.rows).toHaveLength(PAGE_SIZE); expect(a.total).toBe(28); expect(a.summary.positions.reduce((s, x) => s + x.count, 0)).toBe(a.total); expect(a.summary.heroes.reduce((s, x) => s + x.count, 0)).toBe(a.total); expect(new Set([...a.rows, ...b.rows].map(m => m.id)).size).toBe(PAGE_SIZE*2); const controller = new AbortController(); controller.abort(); await expect(loadHistoryPage(query, controller.signal)).rejects.toHaveProperty('name', 'AbortError'); });
     it("uses the same filters for list and chart totals, and handles empty periods", () => { const rows = filterHistory('week', SAMPLE_DATE, '', 'Turbo', 'all'); expect(rows.every(r => r.mode === 'Turbo')).toBe(true); expect(summarize(rows).total).toBe(rows.length); expect(summarize([]).winRate).toBe(0); });
 });
 describe("original match analysis retained", () => {
     it("uses one readable selected inventory and retains every analysis domain", async () => {
         const view = render(<App session={previewProfile}/> );
         fireEvent.click(within(screen.getByRole("navigation")).getByRole("button", { name: "Matches", exact: true }));
-        await waitFor(() => expect(view.container.querySelectorAll('[data-match-row]')).toHaveLength(8));
+        await waitFor(() => expect(view.container.querySelectorAll('[data-match-row]')).toHaveLength(PAGE_SIZE));
         fireEvent.click(screen.getAllByRole('button', { name: 'Analyzed' })[0]);
         // Lazy views may need extra transform time on a cold Windows run.
         await waitFor(() => expect(view.container.querySelectorAll('.hero-card')).toHaveLength(10), { timeout: 5000 });
@@ -109,7 +109,7 @@ describe("compact dashboard and independent chart", () => {
         expect(view.container.querySelectorAll(".shortcut-grid button")).toHaveLength(6);
         expect(within(view.container.querySelector(".profile-banner") as HTMLElement).getByRole("button", { name: "Fetch matches" })).toBeTruthy();
         expect(view.container.querySelectorAll(".row-hero small, .row-hero span, .row-duration small")).toHaveLength(0);
-        expect(view.container.querySelectorAll(".match-row:not(.table-head) .copy-value")).toHaveLength(8);
+        expect(view.container.querySelectorAll(".match-row:not(.table-head) .copy-value")).toHaveLength(10);
     });
     it("keeps chart dates separate from history and shows W/L on hero and position hover", async () => {
         const view = render(<App session={previewProfile}/> );
@@ -117,7 +117,7 @@ describe("compact dashboard and independent chart", () => {
         expect(chart.querySelector(".ring-center strong")?.textContent).toBe("28");
         fireEvent.click(within(chart).getByRole("button", { name: "Monthly", exact: true }));
         expect(chart.querySelector(".ring-center strong")?.textContent).toBe("40");
-        expect(view.container.querySelectorAll("[data-match-row]")).toHaveLength(8);
+        expect(view.container.querySelectorAll("[data-match-row]")).toHaveLength(PAGE_SIZE);
         const segment = chart.querySelector('svg g[aria-label^="Carry:"]')!;
         fireEvent.mouseEnter(segment);
         expect(chart.querySelector(".ring-tooltip")?.textContent).toContain("W");
@@ -125,10 +125,10 @@ describe("compact dashboard and independent chart", () => {
         expect(chart.querySelector(".ring-center strong")?.textContent).toContain("%");
         fireEvent.mouseLeave(segment);
         fireEvent.click(within(screen.getByRole("navigation")).getByRole("button", { name: "Matches", exact: true }));
-        await waitFor(() => expect(view.container.querySelectorAll("[data-match-row]")).toHaveLength(8));
+        await waitFor(() => expect(view.container.querySelectorAll("[data-match-row]")).toHaveLength(PAGE_SIZE));
         const newChart = view.container.querySelector(".distribution") as HTMLElement;
         fireEvent.click(within(view.container.querySelector(".history-toolbar") as HTMLElement).getByRole("button", { name: "Monthly", exact: true }));
-        await waitFor(() => expect(view.container.querySelectorAll("[data-match-row]")).toHaveLength(8));
+        await waitFor(() => expect(view.container.querySelectorAll("[data-match-row]")).toHaveLength(PAGE_SIZE));
         expect(newChart.querySelector(".ring-center strong")?.textContent).toBe("28");
     });
     it("copies the bare match ID without a hash", async () => {

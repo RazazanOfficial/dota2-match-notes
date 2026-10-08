@@ -129,6 +129,17 @@ describe("PostgreSQL schema migration and real Express services", () => {
     expect(first.status).toBe(200);
     expect(first.body.rows).toMatchObject([{ id: "9000001234", journalId: entry.id, k: 8, position: 1 }]);
     expect(first.body.summary).toMatchObject({ total: 1, wins: 1, heroes: [{ id: 1, count: 1 }], positions: [{ id: 1, count: 1 }] });
+    expect(first.body.pageSize).toBe(10);
+    expect((await request(app).get(`${base}&hero=1&pageSize=100`).set("Cookie",cookie)).body.total).toBe(1);
+    expect((await request(app).get(`${base}&hero=8`).set("Cookie",cookie)).body.total).toBe(0);
+    expect((await request(app).get(`${base}&offset=1&pageSize=10`).set("Cookie",cookie)).body.rows).toEqual([]);
+    for (const parameter of ["pageSize=101","pageSize=0","offset=-1","hero=NaN"]) expect((await request(app).get(`${base}&${parameter}`).set("Cookie",cookie)).status).toBe(400);
+    await db.update(dotaMatches).set({rawData:{match_id:9000001234,players:[{account_id:1,hero_id:1,player_slot:0,item_0:50,item_1:36,item_2:108,item_3:247,item_4:609,item_5:1,permanent_buffs:[{permanent_buff:5,stack_count:64}],private_payload:"not_for_history"}]}}).where(eq(dotaMatches.matchId,9000001234));
+    const inventory=await request(app).get(base).set("Cookie",cookie);
+    expect(inventory.body.rows[0].itemIds).toEqual([50,36,108,247,609,1]);
+    expect(inventory.body.rows[0].buffs).toMatchObject([{key:"legion_commander_duel",stacks:64}]);
+    expect(JSON.stringify(inventory.body)).not.toContain("not_for_history");
+
     const next = await request(app).get(`${base}&page=2`).set("Cookie",cookie);
     expect(next.body.rows).toEqual([]);expect(next.body.total).toBe(1);
     expect((await request(app).get(base.replace("mode=Ranked", "mode=Turbo")).set("Cookie",cookie)).body.total).toBe(0);

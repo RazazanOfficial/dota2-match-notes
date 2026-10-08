@@ -4,6 +4,7 @@ import { heroById, heroImage } from "@/data/heroes";
 import { applyAnalysisPositionOverrides } from "@/lib/dota/analysis-position-overrides";
 import MatchInventory from "@/components/MatchInventory";
 import type { Match, MatchAnalysis, MatchParticipant, MatchPlayerAnalysis, Session } from "@/lib/types";
+import { cachedRead } from "../offlineCache";
 import { apiRequest } from "../api";
 import { detailFor, durationText, type HistoryMatch } from "../history";
 import { isPersian, type Messages } from "../i18n";
@@ -22,8 +23,9 @@ export function Analysis({ t, row, onBack, live = false, session }: {
     live?: boolean;
     session?: Session;
 }) {
-    const initial = useMemo(() => live ? null : detailFor(row), [row, live]);
-    const [match, setMatch] = useState<Match | null>(initial), [selected, setSelected] = useState(0), [tab, setTab] = useState("summary"), [error, setError] = useState<unknown>(null), [pending, setPending] = useState(false);
+    const pagePath = `/api/journal/matches/${encodeURIComponent(row.journalId || row.id)}/page?player=${encodeURIComponent(session?.username || "")}`;
+    const initial = useMemo(() => live ? cachedRead<{ page: { match: Match } }>(pagePath)?.page.match || null : detailFor(row), [row,live,pagePath]);
+    const [match, setMatch] = useState<Match | null>(initial), [selected, setSelected] = useState(initial?.participants?.find(player=>player.isProfilePlayer)?.playerSlot || 0), [tab, setTab] = useState("summary"), [error, setError] = useState<unknown>(null), [pending, setPending] = useState(false);
     const [preparation, setPreparation] = useState<{ replay: string; progress?: ReplayProgress | null; errorCode?: string | null } | null>(null);
     const [refreshToken, setRefreshToken] = useState(0), [checking, setChecking] = useState(false);
     useEffect(() => {
@@ -69,7 +71,7 @@ export function Analysis({ t, row, onBack, live = false, session }: {
     const inspected = match?.participants?.find(p => p.playerSlot === selected), player = match?.analysis?.players.find(p => p.playerSlot === selected);
     const tabs = [{ key: "summary", label: t.summary }, { key: "analysis", label: t.fullAnalysis }, { key: "journal", label: t.journal }, { key: "images", label: t.images }];
     if (!match) return <div className="screen-stack"><button className="text-button" onClick={onBack}>{t.back}</button>{!!error ? <ErrorNotice error={error} t={t}/> : <LoadingView t={t}/>}</div>;
-    return <div className="screen-stack match-detail"><div className="detail-toolbar"><button className="text-button" onClick={onBack}><ArrowLeft size={17}/>{t.back}</button></div><section className="panel match-banner" dir="ltr"><div className={`team-result ${match.radiantWin ? "good" : ""}`}><img src="/match-details/radiant.webp" alt=""/><div><h1>Radiant</h1><small>{match.radiantWin ? t.teamWon : t.teamLost}</small></div></div><div className="final-score"><strong>{match.radiantScore ?? "—"}</strong><span><Clock size={14}/><bdi>{durationText(row.duration)}</bdi><small><ModeIcon mode={row.mode}/></small></span><strong>{match.direScore ?? "—"}</strong></div><div className={`team-result dire ${match.radiantWin === false ? "good" : ""}`}><div><h1>Dire</h1><small>{match.radiantWin === false ? t.teamWon : t.teamLost}</small></div><img src="/match-details/dire.webp" alt=""/></div></section><div className="match-meta"><div className="panel match-identity"><span className="muted">{t.matchId}</span><CopyValue value={row.id} t={t}/><i /><CalendarDays size={15}/><span>{formatDateTime24(row.startedAt, t)}</span></div></div><nav className="detail-tabs" role="tablist" aria-label={t.details}>{tabs.map((item, i) => <button id={`detail-tab-${item.key}`} key={item.key} role="tab" tabIndex={tab === item.key ? 0 : -1} aria-selected={tab === item.key} aria-controls="detail-panel" className={tab === item.key ? "active" : ""} onClick={() => setTab(item.key)} onKeyDown={e => { let next = i; const rtl = document.documentElement.dir === "rtl"; if (e.key === "ArrowRight")
+    return <div className="screen-stack match-detail"><div className="detail-toolbar"><button className="text-button" onClick={onBack}><ArrowLeft size={17}/>{t.back}</button></div><section className="panel match-banner" dir="ltr"><div className={`team-result ${match.radiantWin ? "good" : ""}`}><img src="/match-details/radiant.webp" alt=""/><div><h1>Radiant</h1><small>{match.radiantWin ? t.teamWon : t.teamLost}</small></div></div><div className="final-score"><strong>{match.radiantScore ?? "—"}</strong><span><Clock size={14}/><bdi>{durationText(row.duration)}</bdi><small><ModeIcon mode={row.mode} t={t}/></small></span><strong>{match.direScore ?? "—"}</strong></div><div className={`team-result dire ${match.radiantWin === false ? "good" : ""}`}><div><h1>Dire</h1><small>{match.radiantWin === false ? t.teamWon : t.teamLost}</small></div><img src="/match-details/dire.webp" alt=""/></div></section><div className="match-meta"><div className="panel match-identity"><span className="muted">{t.matchId}</span><CopyValue value={row.id} t={t}/><i /><CalendarDays size={15}/><span>{formatDateTime24(row.startedAt, t)}</span></div></div><nav className="detail-tabs" role="tablist" aria-label={t.details}>{tabs.map((item, i) => <button id={`detail-tab-${item.key}`} key={item.key} role="tab" tabIndex={tab === item.key ? 0 : -1} aria-selected={tab === item.key} aria-controls="detail-panel" className={tab === item.key ? "active" : ""} onClick={() => setTab(item.key)} onKeyDown={e => { let next = i; const rtl = document.documentElement.dir === "rtl"; if (e.key === "ArrowRight")
         next += rtl ? -1 : 1;
     else if (e.key === "ArrowLeft")
         next += rtl ? 1 : -1;
