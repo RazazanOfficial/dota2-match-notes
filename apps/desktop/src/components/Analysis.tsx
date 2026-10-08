@@ -4,6 +4,7 @@ import { heroById, heroImage } from "@/data/heroes";
 import { applyAnalysisPositionOverrides } from "@/lib/dota/analysis-position-overrides";
 import MatchInventory from "@/components/MatchInventory";
 import type { Match, MatchAnalysis, MatchParticipant, MatchPlayerAnalysis, Session } from "@/lib/types";
+import { useConnection } from "../connection";
 import { cachedRead } from "../offlineCache";
 import { apiRequest } from "../api";
 import { detailFor, durationText, type HistoryMatch } from "../history";
@@ -23,6 +24,7 @@ export function Analysis({ t, row, onBack, live = false, session }: {
     live?: boolean;
     session?: Session;
 }) {
+    const connection = useConnection();
     const pagePath = `/api/journal/matches/${encodeURIComponent(row.journalId || row.id)}/page?player=${encodeURIComponent(session?.username || "")}`;
     const initial = useMemo(() => live ? cachedRead<{ page: { match: Match } }>(pagePath)?.page.match || null : detailFor(row), [row,live,pagePath]);
     const [match, setMatch] = useState<Match | null>(initial), [selected, setSelected] = useState(initial?.participants?.find(player=>player.isProfilePlayer)?.playerSlot || 0), [tab, setTab] = useState("summary"), [error, setError] = useState<unknown>(null), [pending, setPending] = useState(false);
@@ -38,7 +40,7 @@ export function Analysis({ t, row, onBack, live = false, session }: {
                 if (!controller.signal.aborted) { setMatch(item); setSelected(item.participants?.find(p => p.isProfilePlayer)?.playerSlot || 0); }
             }).catch(failure => { if (!controller.signal.aborted) setError(failure); });
         return () => controller.abort();
-    }, [live, row.id, row.journalId, session?.username]);
+    }, [live, row.id, row.journalId, session?.username, connection]);
     useEffect(() => {
         if (!live || tab !== "analysis" || !match || match.analysis) return;
         const controller = new AbortController();
@@ -56,7 +58,7 @@ export function Analysis({ t, row, onBack, live = false, session }: {
             }).catch(failure => { if (!controller.signal.aborted) { setError(failure); timer = window.setTimeout(() => setRefreshToken(value => value + 1), 10_000); } })
             .finally(() => { if (!controller.signal.aborted) setChecking(false); });
         return () => { controller.abort(); window.clearTimeout(timer); };
-    }, [live, tab, match?.id, match?.analysis, refreshToken]);
+    }, [live, tab, match?.id, match?.analysis, refreshToken, connection]);
     async function requestAnalysis() {
         if (!match || pending) return;
         setPending(true); setError(null);
@@ -64,6 +66,7 @@ export function Analysis({ t, row, onBack, live = false, session }: {
             const result = await apiRequest<{ preparation?: { replay: string; progress?: ReplayProgress | null; errorCode?: string | null } }>(`/api/matches/${encodeURIComponent(match.id)}/analysis`, { method: "POST", body: "{}" });
             setPreparation(result.preparation || { replay: "pending", progress: { phase: "queued", bytes: 0, totalBytes: null, bytesPerSecond: 0, attempts: 0, nextTryAt: null, phaseStartedAt: null, heartbeatAt: null, retryDeadlineAt: null, errorCode: null } });
             setRefreshToken(value => value + 1);
+            window.dispatchEvent(new Event("dota-notes:matches-updated"));
         }
         catch (failure) { setError(failure); }
         finally { setPending(false); }

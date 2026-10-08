@@ -369,6 +369,12 @@
           "markdownDescription": "Enables the export_recovery_codes command without any pre-configured scope."
         },
         {
+          "description": "Enables the launch_dota command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-launch-dota",
+          "markdownDescription": "Enables the launch_dota command without any pre-configured scope."
+        },
+        {
           "description": "Enables the list_replays command without any pre-configured scope.",
           "type": "string",
           "const": "allow-list-replays",
@@ -429,6 +435,12 @@
           "markdownDescription": "Denies the export_recovery_codes command without any pre-configured scope."
         },
         {
+          "description": "Denies the launch_dota command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-launch-dota",
+          "markdownDescription": "Denies the launch_dota command without any pre-configured scope."
+        },
+        {
           "description": "Denies the list_replays command without any pre-configured scope.",
           "type": "string",
           "const": "deny-list-replays",
@@ -481,6 +493,12 @@
           "type": "string",
           "const": "session-vault",
           "markdownDescription": "Keep the authenticated session in the operating system credential store."
+        },
+        {
+          "description": "Launch Dota 2 through the fixed official Steam game URI from the main window.",
+          "type": "string",
+          "const": "steam-launch",
+          "markdownDescription": "Launch Dota 2 through the fixed official Steam game URI from the main window."
         },
         {
           "description": "Open the validated Dota Notes Steam sign-in URL in the system browser.",

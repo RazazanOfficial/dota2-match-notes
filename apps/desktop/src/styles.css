@@ -3307,3 +3307,27 @@ html { scroll-behavior:smooth; }
 .monitor-preview>bdi { font-size:12px; }
 .monitor-preview>svg { position:absolute;bottom:5px;right:5px;color:var(--good); }
 .history-toolbar .filters { flex-wrap:wrap;max-width:100%; }
+
+/* Compact local replay setup. Illustrations are vectors bundled with the app. */
+.replay-location .replay-location-actions {flex:0 0 auto;display:flex;flex-wrap:wrap;gap:8px}
+.replay-location .replay-folder-name {min-width:0}
+.replay-folder-name bdi {display:block;direction:ltr;text-align:start;font-size:12px;overflow-wrap:anywhere}
+.replay-setup-guide {display:grid;gap:16px}
+.setup-steps {display:flex;justify-content:center;gap:12px}
+.setup-steps button {width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--muted);position:relative}
+.setup-steps button.active {border-color:var(--accent);color:var(--text);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.setup-steps button.complete {color:#70d8ba;border-color:#70d8ba}
+.setup-illustration {display:block;width:100%;height:auto;max-height:300px;direction:ltr;border-radius:14px}
+.setup-caption {display:grid;gap:7px;position:relative;padding-inline-end:50px}
+.setup-caption>span {position:absolute;inset-inline-end:0;top:0;color:var(--muted);font-size:12px;direction:ltr}
+.setup-caption h3 {font-size:17px;margin:0}.setup-caption p {margin:0;color:var(--muted);line-height:1.9;font-size:13px;min-height:50px}
+.replay-setup-guide footer {display:flex;justify-content:space-between;gap:12px}
+.launch-dota-area {display:grid;gap:7px;margin-bottom:9px}
+.launch-dota {display:flex;gap:10px;align-items:center;width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);color:var(--text);font:inherit;font-size:12px}
+.launch-dota:hover {border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.launch-dota>img {width:26px;height:26px;object-fit:contain}.launch-dota>span {flex:1;text-align:start}
+.launch-dota-area>small {color:var(--muted);font-size:10px;line-height:1.6;padding-inline:8px}
+.launch-dota-area .error-notice {padding:10px;font-size:11px}.launch-dota-area .error-notice svg {flex-shrink:0;width:16px}
+.replay-transfer {width:fit-content;max-width:100%;padding:12px 16px;display:flex;gap:12px;align-items:center}
+.replay-transfer>div {display:grid;gap:4px}.replay-transfer strong {font-size:13px}.replay-transfer small {color:var(--muted);font-size:11px}
+.replay-transfer .signal-dot {flex-shrink:0}.replay-transfer .copy-value {font-size:12px}

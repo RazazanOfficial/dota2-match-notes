@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "steam-launch"
+description = "Launch Dota 2 through the fixed official Steam game URI from the main window."
+commands.allow = ["launch_dota"]

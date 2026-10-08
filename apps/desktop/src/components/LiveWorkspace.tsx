@@ -65,14 +65,20 @@ export function useRows(query: HistoryQuery, collectAll = false) {
     const connection = useConnection();
     const [state,setState] = useState<{key:string;data:MatchListResponse|null;error:unknown}>(()=>({key,data:cachedRead(key) || cachedHistory(query,collectAll),error:null}));
     const [refreshing,setRefreshing]=useState(false);
-    const [revision,setRevision] = useState(0);
-    useEffect(()=>{ const refresh=()=>setRevision(value=>value+1); window.addEventListener(refreshEvent,refresh); return ()=>window.removeEventListener(refreshEvent,refresh); },[]);
     useEffect(()=>{
-        const controller=new AbortController(); let timer=0;
+        const controller=new AbortController();
+        let timer=0, inFlight=false, refreshAgain=false;
         const load=async()=>{
-            setRefreshing(true);
+            if (controller.signal.aborted) return;
+            if (inFlight) { refreshAgain=true; return; }
+            window.clearTimeout(timer); inFlight=true; setRefreshing(true);
+            let delay=30_000;
             try {
-                if (connectionState()==="offline" && cachedRead(key)) { setState({key,data:cachedRead(key),error:null}); return; }
+                if (connectionState()==="offline") {
+                    const previous=cachedRead<MatchListResponse>(key) || cachedHistory(query,collectAll);
+                    if (previous) setState({key,data:previous,error:null});
+                    return;
+                }
                 let result=await listMatches(query,controller.signal);
                 let rows=result.rows;
                 if (collectAll) {
@@ -84,17 +90,38 @@ export function useRows(query: HistoryQuery, collectAll = false) {
                 }
                 if (controller.signal.aborted) return;
                 cachedWrite(key,result); setState({key,data:result,error:null});
-                const running=result.rows.some(row=>["pending","processing"].includes(row.analysisStatus || ""));
-                if (connectionState()==="online" && (result.summaryPending || running)) timer=window.setTimeout(load,result.summaryPending?2000:5000);
+                const running=result.rows.some(row=>["pending","queued","processing"].includes(row.analysisPreparation?.replay || row.analysisStatus || ""));
+                delay=result.summaryPending ? 2_000 : running ? 5_000 : 30_000;
             } catch(failure) {
                 if (!controller.signal.aborted) {
                     const previous=cachedRead<MatchListResponse>(key) || cachedHistory(query,collectAll);
                     setState({key,data:previous,error:previous && connectionState()==="offline" ? null : failure});
+                    delay=10_000;
                 }
-            } finally { if (!controller.signal.aborted) setRefreshing(false); }
+            } finally {
+                inFlight=false;
+                if (!controller.signal.aborted) {
+                    setRefreshing(false);
+                    // Retry after transient failures and refresh idle rows too: a job
+                    // may have been started elsewhere, or completed while hidden.
+                    if (connectionState()!=="offline") timer=window.setTimeout(load,refreshAgain ? 0 : delay);
+                    refreshAgain=false;
+                }
+            }
         };
-        void load(); return ()=>{controller.abort();window.clearTimeout(timer);};
-    },[key,revision,connection]);
+        const refresh=()=>{if(connectionState()!=="offline") void load();};
+        const visible=()=>{if(document.visibilityState==="visible") refresh();};
+        window.addEventListener(refreshEvent,refresh);
+        window.addEventListener("focus",refresh);
+        document.addEventListener("visibilitychange",visible);
+        void load();
+        return ()=>{
+            controller.abort(); window.clearTimeout(timer);
+            window.removeEventListener(refreshEvent,refresh);
+            window.removeEventListener("focus",refresh);
+            document.removeEventListener("visibilitychange",visible);
+        };
+    },[key,connection]);
     const current=state.key===key?state:{key,data:cachedRead<MatchListResponse>(key) || cachedHistory(query,collectAll),error:null};
     return {...current,refreshing,initialLoading:!current.data && !current.error};
 }

@@ -1,4 +1,6 @@
 mod replay;
+mod replay_codec;
+mod replay_paths;
 mod recovery;
 mod aspect_geometry;
 #[cfg(windows)] mod aspect_windows;
@@ -48,6 +50,12 @@ fn open_steam_login(app: AppHandle, url: String) -> Result<(), String> {
     }
     app.opener().open_url(url, None::<&str>).map_err(|e| e.to_string())
 }
+#[tauri::command]
+fn launch_dota(app: AppHandle, window: tauri::WebviewWindow) -> Result<(), String> {
+    if window.label() != "main" { return Err("steam_launch_failed".into()); }
+    // The registered Steam protocol handles client startup and game location.
+    app.opener().open_url("steam://rungameid/570", None::<&str>).map_err(|_| "steam_launch_failed".into())
+}
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default();
@@ -65,7 +73,7 @@ pub fn run() {
             Ok(())
         })
         .manage(replay::ReplayState::default())
-        .invoke_handler(tauri::generate_handler![open_steam_login, save_session_token, load_session_token, clear_session_token, replay::replay_settings, replay::choose_dota_folder, replay::list_replays, replay::download_replay, recovery::export_recovery_codes, window_aspect::set_window_aspect_ratio])
+        .invoke_handler(tauri::generate_handler![launch_dota, open_steam_login, save_session_token, load_session_token, clear_session_token, replay::replay_settings, replay::choose_dota_folder, replay::list_replays, replay::download_replay, recovery::export_recovery_codes, window_aspect::set_window_aspect_ratio])
         .run(tauri::generate_context!())
         .expect("error while running Dota Notes");
 }
