@@ -6,6 +6,7 @@
 
 | موضوع | فایل |
 | --- | --- |
+| عرض فضای کار، اندازهٔ ثابت پنجره، باف و Git/VPS | [fixed-window-loadout.fa.md](fixed-window-loadout.fa.md) |
 | کش آفلاین، جدول آیتم/باف، فیلتر نمودار و Git/VPS | [offline-match-workspace.fa.md](offline-match-workspace.fa.md) |
 | پوزیشن ساپورت‌های چرخشی، ساعت ۲۴ ساعته، گزارش نمایشی و Git/VPS | [support-position-time-ui.fa.md](support-position-time-ui.fa.md) |
 | اعتبارسنجی ID صفر ریپلی، خطا/پیشرفت تحلیل و استقرار روی VPS موجود | [replay-validation-progress.fa.md](replay-validation-progress.fa.md) |

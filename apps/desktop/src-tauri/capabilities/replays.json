@@ -11,6 +11,12 @@
     "recovery-export",
     "deep-link:default",
     "core:event:allow-listen",
-    "core:event:allow-unlisten"
+    "core:event:allow-unlisten",
+    "core:window:allow-current-monitor",
+    "core:window:allow-primary-monitor",
+    "core:window:allow-inner-size",
+    "core:window:allow-outer-size",
+    "core:window:allow-set-size",
+    "core:window:allow-center"
   ]
 }

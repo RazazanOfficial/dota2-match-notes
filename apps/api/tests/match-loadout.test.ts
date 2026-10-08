@@ -8,6 +8,10 @@ describe("compact final inventory and buffs",()=>{
   expect(result.buffs.filter(b=>b.key==="ultimate_scepter")).toHaveLength(1);
   expect(result.buffs).toEqual(expect.arrayContaining([expect.objectContaining({key:"legion_commander_duel",stacks:88}),expect.objectContaining({key:"slark_essence_shift",stacks:9}),expect.objectContaining({key:"silencer_glaives_of_wisdom",stacks:20}),expect.objectContaining({key:"permanent_buff_999",stacks:2})]));
  });
+ it("names Lifestealer's reported permanent buff 16 and retains its actual amount",()=>{
+  const result=extractLoadout({permanent_buffs:[{permanent_buff:16,stack_count:312},{permanent_buff:6,stack_count:1}]});
+  expect(result.buffs).toEqual([expect.objectContaining({key:"life_stealer_feast",label:"Permanent health",stacks:312}),expect.objectContaining({key:"tome_of_knowledge",itemId:257})]);
+ });
  it("rejects malformed IDs/stacks and limits arrays",()=>{
   const result=extractLoadout({item_0:-1,item_1:"50",permanent_buffs:[{permanent_buff:"5",stack_count:40},{permanent_buff:5,stack_count:NaN},...Array.from({length:100},(_,i)=>({permanent_buff:i+100,stack_count:2}))]});
   expect(result.itemIds).toEqual([null,null,null,null,null,null]);expect(result.buffs.length).toBeLessThanOrEqual(32);expect(result.buffs[0].stacks).toBeNull();
