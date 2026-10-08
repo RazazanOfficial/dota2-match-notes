@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-set-window-aspect-ratio"
+description = "Enables the set_window_aspect_ratio command without any pre-configured scope."
+commands.allow = ["set_window_aspect_ratio"]
+
+[[permission]]
+identifier = "deny-set-window-aspect-ratio"
+description = "Denies the set_window_aspect_ratio command without any pre-configured scope."
+commands.deny = ["set_window_aspect_ratio"]

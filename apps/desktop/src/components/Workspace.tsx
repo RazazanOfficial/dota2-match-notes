@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Download, Search, Swords, X, Sparkles, Trophy, Activity, ArrowUpRight, Zap, Shield, Gamepad2, Brain, Sprout, TrendingUp, CircleHelp, Check, LoaderCircle, ArrowUpLeft, ChevronDown, Send } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { CalendarDays, ChevronLeft, ChevronRight, Download, Search, Swords, X, Sparkles, Trophy, Activity, ArrowUpRight, Zap, Shield, Gamepad2, Brain, Sprout, TrendingUp, CircleHelp, Check, LoaderCircle, ArrowUpLeft, ChevronDown, Send, AlertCircle } from "lucide-react";
 import { heroById, heroImage, heroIcon } from "@/data/heroes";
 import { positionImage } from "@/data/positions";
 import { buildPersianCalendarMonth } from "@/lib/persian-calendar";
@@ -107,7 +107,7 @@ export function Score({ value, t }: { value: number | null | undefined; t?: Mess
 }
 type Preparation = { replay: string; progress?: ReplayProgress | null; errorCode?: string | null };
 export function MatchRow({ match, t, onOpen, live = false }: { match: HistoryMatch; t: Messages; onOpen: (m: HistoryMatch) => void; live?: boolean }) {
-    const hero = heroById(match.heroId), [preparation, setPreparation] = useState<Preparation | null>(match.analysisPreparation || null), [busy, setBusy] = useState(false), [error, setError] = useState<unknown>(null), [ready, setReady] = useState(false), [expanded, setExpanded] = useState(true);
+    const hero = heroById(match.heroId), [preparation, setPreparation] = useState<Preparation | null>(match.analysisPreparation || null), [busy, setBusy] = useState(false), [error, setError] = useState<unknown>(null), [ready, setReady] = useState(false), [expanded, setExpanded] = useState(false);
     useEffect(() => {
         if (match.analysisPreparation) { setPreparation(match.analysisPreparation); setReady(false); }
         else if (match.analyzed) { setPreparation(null); setReady(true); }
@@ -133,7 +133,7 @@ export function MatchRow({ match, t, onOpen, live = false }: { match: HistoryMat
     async function analyze() {
         if (running) return;
         if (match.analyzed || ready || !live) { onOpen(match); return; }
-        setBusy(true); setError(null);
+        setBusy(true); setError(null); setExpanded(true);
         try {
             const result = await apiRequest<{ analysis?: unknown; preparation?: Preparation }>(`/api/matches/${encodeURIComponent(match.journalId || match.id)}/analysis`, { method: "POST", body: "{}" });
             if (result.analysis || result.preparation?.replay === "ready") { setReady(true); setPreparation(null); window.dispatchEvent(new Event("dota-notes:matches-updated")); }
@@ -141,20 +141,26 @@ export function MatchRow({ match, t, onOpen, live = false }: { match: HistoryMat
         } catch (failure) { setError(failure); } finally { setBusy(false); }
     }
     const analyzed = !running && (match.analyzed || ready);
+    const failed = !running && !analyzed && (preparation?.replay === "failed" || match.analysisStatus === "failed" || Boolean(error));
     return <><div role="row" className="match-row" data-match-row={match.id}>
 
         <span role="cell"><button className="row-hero" onClick={() => onOpen(match)} aria-label={`${hero?.name || t.heroColumn} · ${t.details} ${match.id}`}><img src={hero ? heroImage(hero) : ""} alt={hero?.name} width={64} height={36} loading="lazy"/></button></span>
         <span role="cell"><Position value={match.position} title={false} t={t} analyzed={match.analyzed || ready} reportable/></span><span role="cell" className={`result-pill ${match.won ? "win" : "loss"}`}>{match.won ? "W" : "L"}</span>
         <bdi role="cell" className="row-kda">{match.k} / {match.d} / {match.a}</bdi><span role="cell"><Score value={match.score} t={t}/></span><span role="cell"><ModeIcon mode={match.mode} t={t}/></span>
-        <span role="cell"><button className={`analysis-action ${analyzed ? "ready" : running ? "running" : "pending"}`} aria-expanded={running ? expanded : undefined} onClick={() => running ? setExpanded(value => !value) : void analyze()}>{analyzed ? <Check size={15}/> : running ? <LoaderCircle className="processing-spinner" size={15}/> : <Sparkles size={14}/>}<span>{analyzed ? t.analysisDone : running ? t.analysisQueued : t.analyze}</span>{running && <ChevronDown size={15} className={expanded ? "is-expanded" : ""}/>}</button></span>
+        <span role="cell"><button className={`analysis-action ${analyzed ? "ready" : running ? "running" : failed ? "failed" : "pending"}`} aria-expanded={running || failed ? expanded : undefined} onClick={() => running || failed ? setExpanded(value => !value) : void analyze()}>{analyzed ? <Check size={15}/> : running ? <LoaderCircle className="processing-spinner" size={15}/> : failed ? <AlertCircle size={15}/> : <Sparkles size={14}/>}<span>{analyzed ? t.analysisDone : running ? t.analysisQueued : failed ? t.analysisError : t.analyze}</span>{(running || failed) && <ChevronDown size={15} className={expanded ? "is-expanded" : ""}/>}</button></span>
         <bdi role="cell" className="row-duration">{durationText(match.duration)}</bdi><span role="cell" className="match-id-cell"><CopyValue value={match.id} t={t}/></span>
         <span role="cell" className="items-cell"><MatchLoadout match={match} t={t}/></span>
         <span role="cell" className="details-cell"><button className="match-details-button" onClick={() => onOpen(match)} aria-label={`${t.details} ${match.id}`}>{isPersian(t) ? <ArrowUpRight size={17}/> : <ArrowUpLeft size={17}/>}</button></span>
-    </div>{preparation && expanded && <div className="row-analysis-progress"><AnalysisProgress preparation={preparation} t={t} compact onCollapse={() => setExpanded(false)}/></div>}{!!error && <ErrorNotice error={error} title={t.analysisFailed} t={t}/>}</>;
+    </div>{expanded && (preparation || failed) && <div className="row-analysis-progress">{error ? <ErrorNotice error={error} title={t.analysisFailed} t={t}/> : <AnalysisProgress preparation={preparation || {replay:"failed"}} t={t} compact onCollapse={() => setExpanded(false)}/>} {failed && <button className="analysis-retry-button" onClick={()=>void analyze()}>{t.analysisRetryAction}</button>}</div>}</>;
 }
 export function MatchTable({ matches, t, onOpen, groupDays = false, live = false }: { matches: HistoryMatch[]; t: Messages; onOpen: (m: HistoryMatch) => void; groupDays?: boolean; live?: boolean }) {
+    const header = useRef<HTMLDivElement>(null);
+    // One shared width for every row/header; loadout growth never stretches the gaps.
+    const buffs = Math.max(0,...matches.map(m=>m.buffs?.length || 0));
+    const loadoutWidth = 332 + (buffs ? 12 + buffs*36 + (buffs-1)*6 : 0);
+    const style = {"--loadout-width":`${loadoutWidth}px`} as CSSProperties;
     const columns = [t.heroColumn,t.posColumn,t.result,"K / D / A","IMP",t.mode,t.analysis,t.duration,t.matchId,t.items,t.details];
-    return <div className="table-scroll"><div role="table" aria-label={t.matches} className="match-table"><div role="row" className="match-row table-head">{columns.map(label=><span role="columnheader" className={label===t.items ? "items-cell" : label===t.details ? "details-cell" : undefined} key={label}>{label}</span>)}</div>{matches.map((m,i)=><div role="rowgroup" key={m.id}>{groupDays && (i===0 || matchDateKey(m)!==matchDateKey(matches[i-1])) && <div className="day-divider"><span>{new Intl.DateTimeFormat(isPersian(t)?"fa-IR":"en-US",{weekday:"long",month:"short",day:"numeric",timeZone:"Asia/Tehran"}).format(new Date(m.startedAt))}</span><i/></div>}<MatchRow match={m} t={t} onOpen={onOpen} live={live}/></div>)}</div></div>;
+    return <div role="table" aria-label={t.matches} className="match-table-region" style={style}><div className="match-table-sticky" ref={header}><div role="row" className="match-row table-head">{columns.map(label=><span role="columnheader" className={label===t.items ? "items-cell" : label===t.details ? "details-cell" : undefined} key={label}>{label}</span>)}</div></div><div className="table-scroll" onScroll={event=>{if(header.current)header.current.scrollLeft=event.currentTarget.scrollLeft;}}><div className="match-table">{matches.map((m,i)=><div role="rowgroup" key={m.id}>{groupDays && (i===0 || matchDateKey(m)!==matchDateKey(matches[i-1])) && <div className="day-divider"><span>{new Intl.DateTimeFormat(isPersian(t)?"fa-IR":"en-US",{weekday:"long",month:"short",day:"numeric",timeZone:"Asia/Tehran"}).format(new Date(m.startedAt))}</span><i/></div>}<MatchRow match={m} t={t} onOpen={onOpen} live={live}/></div>)}</div></div></div>;
 }
 
 export function Matches({ t, onOpen, session = previewProfile }: {

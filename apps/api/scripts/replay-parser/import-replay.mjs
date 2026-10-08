@@ -46,8 +46,8 @@ async function run(command, args, { timeoutMs = 120_000, outputLimit = 8_192 } =
     else out.push(chunk);
   });
   child.stderr.on("data", (chunk) => {
+    if (errorBytes < 8_192) errors.push(chunk.subarray(0, 8_192 - errorBytes));
     errorBytes += chunk.length;
-    if (errorBytes < 8_192) errors.push(chunk);
   });
   try {
     const code = await new Promise((done, reject) => {
@@ -55,7 +55,10 @@ async function run(command, args, { timeoutMs = 120_000, outputLimit = 8_192 } =
       child.once("close", done);
     });
     if (timedOut || exceeded || code !== 0) {
-      throw new Error(`${command} failed (${timedOut ? "timeout" : exceeded ? "output limit" : code}): ${Buffer.concat(errors).toString("utf8").slice(-800)}`);
+      const text = Buffer.concat(errors).toString("utf8");
+      // Keep the exception at the beginning; the end of a Java stack alone loses its cause.
+      const diagnostic = text.length <= 1450 ? text : `${text.slice(0, 1100)}\n[stack truncated]\n${text.slice(-250)}`;
+      throw new Error(`${command} failed (${timedOut ? "timeout" : exceeded ? "output limit" : code}): ${diagnostic}`);
     }
     return Buffer.concat(out);
   } finally { clearTimeout(timeout); }
@@ -187,7 +190,8 @@ async function main() {
     }
     if (!dryRun) await store(matchId, blob);
     console.log(JSON.stringify({ matchId, mode: dryRun ? "validated" : "stored", parserVersion: blob.version,
-      players: blob.players.length, timelinePoints: blob.players[0].times.length }));
+      players: blob.players.length, timelinePoints: blob.players[0].times.length,
+      laneEventsAvailable: Boolean(blob.lane_events), laneSnapshots: blob.lane_events?.snapshots?.length ?? 0 }));
   } finally { await rm(work, { recursive: true, force: true }); }
 }
 

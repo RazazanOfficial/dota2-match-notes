@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState } from "react";
 import { LayoutDashboard, List, Film, Sparkles, Settings, Moon, Sun, UserRound, LogOut } from "lucide-react";
 import { messages } from "./i18n";
-import { useFixedWindow, type WindowLayoutState } from "./hooks/useFixedWindow";
+import { useWindowAspect, type WindowAspectState } from "./hooks/useFixedWindow";
 import { WindowControls } from "./components/WindowControls";
 import { useSmoothScroll } from "./hooks/useSmoothScroll";
 import { usePreferences } from "./hooks/usePreferences";
@@ -28,12 +28,12 @@ export function App({ session }: {
 }) {
     useSmoothScroll();
     const prefs = usePreferences();
-    const layout = useFixedWindow();
+    const layout = useWindowAspect();
     useConnectionMonitor(API_ORIGIN, !session);
     if (!layout.ready) return <LoadingView full t={messages[prefs.preferences.language]}/>;
     return <CursorThemeProvider showSettings={false}>{session ? <Desktop session={session} prefs={prefs} layout={layout}/> : <AuthenticatedApp prefs={prefs} layout={layout}/>}</CursorThemeProvider>;
 }
-function AuthenticatedApp({ prefs, layout }: { prefs: PreferenceState; layout: WindowLayoutState }) {
+function AuthenticatedApp({ prefs, layout }: { prefs: PreferenceState; layout: WindowAspectState }) {
     const auth = useDesktopAuth();
     if (auth.restoring) return <LoadingView full session t={messages[prefs.preferences.language]}/>;
     if (!auth.session) return <Login preferences={prefs.preferences} setPreferences={prefs.setPreferences} t={messages[prefs.preferences.language]} busy={auth.busy || auth.restoring} error={auth.error} onSteam={auth.signIn} onPassword={async (id, password) => { localStorage.removeItem(signupKey); await auth.signInWithPassword(id, password); }} clearError={auth.clearError}/>;
@@ -43,7 +43,7 @@ function AuthenticatedApp({ prefs, layout }: { prefs: PreferenceState; layout: W
 function Desktop({ session, prefs, layout, live = false, onLogout }: {
     session: Session;
     prefs: PreferenceState;
-    layout: WindowLayoutState;
+    layout: WindowAspectState;
     live?: boolean;
     onLogout?: () => void;
 }) {

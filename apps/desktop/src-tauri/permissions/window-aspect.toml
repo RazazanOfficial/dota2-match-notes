@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "window-aspect"
+description = "Choose a supported aspect ratio for the main desktop window."
+commands.allow = ["set_window_aspect_ratio"]

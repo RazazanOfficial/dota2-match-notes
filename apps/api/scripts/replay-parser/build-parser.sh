@@ -8,6 +8,8 @@ fi
 
 # An audited, reproducible OpenDota parser revision. It compiles and was
 # exercised against replay 9008411473 on Java 17; no binary is checked in.
+# Clarity 4.0.3 / protobuf 6.3 also parsed the previously failing replay 9033813921
+# on the real VPS. Keep the OpenDota output schema/revision unchanged.
 parser_commit="e17d09ef40e63c387512057cef7250eebc96be96"
 parser_destination="$1"
 build_dir="$(mktemp -d)"
@@ -28,13 +30,23 @@ python3 - "$build_dir/parser/pom.xml" <<'PY'
 from pathlib import Path
 import sys
 p = Path(sys.argv[1]); content = p.read_text()
-for before, after in (("<source>21</source>", "<source>17</source>"),
+for before, after in (("<version>4.0.1</version>", "<version>4.0.3</version>"),
+                      ("<source>21</source>", "<source>17</source>"),
                       ("<target>21</target>", "<target>17</target>")):
     if content.count(before) != 1: raise SystemExit("Unexpected parser POM version")
     content = content.replace(before, after)
 start = content.index("    <repositories>")
 end = content.index("    </repositories>", start) + len("    </repositories>")
-p.write_text(content[:start] + content[end:])
+content = content[:start] + content[end:]
+# Clarity declares a dependency range. Pin the exact protobuf used by the VPS test.
+content = content.replace("    <build>", """    <dependencyManagement>
+      <dependencies><dependency>
+        <groupId>com.skadistats</groupId><artifactId>clarity-protobuf</artifactId>
+        <version>6.3</version>
+      </dependency></dependencies>
+    </dependencyManagement>
+    <build>""", 1)
+p.write_text(content)
 PY
 
 (cd "$build_dir/parser" && mvn -B -DskipTests package)

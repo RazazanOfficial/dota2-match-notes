@@ -363,6 +363,12 @@
           "markdownDescription": "Enables the download_replay command without any pre-configured scope."
         },
         {
+          "description": "Enables the export_recovery_codes command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-export-recovery-codes",
+          "markdownDescription": "Enables the export_recovery_codes command without any pre-configured scope."
+        },
+        {
           "description": "Enables the list_replays command without any pre-configured scope.",
           "type": "string",
           "const": "allow-list-replays",
@@ -393,6 +399,12 @@
           "markdownDescription": "Enables the save_session_token command without any pre-configured scope."
         },
         {
+          "description": "Enables the set_window_aspect_ratio command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-set-window-aspect-ratio",
+          "markdownDescription": "Enables the set_window_aspect_ratio command without any pre-configured scope."
+        },
+        {
           "description": "Denies the choose_dota_folder command without any pre-configured scope.",
           "type": "string",
           "const": "deny-choose-dota-folder",
@@ -409,6 +421,12 @@
           "type": "string",
           "const": "deny-download-replay",
           "markdownDescription": "Denies the download_replay command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the export_recovery_codes command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-export-recovery-codes",
+          "markdownDescription": "Denies the export_recovery_codes command without any pre-configured scope."
         },
         {
           "description": "Denies the list_replays command without any pre-configured scope.",
@@ -441,6 +459,12 @@
           "markdownDescription": "Denies the save_session_token command without any pre-configured scope."
         },
         {
+          "description": "Denies the set_window_aspect_ratio command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-set-window-aspect-ratio",
+          "markdownDescription": "Denies the set_window_aspect_ratio command without any pre-configured scope."
+        },
+        {
           "description": "Save the six recovery codes to a user-selected text file.",
           "type": "string",
           "const": "recovery-export",
@@ -463,6 +487,12 @@
           "type": "string",
           "const": "steam-login",
           "markdownDescription": "Open the validated Dota Notes Steam sign-in URL in the system browser."
+        },
+        {
+          "description": "Choose a supported aspect ratio for the main desktop window.",
+          "type": "string",
+          "const": "window-aspect",
+          "markdownDescription": "Choose a supported aspect ratio for the main desktop window."
         },
         {
           "description": "Default core plugins set.\n#### This default permission set includes:\n\n- `core:path:default`\n- `core:event:default`\n- `core:window:default`\n- `core:webview:default`\n- `core:app:default`\n- `core:image:default`\n- `core:resources:default`\n- `core:menu:default`\n- `core:tray:default`",

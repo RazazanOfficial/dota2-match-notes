@@ -3,7 +3,15 @@
   "productName": "Dota Notes",
   "version": "0.1.0",
   "identifier": "ir.dota2notes.desktop",
-  "plugins": { "deep-link": { "desktop": { "schemes": ["dota-notes"] } } },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "dota-notes"
+        ]
+      }
+    }
+  },
   "build": {
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
@@ -15,13 +23,13 @@
       {
         "label": "main",
         "title": "Dota Notes",
-        "width": 960,
-        "height": 540,
+        "width": 1480,
+        "height": 833,
         "minWidth": 800,
         "minHeight": 450,
         "center": true,
-        "resizable": false,
-        "maximizable": false,
+        "resizable": true,
+        "maximizable": true,
         "decorations": true
       }
     ],
