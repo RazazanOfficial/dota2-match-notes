@@ -3,7 +3,7 @@
 Monorepo اپ‌های Dota Notes: دفتر مچ، دریافت و تحلیل ریپلی و کلاینت‌های جدید دسکتاپ و موبایل.
 برای ادامهٔ توسعه ابتدا [فهرست مستندات](docs/README.md) و [HANDOFF](docs/HANDOFF.md) را بخوانید.
 
-تغییر جاری: رفع بازخوانی وضعیت زندهٔ تحلیل، راهنمای تصویری ریپلی، دانلود Zstandard/BZip2 به DEM و اجرای دوتا از Steam؛ [راهنمای تست، Git و VPS](docs/replay-setup-live-status.fa.md).
+تغییر جاری: رفع پاسخ 400 در جست‌وجوی ریپلی به‌دلیل تداخل مسیر ثابت lookup با شناسهٔ مچ؛ [راهنمای تست، Git و استقرار API](docs/replay-lookup-routing.fa.md).
 
 ## ساختار
 

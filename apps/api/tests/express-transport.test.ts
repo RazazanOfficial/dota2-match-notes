@@ -31,6 +31,7 @@ describe("all original routes over Express", () => {
           expect(response.headers.deprecation).toBe("true");
           continue;
         }
+        expect(response.body.route).toBe(route.path.replace(/^\/api/, "").replace(/\[([^\]]+)\]/g, ":$1"));
         expect(response.body.method).toBe(method);
         expect(response.body.query).toBe("value");
         for (const key of [...route.path.matchAll(/\[([^\]]+)\]/g)].map(x => x[1])) expect(response.body.params[key]).toBeDefined();
