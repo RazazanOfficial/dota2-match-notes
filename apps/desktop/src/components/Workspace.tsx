@@ -137,7 +137,10 @@ export function MatchRow({ match, t, onOpen, live = false }: { match: HistoryMat
         try {
             const result = await apiRequest<{ analysis?: unknown; preparation?: Preparation }>(`/api/matches/${encodeURIComponent(match.journalId || match.id)}/analysis`, { method: "POST", body: "{}" });
             if (result.analysis || result.preparation?.replay === "ready") { setReady(true); setPreparation(null); window.dispatchEvent(new Event("dota-notes:matches-updated")); }
-            else setPreparation(result.preparation || { replay: "pending" });
+            else {
+                setPreparation(result.preparation || { replay: "pending" });
+                window.dispatchEvent(new Event("dota-notes:matches-updated"));
+            }
         } catch (failure) { setError(failure); } finally { setBusy(false); }
     }
     const analyzed = !running && (match.analyzed || ready);

@@ -6,6 +6,21 @@ export function errorCode(error: unknown): string | null {
 }
 export function friendlyError(code: string | null | undefined, t: Messages) {
     const fa = isPersian(t);
+    const local: Record<string, [string, string]> = {
+        dota_folder_invalid: ["پوشهٔ نصب دوتا را انتخاب کن؛ همان پوشه‌ای که Steam با Browse local files باز می‌کند.", "Choose the Dota installation folder opened by Steam’s Browse local files."],
+        replay_folder_required: ["ابتدا پوشهٔ نصب دوتا را انتخاب کن.", "Choose your Dota installation folder first."],
+        replay_folder_write_failed: ["امکان ذخیره در پوشهٔ ریپلی نیست. دسترسی نوشتن و فضای آزاد این درایو را بررسی کن.", "The replay folder is not writable. Check its permissions and free disk space."],
+        replay_write_failed: ["ذخیرهٔ فایل روی سیستم کامل نشد. فضای آزاد و دسترسی پوشهٔ ریپلی را بررسی کن.", "The replay could not be saved locally. Check free disk space and folder permissions."],
+        replay_existing_invalid: ["یک فایل ناقص با این شناسه در پوشهٔ ریپلی وجود دارد. آن فایل را جابه‌جا کن و دوباره دانلود کن.", "An invalid file with this match ID already exists. Move it out of the replay folder and download again."],
+        replay_format_invalid: ["فایل دریافت‌شده یک ریپلی معتبر نیست. دوباره تلاش کن؛ اگر تکرار شد، شناسهٔ مچ را به پشتیبانی بده.", "The downloaded file is not a valid replay. Try again; if it persists, share the match ID with support."],
+        replay_decode_failed: ["بازکردن فایل ریپلی کامل نشد؛ ممکن است دریافت فایل ناقص باشد. دوباره دانلود کن.", "The replay could not be unpacked; its download may be incomplete. Download it again."],
+        replay_transfer_failed: ["دریافت فایل ریپلی کامل نشد. اتصال اینترنت را بررسی کن و دوباره دانلود کن.", "The replay transfer could not finish. Check your connection and download again."],
+        replay_size_limit: ["حجم این ریپلی از محدودیت ۲ گیگابایت بیشتر است.", "This replay exceeds the supported 2 GB size limit."],
+        replay_busy: ["تا پایان دانلود فعلی صبر کن.", "Wait for the current download to finish."],
+        replay_local_failed: ["دسترسی به فایل‌های ریپلی روی سیستم ممکن نشد. پوشهٔ انتخاب‌شده و دسترسی آن را بررسی کن.", "Local replay files could not be accessed. Check the selected folder and its permissions."],
+        steam_launch_failed: ["بازکردن استیم ممکن نشد. نصب استیم و دسترسی میان‌برهای آن را بررسی کن.", "Steam could not be opened. Check that Steam and its game shortcuts are installed."],
+    };
+    if (code && local[code]) return local[code][fa ? 0 : 1];
     if (code === "offline_mode") return t.offlineRequired;
     if (code?.startsWith("replay_identity_")) return fa ? "اطلاعات این ریپلی با مچ انتخاب‌شده تأیید نشد. دوباره تلاش کن؛ اگر مشکل ادامه داشت، شناسهٔ مچ را به پشتیبانی بده." : "We couldn't verify that this replay belongs to the selected match. Try again; if it persists, share the match ID with support.";
     if (code?.includes("parser") || code === "analysis_failed") return fa ? "خواندن و تحلیل این ریپلی کامل نشد. دوباره تلاش کن؛ اگر مشکل ادامه داشت، پشتیبانی می‌تواند آن را بررسی کند." : "We couldn't finish reading and analyzing this replay. Try again; support can investigate if it continues.";

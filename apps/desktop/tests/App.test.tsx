@@ -4,6 +4,9 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { App } from "../src/App";
 import { preferenceKey } from "@dota-notes/design-tokens";
 import { requestRange, trackingStart } from "../src/components/Calendar";
+import * as replayApi from "../src/api";
+import { Replay } from "../src/components/Replay";
+import { setConnection } from "../src/connection";
 import { replayNative, playCommand, validReplayId } from "../src/replays";
 import { previewProfile, profileRegistrationDate } from "../src/components/Shared";
 import { messages } from "../src/i18n";
@@ -165,6 +168,9 @@ describe("registration calendar", () => {
 });
 describe("native replay library", () => {
     function mocks() {
+        setConnection("online");
+        vi.spyOn(replayApi,"getBearer").mockReturnValue("test-session");
+        vi.spyOn(replayApi,"apiRequest").mockImplementation(async(path) => (path.startsWith("/api/matches/me?") ? {rows:filterHistory("week",SAMPLE_DATE)} : {archived:true}) as never);
         vi.spyOn(replayNative, "available").mockReturnValue(true);
         vi.spyOn(replayNative, "settings").mockResolvedValue({ dotaPath: "C:/Steam/steamapps/common/dota 2 beta", replayPath: "C:/Steam/steamapps/common/dota 2 beta/game/dota/replays" });
         vi.spyOn(replayNative, "files").mockResolvedValue([]);
@@ -175,22 +181,20 @@ describe("native replay library", () => {
         const file = { matchId: "9026000101", path: "replays/9026000101.dem", sizeBytes: 1048576, modifiedSeconds: 1790000000 };
         const download = vi.spyOn(replayNative, "download").mockResolvedValue(file);
         vi.mocked(replayNative.files).mockResolvedValueOnce([]).mockResolvedValueOnce([file]);
-        render(<App session={previewProfile}/> );
-        fireEvent.click(within(screen.getByRole("navigation")).getByRole("button", { name: "Replay", exact: true }));
+        render(<Replay t={messages.en} live/>);
         await screen.findByText("C:/Steam/steamapps/common/dota 2 beta/game/dota/replays");
         fireEvent.change(screen.getByRole("textbox", { name: "Match ID" }), { target: { value: file.matchId } });
         fireEvent.click(screen.getByRole("button", { name: messages.en.replaySearch }));
         fireEvent.click(within(document.querySelector(".replay-result") as HTMLElement).getByRole("button", { name: "Download replay" }));
         await waitFor(() => expect(screen.getByRole("tab", { name: /Downloaded replays/ }).getAttribute("aria-selected")).toBe("true"));
-        expect(download).toHaveBeenCalledWith(file.matchId);
+        expect(download).toHaveBeenCalledWith(file.matchId,"test-session",replayApi.API_ORIGIN);
         expect(screen.getByRole("button", { name: "Copy Play command" })).toBeTruthy();
         expect(screen.getByText(playCommand(file.matchId))).toBeTruthy();
     });
     it("keeps failed downloads out of the local library", async () => {
         mocks();
         vi.spyOn(replayNative, "download").mockRejectedValue(new Error("Replay expired"));
-        render(<App session={previewProfile}/> );
-        fireEvent.click(within(screen.getByRole("navigation")).getByRole("button", { name: "Replay", exact: true }));
+        render(<Replay t={messages.en} live/>);
         await screen.findByText("C:/Steam/steamapps/common/dota 2 beta/game/dota/replays");
         fireEvent.click(screen.getAllByRole("button", { name: "Download replay" })[0]);
         expect((await screen.findByRole("alert")).textContent).toContain("This step couldn't finish");
