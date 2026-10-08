@@ -2,43 +2,41 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { StrictMode } from "react";
 import { cleanup, fireEvent, render, renderHook, screen, waitFor, act } from "@testing-library/react";
-import { chooseWindowPreset, readWindowSpace, resizeWindow, windowPresets, windowPreferenceKey } from "../src/windowLayout";
-import { useFixedWindow } from "../src/hooks/useFixedWindow";
+import { readWindowPreference, windowPreferenceKey } from "../src/windowLayout";
+import { useWindowAspect } from "../src/hooks/useFixedWindow";
 import { WindowControls } from "../src/components/WindowControls";
 import { MatchLoadout,normalizeBuff } from "../src/components/MatchLoadout";
 import { messages } from "../src/i18n";
 import { sampleHistory } from "../src/history";
-const mocks=vi.hoisted(()=>({current:vi.fn(),primary:vi.fn(),size:vi.fn(),center:vi.fn(),moved:vi.fn(),scale:vi.fn(),inner:vi.fn(),outer:vi.fn()}));
-vi.mock("@tauri-apps/api/core",()=>({isTauri:()=>true}));
-vi.mock("@tauri-apps/api/window",async()=>({...await vi.importActual("@tauri-apps/api/window"),currentMonitor:mocks.current,primaryMonitor:mocks.primary,getCurrentWindow:()=>({setSize:mocks.size,center:mocks.center,onMoved:mocks.moved,onScaleChanged:mocks.scale,innerSize:mocks.inner,outerSize:mocks.outer})}));
-const physical=(width:number,height:number)=>({width,height,toLogical:(scale:number)=>({width:width/scale,height:height/scale})});
-beforeEach(()=>{vi.clearAllMocks();localStorage.clear();mocks.current.mockResolvedValue({scaleFactor:1,workArea:{size:physical(1920,1040)}});mocks.inner.mockResolvedValue(physical(960,540));mocks.outer.mockResolvedValue(physical(974,572));mocks.size.mockResolvedValue(undefined);mocks.center.mockResolvedValue(undefined);mocks.moved.mockResolvedValue(()=>{});mocks.scale.mockResolvedValue(()=>{});});
+const mocks=vi.hoisted(()=>({invoke:vi.fn()}));
+vi.mock("@tauri-apps/api/core",()=>({isTauri:()=>true,invoke:mocks.invoke}));
+beforeEach(()=>{vi.clearAllMocks();localStorage.clear();mocks.invoke.mockResolvedValue(undefined);});
 afterEach(()=>{cleanup();vi.restoreAllMocks();});
-describe("fixed native window layouts",()=>{
- it("chooses a fitting preset, preserves an explicit choice, and never accepts an unknown size",()=>{
-  expect(chooseWindowPreset(null,1882,984)?.id).toBe("wide");expect(chooseWindowPreset("medium",1882,984)?.id).toBe("medium");expect(chooseWindowPreset("invalid",1200,670)?.id).toBe("small");expect(chooseWindowPreset("extra",1200,670)?.id).toBe("small");expect(chooseWindowPreset(null,799,449)).toBeNull();
+describe("native window aspect ratios",()=>{
+ it("ignores old resolution presets and rejects an invalid persisted ratio",()=>{
+  localStorage.setItem("dota-notes.window-size.v1","wide");expect(readWindowPreference()).toBe("16:9");
+  localStorage.setItem(windowPreferenceKey,"1920x1080");expect(readWindowPreference()).toBe("16:9");
+  localStorage.setItem(windowPreferenceKey,"4:3");expect(readWindowPreference()).toBe("4:3");
  });
- it("uses work area and display scaling including the real window frame",async()=>{
-  mocks.current.mockResolvedValue({scaleFactor:1.5,workArea:{size:physical(1920,1040)}});mocks.inner.mockResolvedValue(physical(1440,810));mocks.outer.mockResolvedValue(physical(1455,855));
-  const space=await readWindowSpace();expect(space).toEqual({width:1246,height:639});expect(chooseWindowPreset(null,space.width,space.height)?.id).toBe("compact");await resizeWindow(windowPresets[1]);expect(mocks.size.mock.calls[0][0]).toMatchObject({width:960,height:540,type:"Logical"});expect(mocks.center).toHaveBeenCalled();
+ it("restores the saved ratio through one native command",async()=>{
+  localStorage.setItem(windowPreferenceKey,"16:10");const {result}=renderHook(()=>useWindowAspect());await waitFor(()=>expect(result.current.ready).toBe(true));
+  expect(mocks.invoke).toHaveBeenCalledTimes(1);expect(mocks.invoke).toHaveBeenCalledWith("set_window_aspect_ratio",{ratio:"16:10",resize:true});
  });
- it("restores the chosen size, persists only after successful resize, and rejects unsupported choices",async()=>{
-  localStorage.setItem(windowPreferenceKey,"medium");const {result}=renderHook(()=>useFixedWindow());await waitFor(()=>expect(result.current.ready).toBe(true));expect(result.current.selected).toBe("medium");
-  await act(()=>result.current.select("standard"));expect(result.current.selected).toBe("standard");expect(localStorage.getItem(windowPreferenceKey)).toBe("standard");
-  const count=mocks.size.mock.calls.length;await act(()=>result.current.select("extra"));expect(result.current.failed).toBe(true);expect(mocks.size.mock.calls.length).toBe(count);expect(localStorage.getItem(windowPreferenceKey)).toBe("standard");
+ it("persists only a successful ratio change and rejects unsupported values",async()=>{
+  const {result}=renderHook(()=>useWindowAspect());await waitFor(()=>expect(result.current.ready).toBe(true));
+  await act(()=>result.current.select("21:9"));expect(localStorage.getItem(windowPreferenceKey)).toBe("21:9");
+  const count=mocks.invoke.mock.calls.length;await act(()=>result.current.select("extra"));expect(mocks.invoke).toHaveBeenCalledTimes(count);
+  mocks.invoke.mockRejectedValueOnce(new Error("IPC failed"));await act(()=>result.current.select("4:3"));expect(result.current.failed).toBe(true);expect(result.current.selected).toBe("21:9");expect(localStorage.getItem(windowPreferenceKey)).toBe("21:9");
  });
- it("finishes native setup in StrictMode without restoring a stale async result",async()=>{
-  const {result}=renderHook(()=>useFixedWindow(),{wrapper:StrictMode});await waitFor(()=>expect(result.current.ready).toBe(true));expect(result.current.selected).toBe("wide");expect(result.current.failed).toBe(false);
+ it("finishes startup in StrictMode and does not block the app on a native failure",async()=>{
+  const {result}=renderHook(()=>useWindowAspect(),{wrapper:StrictMode});await waitFor(()=>expect(result.current.ready).toBe(true));expect(result.current.failed).toBe(false);
  });
- it("falls back on a smaller monitor and restores the preferred preset when moved back",async()=>{
-  localStorage.setItem(windowPreferenceKey,"wide");const {result}=renderHook(()=>useFixedWindow());await waitFor(()=>expect(result.current.selected).toBe("wide"));
-  // The title bar and margins leave only 644px of usable height, below the 648px preset.
-  mocks.current.mockResolvedValue({scaleFactor:1,workArea:{size:physical(1200,700)}});act(()=>mocks.moved.mock.calls.at(-1)![0]());await waitFor(()=>expect(result.current.selected).toBe("compact"));expect(localStorage.getItem(windowPreferenceKey)).toBe("wide");
-  mocks.current.mockResolvedValue({scaleFactor:1,workArea:{size:physical(1920,1040)}});act(()=>mocks.moved.mock.calls.at(-1)![0]());await waitFor(()=>expect(result.current.selected).toBe("wide"));
+ it("lets the app finish loading when the native command is unavailable",async()=>{
+  mocks.invoke.mockRejectedValueOnce(new Error("not allowed"));const {result}=renderHook(()=>useWindowAspect());await waitFor(()=>expect(result.current.ready).toBe(true));expect(result.current.failed).toBe(true);
  });
- it("renders ratio cards and disables choices that do not fit the current display",()=>{
-  const select=vi.fn();render(<WindowControls t={messages.fa} layout={{ready:true,busy:false,native:true,width:1300,height:750,selected:"medium",failed:false,select}}/>);
-  expect(screen.getAllByText("16:9")).toHaveLength(8);const extra=screen.getByText("2240 × 1260").closest("button")!;expect(extra.disabled).toBe(true);fireEvent.click(screen.getByText("1280 × 720"));expect(select).toHaveBeenCalledWith("medium");
+ it("renders ratio cards without fixed resolutions or a fullscreen option",()=>{
+  const select=vi.fn();const view=render(<WindowControls t={messages.fa} layout={{ready:true,busy:false,native:true,selected:"16:9",failed:false,select}}/>);
+  expect(screen.getAllByRole("button")).toHaveLength(5);expect(view.container.textContent).not.toMatch(/1920|1480|Full.?screen|تمام.?صفحه/);fireEvent.click(screen.getByText("4:3"));expect(select).toHaveBeenCalledWith("4:3");
  });
  it("repairs old cached buff 16 and uses a bundled icon and readable names in both languages",()=>{
   const old={key:"permanent_buff_16",label:"Permanent buff 16",stacks:312};expect(normalizeBuff(old,messages.en)).toMatchObject({key:"life_stealer_feast",label:"Permanent health",stacks:312});expect(normalizeBuff(old,messages.fa).label).toBe("سلامتی دائمی");

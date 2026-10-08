@@ -81,7 +81,8 @@ describe("match workspace regressions",()=>{
     it("restores persisted processing immediately and refreshes its stage from history", () => {
         const processing = { ...row, analysisStatus: "processing" as const, analysisPreparation: { replay: "processing", progress: { phase: "parsing", bytes: 1024, totalBytes: 1024, bytesPerSecond: 0, attempts: 1, nextTryAt: null, phaseStartedAt: null, heartbeatAt: null, retryDeadlineAt: null, errorCode: null } } };
         const view = render(<MatchTable matches={[processing]} t={messages.fa} onOpen={vi.fn()} live/>);
-        expect(screen.getByRole("button", { name: messages.fa.analysisQueued }).getAttribute("aria-expanded")).toBe("true");
+        expect(screen.getByRole("button", { name: messages.fa.analysisQueued }).getAttribute("aria-expanded")).toBe("false");
+        fireEvent.click(screen.getByRole("button", { name: messages.fa.analysisQueued }));
         expect(view.container.querySelector('.analysis-steps [aria-current="step"]')?.textContent).toContain(messages.fa.analysisParse);
         expect(mocks.api).not.toHaveBeenCalled();
         view.rerender(<MatchTable matches={[{ ...processing, analyzed: true, analysisPreparation: { ...processing.analysisPreparation, progress: { ...processing.analysisPreparation.progress, phase: "uploading" } } }]} t={messages.fa} onOpen={vi.fn()} live/>);
@@ -98,8 +99,10 @@ describe("match workspace regressions",()=>{
     });
     it("restores a failed request and keeps retry available", () => {
         render(<MatchTable matches={[{ ...row, analysisStatus: "failed", analysisPreparation: { replay: "failed", errorCode: "replay_identity_mismatch" } }]} t={messages.en} onOpen={vi.fn()} live/>);
+        expect(screen.queryByRole("alert")).toBeNull();
+        fireEvent.click(screen.getByRole("button", { name: messages.en.analysisError }));
         expect(screen.getByRole("alert").textContent).toContain("verify");
-        expect(screen.getByRole("button", { name: messages.en.analyze }).disabled).toBe(false);
+        expect(screen.getByRole("button", { name: messages.en.analysisRetryAction }).disabled).toBe(false);
     });
     it("translates an API request failure without leaking its technical message", async () => {
         mocks.api.mockRejectedValue(new ApiError("private stack trace", 500, "analysis_request_failed"));

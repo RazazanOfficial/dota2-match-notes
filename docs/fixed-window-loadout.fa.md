@@ -1,5 +1,7 @@
 # عرض فضای کار، اندازهٔ ثابت پنجره و باف‌ها
 
+**سند تاریخی:** این مرحله در `773076b` ادغام شد. رفتار ثابت پنجره و wrap جدول با تسک `fix/resizable-match-workspace` جایگزین شده است؛ برای رفتار جاری و استقرار [راهنمای جدید](resizable-match-workspace.fa.md) را بخوانید. اصلاح باف‌ها همچنان برقرار است.
+
 مبنای تسک `origin/main` در commit `db47f0e` (merge پچ offline-match-workspace)، branch مستقل `fix/fixed-window-loadout` است. نسخهٔ مستقر VPS تنها با خروجی همان VPS تأیید می‌شود.
 
 ## تغییرات

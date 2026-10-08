@@ -41,12 +41,27 @@ describe("updated match workspace",()=>{
  });
  it("collapses processing stages and shows only a short retry count near the signal",()=>{
   const processing={...rows[0],analyzed:false,analysisStatus:"pending" as const,analysisPreparation:{replay:"pending",progress:{phase:"retry_wait",attempts:2,bytes:0,totalBytes:null,bytesPerSecond:0,nextTryAt:null,phaseStartedAt:null,heartbeatAt:null,retryDeadlineAt:null,errorCode:"replay_metadata_pending"}}};
-  const view=render(<MatchTable matches={[processing]} t={messages.en} onOpen={vi.fn()}/>);const progress=view.container.querySelector('.row-analysis-progress')!;expect(progress.querySelector('.signal-retry')).toBeTruthy();expect(progress.textContent).toContain('Attempt 2');expect(progress.querySelector('.analysis-progress-heading')?.textContent).not.toContain(messages.en.analysisRefresh);expect(progress.querySelector('.analysis-progress-heading')?.textContent).not.toContain(messages.en.analysisQueued);
+  const view=render(<MatchTable matches={[processing]} t={messages.en} onOpen={vi.fn()}/>);expect(view.container.querySelector('.row-analysis-progress')).toBeNull();fireEvent.click(screen.getByRole("button",{name:messages.en.analysisQueued}));const progress=view.container.querySelector('.row-analysis-progress')!;expect(progress.querySelector('.signal-retry')).toBeTruthy();expect(progress.textContent).toContain('Attempt 2');expect(progress.querySelector('.analysis-progress-heading')?.textContent).not.toContain(messages.en.analysisRefresh);expect(progress.querySelector('.analysis-progress-heading')?.textContent).not.toContain(messages.en.analysisQueued);
   fireEvent.click(screen.getByRole("button",{name:messages.en.collapseProgress}));expect(view.container.querySelector('.row-analysis-progress')).toBeNull();fireEvent.click(screen.getByRole("button",{name:messages.en.analysisQueued}));expect(view.container.querySelector('.row-analysis-progress')).toBeTruthy();
  });
  it("retains cached rows immediately when returning to a page during an outage",async()=>{
   const view=render(<LiveDashboard session={previewProfile} t={messages.en} onOpen={vi.fn()} onNavigate={vi.fn()}/>);await waitFor(()=>expect(view.container.querySelectorAll('[data-match-row]')).toHaveLength(10));view.unmount();setConnection('offline');mocks.list.mockRejectedValue(new Error('offline'));
   const cached=render(<LiveDashboard session={previewProfile} t={messages.en} onOpen={vi.fn()} onNavigate={vi.fn()}/>);expect(cached.container.querySelectorAll('[data-match-row]')).toHaveLength(10);expect(cached.container.querySelector('.match-list .loading-view')).toBeNull();
+ });
+ it.each([messages.en,messages.fa])("keeps a failed analysis closed across remount and exposes a deliberate retry",async(t)=>{
+  const failed={...rows[0],analyzed:false,analysisStatus:"failed" as const,analysisPreparation:{replay:"failed",errorCode:"replay_parser_failed"}};
+  mocks.api.mockResolvedValue({preparation:{replay:"pending"}});
+  const view=render(<MatchTable matches={[failed]} t={t} onOpen={vi.fn()} live/>);
+  const button=screen.getByRole("button",{name:t.analysisError});expect(button.className).toContain("failed");expect(button.getAttribute("aria-expanded")).toBe("false");expect(view.container.querySelector('.row-analysis-progress')).toBeNull();expect(mocks.api).not.toHaveBeenCalled();
+  fireEvent.click(button);expect(screen.getByRole("alert").textContent).toContain(t.analysisFailed);expect(mocks.api).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button",{name:t.analysisRetryAction}));await waitFor(()=>expect(mocks.api).toHaveBeenCalledWith(expect.stringContaining(failed.id),expect.objectContaining({method:"POST"})));
+  view.unmount();const next=render(<MatchTable matches={[failed]} t={t} onOpen={vi.fn()}/>);expect(next.container.querySelector('.row-analysis-progress')).toBeNull();
+ });
+ it("keeps sticky headers aligned with horizontal scrolling without losing columns",()=>{
+  const view=render(<MatchTable matches={[rows[0]]} t={messages.en} onOpen={vi.fn()}/>);
+  const scroll=view.container.querySelector('.table-scroll')! as HTMLDivElement;const head=view.container.querySelector('.match-table-sticky')! as HTMLDivElement;
+  scroll.scrollLeft=250;fireEvent.scroll(scroll);expect(head.scrollLeft).toBe(250);expect(screen.getAllByRole("columnheader")).toHaveLength(11);
+  expect(view.container.querySelectorAll('.row-item')).toHaveLength(6);
  });
  it("opens the calendar offline without a loader or unsolicited error, and explains a submitted request",async()=>{
   const view=render(<LiveDashboard session={previewProfile} t={messages.en} onOpen={vi.fn()} onNavigate={vi.fn()}/>);await screen.findByRole("table");setConnection("offline");mocks.sync.mockRejectedValue(new Error("offline"));
