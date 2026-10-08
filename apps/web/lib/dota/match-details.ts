@@ -3,6 +3,8 @@ import type { MatchParticipant } from "../types";
 import { openDotaMatchSchema } from "../opendota/validation";
 import { resolveMatchPositions } from "./position-resolver";
 
+import { extractLoadout } from "./match-loadout";
+
 const SCEPTER_ITEM_IDS = new Set([108, 271, 727]);
 const SHARD_ITEM_IDS = new Set([609, 725]);
 
@@ -88,6 +90,7 @@ export function extractMatchDetails(
         heroDamage: player.hero_damage ?? null,
         towerDamage: player.tower_damage ?? null,
         heroHealing: player.hero_healing ?? null,
+        buffs: extractLoadout(player, rawPlayers.find(value => value.player_slot === player.player_slot)?.track_gold).buffs,
         itemIds,
         backpackItemIds,
         neutralItemId: normalizeItemId(player.item_neutral),

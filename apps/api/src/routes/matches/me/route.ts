@@ -7,7 +7,9 @@ import { parseDateRange } from "../../../lib/journal/validation";
 import { historyPositionSql, historyScoreSql, refreshHistoryAnalysis, replayParsedSql, summaryCurrentSql } from "../../../lib/dota/history-analysis";
 import { progressFromRow } from "../../../lib/replay/progress";
 
-const PAGE_SIZE = 8;
+import { extractLoadout } from "../../../lib/dota/match-loadout";
+
+const PAGE_SIZE = 10;
 
 /** Small, paginated match rows: no replay or raw provider JSON is loaded. */
 export async function GET(request: HttpRequest) {
@@ -17,11 +19,14 @@ export async function GET(request: HttpRequest) {
   if (!range.success) return Response.json({ ok: false, error: { code: "invalid_date_range" } }, { status: 400 });
   const params = request.parsedUrl.searchParams;
   const page = Number(params.get("page") || "1");
+  const pageSize = Number(params.get("pageSize") || PAGE_SIZE);
+  const offset = params.has("offset") ? Number(params.get("offset")) : (page - 1) * pageSize;
+  const hero = params.get("hero") || "all";
   const query = (params.get("query") || "").trim();
   const mode = params.get("mode") || "all";
   const position = params.get("position") || "all";
-  if (!Number.isSafeInteger(page) || page < 1 || page > 100_000 || query.length > 64 ||
-      !["all", "Ranked", "Turbo", "All Pick", "Captains Mode", "Single Draft", "All Random", "Random Draft", "Ability Draft", "Other"].includes(mode) ||
+  if (!Number.isSafeInteger(page) || page < 1 || page > 100_000 || query.length > 64 || !Number.isSafeInteger(offset) || offset < 0 || offset > 1000000 || !Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 100 || (hero !== "all" && (!/^\d{1,5}$/.test(hero) || Number(hero) < 1)) ||
+      !["all", "Ranked", "Turbo", "All Pick", "Captains Mode", "Captains Draft", "Single Draft", "All Random", "Random Draft", "Ability Draft", "Other"].includes(mode) ||
       !["all", "0", "1", "2", "3", "4", "5"].includes(position)) {
     return Response.json({ ok: false, error: { code: "invalid_match_filters" } }, { status: 400 });
   }
@@ -32,17 +37,31 @@ export async function GET(request: HttpRequest) {
     filters.push(or(ilike(journalMatches.heroName, `%${escaped}%`),
       sql`${journalMatches.dotaMatchId}::text like ${`%${escaped}%`} escape '\\'`)!);
   }
+  if (hero !== "all") filters.push(eq(journalMatches.heroId, Number(hero)));
   if (position !== "all") filters.push(sql`${historyPositionSql} = ${Number(position)}`);
   if (mode === "Turbo") filters.push(eq(dotaMatches.gameMode, 23));
   if (mode === "Ranked") filters.push(or(eq(dotaMatches.lobbyType, 5), eq(dotaMatches.lobbyType, 6), eq(dotaMatches.lobbyType, 7))!);
   if (mode === "All Pick") filters.push(and(sql`${dotaMatches.gameMode} in (1, 22)`,
     or(sql`${dotaMatches.lobbyType} is null`, sql`${dotaMatches.lobbyType} not in (5, 6, 7)`))!);
-  const modes: Record<string, number[]> = { "Captains Mode": [2, 16], "Single Draft": [3], "All Random": [4], "Random Draft": [18], "Ability Draft": [11] };
+  const modes: Record<string, number[]> = { "Captains Mode": [2], "Captains Draft": [16], "Single Draft": [3], "All Random": [4], "Random Draft": [18], "Ability Draft": [11] };
   if (modes[mode]) filters.push(and(sql`${dotaMatches.gameMode} in (${sql.join(modes[mode].map(value => sql`${value}`), sql`, `)})`, sql`coalesce(${dotaMatches.lobbyType}, 0) not in (5,6,7)`)!);
   if (mode === "Other") filters.push(and(sql`coalesce(${dotaMatches.gameMode}, 0) not in (1,2,3,4,11,16,18,22,23)`, sql`coalesce(${dotaMatches.lobbyType}, 0) not in (5,6,7)`)!);
   const condition = and(...filters);
   const db = getDb();
+  // Select only six inventory slots and bounded buffs, never a replay/provider blob.
+  const loadout = sql<unknown>`(select jsonb_build_object(
+    'item_0',p->'item_0','item_1',p->'item_1','item_2',p->'item_2',
+    'item_3',p->'item_3','item_4',p->'item_4','item_5',p->'item_5',
+    'aghanims_scepter',p->'aghanims_scepter','aghanims_shard',p->'aghanims_shard','moonshard',p->'moonshard',
+    'permanent_buffs',jsonb_path_query_array(p,'$.permanent_buffs[0 to 31]'),
+    'player_slot',p->'player_slot')
+    from jsonb_array_elements(case when jsonb_typeof(${dotaMatches.rawData}->'players')='array' then ${dotaMatches.rawData}->'players' else '[]'::jsonb end) p
+    where p->>'account_id'=${String(user.steamAccountId)} or p->>'hero_id'=${journalMatches.heroId}::text
+    order by (p->>'account_id'=${String(user.steamAccountId)}) desc nulls last limit 1)`;
+  const track = sql<unknown>`(select p->'track_gold' from jsonb_array_elements(case when jsonb_typeof(${dotaMatches.localReplayData}->'players')='array' then ${dotaMatches.localReplayData}->'players' else '[]'::jsonb end) p
+    where p->>'player_slot'=(${loadout})->>'player_slot' limit 1)`;
   const source = () => db.select({
+    loadout, track,
     id: journalMatches.id, dotaMatchId: journalMatches.dotaMatchId,
     heroId: journalMatches.heroId, heroName: journalMatches.heroName,
     position: historyPositionSql, score: historyScoreSql, result: journalMatches.result,
@@ -62,7 +81,7 @@ export async function GET(request: HttpRequest) {
     .leftJoin(localReplayJobs, eq(journalMatches.dotaMatchId, localReplayJobs.matchId)).where(condition);
   const [rows, totals, heroes, positions] = await Promise.all([
     source().orderBy(desc(journalMatches.startedAt), desc(journalMatches.createdAt), desc(journalMatches.id))
-      .limit(PAGE_SIZE).offset((page - 1) * PAGE_SIZE),
+      .limit(pageSize).offset(offset),
     db.select({ total: sql<number>`count(*)::int`, wins: sql<number>`count(*) filter (where ${journalMatches.result} = 'win')::int`, score: sql<number | null>`avg(${historyScoreSql})` })
       .from(journalMatches).innerJoin(journalDays, eq(journalMatches.dayId, journalDays.id))
       .leftJoin(dotaMatches, eq(journalMatches.dotaMatchId, dotaMatches.matchId)).where(condition),
@@ -78,8 +97,9 @@ export async function GET(request: HttpRequest) {
   const total = totals[0]?.total || 0, wins = totals[0]?.wins || 0;
   const segments = (data: { id: number | null; count: number; wins: number }[]) =>
     data.filter(row => row.id != null).map(row => ({ id: row.id!, count: row.count, wins: row.wins, losses: row.count - row.wins }));
-  return Response.json({ ok: true, page, pageSize: PAGE_SIZE, total, summaryPending,
+  return Response.json({ ok: true, page, pageSize, total, summaryPending,
     rows: rows.map(row => ({ id: row.dotaMatchId ? String(row.dotaMatchId) : row.id,
+      ...extractLoadout(row.loadout,row.track),
       journalId: row.id, heroId: row.heroId, heroName: row.heroName,
       position: row.position || null, won: row.result === "win",
       k: row.kills, d: row.deaths, a: row.assists, score: row.score,

@@ -177,6 +177,10 @@ async function main() {
     try {
       await run("java", ["com.sun.tools.javac.Main", "-cp", jar, "-d", work, join(scriptDir, "LaneEvents.java")], { timeoutMs: 30_000 });
       blob.lane_events = await extractLaneEvents(jar, work, dem);
+      for (const row of blob.lane_events.trackGold || []) {
+        const player = blob.players.find(player => player.player_slot === row.sourceSlot);
+        if (player) player.track_gold = row;
+      }
     } catch (error) {
       // Replay analysis remains available; an incomplete Lane score is never invented.
       console.error(`Lane events unavailable for ${matchId}: ${error instanceof Error ? error.message : String(error)}`);

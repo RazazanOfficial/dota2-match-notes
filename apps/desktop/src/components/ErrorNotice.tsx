@@ -6,6 +6,7 @@ export function errorCode(error: unknown): string | null {
 }
 export function friendlyError(code: string | null | undefined, t: Messages) {
     const fa = isPersian(t);
+    if (code === "offline_mode") return t.offlineRequired;
     if (code?.startsWith("replay_identity_")) return fa ? "اطلاعات این ریپلی با مچ انتخاب‌شده تأیید نشد. دوباره تلاش کن؛ اگر مشکل ادامه داشت، شناسهٔ مچ را به پشتیبانی بده." : "We couldn't verify that this replay belongs to the selected match. Try again; if it persists, share the match ID with support.";
     if (code?.includes("parser") || code === "analysis_failed") return fa ? "خواندن و تحلیل این ریپلی کامل نشد. دوباره تلاش کن؛ اگر مشکل ادامه داشت، پشتیبانی می‌تواند آن را بررسی کند." : "We couldn't finish reading and analyzing this replay. Try again; support can investigate if it continues.";
     if (code === "unauthorized" || code === "onboarding_required") return fa ? "برای ادامه، ورود و مراحل ثبت‌نام حسابت را بررسی کن." : "Check your sign-in and account setup before continuing.";

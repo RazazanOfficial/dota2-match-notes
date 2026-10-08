@@ -10,7 +10,7 @@ export type AnalysisPreparation = { replay: string; progress?: ReplayProgress | 
 export type Period = "week" | "month";
 export type Scope = "day" | Period;
 export const COOLDOWNS: Record<Scope, number> = { day: 90000, week: 180000, month: 7200000 };
-export const PAGE_SIZE = 8;
+export const PAGE_SIZE = 10;
 export const SAMPLE_DATE = "2026-10-02";
 export const roles = ["", "Carry", "Mid", "Offlane", "Soft Support", "Hard Support"];
 const pool = [85, 8, 11, 2, 86, 5, 14, 47, 26, 30];
@@ -30,6 +30,8 @@ export interface HistoryMatch {
     analyzed: boolean;
     analysisStatus?: "basic" | "pending" | "processing" | "failed" | "ready";
     analysisPreparation?: AnalysisPreparation | null;
+    itemIds?: Array<number | null>;
+    buffs?: import("@/lib/types").MatchBuff[];
 }
 // Lightweight rows only. Full analysis is created lazily for the selected match.
 export const sampleHistory: HistoryMatch[] = Array.from({ length: 72 }, (_, index) => {
@@ -62,6 +64,11 @@ export interface HistoryQuery {
     mode: string;
     position: string;
     page: number;
+    pageSize?: number;
+    offset?: number;
+    hero?: string;
+    from?: string;
+    to?: string;
 }
 // The same contract can be backed by a paginated API when account integration is added.
 export async function loadHistoryPage(query: HistoryQuery, signal: AbortSignal) {

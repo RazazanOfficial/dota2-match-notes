@@ -3,6 +3,7 @@ import { Download, FolderOpen, RefreshCw, Search } from "lucide-react";
 import { heroById, heroImage } from "@/data/heroes";
 import { sampleHistory } from "../history";
 import type { HistoryMatch } from "../history";
+import { cachedRead } from "../offlineCache";
 import { API_ORIGIN, apiRequest, getBearer } from "../api";
 import { isPersian, type Messages } from "../i18n";
 import { replayNative, playCommand, validReplayId, type ReplayFile, type ReplaySettings } from "../replays";
@@ -14,7 +15,9 @@ export function Replay({ t, live = false }: {
     t: Messages;
     live?: boolean;
 }) {
-    const [tab, setTab] = useState("find"), [id, setId] = useState(""), [searched, setSearched] = useState(""), [settings, setSettings] = useState<ReplaySettings>({ dotaPath: null, replayPath: null }), [files, setFiles] = useState<ReplayFile[]>([]), [busy, setBusy] = useState(""), [bytes, setBytes] = useState(0), [notice, setNotice] = useState(""), [recent, setRecent] = useState<HistoryMatch[]>([]), [queued, setQueued] = useState("");
+    const end = new Date(), start = new Date(end.getTime()-61*86400000);
+    const historyPath = `/api/matches/me?${new URLSearchParams({from:start.toISOString().slice(0,10),to:end.toISOString().slice(0,10),page:"1"})}`;
+    const [tab, setTab] = useState("find"), [id, setId] = useState(""), [searched, setSearched] = useState(""), [settings, setSettings] = useState<ReplaySettings>({ dotaPath: null, replayPath: null }), [files, setFiles] = useState<ReplayFile[]>([]), [busy, setBusy] = useState(""), [bytes, setBytes] = useState(0), [notice, setNotice] = useState(""), [recent, setRecent] = useState<HistoryMatch[]>(()=>cachedRead<{rows:HistoryMatch[]}>(historyPath)?.rows || []), [queued, setQueued] = useState("");
     const [error, setError] = useState<unknown>(null);
     const native = replayNative.available();
     const [historyLoading, setHistoryLoading] = useState(live), [nativeLoading, setNativeLoading] = useState(native);
@@ -109,7 +112,7 @@ export function Replay({ t, live = false }: {
     finally {
         setBusy("");
     } }
-    if (historyLoading || nativeLoading) return <LoadingView t={t}/>;
+
     return <div className="screen-stack"><div className="page-heading"><h1>{t.replay}</h1></div>{!!error && <ErrorNotice error={error} t={t}/>}<section className="panel replay-location"><div><FolderOpen size={20}/><div><strong>{t.dotaFolder}</strong><p className="muted">{settings.dotaPath || t.folderHint}</p></div></div><button className="secondary-button" disabled={!native || !!busy} onClick={chooseFolder}><FolderOpen size={16}/>{t.chooseFolder}</button>{settings.replayPath && <p className="replay-path"><small>{t.replayFolder}</small><bdi>{settings.replayPath}</bdi></p>}{!native && <small className="muted">{t.nativeRequired}</small>}</section><div className="detail-tabs" role="tablist" aria-label={t.replay}><button id="replay-find-tab" role="tab" aria-selected={tab === "find"} aria-controls="replay-panel" className={tab === "find" ? "active" : ""} onClick={() => setTab("find")}>{t.findReplay}</button><button id="replay-local-tab" role="tab" aria-selected={tab === "local"} aria-controls="replay-panel" className={tab === "local" ? "active" : ""} onClick={() => setTab("local")}>{t.localReplays}<small>{files.length}</small></button></div><div role="tabpanel" id="replay-panel" aria-labelledby={`replay-${tab}-tab`} className="screen-stack">
     {tab === "find" && <><section className="panel replay-search"><form onSubmit={e => { e.preventDefault(); if (validReplayId(id))
         setSearched(id); }}><label className="search-box"><Search size={17}/><input inputMode="numeric" aria-label={t.matchId} placeholder="9026000101" value={id} onChange={e => setId(e.target.value.trim())}/></label><button className="primary-button" disabled={!validReplayId(id)}>{t.replaySearch}</button></form>{searched && <div className="replay-result"><CopyValue value={searched} t={t}/><CopyValue value={playCommand(searched)} label={t.playCommand} t={t}/><button className="secondary-button" disabled={!!busy || !!queued} onClick={() => download(searched)}><Download size={16}/>{t.download}</button></div>}</section><section className="panel replay-list"><div className="section-heading"><h2>{t.selectMatch}</h2>{!live && <small className="muted">{t.demoLabel}</small>}</div>{(live ? recent : sampleHistory.slice(0, 8)).map(m => { const h = heroById(m.heroId); return <div className="replay-choice" key={m.id}>{h && <img src={heroImage(h)} alt={h.name} loading="lazy"/>}<Position value={m.position} title={false} t={t} analyzed={m.analyzed}/><CopyValue value={m.id} t={t}/><small>{m.startedAt.slice(0, 10)}</small><CopyValue value={playCommand(m.id)} label={t.playCommand} t={t}/><button className="secondary-button" disabled={!!busy || !!queued} onClick={() => download(m.id)}><Download size={15}/>{t.download}</button></div>; })}{live && !recent.length && <p className="empty-message">{t.noData}</p>}</section></>}

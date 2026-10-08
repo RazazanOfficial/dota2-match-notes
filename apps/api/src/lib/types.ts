@@ -1,3 +1,4 @@
+export interface MatchBuff { key: string; label: string; stacks: number | null; itemId?: number; sourceSlot?: number; beneficiaries?: Array<{ playerSlot: number; heroId: number; gold: number }> }
 export type AccessMode = "player" | "coach";
 export type MatchResult = "win" | "loss";
 export type MatchSource = "manual" | "steam" | "opendota";
@@ -71,6 +72,7 @@ export interface MatchParticipant {
   heroDamage: number | null;
   towerDamage: number | null;
   heroHealing: number | null;
+  buffs?: MatchBuff[];
   itemIds: Array<number | null>;
   backpackItemIds: Array<number | null>;
   neutralItemId: number | null;

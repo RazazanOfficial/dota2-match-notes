@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import readline from "node:readline";
+import { createMatchBuffCollector } from "./match-buffs.mjs";
 
 const ITEMS = new Set(["item_flask", "item_clarity", "item_enchanted_mango", "item_tango",
   "item_faerie_fire", "item_ward_observer", "item_ward_sentry", "item_ward_dispenser",
@@ -68,7 +69,7 @@ export function createLaneCollector() {
 }
 
 export async function extractLaneEvents(jar, work, dem) {
-  const collector = createLaneCollector();
+  const collector = createLaneCollector(), buffs = createMatchBuffCollector();
   const child = spawn("java", ["-Xmx1200m", "-cp", `${jar}:${work}`, "LaneEvents", dem],
     { stdio: ["ignore", "pipe", "pipe"] });
   let error = "", count = 0;
@@ -81,11 +82,11 @@ export async function extractLaneEvents(jar, work, dem) {
   try {
     for await (const line of readline.createInterface({ input: child.stdout, crlfDelay: Infinity })) {
       if (++count > 1_500_000 || line.length > 32_768) throw new Error("Excessive parser event output");
-      collector.accept(JSON.parse(line));
+      const event = JSON.parse(line); collector.accept(event); buffs.accept(event);
     }
     const code = await closed;
     if (code !== 0) throw new Error(`Lane replay extraction failed (${code}): ${error}`);
-    return collector.finish();
+    return { ...collector.finish(), trackGold: buffs.finish() };
   } catch (reason) { child.kill("SIGKILL"); await closed.catch(() => undefined); throw reason; }
   finally { clearTimeout(timer); }
 }
