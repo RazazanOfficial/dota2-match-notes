@@ -106,11 +106,12 @@ export const routes = [
   { path: "/matches/:matchId/replay", method: "POST", handler: r30.POST },
   { path: "/releases/:releaseId/read", method: "POST", handler: r31.POST },
   { path: "/releases", method: "GET", handler: r32.GET },
+  // Literal routes must precede parameters: "lookup" is not a match ID.
+  { path: "/replays/lookup", method: "POST", handler: r36.POST },
   { path: "/replays/:matchId/analysis", method: "GET", handler: r33.GET },
   { path: "/replays/:matchId/file", method: "GET", handler: r34.GET },
   { path: "/replays/:matchId", method: "GET", handler: r35.GET },
   { path: "/replays/:matchId", method: "POST", handler: r35.POST },
-  { path: "/replays/lookup", method: "POST", handler: r36.POST },
   { path: "/sync/me", method: "GET", handler: r37.GET },
   { path: "/sync/me", method: "POST", handler: r37.POST },
   { path: "/users/search", method: "GET", handler: r38.GET },

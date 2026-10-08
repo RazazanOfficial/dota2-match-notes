@@ -32,7 +32,7 @@ let userId = ""; let cookie = ""; let oldFolder = "";
 const password = "correct-test-password";
 
 beforeAll(async () => {
-  vi.stubEnv("APP_URL", "https://dota.example"); vi.stubEnv("API_ALLOWED_ORIGINS", "http://localhost:1420");
+  vi.stubEnv("APP_URL", "https://dota.example"); vi.stubEnv("API_ALLOWED_ORIGINS", "http://localhost:1420,http://tauri.localhost");
   vi.stubEnv("SYNC_WORKER_SECRET", "integration-test-worker-secret-123456789");
   oldFolder = await mkdtemp(join(tmpdir(), "dota-old-schema-")); await mkdir(join(oldFolder,"meta"));
   const journal = JSON.parse(await readFile(join(migrationFolder,"meta/_journal.json"),"utf8"));
@@ -61,6 +61,41 @@ describe("PostgreSQL schema migration and real Express services", () => {
     const result=await request(createApp()).get("/api/auth/session").set("Cookie",cookie);
     expect(result.body.authenticated).toBe(true);expect(result.body.user.id).toBe(userId);
     expect(result.body.user.passwordHash).toBeUndefined();expect(result.body.user.hasPassword).toBe(true);
+  });
+  it("routes replay lookup to the literal handler and can then enqueue the numeric replay", async () => {
+    const ids = [9033871443, 9034129766];
+    const startedAt = new Date();
+    const fetch = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Cached lookup must not fetch OpenDota"));
+    try {
+      for (const matchId of ids) {
+        await db.insert(dotaMatches).values({ matchId, startedAt, rawData: {
+          match_id: matchId, start_time: Math.floor(startedAt.getTime()/1000), duration: 1800,
+          radiant_win: true, game_mode: 22, lobby_type: 7,
+          players: [{ account_id: 1, player_slot: 0, hero_id: 1, kills: 2, deaths: 1, assists: 3 }],
+        } });
+        for (const prefix of ["/api", "/api/v1"]) {
+          const app = createApp();
+          const lookup = await request(app).post(`${prefix}/replays/lookup`)
+            .set("Origin", "http://tauri.localhost").set("Cookie", cookie).send({ matchId });
+          expect(lookup.status).toBe(200);
+          expect(lookup.body.match.matchId).toBe(matchId);
+          const queued = await request(app).post(`${prefix}/replays/${matchId}`)
+            .set("Origin", "http://tauri.localhost").set("Cookie", cookie).send({ intent: "download" });
+          expect(queued.status).toBe(202);
+          const status = await request(app).get(`${prefix}/replays/${matchId}`).set("Cookie", cookie);
+          expect(status.status).toBe(200);
+          expect(status.body.status).toBe("pending");
+        }
+      }
+      expect(fetch).not.toHaveBeenCalled();
+    } finally {
+      fetch.mockRestore();
+      for (const matchId of ids) {
+        await db.delete(journalMatches).where(eq(journalMatches.dotaMatchId, matchId));
+        await db.delete(localReplayJobs).where(eq(localReplayJobs.matchId, matchId));
+        await db.delete(dotaMatches).where(eq(dotaMatches.matchId, matchId));
+      }
+    }
   });
   it("keeps an interrupted Steam signup provisional across sessions until completion", async () => {
     const [provisional] = await db.insert(users).values({ steamId: "76561197960265730", steamAccountId: 2, handle: "provisional_user", displayName: "Provisional" }).returning({ id: users.id });
