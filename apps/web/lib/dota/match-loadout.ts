@@ -1,10 +1,11 @@
-// IDs from odota/dotaconstants/build/permanent_buffs.json. Unknown IDs remain visible.
+// Base IDs from odota/dotaconstants; ID 16 was reported in the real Lifestealer match.
+// Feast name/meaning verified against Valve abilities_english.txt. Unknown IDs retain their key.
 export const permanentBuffs: Record<number, [string, string]> = {
   1:["moon_shard","Moon Shard"],2:["ultimate_scepter","Aghanim's Scepter"],3:["silencer_glaives_of_wisdom","Intelligence stolen"],
   4:["pudge_flesh_heap","Flesh Heap"],5:["legion_commander_duel","Duel damage"],6:["tome_of_knowledge","Tome of Knowledge"],
   7:["lion_finger_of_death","Finger of Death"],8:["slark_essence_shift","Permanent agility"],9:["abyssal_underlord_atrophy_aura","Atrophy Aura"],
   10:["bounty_hunter_jinada","Jinada"],12:["aghanims_shard","Aghanim's Shard"],13:["axe_culling_blade","Culling Blade"],
-  14:["necrolyte_reapers_scythe","Reaper's Scythe"],15:["muerta_pierce_the_veil","Pierce the Veil"],
+  14:["necrolyte_reapers_scythe","Reaper's Scythe"],15:["muerta_pierce_the_veil","Pierce the Veil"],16:["life_stealer_feast","Permanent health"],
 };
 export type MatchBuff = { key: string; label: string; stacks: number | null; itemId?: number; sourceSlot?: number; beneficiaries?: Array<{ playerSlot: number; heroId: number; gold: number }> };
 const rec = (v: unknown): Record<string, unknown> => v && typeof v === "object" && !Array.isArray(v) ? v as Record<string, unknown> : {};
@@ -19,7 +20,7 @@ export function extractLoadout(input: unknown, trackInput?: unknown) {
     if (typeof id !== "number" || !Number.isSafeInteger(id) || id < 1 || id > 10000) continue;
     const [key,label] = permanentBuffs[id] || [`permanent_buff_${id}`,`Permanent buff ${id}`];
     const stacks = typeof row.stack_count === "number" && Number.isFinite(row.stack_count) && row.stack_count >= 0 ? row.stack_count : null;
-    add({ key,label,stacks,...(id === 1 ? {itemId:247} : id === 2 ? {itemId:108} : id === 12 ? {itemId:609} : {}) });
+    add({ key,label,stacks,...(id === 1 ? {itemId:247} : id === 2 ? {itemId:108} : id === 12 ? {itemId:609} : id === 6 ? {itemId:257} : {}) });
   }
   if (player.aghanims_scepter === true || player.aghanims_scepter === 1) add({key:"ultimate_scepter",label:"Aghanim's Scepter",stacks:null,itemId:108});
   if (player.aghanims_shard === true || player.aghanims_shard === 1) add({key:"aghanims_shard",label:"Aghanim's Shard",stacks:null,itemId:609});

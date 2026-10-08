@@ -15,11 +15,13 @@
       {
         "label": "main",
         "title": "Dota Notes",
-        "width": 1440,
-        "height": 920,
-        "minWidth": 1024,
-        "minHeight": 700,
+        "width": 960,
+        "height": 540,
+        "minWidth": 800,
+        "minHeight": 450,
         "center": true,
+        "resizable": false,
+        "maximizable": false,
         "decorations": true
       }
     ],

@@ -135,10 +135,10 @@ describe("match workspace regressions",()=>{
         await waitFor(()=>expect(mocks.api).toHaveBeenCalledWith(`/api/matches/${row.journalId}/analysis`,expect.objectContaining({method:"POST"})));
         expect(open).not.toHaveBeenCalled();expect((await screen.findAllByText(messages.en.analysisDownload)).length).toBeGreaterThan(0);
         fireEvent.click(screen.getByRole("button",{name:`${messages.en.details} ${row.id}`}));expect(open).toHaveBeenCalledWith(row);
-        expect(view.container.querySelector("[data-match-row]")?.children[9].classList.contains("details-cell")).toBe(true);
+        expect(view.container.querySelector("[data-match-row]")?.children[10].classList.contains("details-cell")).toBe(true);
         view.rerender(<MatchTable matches={[{...row,analyzed:true,position:2,score:83,analysisStatus:"ready"}]} t={messages.fa} onOpen={open} live/>);
         expect(screen.getByRole("button",{name:messages.fa.analysisDone}).classList.contains("ready")).toBe(true);
-        expect(view.container.querySelector("[data-match-row]")?.children[9].classList.contains("details-cell")).toBe(true);
+        expect(view.container.querySelector("[data-match-row]")?.children[10].classList.contains("details-cell")).toBe(true);
         expect(view.container.querySelector('.imp-score')?.textContent).toBe("83");
     });
     it("handles an already-ready analysis POST without leaving the row pending",async()=>{
