@@ -105,11 +105,11 @@ describe("original match analysis retained", () => {
     }, 15000);
 });
 describe("compact dashboard and independent chart", () => {
-    it("uses the Steam avatar, removes empty panels and exposes all six shortcuts", () => {
+    it("uses the Steam avatar and keeps shortcuts out of the dashboard", () => {
         const view = render(<App session={{ mode: "player", username: "player", displayName: "Player", avatarUrl: "https://avatars.steamstatic.com/player.jpg", registeredDate: "2026-09-15" }}/>);
         expect(view.container.querySelector(".profile-banner .avatar img")).toHaveProperty("src", "https://avatars.steamstatic.com/player.jpg");
         expect(view.container.querySelector(".win-panel, .activity-panel")).toBeNull();
-        expect(view.container.querySelectorAll(".shortcut-grid button")).toHaveLength(6);
+        expect(view.container.querySelector(".shortcut-grid")).toBeNull();
         expect(within(view.container.querySelector(".profile-banner") as HTMLElement).getByRole("button", { name: "Fetch matches" })).toBeTruthy();
         expect(view.container.querySelectorAll(".row-hero small, .row-hero span, .row-duration small")).toHaveLength(0);
         expect(view.container.querySelectorAll(".match-row:not(.table-head) .copy-value")).toHaveLength(10);

@@ -62,6 +62,66 @@ describe("PostgreSQL schema migration and real Express services", () => {
     expect(result.body.authenticated).toBe(true);expect(result.body.user.id).toBe(userId);
     expect(result.body.user.passwordHash).toBeUndefined();expect(result.body.user.hasPassword).toBe(true);
   });
+  it("isolates own profiles and protects the admin user inspector on both API prefixes", async () => {
+    const [other] = await db.insert(users).values({ steamId:"76561197960265730", steamAccountId:2,
+      handle:"profile_other",displayName:"Other profile",passwordHash:"never-expose-this-hash",
+      recoveryEmail:"private@example.test", onboardingCompletedAt:new Date(),
+    }).returning({id:users.id});
+    const [day] = await db.insert(journalDays).values({userId:other.id,day:"2026-10-05"}).returning({id:journalDays.id});
+    await db.insert(journalMatches).values([
+      {userId:other.id,dayId:day.id,number:1,result:"win",heroName:"Luna",startedAt:new Date("2026-10-05T10:00:00Z")},
+      {userId:other.id,dayId:day.id,number:2,result:"loss",heroName:"Axe",startedAt:new Date("2026-10-05T11:00:00Z")},
+    ]);
+    const app=createApp(), session=await createSession(userId);
+    const previous=process.env.SUPER_ADMIN_STEAM_IDS;
+    try {
+      process.env.SUPER_ADMIN_STEAM_IDS="";
+      for (const prefix of ["/api","/api/v1"]) {
+        expect((await request(app).get(`${prefix}/profile/me`)).status).toBe(401);
+        const own=await request(app).get(`${prefix}/profile/me?userId=${other.id}`).auth(session.token,{type:"bearer"});
+        expect(own.status).toBe(200);expect(own.body.profile.user.id).toBe(userId);
+        expect(own.body.profile.stats.total).toBe(0);expect(own.body.profile.recent).toEqual([]);
+        expect(own.headers["cache-control"]).toBe("private, no-store");
+        expect((await request(app).get(`${prefix}/admin/users/${other.id}`)).status).toBe(401);
+        expect((await request(app).get(`${prefix}/admin/users/${other.id}`).auth(session.token,{type:"bearer"})).status).toBe(403);
+      }
+      process.env.SUPER_ADMIN_STEAM_IDS="76561197960265729";
+      for (const prefix of ["/api","/api/v1"]) {
+        const inspected=await request(app).get(`${prefix}/admin/users/${other.id}`).auth(session.token,{type:"bearer"});
+        expect(inspected.status).toBe(200);
+        expect(inspected.body.profile.stats).toMatchObject({total:2,wins:1,losses:1,winRate:50,analyzed:0});
+        expect(inspected.body.profile.recent[0].heroName).toBe("Axe");
+        expect(inspected.body.profile.user).toMatchObject({id:other.id,hasPassword:true,hasVerifiedEmail:false});
+        expect(inspected.body.profile.user.passwordHash).toBeUndefined();
+        expect(inspected.body.profile.user.recoveryEmail).toBeUndefined();
+        expect(inspected.body.profile.user.tokenHash).toBeUndefined();
+        expect(inspected.headers["cache-control"]).toBe("private, no-store");
+        expect((await request(app).get(`${prefix}/admin/users/not-a-uuid`).auth(session.token,{type:"bearer"})).status).toBe(400);
+        expect((await request(app).get(`${prefix}/admin/users/00000000-0000-4000-8000-000000000000`).auth(session.token,{type:"bearer"})).status).toBe(404);
+      }
+    } finally {
+      if(previous === undefined) delete process.env.SUPER_ADMIN_STEAM_IDS; else process.env.SUPER_ADMIN_STEAM_IDS=previous;
+      await db.delete(users).where(eq(users.id,other.id));
+    }
+  });
+  it("includes failed manual sync jobs in the authorized service monitor", async () => {
+    const previous=process.env.SUPER_ADMIN_STEAM_IDS;
+    const [job] = await db.insert(syncJobs).values({userId,kind:"manual",status:"failed",errorMessage:"sync_provider_unavailable",finishedAt:new Date("2026-10-10T12:00:00Z")}).returning({id:syncJobs.id});
+    try {
+      process.env.SUPER_ADMIN_STEAM_IDS="";
+      expect((await request(createApp()).get("/api/admin/service-monitor").set("Cookie",cookie)).status).toBe(403);
+      process.env.SUPER_ADMIN_STEAM_IDS="76561197960265729";
+      const result=await request(createApp()).get("/api/admin/service-monitor").set("Cookie",cookie);
+      expect(result.status).toBe(200);
+      expect(Array.isArray(result.body.monitor.units)).toBe(true);
+      expect(result.body.monitor.queues).toContainEqual({source:"sync",status:"failed",total:1});
+      expect(result.body.monitor.failures).toContainEqual(expect.objectContaining({source:"sync",detail:"sync_provider_unavailable"}));
+      expect(result.headers["cache-control"]).toBe("private, no-store");
+    } finally {
+      if(previous === undefined) delete process.env.SUPER_ADMIN_STEAM_IDS; else process.env.SUPER_ADMIN_STEAM_IDS=previous;
+      await db.delete(syncJobs).where(eq(syncJobs.id,job.id));
+    }
+  });
   it("routes replay lookup to the literal handler and can then enqueue the numeric replay", async () => {
     const ids = [9033871443, 9034129766];
     const startedAt = new Date();
@@ -106,6 +166,7 @@ describe("PostgreSQL schema migration and real Express services", () => {
       const app = createApp();
       expect((await request(app).get("/api/auth/session").auth(first.token,{type:"bearer"})).body.user.onboardingCompletedAt).toBeNull();
       expect((await request(app).get("/api/matches/me?from=2026-09-12&to=2026-09-18").auth(first.token,{type:"bearer"})).body.error.code).toBe("onboarding_required");
+      expect((await request(app).get("/api/profile/me").auth(first.token,{type:"bearer"})).status).toBe(409);
       expect((await request(app).post("/api/auth/signup/complete").auth(first.token,{type:"bearer"})).status).toBe(409);
       await db.update(users).set({ passwordHash: await hashPassword(password) }).where(eq(users.id, provisional.id));
       const second = await createSession(provisional.id);

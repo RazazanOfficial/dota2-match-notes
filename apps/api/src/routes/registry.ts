@@ -2,6 +2,8 @@ import * as playerPage from "./players/[identifier]/route";
 import * as matchPage from "./journal/matches/[matchId]/page/route";
 import * as r0 from "./admin/monthly-references/route";
 import * as r1 from "./admin/overview/route";
+import * as adminUserProfile from "./admin/users/[userId]/route";
+import * as ownProfile from "./profile/me/route";
 import * as r2 from "./admin/releases/[releaseId]/route";
 import * as r3 from "./admin/releases/route";
 import * as r4 from "./admin/replay-archive/route";
@@ -69,6 +71,8 @@ export const routes = [
   { path: "/admin/users/:userId/password", method: "PUT", handler: r9.PUT },
   { path: "/admin/users/:userId/password", method: "DELETE", handler: r9.DELETE },
   { path: "/admin/users", method: "GET", handler: r10.GET },
+  { path: "/admin/users/:userId", method: "GET", handler: adminUserProfile.GET },
+  { path: "/profile/me", method: "GET", handler: ownProfile.GET },
   { path: "/admin/users", method: "POST", handler: r10.POST },
   { path: "/auth/logout", method: "POST", handler: r11.POST },
   { path: "/auth/password/login", method: "POST", handler: r12.POST },
