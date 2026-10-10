@@ -195,10 +195,12 @@ export function Dashboard({ t, onOpen, onNavigate, session = previewProfile }: {
     const matches = useMemo(() => filterHistory(period, anchor), [period, anchor]), summary = useMemo(() => summarize(matches), [matches]);
     return <div className="screen-stack"><section className="panel profile-banner"><Avatar session={session}/><div><p className="eyebrow">PLAYER PROFILE</p><h1><bdi>{session.displayName || session.username}</bdi></h1></div><div className="profile-period"><PeriodControls {...{ period, setPeriod, anchor, setAnchor, t }} registration={profileRegistrationDate(session)}/></div><button className="primary-button" onClick={() => setFetchOpen(true)}><Download size={16}/>{t.fetchMatches}</button></section><Stats summary={summary} t={t}/><div className="shortcut-grid">{([{ page: "reports", label: t.reports, icon: Brain }, { page: "replay", label: t.downloadReply, icon: Download }, { page: "matches", label: t.matches, icon: Swords }, { page: "coach", label: t.coach, icon: Sparkles }, { page: "farm", label: t.farm, icon: Sprout }, { page: "meta", label: t.meta, icon: TrendingUp }] as const).map(({ page, label, icon: Icon }) => <button className="panel shortcut" key={page} onClick={() => onNavigate(page)}><Icon size={19}/><span>{label}</span><ArrowUpRight size={14}/></button>)}</div><div className="history-grid"><section className="panel match-list"><div className="section-heading"><h2>{t.recent}</h2><button className="text-button" onClick={() => onNavigate("matches")}>{t.matches}<ArrowUpRight size={15}/></button></div><MatchTable matches={matches.slice(0, 10)} t={t} onOpen={onOpen} groupDays/>{!matches.length && <p className="empty-message">{t.noData}</p>}</section><Distribution t={t} registration={profileRegistrationDate(session)}/></div>{fetchOpen && <FetchDialog session={session} t={t} onClose={() => setFetchOpen(false)}/>}</div>;
 }
-export function Modal({ title, onClose, children }: {
+export function Modal({ title, onClose, children, className = "", closeLabel = "Close" }: {
     title: string;
     onClose: () => void;
     children: React.ReactNode;
+    className?: string;
+    closeLabel?: string;
 }) {
     const ref = useRef<HTMLElement>(null), closeRef = useRef(onClose);
     closeRef.current = onClose;
@@ -214,7 +216,7 @@ export function Modal({ title, onClose, children }: {
             first?.focus();
         }
     } }; ref.current?.querySelector<HTMLElement>('button')?.focus(); window.addEventListener("keydown", close); return () => { window.removeEventListener("keydown", close); previous?.focus(); }; }, []);
-    return <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}><section ref={ref} className="panel modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title"><header><h2 id="modal-title">{title}</h2><button aria-label="Close" onClick={onClose}><X size={20}/></button></header>{children}</section></div>;
+    return <div className={`modal-backdrop ${className}`} onMouseDown={e => e.target === e.currentTarget && onClose()}><section ref={ref} className="panel modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title"><header><h2 id="modal-title">{title}</h2><button aria-label={closeLabel} onClick={onClose}><X size={20}/></button></header>{children}</section></div>;
 }
 const cooldownKey = "dota-notes.preview-sync-cooldowns.v1";
 function readCooldowns(): Record<Scope, number> { try {

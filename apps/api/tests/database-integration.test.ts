@@ -79,12 +79,14 @@ describe("PostgreSQL schema migration and real Express services", () => {
             .set("Origin", "http://tauri.localhost").set("Cookie", cookie).send({ matchId });
           expect(lookup.status).toBe(200);
           expect(lookup.body.match.matchId).toBe(matchId);
+          expect(lookup.body.match).toMatchObject({heroId:1, won:true, position:null, score:null, analyzed:false, mode:"Ranked", duration:1800});
           const queued = await request(app).post(`${prefix}/replays/${matchId}`)
             .set("Origin", "http://tauri.localhost").set("Cookie", cookie).send({ intent: "download" });
           expect(queued.status).toBe(202);
           const status = await request(app).get(`${prefix}/replays/${matchId}`).set("Cookie", cookie);
           expect(status.status).toBe(200);
           expect(status.body.status).toBe("pending");
+          expect(status.body.match).toMatchObject({matchId, heroId:1, won:true, mode:"Ranked", duration:1800});
         }
       }
       expect(fetch).not.toHaveBeenCalled();
@@ -208,6 +210,16 @@ describe("PostgreSQL schema migration and real Express services", () => {
       const full = await loadPublicMatchAnalysis(entries[0].id), profile = full.analysis!.players.find(p => p.isProfilePlayer)!;
       expect(profile.performanceScore).toBeTypeOf("number"); expect(profile.position).toBe(2);
       expect(result.body.rows.find((row: {id:string}) => row.id === String(ids[0]))).toMatchObject({ analyzed: true, position: 2, score: profile.performanceScore, analysisStatus: "ready" });
+      // A downloaded replay gets the owner's current compact analysis, never another user's journal.
+      const replayInfo = await request(app).get(`/api/replays/${ids[0]}`).auth(token,{type:"bearer"});
+      expect(replayInfo.status).toBe(200);
+      expect(replayInfo.body.match).toMatchObject({matchId:ids[0], heroId:1, position:2, score:profile.performanceScore, analyzed:true, mode:"Ranked", won:true, duration:1800});
+      const visitor = await request(app).get(`/api/replays/${ids[0]}`).set("Cookie",cookie);
+      expect(visitor.status).toBe(200);
+      expect(visitor.body.match).toMatchObject({heroId:null, position:null, score:null, won:null, analyzed:false});
+      expect(JSON.stringify(replayInfo.body.match)).not.toMatch(/gold_t|password|rawData|account_id/);
+      expect((await request(app).get(`/api/replays/${ids[0]}`)).status).toBe(401);
+      expect((await db.select().from(localReplayJobs).where(eq(localReplayJobs.matchId,ids[0])))).toHaveLength(0);
       // An algorithm update must replace old compact summaries, even though
       // the raw replay/reference/overrides did not change.
       const [oldProjection] = await db.select({ value: journalMatches.analysisSummary }).from(journalMatches).where(eq(journalMatches.id, entries[0].id));

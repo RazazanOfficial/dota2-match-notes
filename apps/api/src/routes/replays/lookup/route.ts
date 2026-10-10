@@ -1,3 +1,4 @@
+import { replayMatchInfo } from "../../../lib/replay/match-info";
 import { logFailure } from "../../../http/log";
 import type { HttpRequest } from "../../../http/protocol";
 import { eq } from "drizzle-orm";
@@ -49,10 +50,11 @@ export async function POST(request: HttpRequest) {
     }
     const player = match.players.find((entry) => entry.account_id === user.steamAccountId);
     if (player) await saveDiscoveredOpenDotaMatch({ userId: user.id, match, player });
+    const info = await replayMatchInfo(matchId, user.id, user.steamAccountId);
     return Response.json({ ok: true, match: {
-      matchId, startedAt: new Date(match.start_time * 1000).toISOString(), duration: match.duration,
+      ...info, matchId, startedAt: new Date(match.start_time * 1000).toISOString(), duration: match.duration,
       radiantWin: match.radiant_win, radiantScore: match.radiant_score, direScore: match.dire_score,
-      heroId: player?.hero_id || null, heroName: player ? heroById(player.hero_id)?.name || null : null,
+      heroName: info?.heroId ? heroById(info.heroId)?.name || null : null,
     } }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     if (error instanceof OpenDotaError) return Response.json({ ok: false, error: { message: error.message, code: error.code } }, { status: error.status });
