@@ -57,7 +57,7 @@ export async function restoreOfflineSession(token: string): Promise<Session | nu
         setCacheOwner(entry.session.steamId); return entry.session;
     } catch { return null; }
 }
-export const cacheableRead = (path: string) => /^\/api\/(?:matches\/me\?|journal\/matches\/[^/]+\/page\?|matches\/[^/]+\/analysis(?:\?|$)|sync\/me$)/.test(path);
+export const cacheableRead = (path: string) => /^\/api\/(?:profile\/me$|matches\/me\?|journal\/matches\/[^/]+\/page\?|matches\/[^/]+\/analysis(?:\?|$)|sync\/me$)/.test(path);
 
 // Seed a new view from already-known rows of this account, even when its page
 // size differs. Exact responses retain their complete server totals.

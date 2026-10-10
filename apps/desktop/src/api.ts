@@ -16,7 +16,7 @@ export function setBearer(token: string | null) { bearer = token; }
 export function hasBearer() { return bearer !== null; }
 export function getBearer() { return bearer; }
 
-export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function apiRequest<T>(path: string, init: RequestInit = {}, timeoutMs = 12000): Promise<T> {
     if (!path.startsWith("/api/") || path.startsWith("//")) throw new Error("Invalid API path");
     const method = (init.method || "GET").toUpperCase(), read = method === "GET" && cacheableRead(path);
     if (method !== "GET" && connectionState() === "offline") throw new ApiError("Offline mode", 0, "offline_mode");
@@ -28,7 +28,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
     const controller = new AbortController(), abort = () => controller.abort();
     init.signal?.addEventListener("abort", abort, { once: true });
     if (init.signal?.aborted) controller.abort();
-    const timeout = window.setTimeout(abort, 12000);
+    const timeout = window.setTimeout(abort, Math.max(1000, Math.min(timeoutMs, 600000)));
     try {
         const response = await fetch(`${API_ORIGIN}${path}`, { ...init, signal: controller.signal, headers, credentials: "omit", cache: "no-store" });
         const body = await response.json().catch(() => null);

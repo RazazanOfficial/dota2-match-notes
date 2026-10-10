@@ -15,7 +15,7 @@ const ids = new Set([
   "dota2notes-opendota-parse.timer", "dota2notes-opendota-parse.service",
   "dota2notes-replay.timer", "dota2notes-replay.service",
   "dota2notes-performance-reference.timer", "dota2notes-performance-reference.service",
-  "dota2notes-sync.timer", "dota2notes-sync.service", "dota2notes-stratz.timer",
+  "dota2notes-sync.timer", "dota2notes-sync-manual.timer", "dota2notes-monitor.timer", "dota2notes-monitor.service", "dota2notes-sync.service", "dota2notes-stratz.timer",
   "dota2notes-stratz.service", "nginx.service", "postgresql.service",
 ]);
 
@@ -74,10 +74,11 @@ export async function getServiceMonitor() {
       SELECT 'replay' AS source, status::text, coalesce(error_code, '') AS detail, updated_at FROM local_replay_jobs WHERE status = 'failed'
       UNION ALL SELECT 'images', status::text, coalesce(error_code, ''), updated_at FROM match_image_jobs WHERE status = 'failed'
       UNION ALL SELECT 'opendota_parse', status::text, coalesce(error_code, ''), updated_at FROM open_dota_parse_jobs WHERE status = 'failed'
+      UNION ALL SELECT 'sync', status::text, coalesce(error_message, ''), coalesce(finished_at, created_at) FROM sync_jobs WHERE status = 'failed'
     ) failures ORDER BY updated_at DESC LIMIT 8
   `);
   return {
-    ...snapshot, snapshotError,
+    capturedAt: snapshot?.capturedAt ?? null, units: snapshot?.units ?? [], snapshotError,
     stale: snapshot ? Date.now() - Date.parse(snapshot.capturedAt) > 180_000 : true,
     queues: rows.rows.map(row => ({ source: String(row.source), status: String(row.status), total: Number(row.total) })),
     failures: latest.rows.map(row => ({ source: String(row.source), at: String(row.updated_at), detail: String(row.detail).slice(0, 250) })),

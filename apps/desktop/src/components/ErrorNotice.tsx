@@ -16,12 +16,20 @@ export function friendlyError(code: string | null | undefined, t: Messages) {
         replay_decode_failed: ["بازکردن فایل ریپلی کامل نشد؛ ممکن است دریافت فایل ناقص باشد. دوباره دانلود کن.", "The replay could not be unpacked; its download may be incomplete. Download it again."],
         replay_transfer_failed: ["دریافت فایل ریپلی کامل نشد. اتصال اینترنت را بررسی کن و دوباره دانلود کن.", "The replay transfer could not finish. Check your connection and download again."],
         replay_size_limit: ["حجم این ریپلی از محدودیت ۲ گیگابایت بیشتر است.", "This replay exceeds the supported 2 GB size limit."],
-        replay_busy: ["تا پایان دانلود فعلی صبر کن.", "Wait for the current download to finish."],
+        replay_busy: ["ریپلی در حال دانلود یا پردازش است؛ بعد از پایان آن دوباره اقدام کن.", "A replay is being downloaded or processed. Wait for it to finish before trying again."],
         replay_local_failed: ["دسترسی به فایل‌های ریپلی روی سیستم ممکن نشد. پوشهٔ انتخاب‌شده و دسترسی آن را بررسی کن.", "Local replay files could not be accessed. Check the selected folder and its permissions."],
         steam_launch_failed: ["بازکردن استیم ممکن نشد. نصب استیم و دسترسی میان‌برهای آن را بررسی کن.", "Steam could not be opened. Check that Steam and its game shortcuts are installed."],
     };
     if (code && local[code]) return local[code][fa ? 0 : 1];
     if (code === "offline_mode") return t.offlineRequired;
+    if (code === "super_admin_required") return fa ? "این بخش فقط برای مدیر مجاز حساب فعال است." : "This area requires an authorized administrator account.";
+    if (code === "user_not_found") return fa ? "این حساب کاربری پیدا نشد؛ فهرست را بازخوانی کن." : "This user account was not found. Refresh the user list.";
+    if (code === "steam_profile_unavailable") return fa ? "دریافت پروفایل از استیم کامل نشد؛ کمی بعد دوباره تلاش کن." : "Steam profile retrieval failed. Please try again shortly.";
+    if (code === "release_version_conflict") return fa ? "این شماره نسخه قبلاً ثبت شده؛ همان نسخه را ویرایش کن یا شماره دیگری وارد کن." : "This version already exists. Edit that release or choose another version.";
+    if (code === "steam_user_conflict") return fa ? "این اکانت استیم از قبل ثبت شده؛ مشخصات کاربر موجود را بررسی کن." : "This Steam account is already registered. Check the existing user account.";
+    if (code === "matches_not_found") return fa ? "این کاربر هنوز مچی برای بازخوانی ندارد." : "This user has no matches to refresh yet.";
+    if (code === "reference_not_found") return fa ? "این نسخه مرجع پیدا نشد؛ فهرست نسخه‌ها را بازخوانی کن." : "This reference version was not found. Refresh the version list.";
+    if (code === "invalid_request" || code === "invalid_input") return fa ? "اطلاعات فرم معتبر نیست؛ مقدارهای واردشده را بررسی کن." : "Some form values are invalid. Check the entered values.";
     if (code?.startsWith("replay_identity_")) return fa ? "اطلاعات این ریپلی با مچ انتخاب‌شده تأیید نشد. دوباره تلاش کن؛ اگر مشکل ادامه داشت، شناسهٔ مچ را به پشتیبانی بده." : "We couldn't verify that this replay belongs to the selected match. Try again; if it persists, share the match ID with support.";
     if (code?.includes("parser") || code === "analysis_failed") return fa ? "خواندن و تحلیل این ریپلی کامل نشد. دوباره تلاش کن؛ اگر مشکل ادامه داشت، پشتیبانی می‌تواند آن را بررسی کند." : "We couldn't finish reading and analyzing this replay. Try again; support can investigate if it continues.";
     if (code === "unauthorized" || code === "onboarding_required") return fa ? "برای ادامه، ورود و مراحل ثبت‌نام حسابت را بررسی کن." : "Check your sign-in and account setup before continuing.";
