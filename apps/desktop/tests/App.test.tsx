@@ -185,6 +185,7 @@ describe("native replay library", () => {
         await screen.findByText("C:/Steam/steamapps/common/dota 2 beta/game/dota/replays");
         fireEvent.change(screen.getByRole("textbox", { name: "Match ID" }), { target: { value: file.matchId } });
         fireEvent.click(screen.getByRole("button", { name: messages.en.replaySearch }));
+        await waitFor(() => expect(within(document.querySelector(".replay-result") as HTMLElement).getByRole("button", { name: "Download replay" })).toHaveProperty("disabled", false));
         fireEvent.click(within(document.querySelector(".replay-result") as HTMLElement).getByRole("button", { name: "Download replay" }));
         await waitFor(() => expect(screen.getByRole("tab", { name: /Downloaded replays/ }).getAttribute("aria-selected")).toBe("true"));
         expect(download).toHaveBeenCalledWith(file.matchId,"test-session",replayApi.API_ORIGIN);

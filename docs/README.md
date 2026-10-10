@@ -6,7 +6,8 @@
 
 | موضوع | فایل |
 | --- | --- |
-| رفع 400 جست‌وجوی ریپلی و Git/VPS (جاری) | [replay-lookup-routing.fa.md](replay-lookup-routing.fa.md) |
+| مشخصات مچ در ریپلی و آموزش‌های دو زبانه (جاری) | [replay-match-tutorials.fa.md](replay-match-tutorials.fa.md) |
+| رفع 400 جست‌وجوی ریپلی و Git/VPS | [replay-lookup-routing.fa.md](replay-lookup-routing.fa.md) |
 | راهنمای ریپلی، اجرای دوتا، وضعیت زنده و Git/VPS | [replay-setup-live-status.fa.md](replay-setup-live-status.fa.md) |
 | چیدمان جمع‌وجور، نسبت پنجره، Clarity و Git/VPS | [resizable-match-workspace.fa.md](resizable-match-workspace.fa.md) |
 | مرحلهٔ قبلی اندازهٔ ثابت پنجره و باف (رفتار پنجره/جدول جایگزین شده) | [fixed-window-loadout.fa.md](fixed-window-loadout.fa.md) |

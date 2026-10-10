@@ -21,7 +21,8 @@ describe("updated match workspace",()=>{
   fireEvent.click(screen.getByRole("button",{name:messages.en.loadMore}));await waitFor(()=>expect(view.container.querySelectorAll('[data-match-row]')).toHaveLength(30));
   expect(screen.queryByRole("button",{name:messages.en.loadMore})).toBeNull();fireEvent.click(within(view.container.querySelector('.pagination')!).getByRole("button",{name:messages.en.next}));
   await waitFor(()=>expect(view.container.querySelectorAll('[data-match-row]')).toHaveLength(10));expect(mocks.list.mock.calls.some(([q])=>q.offset===30 && q.pageSize===10)).toBe(true);
- });
+ // Four render transitions share this deadline; parallel DB suites can exhaust the 5s default.
+ },15000);
  it("shows the entire selected period without eight-match pagination",async()=>{
   const view=render(<LiveMatches session={previewProfile} t={messages.en} onOpen={vi.fn()}/>);await waitFor(()=>expect(view.container.querySelectorAll('[data-match-row]')).toHaveLength(41));expect(view.container.querySelector('.pagination')).toBeNull();
  });

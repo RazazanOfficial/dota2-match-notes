@@ -1,3 +1,4 @@
+import { replayMatchInfo } from "../../../lib/replay/match-info";
 import { logFailure } from "../../../http/log";
 import type { HttpRequest } from "../../../http/protocol";
 import { eq } from "drizzle-orm";
@@ -17,7 +18,9 @@ export async function GET(request: HttpRequest, context: Context) {
   if (!id.success) return Response.json({ ok: false, error: { message: "Match ID معتبر نیست" } }, { status: 400 });
   const [match] = await getDb().select({ matchId: dotaMatches.matchId }).from(dotaMatches).where(eq(dotaMatches.matchId, id.data)).limit(1);
   if (!match) return Response.json({ ok: false, error: { message: "مچ پیدا نشد" } }, { status: 404 });
-  try { return Response.json({ ok: true, ...await replayStatusForMatch(id.data) }, { headers: { "Cache-Control": "private, no-store" } }); }
+  try {
+    const [status, match] = await Promise.all([replayStatusForMatch(id.data), replayMatchInfo(id.data, user.id, user.steamAccountId)]);
+    return Response.json({ ok: true, ...status, match }, { headers: { "Cache-Control": "private, no-store" } }); }
   catch (error) { logFailure("Replay status failed", error); return Response.json({ ok: false, error: { message: "وضعیت Replay در دسترس نیست" } }, { status: 503 }); }
 }
 
