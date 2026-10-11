@@ -18,6 +18,36 @@
 
 ## پوشش اسکریپت
 
+### مرحلهٔ هدفمند پس از گزارش اول — نسخهٔ ۲
+
+گزارش `stratz-diagnostics-1791712172088.json` نشان داد چهار ترکیب Meta با curl و gzip کامل و بدون خطای GraphQL برمی‌گردند؛ پاسخ عادی و Performance بزرگ ناقص‌اند. Node مستقل شکست دارد. شمارش ردیف‌های ماه سپتامبر با قرارداد فعلی Unix seconds صفر است؛ این **اثبات نبودن دادهٔ سپتامبر نیست**، چون گزارش نخست مقدار واقعی `month` را ذخیره نکرد.
+
+گزینهٔ `--targeted` به جای تکرار تست‌های ارتباط قبلی، این ۱۶ تست را یکجا اجرا می‌کند:
+
+1. چهار ترکیب Meta با gzip؛ ثبت مقدار و نوع واقعی `month` و تعداد ردیف‌ها، بدون نگهداری ردیف خام.
+2. Meta با `take: 4` برای مشاهدهٔ ماه‌های بیشتری که منبع برمی‌گرداند.
+3. هر چهار Hero اولین batch جداگانه، با هر پنج Position و تمام دقیقه‌های ۰–۷۵.
+4. Hero اول برای هر پنج Position جداگانه، با تمام دقیقه‌های ۰–۷۵.
+5. چهار Hero در Position 1؛ چهار Hero و پنج Position در بازهٔ ۰–۱۵، برای بررسی گزینه‌های تقسیم پاسخ.
+
+هر تست Performance تمام ۱۴ مقدار موجود production را درخواست می‌کند و محدودهٔ Hero/Position/Week/Rank/Minute، تکرار ردیف، تعداد نمونه و اعتبار metricها را کنترل می‌کند. `matchesProductionContract` به‌تنهایی نشان‌دهندهٔ تکمیل دریافت ماه نیست؛ HTTP و انتقال کامل و نبود خطای GraphQL نیز لازم‌اند. پنجرهٔ ۰–۱۵ فقط کنترل تشخیصی است و جایگزین پوشش تمام دقیقه‌ها نمی‌شود. Candidateهای تاریخ فقط مقایسهٔ تشخیصی‌اند و تبدیل production را تغییر نمی‌دهند.
+
+روی همان branch `fix/stratz-connectivity` بمانید. فقط فایل `apps/api/scripts/diagnose-stratz.mjs` را replace و با MobaXterm به همان مسیر VPS منتقل کنید. build، npm install، migration و restart لازم نیست.
+
+```bash
+cd /var/www/dota2notes
+sudo chown dota2notes:dota2notes apps/api/scripts/diagnose-stratz.mjs
+sudo chmod 0644 apps/api/scripts/diagnose-stratz.mjs
+sudo install -d -m 0700 -o dota2notes -g dota2notes /var/lib/dota2notes/diagnostics
+sudo -u dota2notes -H node \
+  --env-file=/var/www/dota2notes/.env.production \
+  apps/api/scripts/diagnose-stratz.mjs \
+  --targeted --month 2026-09 \
+  --output-dir /var/lib/dota2notes/diagnostics
+```
+
+در پایان همان فایل JSON اعلام‌شده با `REPORT:` را ارسال کنید؛ خلاصهٔ کنسول به‌تنهایی برای بررسی دقیق کافی نیست. این اجرا به‌صورت سری، بدون retry و با توقف روی 429 است؛ با interval معمول، سقف زمانی حدود هشت دقیقه و معمولاً کمتر است.
+
 `apps/api/scripts/diagnose-stratz.mjs` موارد زیر را سری و با فاصله اجرا می‌کند:
 
 1. درخواست کوچک Match؛ همان درخواست با بدنهٔ ۲۰۴۸ بایتی برای کنترل اندازهٔ ارسال.
@@ -94,3 +124,5 @@ sudo -u dota2notes -H node \
 صحت syntax، تولید query دقیق Meta/Performance، انتخاب ماه و پاک‌سازی توکن بررسی می‌شود.
 آزمون محلی TLS با گواهی مورد اعتماد آزمایشی، پاسخ gzip واقعی و پاسخ HTTP 200 عمداً ناقص انجام می‌شود.
 این آزمون کنترل سلامت ابزار است و موفقیت شبکهٔ STRATZ روی VPS محسوب نمی‌شود.
+
+نسخهٔ ۲: syntax و queryهای اصلی بدون تغییر تأیید شدند؛ ۱۶ case هدفمند، مقادیر مختلف تاریخ، cohort اشتباه، metric ناقص، نمونهٔ صفر و ردیف تکراری بررسی شدند. اجرای کامل CLI روی سرور TLS محلی با گواهی مورد اعتماد آزمایشی انجام شد: پاسخ gzip باز شد، مقادیر ماه و قرارداد Performance ثبت شدند و HTTP 200 عمداً ناقص موفق تلقی نشد. خروجی و گزارش فاقد توکن بودند. نتیجهٔ واقعی همین نسخه روی VPS هنوز دریافت نشده است.

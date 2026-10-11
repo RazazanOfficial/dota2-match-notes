@@ -13,28 +13,77 @@ const DEADLINE_MS = 20_000;
 const MARKER = "\n__DOTA_STRATZ_DIAGNOSTIC__";
 const WAIT = ms => new Promise(resolve => setTimeout(resolve, ms));
 const HEADER_NAMES = ["content-type", "content-length", "content-encoding", "transfer-encoding", "cf-ray", "retry-after", "x-ratelimit-remaining-second", "x-ratelimit-remaining-minute", "x-ratelimit-remaining-hour", "x-ratelimit-remaining-day"];
+const PERFORMANCE_METRICS = ["cs", "dn", "kills", "deaths", "assists", "networth", "xp", "heroDamage", "towerDamage", "healingAllies", "campsStacked", "neutrals", "ancients", "teamKills"];
 
 export function redact(value, key) {
   return String(value ?? "").split(key).join("[REDACTED]").replace(/Bearer\s+[^\s"<>]+/gi, "Bearer [REDACTED]").slice(0, 400);
 }
 
-export function summarizeBody(buffer, key, monthEpoch) {
+export function summarizeBody(buffer, key, monthEpoch, expected = {}) {
   let parsed;
   try { parsed = JSON.parse(buffer.toString("utf8")); }
   catch { return { jsonValid: false }; }
   const data = parsed?.data;
   const stats = data?.heroStats;
+  const meta = [1, 2, 3, 4, 5].flatMap(p => Array.isArray(stats?.[`pos${p}`]) ? stats[`pos${p}`] : []);
+  const month = new Date(monthEpoch * 1000);
+  const monthCandidates = {
+    unixSeconds: monthEpoch,
+    unixMilliseconds: monthEpoch * 1000,
+    monthsSinceJanuary1970: (month.getUTCFullYear() - 1970) * 12 + month.getUTCMonth(),
+    calendarYYYYMM: month.getUTCFullYear() * 100 + month.getUTCMonth() + 1,
+  };
+  const monthValues = new Map();
+  for (const row of meta) {
+    const value = row?.month;
+    // Only the public aggregate month field is retained, never a raw row.
+    const kind = typeof value;
+    const safeValue = kind === "number" && Number.isFinite(value) ? value : kind === "string" ? redact(value, key).slice(0, 64) : null;
+    const id = `${kind}:${safeValue}`;
+    const entry = monthValues.get(id) || { value: safeValue, type: kind, rows: 0 };
+    entry.rows++;
+    if (monthValues.size < 24 || monthValues.has(id)) monthValues.set(id, entry);
+  }
+  let performanceValidation;
+  if (Array.isArray(stats?.stats) && expected.heroIds) {
+    const seen = new Set();
+    let invalidScopeRows = 0, duplicateRows = 0, invalidMetricRows = 0, invalidSampleRows = 0;
+    const invalidMetrics = new Set();
+    for (const row of stats.stats) {
+      const position = Number(String(row?.position).match(/^POSITION_([1-5])$/)?.[1]);
+      if (!expected.heroIds.includes(row?.heroId) || !expected.positions.includes(position) || row?.week !== expected.weekNumber || row?.bracketBasicIds !== "DIVINE_IMMORTAL" || !Number.isInteger(row?.time) || row.time < expected.minTime || row.time > expected.maxTime) invalidScopeRows++;
+      const id = `${row?.heroId}:${row?.position}:${row?.time}`;
+      if (seen.has(id)) duplicateRows++;
+      seen.add(id);
+      const count = row?.remainingMatchCount ?? row?.matchCount;
+      if (!Number.isSafeInteger(count) || count < 0) invalidSampleRows++;
+      // Match production: zero-sample rows are not used as references.
+      if (count === 0) continue;
+      let invalid = false;
+      for (const metric of PERFORMANCE_METRICS) {
+        if (typeof row?.[metric] !== "number" || !Number.isFinite(row[metric]) || row[metric] < 0) { invalid = true; invalidMetrics.add(metric); }
+      }
+      if (invalid) invalidMetricRows++;
+    }
+    performanceValidation = { invalidScopeRows, duplicateRows, invalidMetricRows, invalidSampleRows, invalidMetrics: [...invalidMetrics], usableRows: stats.stats.filter(row => Number.isSafeInteger(row?.remainingMatchCount ?? row?.matchCount) && (row?.remainingMatchCount ?? row?.matchCount) > 0).length };
+    performanceValidation.matchesProductionContract = stats.stats.length > 0 && performanceValidation.usableRows > 0 && !invalidScopeRows && !duplicateRows && !invalidMetricRows && !invalidSampleRows;
+  }
   return {
     jsonValid: true,
     matchFound: Boolean(data?.match?.id),
     ...(stats ? {
       metaRows: [1, 2, 3, 4, 5].map(p => Array.isArray(stats[`pos${p}`]) ? stats[`pos${p}`].length : null),
       requestedMonthRows: [1, 2, 3, 4, 5].map(p => Array.isArray(stats[`pos${p}`]) ? stats[`pos${p}`].filter(row => row?.month === monthEpoch).length : null),
+      ...(meta.length ? {
+        metaMonthValues: [...monthValues.values()],
+        requestedMonthCandidates: Object.fromEntries(Object.entries(monthCandidates).map(([format, value]) => [format, { value, numericRows: meta.filter(row => row?.month === value).length, stringRows: meta.filter(row => row?.month === String(value)).length }])),
+      } : {}),
       ...(Array.isArray(stats.stats) ? {
         performanceRows: stats.stats.length,
         performancePositions: [...new Set(stats.stats.map(row => row.position))],
         performanceWeeks: [...new Set(stats.stats.map(row => row.week))],
         rowsAtTime13: stats.stats.filter(row => row.time === 13).length,
+        ...(performanceValidation ? { performanceValidation } : {}),
       } : {}),
     } : {}),
     graphqlErrors: Array.isArray(parsed?.errors) ? parsed.errors.slice(0, 10).map(e => redact(e?.message, key)) : [],
@@ -50,12 +99,28 @@ export function buildQueries(month, now, heroIds) {
   const monthsBack = (now.getUTCFullYear() - month.getUTCFullYear()) * 12 + now.getUTCMonth() - month.getUTCMonth();
   if (monthsBack < 1 || monthsBack > 11) throw new Error("Month must be a completed month within the last 11 months");
   const take = monthsBack + 1;
-  const selection = (p, rank, mode) => `pos${p}: winMonth(take: ${take}, bracketIds: [${rank}], positionIds: [POSITION_${p}], gameModeIds: [${mode}]) { month heroId matchCount winCount }`;
-  const meta = (rank = "DIVINE", mode = "ALL_PICK_RANKED", positions = [1, 2, 3, 4, 5]) => JSON.stringify({ operationName: "MonthlyMeta", query: `query MonthlyMeta { heroStats { ${positions.map(p => selection(p, rank, mode)).join("\n")} } }` });
+  const selection = (p, rank, mode, count) => `pos${p}: winMonth(take: ${count}, bracketIds: [${rank}], positionIds: [POSITION_${p}], gameModeIds: [${mode}]) { month heroId matchCount winCount }`;
+  const meta = (rank = "DIVINE", mode = "ALL_PICK_RANKED", positions = [1, 2, 3, 4, 5], count = take) => JSON.stringify({ operationName: "MonthlyMeta", query: `query MonthlyMeta { heroStats { ${positions.map(p => selection(p, rank, mode, count)).join("\n")} } }` });
   const weekMs = Math.ceil(month.getTime() / 604_800_000) * 604_800_000;
-  const performance = JSON.stringify({ operationName: "MonthlyPerformance", query: `query MonthlyPerformance { heroStats { stats(week: ${weekMs / 1000}, heroIds: [${heroIds.join(",")}], bracketBasicIds: [DIVINE_IMMORTAL], positionIds: [POSITION_1,POSITION_2,POSITION_3,POSITION_4,POSITION_5], groupByTime: true, groupByPosition: true, groupByBracket: true, minTime: 0, maxTime: 75) { heroId week time position bracketBasicIds matchCount remainingMatchCount cs dn kills deaths assists networth xp heroDamage towerDamage healingAllies campsStacked neutrals ancients teamKills } } }` });
+  const performanceFor = (ids = heroIds, positions = [1, 2, 3, 4, 5], minTime = 0, maxTime = 75) => JSON.stringify({ operationName: "MonthlyPerformance", query: `query MonthlyPerformance { heroStats { stats(week: ${weekMs / 1000}, heroIds: [${ids.join(",")}], bracketBasicIds: [DIVINE_IMMORTAL], positionIds: [${positions.map(p => `POSITION_${p}`).join(",")}], groupByTime: true, groupByPosition: true, groupByBracket: true, minTime: ${minTime}, maxTime: ${maxTime}) { heroId week time position bracketBasicIds matchCount remainingMatchCount ${PERFORMANCE_METRICS.join(" ")} } } }` });
+  const performance = performanceFor();
   const small = JSON.stringify({ operationName: "ConnectivityCheck", query: "query ConnectivityCheck { match(id: 9034129766) { id } }" });
-  return { meta, performance, small, weekMs };
+  return { meta, performance, performanceFor, small, weekMs };
+}
+
+export function buildTargetedTests(queries, heroIds) {
+  const performance = (name, ids, positions = [1, 2, 3, 4, 5], minTime = 0, maxTime = 75) => ({
+    name, body: queries.performanceFor(ids, positions, minTime, maxTime), gzip: true,
+    expected: { heroIds: ids, positions, minTime, maxTime, weekNumber: queries.weekMs / 604_800_000 },
+  });
+  return [
+    ...["DIVINE", "IMMORTAL"].flatMap(rank => ["ALL_PICK_RANKED", "TURBO"].map(mode => ({ name: `meta-month-values-${rank}-${mode}`, body: queries.meta(rank, mode), gzip: true }))),
+    { name: "meta-month-values-take4", body: queries.meta("DIVINE", "ALL_PICK_RANKED", [1, 2, 3, 4, 5], 4), gzip: true },
+    ...heroIds.map(id => performance(`performance-hero-${id}-all-positions`, [id])),
+    ...[1, 2, 3, 4, 5].map(p => performance(`performance-hero-${heroIds[0]}-position-${p}`, [heroIds[0]], [p])),
+    performance("performance-four-heroes-position1", heroIds, [1]),
+    performance("performance-four-heroes-minutes0-15", heroIds, [1, 2, 3, 4, 5], 0, 15),
+  ];
 }
 
 function capture(command, args, input = "", outputLimit = LIMIT) {
@@ -128,7 +193,7 @@ async function runCurl(config, test) {
     headers: selectedHeaders(headers, config.key),
     errors: messages, ...(result.spawnError ? { spawnError: result.spawnError } : {}),
     responseLimitExceeded: result.exceeded, supervisorTimeout: result.timedOut,
-    ...summarizeBody(body, config.key, config.month.getTime() / 1000),
+    ...summarizeBody(body, config.key, config.month.getTime() / 1000, test.expected),
   };
 }
 
@@ -166,7 +231,7 @@ async function runNode(config, test) {
           const encoding = String(headers["content-encoding"] || "identity").toLowerCase().trim();
           if (!["gzip", "identity"].includes(encoding)) return done({ transferComplete: false, error: "unexpected_content_encoding" });
           const decoded = encoding === "gzip" ? gunzipSync(encoded, { maxOutputLength: LIMIT }) : encoded;
-          done({ transferComplete: Boolean(res.complete), decodedBodyBytes: decoded.length, ...summarizeBody(decoded, config.key, config.month.getTime() / 1000) });
+          done({ transferComplete: Boolean(res.complete), decodedBodyBytes: decoded.length, ...summarizeBody(decoded, config.key, config.month.getTime() / 1000, test.expected) });
         } catch (e) { done({ transferComplete: false, error: e.code || e.name, message: redact(e.message, config.key) }); }
       });
     });
@@ -200,7 +265,8 @@ async function main() {
   const curlVersion = await capture("curl", ["--disable", "--version"], "", 32768);
   if (curlVersion.exitCode !== 0) throw new Error("curl is not available");
   const hasHttp2 = /Features:.*\bHTTP2\b/.test(curlVersion.stdout.toString());
-  const tests = [
+  const targeted = args.includes("--targeted");
+  const tests = targeted ? buildTargetedTests(queries, heroIds) : [
     { name: "curl-small-control", body: queries.small },
     { name: "curl-small-padded-2048", body: queries.small.padEnd(2048, " ") },
     { name: "curl-meta-single-position-identity", body: queries.meta("DIVINE", "ALL_PICK_RANKED", [1]) },
@@ -215,7 +281,7 @@ async function main() {
     { name: "node-performance-full-gzip", body: queries.performance, node: true, gzip: true },
   ];
   const report = {
-    version: 1, startedAt: now.toISOString(), referenceMonth: monthString,
+    version: 2, suite: targeted ? "month-and-performance-batching" : "transport", startedAt: now.toISOString(), referenceMonth: monthString,
     endpoint: url.origin + url.pathname, pinnedIp: ip, nodeVersion: process.version,
     curlVersion: curlVersion.stdout.toString().split(/\r?\n/)[0], curlHttp2Supported: hasHttp2,
     heroBatch: heroIds, performanceWeekUnix: queries.weekMs / 1000,
@@ -229,8 +295,8 @@ async function main() {
     if (i) await WAIT(interval);
     console.log(`[${i + 1}/${tests.length}] ${test.name}`);
     const result = await (test.node ? runNode(config, test) : runCurl(config, test));
-    report.tests.push({ name: test.name, requestBytes: Buffer.byteLength(test.body), ...result });
-    console.log(JSON.stringify({ test: test.name, http: result.http, complete: result.transferComplete, jsonValid: result.jsonValid ?? false, bytes: result.receivedWireBytes, error: result.error || result.errors?.join(" ") || null }));
+    report.tests.push({ name: test.name, ...(test.expected ? { expected: test.expected } : {}), requestBytes: Buffer.byteLength(test.body), ...result });
+    console.log(JSON.stringify({ test: test.name, http: result.http, complete: result.transferComplete, jsonValid: result.jsonValid ?? false, bytes: result.receivedWireBytes, ...(targeted ? { months: result.metaMonthValues, rows: result.performanceRows, contract: result.performanceValidation?.matchesProductionContract, graphqlErrors: result.graphqlErrors } : {}), error: result.error || result.errors?.join(" ") || null }));
     if (result.http === 429) {
       report.stoppedForRateLimit = true;
       console.log("Provider rate limit received; remaining tests were skipped.");
