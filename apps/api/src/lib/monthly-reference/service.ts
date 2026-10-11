@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { monthlyHeroPerformance, monthlyHeroPositionMeta, monthlyPositionPerformance, monthlyReferenceEvents, monthlyReferenceVersions } from "../db/schema";
-import { METRICS, MODES, RANKS, RANK_GROUPS, REFERENCE_POLICY, monthDate, monthIsSettled, monthKey, performanceJobs, previousMonth, shouldResetLatestMonth, type Means } from "./model";
+import { METRICS, MODES, RANKS, RANK_GROUPS, REFERENCE_POLICY, monthDate, monthIsSettled, monthKey, performanceJobs, previousMonth, referenceWindow, type Means } from "./model";
 import { fetchMonthlyMeta, fetchMonthlyPerformance, type PerformanceRow } from "./providers";
 import { META_SOURCE_RECHECK_MS, MonthlyMetaPendingError, pendingMetaRetryAt } from "./availability";
 
@@ -24,17 +24,6 @@ async function locked<T>(run: (tx: ReturnType<typeof getDb>) => Promise<T>) {
   });
 }
 
-async function clearMonthlyReference(tx: ReturnType<typeof getDb>, referenceMonth: string, versionIds: string[]) {
-  if (!versionIds.length) return;
-  // Explicit child-first order: these foreign keys do not cascade. The month
-  // predicate on partitioned tables prevents touching any earlier month.
-  await tx.delete(monthlyReferenceEvents).where(inArray(monthlyReferenceEvents.versionId, versionIds));
-  await tx.delete(monthlyHeroPositionMeta).where(eq(monthlyHeroPositionMeta.referenceMonth, referenceMonth));
-  await tx.delete(monthlyHeroPerformance).where(eq(monthlyHeroPerformance.referenceMonth, referenceMonth));
-  await tx.delete(monthlyPositionPerformance).where(eq(monthlyPositionPerformance.referenceMonth, referenceMonth));
-  await tx.delete(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.referenceMonth, referenceMonth));
-}
-
 export async function ensureMonthlyReference(now = new Date(), force = false, requestedMonth?: string) {
   if (requestedMonth && !/^20\d{2}-(0[1-9]|1[0-2])$/.test(requestedMonth)) throw new Error("Invalid reference month");
   const month = requestedMonth ? new Date(`${requestedMonth}-01T00:00:00Z`) : previousMonth(now);
@@ -43,22 +32,23 @@ export async function ensureMonthlyReference(now = new Date(), force = false, re
   if (!monthIsSettled(month, now)) return { status: "waiting-week", month: monthDate(month) };
   return locked(async tx => {
     const monthString = monthDate(month);
-    const existing = await tx.select({ id: monthlyReferenceVersions.id, sourcePolicy: monthlyReferenceVersions.sourcePolicy })
-      .from(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.referenceMonth, monthString));
-    const reset = shouldResetLatestMonth(monthString, monthDate(previousMonth(now)), force,
-      existing.map(version => version.sourcePolicy));
-    if (reset) await clearMonthlyReference(tx, monthString, existing.map(version => version.id));
     const [building] = await tx.select().from(monthlyReferenceVersions)
       .where(and(eq(monthlyReferenceVersions.referenceMonth, monthString), eq(monthlyReferenceVersions.status, "building"),
         eq(monthlyReferenceVersions.sourcePolicy, REFERENCE_POLICY))).limit(1);
-    if (building) return { status: "building", month: monthString, versionId: building.id };
+    if (building && !force) return { status: "building", month: monthString, versionId: building.id };
     const [active] = await tx.select().from(monthlyReferenceVersions)
       .where(and(eq(monthlyReferenceVersions.referenceMonth, monthString), eq(monthlyReferenceVersions.status, "active"),
         eq(monthlyReferenceVersions.sourcePolicy, REFERENCE_POLICY))).limit(1);
     if (active && !force) return { status: "active", month: monthString, versionId: active.id };
+    // A fresh version never deletes the active fallback or mixes existing rows.
+    // Superseded builders remain visible as failed history; in-flight writers
+    // check their version/status under the same lock before committing.
+    await tx.update(monthlyReferenceVersions).set({ status: "failed", updatedAt: now,
+      errorMessage: "این اجرا با نسخهٔ جدید مرجع جایگزین شد؛ اطلاعات مرجع فعال حفظ شده است." })
+      .where(and(eq(monthlyReferenceVersions.referenceMonth, monthString), eq(monthlyReferenceVersions.status, "building")));
     const [created] = await tx.insert(monthlyReferenceVersions).values({ referenceMonth: monthString, sourcePolicy: REFERENCE_POLICY }).returning({ id: monthlyReferenceVersions.id });
     await tx.insert(monthlyReferenceEvents).values({ versionId: created.id, service: "system", level: "info",
-      message: force ? "بازخوانی دستی ماه در صف قرار گرفت" : "ساخت خودکار مرجع ماه آغاز شد" });
+      message: `${force ? "بازخوانی دستی از صفر" : "ساخت خودکار مرجع"}؛ مبنا: هفته‌های STRATZ از ${referenceWindow(month).start} تا ${referenceWindow(month).endExclusive} (پایان بازه غیرشامل، UTC)؛ مرجع فعال قبلی حفظ می‌شود` });
     const end = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 1));
     const lower = monthString, upper = monthDate(end), suffix = monthKey(month);
     // Suffix and date values only come from Date UTC year/month, never request text.
@@ -99,7 +89,7 @@ export async function runMonthlyMetaTick(now = new Date()) {
       await tx.insert(monthlyReferenceEvents).values({ versionId: version.id, service: "meta", level: "info", message: error.message });
       const nextRetryAt = new Date(now.getTime() + META_SOURCE_RECHECK_MS);
       console.info("Monthly Meta waiting for source", { referenceMonth: version.referenceMonth,
-        latestAvailableMonth: error.availableMonths.at(-1), retryAt: nextRetryAt.toISOString() });
+        latestAvailableWeek: error.availableWeeks.at(-1), missingWeeks: error.missingWeeks, position: error.position, retryAt: nextRetryAt.toISOString() });
       return waiting(nextRetryAt);
     });
   }
@@ -112,7 +102,7 @@ export async function runMonthlyMetaTick(now = new Date()) {
     await tx.update(monthlyReferenceVersions).set({ metaCursor: version.metaCursor + 1, metaRows: version.metaRows + rows.length,
       metaLastSuccessAt: new Date(), metaLastError: null, updatedAt: new Date(), errorMessage: null }).where(eq(monthlyReferenceVersions.id, version.id));
     await tx.insert(monthlyReferenceEvents).values({ versionId: version.id, service: "meta", level: "success",
-      message: `${task.rank} / ${task.mode.name}: ${rows.length} ردیف؛ ${version.metaCursor + 1} از ${metaTasks.length}${version.metaCursor + 1 === metaTasks.length ? "؛ Meta کامل شد" : ""}` });
+      message: `${task.rank} / ${task.mode.name} / ${referenceWindow(month).weekStarts.length} هفته و هر پنج پوزیشن: ${rows.length} ردیف؛ ${version.metaCursor + 1} از ${metaTasks.length}${version.metaCursor + 1 === metaTasks.length ? "؛ Meta هفتگی کامل شد" : ""}` });
     return { status: "progress" as const, versionId: version.id, completed: version.metaCursor + 1, total: metaTasks.length, rows: rows.length };
   });
 }
@@ -135,14 +125,15 @@ function eligible(meta: Array<{ heroId: number; position: number; rankBracket: s
 }
 
 async function pruneUnderSampledHeroRows(tx: ReturnType<typeof getDb>, versionId: string) {
-  const [meta, atTwelve] = await Promise.all([
+  const [meta, atTwelve] = [
+    await
     tx.select({ heroId: monthlyHeroPositionMeta.heroId, position: monthlyHeroPositionMeta.position,
       rankBracket: monthlyHeroPositionMeta.rankBracket, matchCount: monthlyHeroPositionMeta.matchCount })
       .from(monthlyHeroPositionMeta).where(and(eq(monthlyHeroPositionMeta.versionId, versionId), eq(monthlyHeroPositionMeta.gameMode, 22))),
-    tx.select({ heroId: monthlyHeroPerformance.heroId, position: monthlyHeroPerformance.position,
+    await tx.select({ heroId: monthlyHeroPerformance.heroId, position: monthlyHeroPerformance.position,
       rankGroup: monthlyHeroPerformance.rankGroup, sampleCount: monthlyHeroPerformance.sampleCount })
       .from(monthlyHeroPerformance).where(and(eq(monthlyHeroPerformance.versionId, versionId), eq(monthlyHeroPerformance.minute, 13))),
-  ]);
+  ];
   const byGroup = new Map<string, ReturnType<typeof eligible>>();
   for (const group of RANK_GROUPS) byGroup.set(group, eligible(meta, group));
   const metaCounts = new Map<string, number>(), totals = new Map<string, number>();
@@ -238,10 +229,25 @@ export async function runMonthlyPerformanceTick() {
     await insertRows(tx, version, rows, allowed);
     const last = version.performanceCursor + 1 === jobs.length;
     const pruned = last ? await pruneUnderSampledHeroRows(tx, version.id) : 0;
-    const counts = last ? await Promise.all([
-      tx.select({ total: sql<number>`count(*)::integer` }).from(monthlyHeroPerformance).where(eq(monthlyHeroPerformance.versionId, version.id)),
-      tx.select({ total: sql<number>`count(*)::integer` }).from(monthlyPositionPerformance).where(eq(monthlyPositionPerformance.versionId, version.id)),
-    ]) : null;
+    const counts = last ? [
+      await tx.select({ total: sql<number>`count(*)::integer` }).from(monthlyHeroPerformance).where(eq(monthlyHeroPerformance.versionId, version.id)),
+      await tx.select({ total: sql<number>`count(*)::integer` }).from(monthlyPositionPerformance).where(eq(monthlyPositionPerformance.versionId, version.id)),
+    ] : null;
+    if (last) {
+      const scopes = await tx.select({ rank: monthlyHeroPositionMeta.rankBracket, mode: monthlyHeroPositionMeta.gameMode,
+        position: monthlyHeroPositionMeta.position, samples: sql<number>`sum(${monthlyHeroPositionMeta.matchCount})::double precision` })
+        .from(monthlyHeroPositionMeta).where(eq(monthlyHeroPositionMeta.versionId, version.id))
+        .groupBy(monthlyHeroPositionMeta.rankBracket, monthlyHeroPositionMeta.gameMode, monthlyHeroPositionMeta.position);
+      for (const rank of RANKS) for (const mode of MODES) for (let position = 1; position <= 5; position++) {
+        if (!scopes.some(row => row.rank === rank && row.mode === mode.id && row.position === position && row.samples > 0)) throw new Error("Monthly Meta cohort coverage is incomplete");
+      }
+      const coverage = await tx.select({ position: monthlyPositionPerformance.position, minute: monthlyPositionPerformance.minute,
+        rank: monthlyPositionPerformance.rankGroup, samples: monthlyPositionPerformance.sampleCount }).from(monthlyPositionPerformance)
+        .where(eq(monthlyPositionPerformance.versionId, version.id));
+      for (const rank of RANK_GROUPS) for (let position = 1; position <= 5; position++) for (let minute = 0; minute <= 75; minute++) {
+        if (!coverage.some(row => row.rank === rank && row.position === position && row.minute === minute && row.samples > 0)) throw new Error("Monthly Performance position/minute coverage is incomplete");
+      }
+    }
     if (last && (!counts![0][0]?.total || !counts![1][0]?.total)) throw new Error("Monthly performance coverage is empty");
     await tx.update(monthlyReferenceVersions).set({ performanceCursor: version.performanceCursor + 1, updatedAt: new Date(),
       performanceLastSuccessAt: new Date(), performanceLastError: null, errorMessage: null, ...(last ? { status: "active", completedAt: new Date(),

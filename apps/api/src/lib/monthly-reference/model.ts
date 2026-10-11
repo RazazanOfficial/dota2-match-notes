@@ -3,10 +3,12 @@ import { HEROES } from "../../data/heroes";
 export const RANKS = ["DIVINE", "IMMORTAL"] as const;
 export const MODES = [{ id: 22, name: "ALL_PICK_RANKED" }, { id: 23, name: "TURBO" }] as const;
 export const RANK_GROUPS = ["DIVINE_IMMORTAL"] as const;
-export const REFERENCE_POLICY = "stratz-ranked-assumed-di-v2";
-export function shouldResetLatestMonth(referenceMonth: string, latestMonth: string,
-  force: boolean, existingPolicies: string[]) {
-  return referenceMonth === latestMonth && (force || existingPolicies.some(policy => policy !== REFERENCE_POLICY));
+export const REFERENCE_POLICY = "stratz-weekly-di-v3";
+export const PREVIOUS_REFERENCE_POLICY = "stratz-ranked-assumed-di-v2";
+export function referenceTaskTotals(month: Date, policy: string) {
+  const divineImmortal = policy === REFERENCE_POLICY || policy === PREVIOUS_REFERENCE_POLICY;
+  return { metaTotal: divineImmortal ? RANKS.length * MODES.length : 16,
+    performanceTotal: performanceJobs(month).length * (divineImmortal ? 1 : 4) };
 }
 export const METRICS = ["cs", "dn", "kills", "deaths", "assists", "networth", "xp", "heroDamage", "towerDamage", "healingAllies", "campsStacked", "neutrals", "ancients", "teamKills"] as const;
 export type Metric = typeof METRICS[number];
@@ -26,6 +28,12 @@ export function referenceMonthsForMatch(when: Date) {
 }
 export function monthKey(month: Date) { return month.toISOString().slice(0, 7).replace("-", "_"); }
 export function monthDate(month: Date) { return month.toISOString().slice(0, 10); }
+export function referenceWindow(month: Date) {
+  const starts = weekStartsInMonth(month);
+  return { basis: "week-start-month" as const, weekStarts: starts.map(value => new Date(value).toISOString().slice(0, 10)),
+    start: new Date(starts[0]).toISOString().slice(0, 10),
+    endExclusive: new Date(starts.at(-1)! + WEEK).toISOString().slice(0, 10) };
+}
 export function weekStartsInMonth(month: Date) {
   const start = monthStart(month).getTime();
   const end = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 1)).getTime();

@@ -1,5 +1,5 @@
 import { fetchStratzGraphql } from "../stratz/gateway";
-import { monthDate, readMeans, type Means } from "./model";
+import { monthDate, readMeans, weekStartsInMonth, monthIsSettled, RANKS, MODES, type Means } from "./model";
 import { MonthlyMetaPendingError } from "./availability";
 
 type Row = Record<string, unknown>;
@@ -14,56 +14,96 @@ function root(value: unknown) {
 
 export type MetaRow = { heroId: number; position: number; rankBracket: string; gameMode: number; matchCount: number; winCount: number; positionShare: number; metaPickRate: number; winRate: number };
 
-export function metaQuery(rank: string, mode: string, take = 2) {
-  const selections = [1, 2, 3, 4, 5].map(position =>
-    `pos${position}: winMonth(take: ${take}, bracketIds: [${rank}], positionIds: [POSITION_${position}], gameModeIds: [${mode}]) { month heroId matchCount winCount }`,
-  );
-  return `query MonthlyMeta { heroStats { ${selections.join("\n")} } }`;
+const WEEK = 604_800_000;
+const PAGE_WEEKS = 8;
+type WeeklyMetaRow = { week: number; heroId: number; matchCount: number; winCount: number };
+
+export function metaQuery(rank: string, mode: string, position: number, take = PAGE_WEEKS, skip = 0) {
+  if (!RANKS.some(value => value === rank) || !MODES.some(value => value.name === mode) ||
+    !Number.isInteger(position) || position < 1 || position > 5 || !Number.isInteger(take) || take < 1 || take > PAGE_WEEKS ||
+    !Number.isInteger(skip) || skip < 0 || skip > 64) throw new Error("Invalid weekly Meta query scope");
+  return `query MonthlyMeta { heroStats { pos${position}: winWeek(take: ${take}, skip: ${skip}, bracketIds: [${rank}], positionIds: [POSITION_${position}], gameModeIds: [${mode}]) { week heroId matchCount winCount } } }`;
+}
+
+export function parseWeeklyMetaPage(value: unknown, position: number): WeeklyMetaRow[] {
+  const raw = root(value)[`pos${position}`];
+  if (!Array.isArray(raw)) throw new Error(`STRATZ weekly Meta pos${position} missing`);
+  const seen = new Set<string>();
+  return raw.map(item => {
+    const row = object(item);
+    const week = integer(row?.week), heroId = integer(row?.heroId), matchCount = integer(row?.matchCount), winCount = integer(row?.winCount);
+    if (week === null || week < 946684800 || week > 4102444800 || (week * 1000) % WEEK !== 0) throw new Error("Invalid STRATZ Meta week timestamp");
+    if (heroId === null || heroId < 1 || heroId > 32767 || matchCount === null || winCount === null ||
+      matchCount < 0 || matchCount > 2147483647 || winCount < 0 || winCount > matchCount) throw new Error("Invalid STRATZ weekly Meta counts");
+    const key = `${week}:${heroId}`;
+    if (seen.has(key)) throw new Error("Duplicate STRATZ weekly Meta row");
+    seen.add(key);
+    return { week, heroId, matchCount, winCount };
+  });
+}
+
+function requireWeeks(rows: WeeklyMetaRow[], month: Date, position: number) {
+  const expected = weekStartsInMonth(month).map(week => week / 1000);
+  const available = new Set(rows.filter(row => row.matchCount > 0).map(row => row.week));
+  const missing = expected.filter(week => !available.has(week));
+  if (missing.length) throw new MonthlyMetaPendingError(monthDate(month), [...available].sort((a,b)=>a-b).map(week=>monthDate(new Date(week*1000))), missing.map(week=>monthDate(new Date(week*1000))), position);
 }
 
 export function parseMeta(value: unknown, month: Date, rank: string, mode: number): MetaRow[] {
+  const wanted = new Set(weekStartsInMonth(month).map(week => week / 1000));
   const data = root(value);
-  const target = month.getTime() / 1_000;
-  const availableMonths = new Set<string>();
-  const seen = new Set<string>();
-  const rows: Array<Omit<MetaRow, "positionShare" | "metaPickRate" | "winRate">> = [];
+  const totals = new Map<string, Omit<MetaRow, "positionShare" | "metaPickRate" | "winRate">>();
   for (let position = 1; position <= 5; position++) {
-    const raw = data[`pos${position}`];
-    if (!Array.isArray(raw)) throw new Error(`STRATZ meta pos${position} missing`);
-    for (const item of raw) {
-      const row = object(item);
-      const sourceMonth = integer(row?.month);
-      const date = sourceMonth === null ? null : new Date(sourceMonth * 1000);
-      if (!date || !Number.isFinite(date.getTime()) || date.getUTCFullYear() < 2000 || date.getUTCFullYear() > 2100 || date.getUTCDate() !== 1 || date.getUTCHours() !== 0 || date.getUTCMinutes() !== 0 || date.getUTCSeconds() !== 0) throw new Error("Invalid STRATZ meta month timestamp");
-      availableMonths.add(monthDate(date));
-      const heroId = integer(row?.heroId), matchCount = integer(row?.matchCount), winCount = integer(row?.winCount);
-      if (heroId === null || matchCount === null || winCount === null || matchCount < 0 || winCount < 0 || winCount > matchCount) throw new Error(`Invalid STRATZ meta row for ${monthDate(month)}`);
-      if (sourceMonth !== target) continue;
-      const key = `${heroId}:${position}`;
-      if (seen.has(key)) throw new Error("Duplicate STRATZ meta cohort row");
-      seen.add(key);
-      rows.push({ heroId, position, rankBracket: rank, gameMode: mode, matchCount, winCount });
+    const source = parseWeeklyMetaPage({ data: { heroStats: data } }, position);
+    requireWeeks(source, month, position);
+    for (const row of source) {
+      if (!wanted.has(row.week) || row.matchCount === 0) continue;
+      const key = `${row.heroId}:${position}`;
+      const existing = totals.get(key) || { heroId: row.heroId, position, rankBracket: rank, gameMode: mode, matchCount: 0, winCount: 0 };
+      existing.matchCount += row.matchCount;
+      existing.winCount += row.winCount;
+      if (existing.matchCount > 2147483647) throw new Error("Monthly Meta count exceeds database integer capacity");
+      totals.set(key, existing);
     }
   }
-  if (!rows.length && availableMonths.size) throw new MonthlyMetaPendingError(monthDate(month), [...availableMonths].sort());
-  if (rows.length < 5 || new Set(rows.map(row=>row.position)).size !== 5) throw new Error(`STRATZ has insufficient monthly meta for ${monthDate(month)}`);
+  const rows = [...totals.values()];
   const heroTotals = new Map<number, number>(), positionTotals = new Map<number, number>();
   for (const row of rows) {
     heroTotals.set(row.heroId, (heroTotals.get(row.heroId) ?? 0) + row.matchCount);
     positionTotals.set(row.position, (positionTotals.get(row.position) ?? 0) + row.matchCount);
   }
   return rows.map(row => ({ ...row,
-    positionShare: heroTotals.get(row.heroId) ? row.matchCount / heroTotals.get(row.heroId)! * 100 : 0,
-    metaPickRate: positionTotals.get(row.position) ? row.matchCount / positionTotals.get(row.position)! * 100 : 0,
-    winRate: row.matchCount ? row.winCount / row.matchCount * 100 : 0,
+    positionShare: row.matchCount / heroTotals.get(row.heroId)! * 100,
+    metaPickRate: row.matchCount / positionTotals.get(row.position)! * 100,
+    winRate: row.winCount / row.matchCount * 100,
   }));
 }
 
-export async function fetchMonthlyMeta(month: Date, rank: string, mode: { id: number; name: string }) {
-  const now = new Date();
+export async function fetchMonthlyMeta(month: Date, rank: string, mode: { id: number; name: string }, fetch = fetchStratzGraphql, now = new Date()) {
   const monthsBack = (now.getUTCFullYear() - month.getUTCFullYear()) * 12 + now.getUTCMonth() - month.getUTCMonth();
-  if (monthsBack < 1 || monthsBack > 11) throw new Error("Reference month is outside the 11-month backfill request limit");
-  return parseMeta(await fetchStratzGraphql(metaQuery(rank, mode.name, monthsBack + 1), "MonthlyMeta"), month, rank, mode.id);
+  if (monthsBack < 1 || monthsBack > 11 || month.getTime() !== new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth(), 1)).getTime()) throw new Error("Reference month is outside the 11-month backfill request limit");
+  if (!monthIsSettled(month, now)) throw new Error("Reference week window has not settled");
+  const expected = weekStartsInMonth(month).map(week => week / 1000);
+  // Scan bounded pages from the actual newest source week, without assuming it is current.
+  const maxPages = Math.ceil((Math.floor(now.getTime() / WEEK) - expected[0] / (WEEK / 1000) + PAGE_WEEKS) / PAGE_WEEKS);
+  const collected: Record<string, WeeklyMetaRow[]> = {};
+  for (let position = 1; position <= 5; position++) {
+    const rows: WeeklyMetaRow[] = [], seen = new Set<string>();
+    for (let page = 0; page < maxPages; page++) {
+      const values = parseWeeklyMetaPage(await fetch(metaQuery(rank, mode.name, position, PAGE_WEEKS, page * PAGE_WEEKS), "MonthlyMeta"), position);
+      for (const row of values) {
+        const key = `${row.week}:${row.heroId}`;
+        if (seen.has(key)) throw new Error("Overlapping STRATZ weekly Meta pages");
+        seen.add(key); rows.push(row);
+      }
+      const available = new Set(rows.filter(row=>row.matchCount > 0).map(row=>row.week));
+      if (expected.every(week=>available.has(week))) break;
+      if (!values.length || Math.min(...values.map(row=>row.week)) < expected[0]) break;
+    }
+    requireWeeks(rows, month, position);
+    collected[`pos${position}`] = rows;
+  }
+  return parseMeta({ data: { heroStats: collected } }, month, rank, mode.id);
 }
 
 export type PerformanceRow = { heroId: number; position: number; rankGroup: string; minute: number; sampleCount: number; means: Means };

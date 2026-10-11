@@ -6,7 +6,8 @@
 
 | موضوع | فایل |
 | --- | --- |
-| اصلاح انتقال STRATZ، ماه Meta غایب و Git/VPS (جاری) | [stratz-reference-transfer.fa.md](stratz-reference-transfer.fa.md) |
+| Meta هفتگی، بازسازی بدون حذف مرجع فعال و Git/VPS (جاری) | [weekly-meta-reference.fa.md](weekly-meta-reference.fa.md) |
+| اصلاح انتقال STRATZ و تشخیص ماه Meta غایب (مرحلهٔ قبل) | [stratz-reference-transfer.fa.md](stratz-reference-transfer.fa.md) |
 | فهرست فیچرهای آیندهٔ Learn & Practice و فایل‌های دانلودی | [learn-and-practice-feature-todo.fa.md](learn-and-practice-feature-todo.fa.md) |
 | پروفایل، پنل ادمین، سایدبار و Git/VPS | [desktop-profile-admin.fa.md](desktop-profile-admin.fa.md) |
 | مشخصات مچ در ریپلی و آموزش‌های دو زبانه | [replay-match-tutorials.fa.md](replay-match-tutorials.fa.md) |

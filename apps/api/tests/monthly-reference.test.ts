@@ -1,30 +1,75 @@
 import { describe, expect, it, vi } from "vitest";
-import { monthIsSettled, performanceJobs, previousMonth, referenceMonthsForMatch, weekStartsInMonth, weightedMean, RANKS, RANK_GROUPS, REFERENCE_POLICY, shouldResetLatestMonth } from "../src/lib/monthly-reference/model";
-import { fetchMonthlyPerformance, metaQuery, parseMeta, parsePerformance, performanceQuery } from "../src/lib/monthly-reference/providers";
+import { monthIsSettled, performanceJobs, previousMonth, referenceMonthsForMatch, weekStartsInMonth, weightedMean, RANKS, RANK_GROUPS, REFERENCE_POLICY, PREVIOUS_REFERENCE_POLICY, referenceTaskTotals, referenceWindow } from "../src/lib/monthly-reference/model";
+import { fetchMonthlyPerformance, fetchMonthlyMeta, parseWeeklyMetaPage, metaQuery, parseMeta, parsePerformance, performanceQuery } from "../src/lib/monthly-reference/providers";
 import { MonthlyMetaPendingError, pendingMetaRetryAt } from "../src/lib/monthly-reference/availability";
 import { poolDivineImmortalMeta } from "../src/lib/monthly-reference/selection";
 
 describe("monthly reference contract", () => {
-  it("distinguishes a missing source month from malformed timestamps and never relabels August as September", () => {
-    const make = (timestamp: number | string) => ({data:{heroStats:Object.fromEntries([1,2,3,4,5].map(p=>[`pos${p}`,[{month:timestamp,heroId:50,matchCount:100,winCount:50}]]))}});
+  function weeklyData(month: Date, count = 100) {
+    return {data:{heroStats:Object.fromEntries([1,2,3,4,5].map(position=>[`pos${position}`,weekStartsInMonth(month).map(week=>({week:week/1000,heroId:50,matchCount:count*position,winCount:count*position/2}))]))}};
+  }
+  it("requires every target week at every position and never relabels another period", () => {
     const september = new Date("2026-09-01T00:00:00Z");
-    expect(() => parseMeta(make(1785542400), september, "DIVINE", 22)).toThrow(MonthlyMetaPendingError);
-    try { parseMeta(make(1785542400), september, "DIVINE", 22); }
-    catch (error) { expect(error).toMatchObject({referenceMonth:"2026-09-01", availableMonths:["2026-08-01"]}); }
-    for (const value of [0, 680, 1785542400000, "1785542400", 1785542401]) {
-      expect(() => parseMeta(make(value), september, "DIVINE", 22)).toThrow("timestamp");
+    expect(() => parseMeta(weeklyData(new Date("2026-08-01T00:00:00Z")), september, "DIVINE", 22)).toThrow(MonthlyMetaPendingError);
+    const missing = weeklyData(september);
+    missing.data.heroStats.pos5.splice(2,1);
+    try { parseMeta(missing,september,"DIVINE",22); throw new Error("Should reject missing week"); }
+    catch (error) { expect(error).toMatchObject({referenceMonth:"2026-09-01",missingWeeks:["2026-09-17"],position:5}); }
+    for (const week of [0,2959,1789603200000,"1789603200",1789603201]) {
+      expect(()=>parseWeeklyMetaPage({data:{heroStats:{pos1:[{week,heroId:1,matchCount:10,winCount:5}]}}},1)).toThrow("timestamp");
     }
-    expect(parseMeta(make(september.getTime()/1000),september,"DIVINE",22)).toHaveLength(5);
-    const incomplete=make(september.getTime()/1000);
-    incomplete.data.heroStats.pos5=[];
-    expect(()=>parseMeta(incomplete,september,"DIVINE",22)).toThrow("insufficient");
+    const invalid = weeklyData(september); invalid.data.heroStats.pos1[0].winCount=101;
+    expect(()=>parseMeta(invalid,september,"DIVINE",22)).toThrow("counts");
+    const duplicate = weeklyData(september); duplicate.data.heroStats.pos1.push(duplicate.data.heroStats.pos1[0]);
+    expect(()=>parseMeta(duplicate,september,"DIVINE",22)).toThrow("Duplicate");
+    const overflow = weeklyData(september,1000000000);
+    expect(()=>parseMeta(overflow,september,"DIVINE",22)).toThrow("capacity");
     const recorded = new Date("2026-10-11T09:00:00Z");
-    const message = new MonthlyMetaPendingError("2026-09-01",["2026-08-01"]).message;
+    const message = new MonthlyMetaPendingError("2026-09-01",["2026-08-27"],["2026-09-03"]).message;
     expect(pendingMetaRetryAt(message,recorded,new Date("2026-10-11T09:59:59Z"))?.toISOString()).toBe("2026-10-11T10:00:00.000Z");
     expect(pendingMetaRetryAt(message,recorded,new Date("2026-10-11T10:00:00Z"))).toBeNull();
     expect(pendingMetaRetryAt("network failure",recorded,recorded)).toBeNull();
   });
-
+  it("sums weekly counts then computes weighted rates, excluding weeks outside the window", () => {
+    const month = new Date("2026-09-01T00:00:00Z");
+    const data = weeklyData(month);
+    data.data.heroStats.pos1[0].matchCount = 1000;
+    data.data.heroStats.pos1[0].winCount = 900;
+    data.data.heroStats.pos1.push({week:1790812800,heroId:50,matchCount:999999,winCount:1});
+    const rows = parseMeta(data,month,"DIVINE",22);
+    expect(rows).toHaveLength(5);
+    expect(rows[0]).toMatchObject({matchCount:1300,winCount:1050,winRate:1050/1300*100});
+    expect(rows[4]).toMatchObject({matchCount:2000,positionShare:2000/6900*100,metaPickRate:100});
+  });
+  it("uses bounded per-position pages, includes every hero and rejects overlaps or partial transfers", async () => {
+    const month=new Date("2026-08-01T00:00:00Z"),now=new Date("2026-10-11T00:00:00Z");
+    const latest=Date.parse("2026-10-01T00:00:00Z")/1000;
+    const fetch=vi.fn(async(query:string)=>{
+      const position=Number(query.match(/POSITION_(\d)/)![1]);
+      const skip=Number(query.match(/skip: (\d+)/)![1]);
+      expect(query).toContain("take: 8"); expect(query).not.toContain("groupBy:");
+      expect(query).not.toContain("heroIds:");
+      return {data:{heroStats:{[`pos${position}`]:Array.from({length:8},(_,i)=>({week:latest-(skip+i)*604800,heroId:50,matchCount:100,winCount:50}))}}};
+    });
+    expect(await fetchMonthlyMeta(month,"DIVINE",{id:22,name:"ALL_PICK_RANKED"},fetch,now)).toHaveLength(5);
+    expect(fetch).toHaveBeenCalledTimes(10);
+    fetch.mockClear(); fetch.mockRejectedValueOnce(new Error("partial body"));
+    await expect(fetchMonthlyMeta(month,"DIVINE",{id:22,name:"ALL_PICK_RANKED"},fetch,now)).rejects.toThrow("partial body");
+    fetch.mockReset(); fetch.mockImplementation(async query=>{
+      const p=Number(query.match(/POSITION_(\d)/)![1]);
+      return {data:{heroStats:{[`pos${p}`]:Array.from({length:8},(_,i)=>({week:latest-i*604800,heroId:50,matchCount:100,winCount:50}))}}};
+    });
+    await expect(fetchMonthlyMeta(month,"DIVINE",{id:22,name:"ALL_PICK_RANKED"},fetch,now)).rejects.toThrow("Overlapping");
+  });
+  it("does not advance past a source gap or request unsettled/future months", async () => {
+    const month=new Date("2026-09-01T00:00:00Z");
+    const fetch=vi.fn(async()=>({data:{heroStats:{pos1:[{week:1787788800,heroId:1,matchCount:1,winCount:1}]}}}));
+    await expect(fetchMonthlyMeta(month,"DIVINE",{id:22,name:"ALL_PICK_RANKED"},fetch,new Date("2026-10-11T00:00:00Z"))).rejects.toBeInstanceOf(MonthlyMetaPendingError);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    fetch.mockClear();
+    await expect(fetchMonthlyMeta(month,"DIVINE",{id:22,name:"ALL_PICK_RANKED"},fetch,new Date("2026-10-01T00:00:00Z"))).rejects.toThrow("settled");
+    expect(fetch).not.toHaveBeenCalled();
+  });
   it("fetches each hero separately without changing the job cursor or losing any minute/metric", async () => {
     const job={week:2957*604800000,rank:"DIVINE_IMMORTAL",heroIds:[102,73,68,1]};
     const fetch=vi.fn(async (query:string) => {
@@ -56,12 +101,24 @@ describe("monthly reference contract", () => {
     expect(referenceMonthsForMatch(new Date("2027-01-01T00:00:00Z")))
       .toEqual(["2026-12-01", "2026-11-01"]);
   });
-  it("resets only the latest month on a new policy or explicit refetch", () => {
-    const latest = "2026-08-01";
-    expect(shouldResetLatestMonth(latest, latest, false, ["stratz-ranked-assumed"])).toBe(true);
-    expect(shouldResetLatestMonth(latest, latest, false, [REFERENCE_POLICY])).toBe(false);
-    expect(shouldResetLatestMonth(latest, latest, true, [REFERENCE_POLICY])).toBe(true);
-    expect(shouldResetLatestMonth("2026-07-01", latest, true, ["stratz-ranked-assumed"])).toBe(false);
+  it("keeps old Divine/Immortal progress totals accurate while identifying the new weekly policy", () => {
+    const month=new Date("2026-09-01T00:00:00Z");
+    expect(referenceTaskTotals(month,REFERENCE_POLICY)).toEqual({metaTotal:4,performanceTotal:128});
+    expect(referenceTaskTotals(month,PREVIOUS_REFERENCE_POLICY)).toEqual({metaTotal:4,performanceTotal:128});
+    expect(referenceTaskTotals(month,"stratz-ranked-assumed")).toEqual({metaTotal:16,performanceTotal:512});
+  });
+  it("handles every month, four/five-week windows, leap years and future year changes generically", () => {
+    for (const year of [2026,2027,2028,2031]) for (let index=0;index<12;index++) {
+      const month=new Date(Date.UTC(year,index,1));
+      const starts=weekStartsInMonth(month);
+      expect([4,5]).toContain(starts.length);
+      expect(starts.every(week=>new Date(week).getUTCMonth()===index && new Date(week).getUTCDay()===4)).toBe(true);
+      const eligible=starts.at(-1)!+9*86400000;
+      expect(monthIsSettled(month,new Date(eligible-1))).toBe(false);
+      expect(monthIsSettled(month,new Date(eligible))).toBe(true);
+      expect(referenceWindow(month).weekStarts).toHaveLength(starts.length);
+    }
+    expect(referenceWindow(new Date("2026-12-01T00:00:00Z"))).toMatchObject({start:"2026-12-03",endExclusive:"2027-01-07"});
   });
   it("assigns a crossing week entirely to its starting month and waits for it to finish", () => {
     const august = new Date("2026-08-01T00:00:00Z");
@@ -77,18 +134,11 @@ describe("monthly reference contract", () => {
     expect(weightedMean(10, 100, 20, 900)).toBe(19);
   });
 
-  it("requests the previous calendar month for each role and rejects a missing month", () => {
-    expect(metaQuery("DIVINE", "ALL_PICK_RANKED")).toContain("gameModeIds: [ALL_PICK_RANKED]");
-    const month = new Date("2026-08-01T00:00:00Z");
-    const august = month.getTime() / 1000;
-    const data = Object.fromEntries([1, 2, 3, 4, 5].map(position => [
-      `pos${position}`,
-      [{ month: august, heroId: 50, matchCount: position * 100, winCount: position * 50 }],
-    ]));
-    const rows = parseMeta({ data: { heroStats: data } }, month, "DIVINE", 22);
-    expect(rows).toHaveLength(5);
-    expect(rows[4]).toMatchObject({ heroId: 50, position: 5, positionShare: 500 / 1500 * 100, gameMode: 22 });
-    expect(() => parseMeta({ data: { heroStats: Object.fromEntries([1, 2, 3, 4, 5].map(position => [`pos${position}`, []])) } }, month, "DIVINE", 22)).toThrow("insufficient");
+  it("limits query inputs to supported weekly cohorts and safe bounded pages", () => {
+    expect(metaQuery("DIVINE","ALL_PICK_RANKED",1)).toContain("winWeek");
+    expect(()=>metaQuery("DIVINE","ALL_PICK_RANKED",0)).toThrow("scope");
+    expect(()=>metaQuery("HERALD","TURBO",1)).toThrow("scope");
+    expect(()=>metaQuery("DIVINE","TURBO",1,100)).toThrow("scope");
   });
 
   it("accepts STRATZ epoch week input and validates the output cohort and fields", () => {

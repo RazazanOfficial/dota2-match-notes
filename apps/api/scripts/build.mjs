@@ -13,6 +13,7 @@ await build({
     "preflight-database": "scripts/preflight-database.ts",
     "analysis-summary": "scripts/analysis-summary.ts",
     "replay-identity": "scripts/replay-identity.ts",
+    "monthly-reference-rebuild": "scripts/monthly-reference-rebuild.ts",
     "stratz-reference-check": "scripts/stratz-reference-check.ts",
   },
   outdir: "dist", bundle: true, platform: "node", format: "esm", packages: "external",

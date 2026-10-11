@@ -3,7 +3,7 @@ import { requireSuperAdmin } from "../../../lib/admin/auth";
 import { adminErrorResponse, AdminError } from "../../../lib/admin/errors";
 import { hasValidRequestOrigin } from "../../../lib/auth/request";
 import { ensureMonthlyReference, getMonthlyHeroDetails, getMonthlyReferenceEvents, listMonthlyReferences } from "../../../lib/monthly-reference/service";
-import { performanceJobs, RANKS, MODES, REFERENCE_POLICY } from "../../../lib/monthly-reference/model";
+import { referenceTaskTotals, referenceWindow, REFERENCE_POLICY } from "../../../lib/monthly-reference/model";
 import { HEROES } from "../../../data/heroes";
 import { z } from "zod";
 
@@ -29,9 +29,8 @@ export async function GET(request: HttpRequest) {
     if (params.size) throw new AdminError(400, "invalid_request", "درخواست معتبر نیست");
     const versions = (await listMonthlyReferences()).map(version => ({
       ...version,
-      metaTotal: version.sourcePolicy === REFERENCE_POLICY ? RANKS.length * MODES.length : 16,
-      performanceTotal: performanceJobs(new Date(`${version.referenceMonth}T00:00:00Z`)).length *
-        (version.sourcePolicy === REFERENCE_POLICY ? 1 : 4),
+      ...referenceTaskTotals(new Date(`${version.referenceMonth}T00:00:00Z`), version.sourcePolicy),
+      window: version.sourcePolicy === REFERENCE_POLICY ? referenceWindow(new Date(`${version.referenceMonth}T00:00:00Z`)) : null,
     }));
     return Response.json({ ok: true, versions }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) { return adminErrorResponse(error); }
