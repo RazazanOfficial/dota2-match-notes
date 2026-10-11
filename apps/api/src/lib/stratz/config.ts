@@ -7,6 +7,7 @@ export interface StratzConfig {
   maxResponseBytes: number;
   diagnosticsEnabled: boolean;
   directIp: string;
+  transport: "node" | "curl";
   retryDelayMs: number;
   maxAttempts: number;
   minRequestIntervalMs: number;
@@ -33,7 +34,7 @@ function parseInteger(name: string, fallback: number, min: number, max: number) 
 function parseEndpoint() {
   const raw = process.env.STRATZ_API_URL?.trim() || DEFAULT_ENDPOINT;
   const url = new URL(raw);
-  if (url.protocol !== "https:" || url.search || url.hash) {
+  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {
     throw new Error("Invalid env: STRATZ_API_URL");
   }
   return url.toString().replace(/\/+$/, "");
@@ -71,6 +72,9 @@ function parseDirectIp() {
 export function getStratzConfig(): StratzConfig {
   const token = process.env.STRATZ_API_TOKEN?.trim();
   if (!token) throw new Error("Missing env: STRATZ_API_TOKEN");
+  if (/[\r\n]/.test(token)) throw new Error("Invalid env: STRATZ_API_TOKEN");
+  const transport = process.env.STRATZ_TRANSPORT?.trim() || "node";
+  if (transport !== "node" && transport !== "curl") throw new Error("Invalid env: STRATZ_TRANSPORT");
 
   return {
     endpoint: parseEndpoint(),
@@ -84,6 +88,7 @@ export function getStratzConfig(): StratzConfig {
     ),
     diagnosticsEnabled: parseBoolean("STRATZ_DIAGNOSTICS_ENABLED"),
     directIp: parseDirectIp(),
+    transport,
     retryDelayMs: parseInteger("STRATZ_RETRY_DELAY_MS", 2_000, 1_000, 10_000),
     maxAttempts: parseInteger("STRATZ_MAX_ATTEMPTS", 2, 1, 2),
     minRequestIntervalMs: parseInteger(

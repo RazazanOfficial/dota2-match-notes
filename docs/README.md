@@ -6,8 +6,9 @@
 
 | موضوع | فایل |
 | --- | --- |
+| اصلاح انتقال STRATZ، ماه Meta غایب و Git/VPS (جاری) | [stratz-reference-transfer.fa.md](stratz-reference-transfer.fa.md) |
 | فهرست فیچرهای آیندهٔ Learn & Practice و فایل‌های دانلودی | [learn-and-practice-feature-todo.fa.md](learn-and-practice-feature-todo.fa.md) |
-| پروفایل، پنل ادمین، سایدبار و Git/VPS (جاری) | [desktop-profile-admin.fa.md](desktop-profile-admin.fa.md) |
+| پروفایل، پنل ادمین، سایدبار و Git/VPS | [desktop-profile-admin.fa.md](desktop-profile-admin.fa.md) |
 | مشخصات مچ در ریپلی و آموزش‌های دو زبانه | [replay-match-tutorials.fa.md](replay-match-tutorials.fa.md) |
 | رفع 400 جست‌وجوی ریپلی و Git/VPS | [replay-lookup-routing.fa.md](replay-lookup-routing.fa.md) |
 | راهنمای ریپلی، اجرای دوتا، وضعیت زنده و Git/VPS | [replay-setup-live-status.fa.md](replay-setup-live-status.fa.md) |

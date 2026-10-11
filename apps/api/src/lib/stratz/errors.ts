@@ -4,6 +4,10 @@ import { ZodError } from "zod";
 export interface StratzErrorDetails {
   upstreamStatus?: number;
   cfRay?: string;
+  transport?: "curl" | "node";
+  curlExitCode?: number;
+  receivedBytes?: number;
+  elapsedMs?: number;
 }
 
 export class StratzError extends Error {

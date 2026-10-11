@@ -1,9 +1,55 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { monthIsSettled, performanceJobs, previousMonth, referenceMonthsForMatch, weekStartsInMonth, weightedMean, RANKS, RANK_GROUPS, REFERENCE_POLICY, shouldResetLatestMonth } from "../src/lib/monthly-reference/model";
-import { metaQuery, parseMeta, parsePerformance, performanceQuery } from "../src/lib/monthly-reference/providers";
+import { fetchMonthlyPerformance, metaQuery, parseMeta, parsePerformance, performanceQuery } from "../src/lib/monthly-reference/providers";
+import { MonthlyMetaPendingError, pendingMetaRetryAt } from "../src/lib/monthly-reference/availability";
 import { poolDivineImmortalMeta } from "../src/lib/monthly-reference/selection";
 
 describe("monthly reference contract", () => {
+  it("distinguishes a missing source month from malformed timestamps and never relabels August as September", () => {
+    const make = (timestamp: number | string) => ({data:{heroStats:Object.fromEntries([1,2,3,4,5].map(p=>[`pos${p}`,[{month:timestamp,heroId:50,matchCount:100,winCount:50}]]))}});
+    const september = new Date("2026-09-01T00:00:00Z");
+    expect(() => parseMeta(make(1785542400), september, "DIVINE", 22)).toThrow(MonthlyMetaPendingError);
+    try { parseMeta(make(1785542400), september, "DIVINE", 22); }
+    catch (error) { expect(error).toMatchObject({referenceMonth:"2026-09-01", availableMonths:["2026-08-01"]}); }
+    for (const value of [0, 680, 1785542400000, "1785542400", 1785542401]) {
+      expect(() => parseMeta(make(value), september, "DIVINE", 22)).toThrow("timestamp");
+    }
+    expect(parseMeta(make(september.getTime()/1000),september,"DIVINE",22)).toHaveLength(5);
+    const incomplete=make(september.getTime()/1000);
+    incomplete.data.heroStats.pos5=[];
+    expect(()=>parseMeta(incomplete,september,"DIVINE",22)).toThrow("insufficient");
+    const recorded = new Date("2026-10-11T09:00:00Z");
+    const message = new MonthlyMetaPendingError("2026-09-01",["2026-08-01"]).message;
+    expect(pendingMetaRetryAt(message,recorded,new Date("2026-10-11T09:59:59Z"))?.toISOString()).toBe("2026-10-11T10:00:00.000Z");
+    expect(pendingMetaRetryAt(message,recorded,new Date("2026-10-11T10:00:00Z"))).toBeNull();
+    expect(pendingMetaRetryAt("network failure",recorded,recorded)).toBeNull();
+  });
+
+  it("fetches each hero separately without changing the job cursor or losing any minute/metric", async () => {
+    const job={week:2957*604800000,rank:"DIVINE_IMMORTAL",heroIds:[102,73,68,1]};
+    const fetch=vi.fn(async (query:string) => {
+      const ids=JSON.parse(`[${query.match(/heroIds: \[([^\]]+)\]/)![1]}]`) as number[];
+      expect(ids).toHaveLength(1);
+      expect(query).toContain("POSITION_1,POSITION_2,POSITION_3,POSITION_4,POSITION_5");
+      expect(query).toContain("minTime: 0, maxTime: 75");
+      const stats=[0,13,75].map(time=>({heroId:ids[0],time,week:2957,position:"POSITION_1",bracketBasicIds:job.rank,remainingMatchCount:100,
+        cs:1,dn:1,kills:1,deaths:1,assists:1,networth:1,xp:1,heroDamage:1,towerDamage:1,healingAllies:1,campsStacked:1,neutrals:1,ancients:1,teamKills:1}));
+      return {data:{heroStats:{stats}}};
+    });
+    const result=await fetchMonthlyPerformance(job,fetch);
+    expect(fetch).toHaveBeenCalledTimes(4);
+    expect(result).toHaveLength(12);
+    expect(result.map(r=>r.heroId)).toEqual([102,102,102,73,73,73,68,68,68,1,1,1]);
+    fetch.mockClear();
+    fetch.mockRejectedValueOnce(new Error("incomplete transfer"));
+    await expect(fetchMonthlyPerformance(job,fetch)).rejects.toThrow("incomplete transfer");
+    expect(fetch).toHaveBeenCalledTimes(1);
+    fetch.mockClear();
+    fetch.mockResolvedValueOnce({data:{heroStats:{stats:[]}}});
+    fetch.mockRejectedValueOnce(new Error("second hero failed"));
+    await expect(fetchMonthlyPerformance(job,fetch)).rejects.toThrow("second hero failed");
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
   it("limits a missing September reference to the active August fallback for October matches", () => {
     expect(referenceMonthsForMatch(new Date("2026-10-01T19:30:00Z")))
       .toEqual(["2026-09-01", "2026-08-01"]);

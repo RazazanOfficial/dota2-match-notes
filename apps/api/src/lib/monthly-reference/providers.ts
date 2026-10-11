@@ -1,5 +1,6 @@
 import { fetchStratzGraphql } from "../stratz/gateway";
 import { monthDate, readMeans, type Means } from "./model";
+import { MonthlyMetaPendingError } from "./availability";
 
 type Row = Record<string, unknown>;
 function object(value: unknown): Row | null { return value && typeof value === "object" && !Array.isArray(value) ? value as Row : null; }
@@ -23,19 +24,29 @@ export function metaQuery(rank: string, mode: string, take = 2) {
 export function parseMeta(value: unknown, month: Date, rank: string, mode: number): MetaRow[] {
   const data = root(value);
   const target = month.getTime() / 1_000;
+  const availableMonths = new Set<string>();
+  const seen = new Set<string>();
   const rows: Array<Omit<MetaRow, "positionShare" | "metaPickRate" | "winRate">> = [];
   for (let position = 1; position <= 5; position++) {
     const raw = data[`pos${position}`];
     if (!Array.isArray(raw)) throw new Error(`STRATZ meta pos${position} missing`);
     for (const item of raw) {
       const row = object(item);
-      if (integer(row?.month) !== target) continue;
+      const sourceMonth = integer(row?.month);
+      const date = sourceMonth === null ? null : new Date(sourceMonth * 1000);
+      if (!date || !Number.isFinite(date.getTime()) || date.getUTCFullYear() < 2000 || date.getUTCFullYear() > 2100 || date.getUTCDate() !== 1 || date.getUTCHours() !== 0 || date.getUTCMinutes() !== 0 || date.getUTCSeconds() !== 0) throw new Error("Invalid STRATZ meta month timestamp");
+      availableMonths.add(monthDate(date));
       const heroId = integer(row?.heroId), matchCount = integer(row?.matchCount), winCount = integer(row?.winCount);
       if (heroId === null || matchCount === null || winCount === null || matchCount < 0 || winCount < 0 || winCount > matchCount) throw new Error(`Invalid STRATZ meta row for ${monthDate(month)}`);
+      if (sourceMonth !== target) continue;
+      const key = `${heroId}:${position}`;
+      if (seen.has(key)) throw new Error("Duplicate STRATZ meta cohort row");
+      seen.add(key);
       rows.push({ heroId, position, rankBracket: rank, gameMode: mode, matchCount, winCount });
     }
   }
-  if (rows.length < 5) throw new Error(`STRATZ has insufficient monthly meta for ${monthDate(month)}`);
+  if (!rows.length && availableMonths.size) throw new MonthlyMetaPendingError(monthDate(month), [...availableMonths].sort());
+  if (rows.length < 5 || new Set(rows.map(row=>row.position)).size !== 5) throw new Error(`STRATZ has insufficient monthly meta for ${monthDate(month)}`);
   const heroTotals = new Map<number, number>(), positionTotals = new Map<number, number>();
   for (const row of rows) {
     heroTotals.set(row.heroId, (heroTotals.get(row.heroId) ?? 0) + row.matchCount);
@@ -80,6 +91,15 @@ export function parsePerformance(value: unknown, week: number, rank: string, her
   }
   return rows;
 }
-export async function fetchMonthlyPerformance(job: { week: number; rank: string; heroIds: number[] }) {
-  return parsePerformance(await fetchStratzGraphql(performanceQuery(job.week, job.rank, job.heroIds), "MonthlyPerformance"), job.week, job.rank, job.heroIds);
+export async function fetchMonthlyPerformance(job: { week: number; rank: string; heroIds: number[] }, fetch = fetchStratzGraphql) {
+  if (!job.heroIds.length || new Set(job.heroIds).size !== job.heroIds.length) throw new Error("Invalid reference hero batch");
+  const rows: PerformanceRow[] = [];
+  // Preserve existing four-hero jobs/cursors. Each network response is one hero,
+  // all five positions, all 76 minutes and all 14 metrics. No DB write occurs
+  // until every subrequest for this job has completed and passed validation.
+  for (const heroId of job.heroIds) {
+    const raw = await fetch(performanceQuery(job.week, job.rank, [heroId]), "MonthlyPerformance");
+    rows.push(...parsePerformance(raw, job.week, job.rank, [heroId]));
+  }
+  return rows;
 }
