@@ -1,10 +1,10 @@
-const PENDING_PREFIX = "آمار Meta ماه ";
+const PENDING_PREFIX = "آمار هفتگی Meta مرجع ";
 export const META_SOURCE_RECHECK_MS = 60 * 60 * 1000;
 
 export class MonthlyMetaPendingError extends Error {
   readonly code = "monthly_meta_pending";
-  constructor(readonly referenceMonth: string, readonly availableMonths: string[]) {
-    super(`${PENDING_PREFIX}${referenceMonth.slice(0, 7)} در پاسخ STRATZ موجود نیست؛ آخرین ماه برگشتی: ${availableMonths.at(-1)?.slice(0, 7) || "نامشخص"}. بررسی مجدد یک ساعت دیگر انجام می‌شود.`);
+  constructor(readonly referenceMonth: string, readonly availableWeeks: string[], readonly missingWeeks: string[] = [], readonly position?: number) {
+    super(`${PENDING_PREFIX}${referenceMonth.slice(0, 7)} کامل نیست${position ? `؛ پوزیشن ${position}` : ""}؛ هفته‌های غایب: ${missingWeeks.join("، ") || "نامشخص"}؛ آخرین هفتهٔ برگشتی: ${availableWeeks.at(-1) || "نامشخص"}. بررسی مجدد یک ساعت دیگر انجام می‌شود.`);
     this.name = "MonthlyMetaPendingError";
   }
 }

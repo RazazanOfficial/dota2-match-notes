@@ -1,5 +1,7 @@
 # اصلاح انتقال جامعهٔ آماری STRATZ
 
+> وضعیت تاریخی: انتقال curl در VPS تأیید شد. رفتار انتظار `winMonth` با [Meta هفتگی](weekly-meta-reference.fa.md) جایگزین می‌شود؛ دستورهای این سند برای استقرار پچ جدید اجرا نشوند.
+
 پایه: `origin/main` در `dd241eb`، ۱۱ اکتبر ۲۰۲۶. branch: `fix/stratz-reference-transfer`.
 
 ## شواهد واقعی VPS
