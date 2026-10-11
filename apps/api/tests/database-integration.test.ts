@@ -24,6 +24,11 @@ import { manualMatchSyncInputSchema } from "../src/lib/opendota/sync-request";
 import { SESSION_COOKIE } from "../src/lib/auth/config";
 import { saturdayWeekStart } from "../src/lib/opendota/sync-request";
 import { toJournalDateKey } from "../src/lib/journal/timezone";
+import * as monthlyProviders from "../src/lib/monthly-reference/providers";
+import { MonthlyMetaPendingError } from "../src/lib/monthly-reference/availability";
+import { ensureMonthlyReference, runMonthlyMetaTick, runMonthlyPerformanceTick } from "../src/lib/monthly-reference/service";
+import { REFERENCE_POLICY } from "../src/lib/monthly-reference/model";
+import { monthlyReferenceEvents, monthlyHeroPositionMeta, monthlyHeroPerformance, monthlyPositionPerformance } from "../src/lib/db/schema";
 
 const client = new PGlite(); const db = drizzle(client); state.db = db;
 const apiFolder = fileURLToPath(new URL("..", import.meta.url));
@@ -50,6 +55,61 @@ beforeAll(async () => {
 afterAll(async () => { await client.close(); if(oldFolder) await rm(oldFolder,{recursive:true,force:true}); vi.unstubAllEnvs(); });
 
 describe("PostgreSQL schema migration and real Express services", () => {
+  it("commits Performance rows and its original cursor together only after the whole provider batch succeeds", async () => {
+    const scheduled = await ensureMonthlyReference(new Date("2026-10-11T10:00:00Z"));
+    const id=scheduled.versionId!;
+    await db.update(monthlyReferenceVersions).set({metaCursor:4}).where(eq(monthlyReferenceVersions.id,id));
+    await db.insert(monthlyHeroPositionMeta).values([1,2,3,4,5].map(position=>({referenceMonth:"2026-09-01",versionId:id,heroId:102,position,rankBracket:"DIVINE",gameMode:22,matchCount:2500,winCount:1250,positionShare:20,metaPickRate:10,winRate:50})));
+    const provider=vi.spyOn(monthlyProviders,"fetchMonthlyPerformance").mockRejectedValue(new Error("second hero transfer failed"));
+    try {
+      await expect(runMonthlyPerformanceTick()).rejects.toThrow("second hero transfer failed");
+      expect((await db.select().from(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.id,id)))[0].performanceCursor).toBe(0);
+      expect(await db.select().from(monthlyHeroPerformance).where(eq(monthlyHeroPerformance.versionId,id))).toHaveLength(0);
+      expect(await db.select().from(monthlyPositionPerformance).where(eq(monthlyPositionPerformance.versionId,id))).toHaveLength(0);
+      provider.mockResolvedValue([0,13,75].map(minute=>({heroId:102,position:1,rankGroup:"DIVINE_IMMORTAL",minute,sampleCount:1000,means:{cs:1,dn:1,kills:1,deaths:1,assists:1,networth:1,xp:1,heroDamage:1,towerDamage:1,healingAllies:1,campsStacked:1,neutrals:1,ancients:1,teamKills:1}})));
+      expect(await runMonthlyPerformanceTick()).toMatchObject({status:"progress",completed:1,total:128});
+      expect((await db.select().from(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.id,id)))[0].performanceCursor).toBe(1);
+      expect(await db.select().from(monthlyHeroPerformance).where(eq(monthlyHeroPerformance.versionId,id))).toHaveLength(3);
+      expect((await db.select().from(monthlyPositionPerformance).where(eq(monthlyPositionPerformance.versionId,id))).map(row=>row.sampleCount)).toEqual([1000,1000,1000]);
+    } finally {
+      provider.mockRestore();
+      await db.delete(monthlyReferenceEvents).where(eq(monthlyReferenceEvents.versionId,id));
+      await db.delete(monthlyHeroPositionMeta).where(eq(monthlyHeroPositionMeta.versionId,id));
+      await db.delete(monthlyHeroPerformance).where(eq(monthlyHeroPerformance.versionId,id));
+      await db.delete(monthlyPositionPerformance).where(eq(monthlyPositionPerformance.versionId,id));
+      await db.delete(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.id,id));
+    }
+  });
+  it("persists source waiting across ticks without advancing cursors or retiring August, then resumes when September arrives", async () => {
+    const now = new Date("2026-10-11T10:00:00Z");
+    const [active] = await db.insert(monthlyReferenceVersions).values({referenceMonth:"2026-08-01",status:"active",sourcePolicy:REFERENCE_POLICY}).returning({id:monthlyReferenceVersions.id});
+    const scheduled = await ensureMonthlyReference(now);
+    const id = scheduled.versionId!;
+    const meta = vi.spyOn(monthlyProviders,"fetchMonthlyMeta").mockRejectedValue(new MonthlyMetaPendingError("2026-09-01",["2026-08-01"]));
+    const performance = vi.spyOn(monthlyProviders,"fetchMonthlyPerformance");
+    try {
+      expect(await runMonthlyMetaTick(now)).toMatchObject({status:"waiting-source",retryAt:"2026-10-11T11:00:00.000Z"});
+      expect(await runMonthlyMetaTick(new Date("2026-10-11T10:59:59Z"))).toMatchObject({status:"waiting-source"});
+      expect(meta).toHaveBeenCalledTimes(1);
+      expect(await runMonthlyPerformanceTick()).toMatchObject({status:"waiting-meta"});
+      expect(performance).not.toHaveBeenCalled();
+      const [waiting] = await db.select().from(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.id,id));
+      expect(waiting).toMatchObject({status:"building",metaCursor:0,performanceCursor:0,metaRows:0,errorMessage:null});
+      expect((await db.select().from(monthlyReferenceEvents).where(eq(monthlyReferenceEvents.versionId,id)))).toHaveLength(2);
+      expect((await db.select().from(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.id,active.id)))[0].status).toBe("active");
+      meta.mockImplementation(async(month,rank,mode)=>monthlyProviders.parseMeta({data:{heroStats:Object.fromEntries([1,2,3,4,5].map(p=>[`pos${p}`,[{month:month.getTime()/1000,heroId:50,matchCount:1000,winCount:500}]]))}},month,rank,mode.id));
+      expect(await runMonthlyMetaTick(new Date("2026-10-11T11:00:00Z"))).toMatchObject({status:"progress",completed:1});
+      const [resumed] = await db.select().from(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.id,id));
+      expect(resumed).toMatchObject({metaCursor:1,metaRows:5,metaLastError:null,errorMessage:null});
+      expect((await db.select().from(monthlyHeroPositionMeta).where(eq(monthlyHeroPositionMeta.versionId,id))).every(row=>row.referenceMonth==="2026-09-01")).toBe(true);
+    } finally {
+      meta.mockRestore();performance.mockRestore();
+      await db.delete(monthlyReferenceEvents).where(eq(monthlyReferenceEvents.versionId,id));
+      await db.delete(monthlyHeroPositionMeta).where(eq(monthlyHeroPositionMeta.versionId,id));
+      await db.delete(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.id,id));
+      await db.delete(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.id,active.id));
+    }
+  });
   it("upgrades the old schema twice without losing users or journal data", async () => {
     const [user]=await db.select().from(users).where(eq(users.id,userId));
     expect(user.displayName).toBe("Legacy user");expect(user.lastMonthSyncAt).toBeNull();

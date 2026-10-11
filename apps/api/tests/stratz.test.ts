@@ -14,6 +14,7 @@ const ENV_NAMES = [
   "STRATZ_API_URL",
   "STRATZ_API_TOKEN",
   "STRATZ_DIRECT_IP",
+  "STRATZ_TRANSPORT",
   "STRATZ_TIMEOUT_MS",
   "STRATZ_MAX_RESPONSE_BYTES",
   "STRATZ_DIAGNOSTICS_ENABLED",
@@ -35,6 +36,7 @@ beforeEach(() => {
   process.env.STRATZ_API_URL = "https://stratz.example.test/graphql/";
   process.env.STRATZ_API_TOKEN = "server-only-token";
   process.env.STRATZ_DIRECT_IP = "104.26.8.64";
+  process.env.STRATZ_TRANSPORT = "node";
   process.env.STRATZ_TIMEOUT_MS = "10000";
   process.env.STRATZ_MAX_RESPONSE_BYTES = "2097152";
   process.env.STRATZ_DIAGNOSTICS_ENABLED = "true";
@@ -59,6 +61,15 @@ afterEach(() => {
 });
 
 describe("STRATZ configuration", () => {
+  it("supports the verified curl transport without accepting arbitrary executables or URL credentials", () => {
+    process.env.STRATZ_TRANSPORT = "curl";
+    expect(getStratzConfig().transport).toBe("curl");
+    process.env.STRATZ_TRANSPORT = "sh";
+    expect(() => getStratzConfig()).toThrow("Invalid env: STRATZ_TRANSPORT");
+    process.env.STRATZ_TRANSPORT = "curl";
+    process.env.STRATZ_API_URL = "https://secret@stratz.example.test/graphql";
+    expect(() => getStratzConfig()).toThrow("Invalid env: STRATZ_API_URL");
+  });
   it("uses one pinned destination and conservative request policy", () => {
     expect(getStratzConfig()).toMatchObject({
       endpoint: "https://stratz.example.test/graphql",

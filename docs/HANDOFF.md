@@ -1,6 +1,6 @@
 # تحویل پروژه به چت یا توسعه‌دهندهٔ بعدی
 
-**آخرین بازبینی این سند: ۱۰ اکتبر ۲۰۲۶.** نقطهٔ شروع: [فهرست docs](README.md)، سپس `README.md` ریشه و فایل‌های کد مربوط به تسک. این سند جای بررسی `git status`، نسخهٔ مستقرشده و وضعیت VPS را نمی‌گیرد.
+**آخرین بازبینی این سند: ۱۱ اکتبر ۲۰۲۶.** نقطهٔ شروع: [فهرست docs](README.md)، سپس `README.md` ریشه و فایل‌های کد مربوط به تسک. این سند جای بررسی `git status`، نسخهٔ مستقرشده و وضعیت VPS را نمی‌گیرد.
 
 ## متن شروع برای چت تازه
 
@@ -17,10 +17,12 @@
 
 ## وضعیت هنگام تحویل
 
-- برنامهٔ Learn & Practice در [Feature TODO](learn-and-practice-feature-todo.fa.md) ثبت شده است؛ این سند فیچر پیاده‌شده نیست. مبنای بررسی ۱۱ اکتبر، آخرین main در `ba3a5e3` است. کار بعدی کاربر تشخیص STRATZ روی VPS و بررسی/بازطراحی جزئیات مچ و IMP است. علت واقعی خطای STRATZ و وضعیت snapshotهای تولید هنوز باید از VPS دریافت شود؛ تغییر فرمول امتیاز یا مسیر پراکسی فعلاً انجام نشده است.
+- تسک `fix/stratz-reference-transfer` بر پایهٔ آخرین main `dd241eb` است. گزارش واقعی VPS نسخهٔ ۲ نشان داد `winMonth` برای چهار ترکیب فقط اوت/ژوئیه را برمی‌گرداند؛ timestamp ثانیه‌ای درست است، نبود سپتامبر در همین پاسخ اثبات شده، نه نبود داده در تمام endpointهای STRATZ. Performance تک‌Hero با هر پنج Position، دقیقه‌های ۰–۷۵ و ۱۴ metric کامل و معتبر بود. پچ با `STRATZ_TRANSPORT=curl` انتقال HTTPS pinned و gzip را فعال می‌کند؛ token/query فقط stdin، TLS verification، سقف decoded body و رد انتقال ناقص حفظ می‌شوند. batch منطقی و cursor تغییر ندارند؛ چهار subrequest موفق پیش از write اتمیک لازم است. ماه Meta غایب `waiting-source` با بررسی ساعتی و رویداد info می‌شود، نه خطای شبکهٔ هر دقیقه؛ مرجع فعال اوت حفظ می‌شود. schema/dependency/فرمول IMP/وب/دسکتاپ/JAR/unit تغییر ندارند؛ API build و release:prepare و یک کلید ENV لازم است. فرمان compiled `stratz-reference-check.js` انتقال واقعی production و چهار Meta/اولین batch Performance را بدون تغییر snapshot بررسی می‌کند (فقط quota مشترک DB را رزرو می‌کند). [دستورات و محدودیت‌ها](stratz-reference-transfer.fa.md). ۴۱۶ تست API، build و release:prepare موفق‌اند؛ تکمیل snapshot سپتامبر فقط پس از برگشت Meta همان ماه ممکن است و نتیجهٔ استقرار production هنوز باید تأیید شود.
+
+- برنامهٔ Learn & Practice در [Feature TODO](learn-and-practice-feature-todo.fa.md) ثبت شده است؛ این سند فیچر پیاده‌شده نیست. پس از بررسی استقرار اصلاح STRATZ، کار بعدی توضیحات کاربر برای بررسی/بازطراحی جزئیات مچ و IMP است؛ فرمول امتیاز هنوز با این تسک تغییر نکرده است.
 
 - تسک جاری `feat/desktop-profile-admin` بر پایه آخرین main بررسی‌شده `0603a7e`: پروفایل واقعی، هفت تب ادمین با پوشش قابلیت‌های پنل Next، badge مستقل Super Admin، جابه‌جایی میان‌برها به سایدبار، W/L رنگی و هیروی sticky هنگام اسکرول افقی. APIهای امن پروفایل اضافه شده‌اند؛ collector و readerهای API/وب timerهای واقعی دریافت دستی و مانیتور را می‌شناسند. پروفایل خود حساب cache می‌شود، داده مدیریتی نه. Tiptap 3.31.3 با نسخه موجود در lock به دسکتاپ اضافه شده؛ schema/ENV/JAR/unit تغییر ندارند. npm ci ریشه، API build/release:prepare، Next build و نصب collector خارجی لازم‌اند؛ [فرمان‌های کامل](desktop-profile-admin.fa.md). کاربر تسک قبلی ریپلی را merge کرده اما هنوز به VPS نبرده؛ استقرار این تسک API قبلی را هم پوشش می‌دهد. نصب واقعی ویندوز/VPS هنوز تأیید نشده است.
-- مخزن GitHub `RazazanOfficial/dota2-match-notes`، شاخهٔ انتشار `main`. آخرین نسخهٔ تأییدشدهٔ VPS در لاگ ۸ اکتبر `07b948a Merge branch 'fix/replay-setup-live-status'` و Git تمیز بود. برای تسک تازه main را fetch کنید؛ این سند فرض نمی‌کند نسخهٔ تازه‌تر مستقر شده است.
+- مخزن GitHub `RazazanOfficial/dota2-match-notes`، شاخهٔ انتشار `main`. آخرین HEAD مشاهده‌شدهٔ checkout VPS در لاگ ۱۱ اکتبر `ba3a5e3` است؛ آخرین main دریافت‌شده برای پچ STRATZ `dd241eb` است. HEAD مخزن به‌تنهایی نسخهٔ release/dist در حال اجرا را ثابت نمی‌کند. برای تسک تازه main را fetch کنید؛ این سند فرض نمی‌کند نسخهٔ تازه‌تر مستقر شده است.
 - Express در `apps/api` شامل احراز هویت Steam/رمز، ثبت‌نام مرحله‌ای، بازیابی/ایمیل، APIهای مچ، تحلیل، صف‌ها و منطق دادهٔ مهاجرت‌شده است. دسکتاپ Tauri به API واقعی متصل است؛ موبایل هنوز scaffold است. گزارش هوشمند/ژورنال و هدیهٔ سه‌روزه فعلاً UI دارند، هدیه اشتراک واقعی فعال نمی‌کند.
 - روش ایمیل production از SMTP تأییدشده استفاده می‌کند؛ تست ارسال واقعی موفق بوده است. secrets فقط در ENV سرور هستند.
 - وب قدیمی Next هنوز روی همین VPS فعال است. حذف آن یا جایگزینی با سایت معرفی مستقل کار بعدی است؛ merge یا pull خودبه‌خود وب را حذف نمی‌کند.
@@ -106,7 +108,7 @@
 - ENV محرمانه `/var/www/dota2notes/.env.production`. مقدار secret چاپ یا وارد Git/ZIP نشود. مسیر parser `/var/lib/dota2notes/parser/parser.jar`؛ incoming `/var/lib/dota2notes/replays/incoming`.
 - checkout موجود `/var/www/dota2notes` را از Git main به‌روز کنید. `npm ci` ریشه، `npm run api:build` و `npm run release:prepare -w @dota-notes/api` سپس `npm ci --prefix apps/api/release --workspaces=false` خروجی مستقل API می‌سازند. build مستقیم API بدون release:prepare، runtime فعال را به‌روز نمی‌کند.
 - پیش از بازنویسی فایل‌های runtime، timerها و workerهای فعال و API متوقف شوند؛ برای npm ci ریشه، وب هم موقتاً متوقف شود. اگر سورس یا dependencies وب تغییر نکرده، build Next لازم نیست. unitها را تنها هنگام تغییر خودشان دوباره نصب کنید.
-- روال به‌روز در [deployment-ubuntu.md بخش ۱۲](deployment-ubuntu.md#۱۲-روال-هر-انتشار-بعدی) و فرمان‌های دقیق تسک جاری در [desktop-profile-admin.fa.md](desktop-profile-admin.fa.md) است. برای docs-only توقف یا build لازم نیست. Cloudflare Worker فقط در صورت تغییر کد خودش جدا deploy می‌شود.
+- روال به‌روز در [deployment-ubuntu.md بخش ۱۲](deployment-ubuntu.md#۱۲-روال-هر-انتشار-بعدی) و فرمان‌های دقیق تسک جاری در [stratz-reference-transfer.fa.md](stratz-reference-transfer.fa.md) است. برای docs-only توقف یا build لازم نیست. Cloudflare Worker فقط در صورت تغییر کد خودش جدا deploy می‌شود.
 - سلامت API: `http://127.0.0.1:4100/health/ready` و `https://api.dota2notes.ir/health/live`. readiness عمومی عمداً 404 می‌دهد.
 
 ## بررسی سریع روی VPS

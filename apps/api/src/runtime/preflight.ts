@@ -10,6 +10,7 @@ import { getStorageConfig } from "../lib/storage/config";
 import { getMatchImageConfig } from "../lib/match-image/config";
 import { HEROES, heroPortraitFileName } from "../data/heroes";
 import { getStratzConfig } from "../lib/stratz/config";
+import { checkStratzCurlAvailable } from "../lib/stratz/curl-transport";
 import { getOpenDotaParseConfig } from "../lib/opendota-parse/config";
 import { getMatchImageJobConfig } from "../lib/match-image-job/config";
 
@@ -56,6 +57,9 @@ export async function preflight(role: PreflightRole = "api") {
       getStratzConfig();
       if (/CHANGE_ME|YOUR_|REPLACE_/i.test(process.env.STRATZ_API_TOKEN || "")) throw new Error();
     });
+  }
+  if (process.env.STRATZ_TRANSPORT?.trim() === "curl") {
+    await check("stratz_curl_transport", () => checkStratzCurlAvailable());
   }
   if (role === "images" || role === "replay") {
     await check("storage_credentials", () => {

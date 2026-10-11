@@ -3,6 +3,7 @@ import { getDb } from "../db";
 import { monthlyHeroPerformance, monthlyHeroPositionMeta, monthlyPositionPerformance, monthlyReferenceEvents, monthlyReferenceVersions } from "../db/schema";
 import { METRICS, MODES, RANKS, RANK_GROUPS, REFERENCE_POLICY, monthDate, monthIsSettled, monthKey, performanceJobs, previousMonth, shouldResetLatestMonth, type Means } from "./model";
 import { fetchMonthlyMeta, fetchMonthlyPerformance, type PerformanceRow } from "./providers";
+import { META_SOURCE_RECHECK_MS, MonthlyMetaPendingError, pendingMetaRetryAt } from "./availability";
 
 const LOCK = 2_741_073;
 const metaTasks = RANKS.flatMap(rank => MODES.map(mode => ({ rank, mode })));
@@ -74,13 +75,34 @@ async function buildingVersion() {
     .orderBy(monthlyReferenceVersions.referenceMonth).limit(1))[0];
 }
 
-export async function runMonthlyMetaTick() {
+export async function runMonthlyMetaTick(now = new Date()) {
   const version = await buildingVersion();
   if (!version) return { status: "idle" as const };
   const task = metaTasks[version.metaCursor];
   if (!task) return { status: "complete" as const, versionId: version.id };
+  const waiting = (retryAt: Date) => ({ status: "waiting-source" as const, versionId: version.id,
+    referenceMonth: version.referenceMonth, retryAt: retryAt.toISOString() });
+  const retryAt = pendingMetaRetryAt(version.metaLastError, version.metaLastErrorAt, now);
+  if (retryAt) return waiting(retryAt);
   const month = new Date(`${version.referenceMonth}T00:00:00Z`);
-  const rows = await fetchMonthlyMeta(month, task.rank, task.mode);
+  let rows: Awaited<ReturnType<typeof fetchMonthlyMeta>>;
+  try { rows = await fetchMonthlyMeta(month, task.rank, task.mode); }
+  catch (error) {
+    if (!(error instanceof MonthlyMetaPendingError)) throw error;
+    return locked(async tx => {
+      const [current] = await tx.select().from(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.id, version.id)).limit(1);
+      if (!current || current.metaCursor !== version.metaCursor || current.status !== "building") return { status: "advanced" as const };
+      const alreadyWaiting = pendingMetaRetryAt(current.metaLastError, current.metaLastErrorAt, now);
+      if (alreadyWaiting) return waiting(alreadyWaiting);
+      await tx.update(monthlyReferenceVersions).set({ metaLastError: error.message,
+        metaLastErrorAt: now, updatedAt: now, errorMessage: null }).where(eq(monthlyReferenceVersions.id, version.id));
+      await tx.insert(monthlyReferenceEvents).values({ versionId: version.id, service: "meta", level: "info", message: error.message });
+      const nextRetryAt = new Date(now.getTime() + META_SOURCE_RECHECK_MS);
+      console.info("Monthly Meta waiting for source", { referenceMonth: version.referenceMonth,
+        latestAvailableMonth: error.availableMonths.at(-1), retryAt: nextRetryAt.toISOString() });
+      return waiting(nextRetryAt);
+    });
+  }
   return locked(async tx => {
     const [current] = await tx.select().from(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.id, version.id)).limit(1);
     if (!current || current.metaCursor !== version.metaCursor || current.status !== "building") return { status: "advanced" as const };

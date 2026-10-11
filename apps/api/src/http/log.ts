@@ -8,6 +8,13 @@ export function logFailure(message: string, context?: unknown) {
     const cause = error.cause;
     const code = "code" in error ? error.code : cause && typeof cause === "object" && "code" in cause ? cause.code : undefined;
     if (typeof code === "string" && /^[A-Z0-9_]{1,40}$/.test(code)) record.causeCode = code;
+    if (typeof code === "string" && /^stratz_[a-z0-9_]{1,60}$/.test(code)) record.code = code;
+    const details = "details" in error && error.details && typeof error.details === "object" ? error.details as Record<string, unknown> : undefined;
+    if (details?.transport === "curl" || details?.transport === "node") record.transport = details.transport;
+    for (const key of ["curlExitCode", "receivedBytes", "elapsedMs", "upstreamStatus"]) {
+      const value = details?.[key];
+      if (typeof value === "number" && Number.isSafeInteger(value) && value >= 0) record[key] = value;
+    }
   }
   const status = object?.status;
   if (typeof status === "number" && Number.isInteger(status)) record.status = status;

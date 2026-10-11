@@ -2,6 +2,7 @@ import { getStratzConfig } from "./config";
 import { StratzError } from "./errors";
 import { parseStratzResponse } from "./validation";
 import { fetchWithDirectIp } from "./direct-transport";
+import { fetchWithCurlDirectIp } from "./curl-transport";
 
 function matchSelection(matchId: number) {
   return `
@@ -169,7 +170,7 @@ function throwForUpstreamError(
 export async function fetchStratzGraphqlOnce(
   query: string,
   operationName: string,
-  transport: typeof fetchWithDirectIp = fetchWithDirectIp,
+  transport?: typeof fetchWithDirectIp,
 ) : Promise<unknown> {
   const config = getStratzConfig();
   const controller = new AbortController();
@@ -187,7 +188,8 @@ export async function fetchStratzGraphqlOnce(
       cache: "no-store",
       signal: controller.signal,
     };
-    const response = await transport(
+    const request = transport || (config.transport === "curl" ? fetchWithCurlDirectIp : fetchWithDirectIp);
+    const response = await request(
       config.endpoint,
       requestInit,
       config.directIp,
@@ -233,7 +235,7 @@ export async function fetchStratzGraphqlOnce(
 
 export async function fetchStratzMatchOnce(
   matchId: number,
-  transport: typeof fetchWithDirectIp = fetchWithDirectIp,
+  transport?: typeof fetchWithDirectIp,
 ) {
   const query = `query MatchEnrichment {${matchSelection(matchId)}\n}`;
   const raw = await fetchStratzGraphqlOnce(query, "MatchEnrichment", transport);
