@@ -11,6 +11,7 @@ import {
 import { getDb } from "../db";
 import { normalizeProfile } from "../date";
 import { extractMatchDetails } from "../dota/match-details";
+import { loadPublicMatchAnalysis } from "../dota/match-analysis-repository";
 import { gameModeName, lobbyTypeName } from "../dota/modes";
 import {
   dotaMatches,
@@ -407,6 +408,21 @@ export async function loadJournalMatchPage(
   const match = day?.matches.find((candidate) => candidate.id === target.matchId);
 
   if (!day || !match) return null;
+  // The detail page must use the same replay overlay and position/score resolver
+  // as Full Analysis, rather than the lightweight history projection.
+  const result = await loadPublicMatchAnalysis(match.id);
+  if ("details" in result && result.details) {
+    Object.assign(match, result.details);
+    if (result.replayParsed && result.analysis) {
+      match.analysis = result.analysis;
+      match.analysisStatus = "ready";
+      const players = new Map(result.analysis.players.map(player => [player.playerSlot, player]));
+      match.participants = match.participants?.map(participant => {
+        const player = players.get(participant.playerSlot);
+        return player ? { ...participant, position: player.position } : participant;
+      });
+    }
+  }
   return { owner, dateKey: target.dateKey, day, match };
 }
 

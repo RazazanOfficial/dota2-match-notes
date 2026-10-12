@@ -455,6 +455,62 @@ describe("PostgreSQL schema migration and real Express services", () => {
       if (snapshotId) await db.delete(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.id,snapshotId));
     }
   }, 30_000);
+  it("serves replay analysis on the detail page with hero/position/minute means and no invented GPM or level", async () => {
+    const app = createApp(), matchId = 9100002201, start = new Date("2026-09-15T12:00:00Z");
+    const [day] = await db.select().from(journalDays).where(eq(journalDays.userId, userId)).limit(1);
+    const players = Array.from({ length: 10 }, (_, i) => ({ player_slot: i < 5 ? i : 123 + i,
+      hero_id: i + 1, account_id: i + 1, personaname: `Player ${i}`, position_est: 2,
+      kills: 8, deaths: 2, assists: 10, last_hits: 160, denies: 8,
+      net_worth: 20100, gold_per_min: 450, xp_per_min: 520, hero_damage: 25000,
+      tower_damage: 3000, hero_healing: 0, level: 21, item_0: 50, item_neutral: 289,
+      benchmarks: { gold_per_min: { raw: 450, pct: .8 } } }));
+    await db.insert(dotaMatches).values({ matchId, startedAt: start, gameMode: 22, lobbyType: 7,
+      rawData: { match_id: matchId, start_time: start.getTime()/1000, duration: 1800, radiant_win: false, game_mode: 22, lobby_type: 7, players } });
+    const [entry] = await db.insert(journalMatches).values({ userId, dayId: day.id, number: 99,
+      dotaMatchId: matchId, heroId: 1, heroName: "Anti-Mage", result: "loss", startedAt: start,
+      positionOverrides: { "0": 5 } }).returning({ id: journalMatches.id });
+    const [snapshot] = await db.insert(monthlyReferenceVersions).values({ referenceMonth: "2026-08-01",
+      status: "active", sourcePolicy: REFERENCE_POLICY, completedAt: new Date() }).returning({ id: monthlyReferenceVersions.id });
+    try {
+      const page = () => request(app).get(`/api/journal/matches/${entry.id}/page`).set("Cookie", cookie);
+      const basic = await page(); expect(basic.status).toBe(200); expect(basic.body.page.match.analysis).toBeUndefined();
+      const replay = { match_id: matchId, version: 1, players: players.map(player => ({ player_slot: player.player_slot,
+        times: [0,60,120], gold_t: [600,1000,1400], xp_t: [0,500,1000], lh_t: [0,5,10],
+        dn_t: [0,1,2], networth_t: [600,1000,1400], camps_stacked_t: [0,0,0],
+        hero_damage_t: [0,100,200], hero_healing_t: [0,0,0] })) };
+      await db.update(dotaMatches).set({ localReplayData: replay }).where(eq(dotaMatches.matchId, matchId));
+      await db.insert(monthlyHeroPositionMeta).values({ referenceMonth: "2026-08-01", versionId: snapshot.id,
+        heroId: 1, position: 5, rankBracket: "DIVINE", gameMode: 22, matchCount: 2000,
+        winCount: 1000, positionShare: 100, metaPickRate: 100, winRate: 50 });
+      const means = { cs: 140, dn: 6, kills: 6, deaths: 3, assists: 10, networth: 18000,
+        xp: 18000, heroDamage: 20000, towerDamage: 2000, healingAllies: 400, campsStacked: 0,
+        neutrals: 0, ancients: 0, teamKills: 20 };
+      await db.insert(monthlyHeroPerformance).values([13,31].map(minute => ({ ...means,
+        ...(minute === 13 ? { cs: 50, networth: 5000 } : {}), referenceMonth: "2026-08-01", versionId: snapshot.id,
+        heroId: 1, position: 5, rankGroup: "DIVINE_IMMORTAL", minute, sampleCount: 1200 })));
+      const result = await page(), match = result.body.page.match;
+      expect(result.status).toBe(200); expect(match.analysis.replaySource).toBe("local");
+      expect(match.participants[0]).toMatchObject({ position: 5, netWorth: 20100, neutralItemId: 289 });
+      const player = match.analysis.players.find((player: { playerSlot: number }) => player.playerSlot === 0);
+      expect(player.performanceScore).toBeTypeOf("number");
+      expect(player.summaryComparison).toMatchObject({ referenceMonth: "2026-08-01", versionId: snapshot.id,
+        minute: 30, sampleCount: 1200, averages: { netWorth: 18000, xpPerMinute: 600,
+          goldPerMinute: null, level: null, lastHits: 140, denies: 6 } });
+      expect(player.laneEfficiency.parts.find((part: { key: string }) => part.key === "networth")?.mean).toBe(5000);
+      // Do not borrow another minute when the exact source minute is missing.
+      const raw = { match_id: matchId, start_time: start.getTime()/1000, duration: 1860, radiant_win: false, game_mode: 22, lobby_type: 7, players };
+      await db.update(dotaMatches).set({ rawData: raw }).where(eq(dotaMatches.matchId, matchId));
+      expect((await page()).body.page.match.analysis.players[0].summaryComparison).toBeUndefined();
+      await db.update(dotaMatches).set({ rawData: { ...raw, duration: 1800, game_mode: 23 } }).where(eq(dotaMatches.matchId, matchId));
+      expect((await page()).body.page.match.analysis.players[0].summaryComparison).toBeUndefined();
+      await db.update(dotaMatches).set({ rawData: { ...raw, duration: 1800 }, localReplayData: null }).where(eq(dotaMatches.matchId, matchId));
+      expect((await page()).body.page.match.analysis).toBeUndefined();
+    } finally {
+      await db.delete(journalMatches).where(eq(journalMatches.id, entry.id));
+      await db.delete(dotaMatches).where(eq(dotaMatches.matchId, matchId));
+      await removeReference(snapshot.id);
+    }
+  }, 30_000);
   it("uses the same public error for missing accounts and incorrect passwords", async () => {
     const app=createApp();
     const bad=await request(app).post("/api/auth/password/login").send({steamIdentifier:"1",password:"incorrect-password"});
