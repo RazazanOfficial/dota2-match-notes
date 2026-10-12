@@ -1,4 +1,4 @@
-import type { MatchBenchmarkMetric, MatchCohortProfile } from "../types";
+import type { MatchBenchmarkMetric, MatchCohortProfile, MatchSummaryComparison } from "../types";
 import { metricScoreWeight, performanceTone } from "./performance-score";
 import type { LaneReference } from "./lane-efficiency";
 
@@ -21,6 +21,10 @@ export interface PerformanceReferenceData {
   meta:HeroPositionMetaReference[];
   benchmarks:BenchmarkDistributionReference[];
   lane?:LaneReference;
+  summary?: {
+    minute: number;
+    hero: Array<{ heroId: number; position: number; sampleCount: number; averages: MatchSummaryComparison["averages"] }>;
+  };
 }
 
 const DEFINITIONS:Record<string,{label:string;description:string;direction:"higher"|"lower"|"contextual";format:"number"|"decimal"|"percent"}>={

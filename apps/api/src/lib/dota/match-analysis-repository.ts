@@ -17,6 +17,7 @@ import { overlayReplayData } from "../replay/overlay";
 import { referenceMonthsForMatch, weekStartsInMonth } from "../monthly-reference/model";
 import { poolDivineImmortalMeta } from "../monthly-reference/selection";
 import { qualifiesHeroPosition } from "../monthly-reference/service";
+import { extractMatchDetails } from "./match-details";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -31,7 +32,7 @@ function numberValue(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-async function loadPerformanceReference(heroIds: number[], matchStart: unknown): Promise<PerformanceReferenceData | undefined> {
+async function loadPerformanceReference(heroIds: number[], matchStart: unknown, duration: unknown): Promise<PerformanceReferenceData | undefined> {
   const started = numberValue(matchStart);
   if (!heroIds.length || !started || !Number.isSafeInteger(started)) return undefined;
   const matchDate = new Date(started * 1_000);
@@ -47,6 +48,11 @@ async function loadPerformanceReference(heroIds: number[], matchStart: unknown):
     .limit(1);
   if (!snapshot) return undefined;
   const referenceMonth = snapshot.referenceMonth;
+  // STRATZ time 13 is minute 12. Do not extrapolate the minute-75 limit
+  // to longer matches, or replace a missing hero/position with another cohort.
+  const seconds = numberValue(duration);
+  const summaryMinute = seconds !== null && seconds > 0 ? Math.floor(seconds / 60) : null;
+  const summaryTime = summaryMinute !== null && summaryMinute + 1 <= 75 ? summaryMinute + 1 : null;
 
   // These rows come exclusively from the external worker snapshot. The site's
   // journal matches are never used as a statistical population.
@@ -65,7 +71,7 @@ async function loadPerformanceReference(heroIds: number[], matchStart: unknown):
         inArray(monthlyHeroPositionMeta.rankBracket, ["DIVINE", "IMMORTAL"])))
       .groupBy(monthlyHeroPositionMeta.position, monthlyHeroPositionMeta.gameMode),
     db.select().from(monthlyHeroPerformance).where(and(eq(monthlyHeroPerformance.versionId, snapshot.id),
-      eq(monthlyHeroPerformance.minute, 13), eq(monthlyHeroPerformance.rankGroup, "DIVINE_IMMORTAL"),
+      inArray(monthlyHeroPerformance.minute, summaryTime === null ? [13] : [...new Set([13, summaryTime])]), eq(monthlyHeroPerformance.rankGroup, "DIVINE_IMMORTAL"),
       inArray(monthlyHeroPerformance.heroId, heroIds))),
     db.select().from(monthlyPositionPerformance).where(and(eq(monthlyPositionPerformance.versionId, snapshot.id),
       eq(monthlyPositionPerformance.minute, 13), eq(monthlyPositionPerformance.rankGroup, "DIVINE_IMMORTAL"))),
@@ -75,6 +81,11 @@ async function loadPerformanceReference(heroIds: number[], matchStart: unknown):
   })));
   const laneMeta = new Map(meta.filter(row => row.gameMode === 22)
     .map(row => [`${row.heroId}:${row.position}`, row] as const));
+  const qualified = (row: typeof heroLane[number]) => {
+    const sample = laneMeta.get(`${row.heroId}:${row.position}`);
+    return Boolean(sample && qualifiesHeroPosition(sample.matchCount,
+      sample.positionShare > 0 ? sample.matchCount * 100 / sample.positionShare : 0, row.sampleCount));
+  };
   return {
     snapshot: {
       id: snapshot.id,
@@ -87,13 +98,19 @@ async function loadPerformanceReference(heroIds: number[], matchStart: unknown):
     },
     meta,
     benchmarks: [],
+    ...(summaryTime !== null && summaryMinute !== null ? { summary: {
+      minute: summaryMinute,
+      hero: heroLane.filter(row => row.minute === summaryTime && qualified(row)).map(row => ({
+        heroId: row.heroId, position: row.position, sampleCount: row.sampleCount,
+        averages: { netWorth: row.networth, lastHits: row.cs, denies: row.dn,
+          heroDamage: row.heroDamage, towerDamage: row.towerDamage, heroHealing: row.healingAllies,
+          xpPerMinute: summaryMinute > 0 ? row.xp / summaryMinute : null,
+          // Net worth is not total gold earned; mean XP is not mean level.
+          goldPerMinute: null, level: null },
+      })),
+    } } : {}),
     lane: { month: referenceMonth, versionId: snapshot.id,
-      hero: heroLane.filter(row => {
-        const sample = laneMeta.get(`${row.heroId}:${row.position}`);
-        return sample && qualifiesHeroPosition(sample.matchCount,
-          sample.positionShare > 0 ? sample.matchCount * 100 / sample.positionShare : 0,
-          row.sampleCount);
-      })
+      hero: heroLane.filter(row => row.minute === 13 && qualified(row))
         .map(row => ({ heroId: row.heroId, position: row.position, sampleCount: row.sampleCount,
         cs: row.cs, dn: row.dn, kills: row.kills, deaths: row.deaths, assists: row.assists, networth: row.networth })),
       position: positionLane.map(row => ({ position: row.position, sampleCount: row.sampleCount,
@@ -131,7 +148,7 @@ export async function loadPublicMatchAnalysis(journalMatchId: string, requestedP
   }))];
   let performanceReference: PerformanceReferenceData | undefined;
   try {
-    performanceReference = await loadPerformanceReference(heroIds, record(source.rawData)?.start_time);
+    performanceReference = await loadPerformanceReference(heroIds, record(source.rawData)?.start_time, record(source.rawData)?.duration);
   } catch (error) {
     console.warn("External performance reference unavailable; using embedded payload only", error);
   }
@@ -163,6 +180,8 @@ export async function loadPublicMatchAnalysis(journalMatchId: string, requestedP
     found: true as const,
     replayParsed,
     analysis,
+    details: extractMatchDetails(overlaid.match, source.profileAccountId, source.profileHeroId,
+      requestedPositionOverrides ? { ...(source.positionOverrides || {}), ...requestedPositionOverrides } : source.positionOverrides),
   };
 }
 
@@ -178,7 +197,7 @@ export async function loadStandaloneMatchAnalysis(matchId: number, profileAccoun
     return heroId === null ? [] : [heroId];
   }))];
   let performanceReference: PerformanceReferenceData | undefined;
-  try { performanceReference = await loadPerformanceReference(heroIds, record(source.rawData)?.start_time); }
+  try { performanceReference = await loadPerformanceReference(heroIds, record(source.rawData)?.start_time, record(source.rawData)?.duration); }
   catch (error) { console.warn("External performance reference unavailable", error); }
   return {
     found: true as const,

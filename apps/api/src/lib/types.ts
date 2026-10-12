@@ -209,6 +209,17 @@ export interface MatchMinuteSnapshot {
   label: string;
 }
 
+export type MatchSummaryMetricKey = "netWorth" | "goldPerMinute" | "xpPerMinute" | "lastHits" | "denies" | "heroDamage" | "towerDamage" | "heroHealing" | "level";
+export interface MatchSummaryComparison {
+  heroId: number;
+  position: number;
+  referenceMonth: string;
+  versionId: string;
+  minute: number;
+  sampleCount: number;
+  averages: Record<MatchSummaryMetricKey, number | null>;
+}
+
 export interface MatchPlayerAnalysis {
   playerSlot: number;
   accountId: number | null;
@@ -228,6 +239,11 @@ export interface MatchPlayerAnalysis {
   heroDamage?: number | null;
   heroHealing?: number | null;
   towerDamage?: number | null;
+  level?: number | null;
+  goldPerMinute?: number | null;
+  xpPerMinute?: number | null;
+  netWorth?: number | null;
+  summaryComparison?: MatchSummaryComparison;
   performanceScore?: number;
   benchmarks: MatchBenchmarkMetric[];
   scoreMetrics?:MatchBenchmarkMetric[];
