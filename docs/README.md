@@ -6,7 +6,8 @@
 
 | موضوع | فایل |
 | --- | --- |
-| خلاصهٔ سریع مچ، دادهٔ تحلیل و مقایسهٔ آماری (جاری) | [match-quick-summary.fa.md](match-quick-summary.fa.md) |
+| کنترل بازهٔ داشبورد، توزیع مشترک و کارت‌های آمار (جاری) | [dashboard-period-distribution.fa.md](dashboard-period-distribution.fa.md) |
+| خلاصهٔ سریع مچ، دادهٔ تحلیل و مقایسهٔ آماری | [match-quick-summary.fa.md](match-quick-summary.fa.md) |
 | Meta هفتگی، بازسازی بدون حذف مرجع فعال و Git/VPS | [weekly-meta-reference.fa.md](weekly-meta-reference.fa.md) |
 | اصلاح انتقال STRATZ و تشخیص ماه Meta غایب (مرحلهٔ قبل) | [stratz-reference-transfer.fa.md](stratz-reference-transfer.fa.md) |
 | فهرست فیچرهای آیندهٔ Learn & Practice و فایل‌های دانلودی | [learn-and-practice-feature-todo.fa.md](learn-and-practice-feature-todo.fa.md) |

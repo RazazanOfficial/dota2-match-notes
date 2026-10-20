@@ -104,7 +104,7 @@ describe("original match analysis retained", () => {
         expect(view.container.querySelector('textarea')).toBeNull();
     }, 15000);
 });
-describe("compact dashboard and independent chart", () => {
+describe("compact dashboard and shared chart", () => {
     it("uses the Steam avatar and keeps shortcuts out of the dashboard", () => {
         const view = render(<App session={{ mode: "player", username: "player", displayName: "Player", avatarUrl: "https://avatars.steamstatic.com/player.jpg", registeredDate: "2026-09-15" }}/>);
         expect(view.container.querySelector(".profile-banner .avatar img")).toHaveProperty("src", "https://avatars.steamstatic.com/player.jpg");
@@ -114,11 +114,12 @@ describe("compact dashboard and independent chart", () => {
         expect(view.container.querySelectorAll(".row-hero small, .row-hero span, .row-duration small")).toHaveLength(0);
         expect(view.container.querySelectorAll(".match-row:not(.table-head) .copy-value")).toHaveLength(10);
     });
-    it("keeps chart dates separate from history and shows W/L on hero and position hover", async () => {
+    it("shares chart dates with history and shows W/L on hero and position hover", async () => {
         const view = render(<App session={previewProfile}/> );
         const chart = view.container.querySelector(".distribution") as HTMLElement;
         expect(chart.querySelector(".ring-center strong")?.textContent).toBe("28");
-        fireEvent.click(within(chart).getByRole("button", { name: "Monthly", exact: true }));
+        expect(within(chart).queryByRole("button", { name: "Monthly", exact: true })).toBeNull();
+        fireEvent.click(within(view.container.querySelector(".profile-banner") as HTMLElement).getByRole("button", { name: "Monthly", exact: true }));
         expect(chart.querySelector(".ring-center strong")?.textContent).toBe("40");
         expect(view.container.querySelectorAll("[data-match-row]")).toHaveLength(PAGE_SIZE);
         const segment = chart.querySelector('svg g[aria-label^="Carry:"]')!;
@@ -132,7 +133,7 @@ describe("compact dashboard and independent chart", () => {
         const newChart = view.container.querySelector(".distribution") as HTMLElement;
         fireEvent.click(within(view.container.querySelector(".history-toolbar") as HTMLElement).getByRole("button", { name: "Monthly", exact: true }));
         await waitFor(() => expect(view.container.querySelectorAll("[data-match-row]")).toHaveLength(PAGE_SIZE));
-        expect(newChart.querySelector(".ring-center strong")?.textContent).toBe("28");
+        expect(newChart.querySelector(".ring-center strong")?.textContent).toBe("40");
     });
     it("copies the bare match ID without a hash", async () => {
         const writeText = vi.fn().mockResolvedValue(undefined);
