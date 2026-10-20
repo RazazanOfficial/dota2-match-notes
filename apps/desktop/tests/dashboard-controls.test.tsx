@@ -5,7 +5,7 @@ import { PeriodControls } from "../src/components/DashboardControls";
 import { HeroPositionDistribution } from "../src/components/HeroPositionDistribution";
 import { Stats } from "../src/components/DashboardStats";
 import { historyPeriodKey, useHistoryPeriod } from "../src/hooks/useHistoryPeriod";
-import { distributionPercent, segmentIconLayout } from "../src/distributionGeometry";
+import { distributionPercent, ringIconLayouts } from "../src/distributionGeometry";
 import { filterHistory, SAMPLE_DATE, sampleHistory, summarize } from "../src/history";
 import { messages } from "../src/i18n";
 import { previewProfile } from "../src/components/Shared";
@@ -39,13 +39,16 @@ describe("shared dashboard range", () => {
         render(<PeriodHarness account={{username:"fallback-test",steamId:"fallback"}}/>); fireEvent.click(screen.getByRole("button"));
         expect(screen.getByRole("button").textContent).toBe("month");
     });
-    it("replaces the date input with a bounded calendar and closes after selecting a day", () => {
+    it("offers direct month and week selection and closes after selecting a week", () => {
         const choose = vi.fn(); const view = render(<PeriodControls period="week" setPeriod={vi.fn()} anchor={SAMPLE_DATE} setAnchor={choose} t={messages.en} registration="2026-09-15"/>);
         expect(view.container.querySelector('input[type="date"]')).toBeNull();
         fireEvent.click(screen.getByRole("button",{name:messages.en.selectedDate}));
-        const dialog = screen.getByRole("dialog"); fireEvent.click(within(dialog).getByRole("button",{name:SAMPLE_DATE,exact:true}));
-        expect(choose).toHaveBeenCalledWith(SAMPLE_DATE); expect(screen.queryByRole("dialog")).toBeNull();
-        expect(screen.getByRole("button",{name:messages.en.next})).toHaveProperty("disabled",true);
+        const dialog = screen.getByRole("dialog");
+        expect(within(dialog).getAllByRole("button").filter(button=>button.textContent?.includes("Week"))).toHaveLength(5);
+        expect(within(dialog).getByRole("button",{name:messages.en.nextYear})).toHaveProperty("disabled",true);
+        fireEvent.click(within(dialog).getByRole("button",{name:/Week 2:/}));
+        expect(choose).toHaveBeenCalledWith("2026-09-26"); expect(screen.queryByRole("dialog")).toBeNull();
+        expect(view.container.querySelector(".period-range")).toBeNull();
     });
     it("returns focus to the range trigger when Escape closes the calendar", () => {
         render(<PeriodControls period="month" setPeriod={vi.fn()} anchor={SAMPLE_DATE} setAnchor={vi.fn()} t={messages.fa}/>);
@@ -66,12 +69,20 @@ describe("distribution and scoped statistics", () => {
         fireEvent.click(screen.getByRole("button",{name:"Filter by position: Carry"})); expect(select).toHaveBeenCalledWith("8","1");
         fireEvent.click(screen.getByRole("button",{name:messages.en.resetFilters})); expect(reset).toHaveBeenCalledOnce();
     });
-    it("keeps small icons in their slices and adds a readable secondary target", () => {
-        const summary = {...summarize([sampleHistory[0]]),total:1000,heroes:[{id:8,count:999,wins:500,losses:499},{id:1,count:1,wins:1,losses:0}],positions:[{id:1,count:1000,wins:501,losses:499}]};
+    it("keeps every small icon unmasked on the ring with no background badges", () => {
+        const summary = {...summarize([sampleHistory[0]]),total:100,heroes:[{id:8,count:98,wins:50,losses:48},{id:1,count:1,wins:1,losses:0},{id:2,count:1,wins:0,losses:1}],positions:[{id:1,count:100,wins:51,losses:49}]};
         const select=vi.fn(),view=render(<HeroPositionDistribution summary={summary} t={messages.en} period="week" onFilter={select} onReset={vi.fn()}/>);
-        expect(view.container.querySelectorAll(".hero-segment")).toHaveLength(2); expect(view.container.querySelectorAll(".segment-icon image")).toHaveLength(3);
-        const extra = within(screen.getByRole("group",{name:messages.en.smallHeroShares})).getByRole("button"); fireEvent.click(extra); expect(select).toHaveBeenCalledWith("1","all");
-        for (const [inner,outer] of [[59,100],[104,150]]) for (const span of [.001,.01,.1,1,Math.PI*2]) { const layout=segmentIconLayout(0,span,inner,outer); expect(layout.size).toBeGreaterThan(0); expect(layout.size).toBeLessThanOrEqual(outer-inner); expect(layout.size/2).toBeLessThanOrEqual((inner+outer)/2*Math.sin(Math.min(span,Math.PI)/2)); }
+        expect(view.container.querySelectorAll(".hero-segment")).toHaveLength(3); expect(view.container.querySelectorAll(".segment-icon image")).toHaveLength(4);
+        expect(view.container.querySelector("clipPath, .segment-icon-backplate, .small-hero-shares")).toBeNull();
+        expect(view.container.querySelectorAll("radialGradient")).toHaveLength(4);
+        fireEvent.click(view.container.querySelectorAll(".segment-icon")[2]); expect(select).toHaveBeenCalledWith("1","all");
+        const counts=[40,25,15,...Array(20).fill(1)];
+        const layout=ringIconLayouts(counts,100,104,150);
+        expect(layout.every(icon=>icon.size>=8)).toBe(true);
+        for(const icon of layout) for(const dx of [-1,1]) for(const dy of [-1,1]) {
+            const radius=Math.hypot(icon.x-160+dx*icon.size/2,icon.y-160+dy*icon.size/2);
+            expect(radius).toBeLessThan(150); expect(radius).toBeGreaterThan(104);
+        }
     });
     it("displays positive fractional shares without rounding them to zero", () => {
         expect(distributionPercent(.01,messages.en)).toBe("0.01%");
