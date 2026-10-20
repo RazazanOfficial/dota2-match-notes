@@ -53,9 +53,9 @@ export function periodRange(period: Period, anchor: string) {
     return { from, to: date.toISOString().slice(0, 10) };
 }
 export const matchDateKey = (match: HistoryMatch) => toJournalDateKey(new Date(match.startedAt));
-export function filterHistory(period: Period, anchor: string, query = "", mode = "all", position = "all") {
+export function filterHistory(period: Period, anchor: string, query = "", mode = "all", position = "all", hero = "all") {
     const range = periodRange(period, anchor);
-    return sampleHistory.filter(m => matchDateKey(m) >= range.from && matchDateKey(m) <= range.to && `${m.id} ${heroById(m.heroId)?.name}`.toLowerCase().includes(query.toLowerCase()) && (mode === "all" || m.mode === mode) && (position === "all" || m.position === Number(position)));
+    return sampleHistory.filter(m => matchDateKey(m) >= range.from && matchDateKey(m) <= range.to && `${m.id} ${heroById(m.heroId)?.name}`.toLowerCase().includes(query.toLowerCase()) && (mode === "all" || m.mode === mode) && (position === "all" || m.position === Number(position)) && (hero === "all" || m.heroId === Number(hero)));
 }
 export interface HistoryQuery {
     period: Period;
@@ -75,7 +75,7 @@ export async function loadHistoryPage(query: HistoryQuery, signal: AbortSignal) 
     await Promise.resolve();
     if (signal.aborted)
         throw new DOMException("Aborted", "AbortError");
-    const matches = filterHistory(query.period, query.anchor, query.query, query.mode, query.position);
+    const matches = filterHistory(query.period, query.anchor, query.query, query.mode, query.position, query.hero);
     return { rows: matches.slice((query.page - 1) * PAGE_SIZE, query.page * PAGE_SIZE), total: matches.length, summary: summarize(matches) };
 }
 export function summarize(matches: HistoryMatch[]) {
