@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import pg from "pg";
 // Loading the S3 SDK is unnecessary for an empty queue (the common timer tick).
 const archive = () => import("./replay-archive.mjs");
-import { replayDescriptor } from "./replay-queue-utils.mjs";
+import { hasCompleteLocalReplay, replayDescriptor } from "./replay-queue-utils.mjs";
 import { fetchReplayMetadata } from "./replay-metadata.mjs";
 import { refreshMatchMetadata } from "./refresh-match-metadata.mjs";
 import { downloadResilient, ReplayError, sha256File, transportConfig } from "./replay-transport.mjs";
@@ -143,7 +143,7 @@ async function handle(client, job, hooks) {
   job.currentPhase = "checking_archive";
   const match = (await client.query("SELECT raw_data,local_replay_data,started_at FROM dota_matches WHERE match_id=$1", [job.match_id])).rows[0];
   if (!match?.raw_data) throw new ReplayError("match_missing", "Match summary is missing", { retryable: false });
-  const parsed = match.local_replay_data?.match_id === Number(job.match_id) && match.local_replay_data?.players?.length === 10;
+  const parsed = hasCompleteLocalReplay(match.local_replay_data, Number(job.match_id));
   let archived = false;
   if (job.archive_key && job.archive_status !== "deleted") {
     archived = await (await archive()).archivedReplayExists(job.archive_key, job.archive_bytes); // only 404 means missing
@@ -239,6 +239,7 @@ async function handle(client, job, hooks) {
   }
   if (!archived) {
     await hooks.phase("uploading");
+    await updateJob(client, job, "upload_bytes=0");
     await hooks.event("uploading", "upload_started", "Uploading verified replay to archive");
     const storage = await archive();
     const key = descriptor ? storage.replayArchiveKey(match.started_at, descriptor) : job.archive_key;
@@ -251,6 +252,11 @@ async function handle(client, job, hooks) {
   await complete(client, job, hooks, source);
 }
 async function failJob(client, job, hooks, error) {
+      // Operator diagnostics without URLs, credentials, provider bodies or paths.
+      const safeToken = value => typeof value === "string" && /^[A-Za-z0-9_.-]{1,80}$/.test(value) ? value : undefined;
+      log({ code: "replay_transport_failure", matchId: Number(job.match_id), phase: job.currentPhase,
+        name: safeToken(error?.name), transportCode: safeToken(error?.code || error?.cause?.code),
+        httpStatus: Number.isInteger(error?.$metadata?.httpStatusCode) ? error.$metadata.httpStatusCode : undefined });
       const fault = error instanceof ReplayError ? error : new ReplayError(
         job.currentPhase === "uploading" ? "replay_archive_upload_failed" : job.currentPhase === "checking_archive" ? "replay_archive_check_failed" : "replay_processing_failed", safeError(error));
       const decision = retryDecision(fault, job);

@@ -86,8 +86,8 @@ describe("match workspace regressions",()=>{
         expect(view.container.querySelector('.analysis-steps [aria-current="step"]')?.textContent).toContain(messages.fa.analysisParse);
         expect(mocks.api).not.toHaveBeenCalled();
         view.rerender(<MatchTable matches={[{ ...processing, analyzed: true, analysisPreparation: { ...processing.analysisPreparation, progress: { ...processing.analysisPreparation.progress, phase: "uploading" } } }]} t={messages.fa} onOpen={vi.fn()} live/>);
-        expect(screen.getByRole("button", { name: messages.fa.analysisQueued }).getAttribute("aria-expanded")).toBe("true");
-        expect(view.container.querySelector('.analysis-steps [aria-current="step"]')?.textContent).toContain(messages.fa.analysisSave);
+        expect(screen.getByRole("button", { name: messages.fa.analysisDone })).toBeTruthy();
+        expect(view.container.querySelector('.row-analysis-progress')).toBeNull();
     });
     it.each([messages.fa, messages.en])("shows a readable red failure at the parser stage without developer codes", t => {
         const prep = { replay: "failed", errorCode: "replay_parser_failed" };

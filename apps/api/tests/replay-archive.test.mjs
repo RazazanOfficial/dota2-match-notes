@@ -72,3 +72,52 @@ describe("private replay archive layout", () => {
     }
   });
 });
+
+it.each([false, true])("uploads bounded multipart ranges, retries transient failures and cleans up permanent failure=%s", async permanent => {
+  const directory = await mkdtemp(join(tmpdir(), "replay-multipart-"));
+  const bytes = Buffer.alloc(17 * 1024 * 1024, 7), source = join(directory,"replay.dem");
+  await writeFile(source,bytes);
+  const sha256 = createHash("sha256").update(bytes).digest("hex");
+  const attempts = new Map(), parts = new Map();
+  let completed=false, aborted=false, reported=0, confirmed=false, checked=false;
+  const server=createServer(async(request,response)=>{
+    const url=new URL(request.url,"http://localhost");
+    const chunks=[];for await(const chunk of request) chunks.push(chunk);
+    const body=Buffer.concat(chunks);
+    if(request.method==="POST" && url.searchParams.has("uploads")) {
+      response.writeHead(200,{"Content-Type":"application/xml"}).end('<InitiateMultipartUploadResult><UploadId>test-id</UploadId></InitiateMultipartUploadResult>');
+    } else if(request.method==="PUT") {
+      const part=Number(url.searchParams.get("partNumber"));attempts.set(part,(attempts.get(part)||0)+1);
+      if(permanent || part===2 && attempts.get(part)===1) {
+        response.writeHead(permanent?403:503,{"Content-Type":"application/xml"})
+          .end(`<Error><Code>${permanent?"AccessDenied":"SlowDown"}</Code><Message>Test only</Message></Error>`);
+      } else {parts.set(part,body);response.writeHead(200,{ETag:`"part-${part}"`}).end();}
+    } else if(request.method==="POST") {
+      expect(parts.size).toBe(3);expect(body.toString()).toContain("<PartNumber>3</PartNumber>");completed=true;
+      response.writeHead(200,{"Content-Type":"application/xml"}).end('<CompleteMultipartUploadResult><ETag>"complete"</ETag></CompleteMultipartUploadResult>');
+    } else if(request.method==="HEAD") {
+      checked=true;response.writeHead(200,{"Content-Length":bytes.length,"x-amz-meta-sha256":sha256}).end();
+    } else if(request.method==="DELETE") {aborted=true;response.writeHead(204).end();}
+    else response.writeHead(400).end();
+  });
+  await new Promise(resolve=>server.listen(0,"127.0.0.1",resolve));
+  const names=["CLOUD_SPACE_END_POINT_URL","CLOUD_SPACE_BUCKET","CLOUD_SPACE_ACCESS_KEY","CLOUD_SPACE_SECRET_KEY","CLOUD_SPACE_FORCE_PATH_STYLE"];
+  const prior=Object.fromEntries(names.map(name=>[name,process.env[name]]));
+  try {
+    Object.assign(process.env,{CLOUD_SPACE_END_POINT_URL:`http://127.0.0.1:${server.address().port}`,CLOUD_SPACE_BUCKET:"test",CLOUD_SPACE_ACCESS_KEY:"test",CLOUD_SPACE_SECRET_KEY:"test",CLOUD_SPACE_FORCE_PATH_STYLE:"true"});
+    const promise=uploadReplay(source,"replays/2026/10/21/9000000001.dem.bz2",{onProgress:delta=>{reported+=delta;},onUploaded:()=>{confirmed=true;}});
+    if(permanent) {
+      await expect(promise).rejects.toMatchObject({$metadata:{httpStatusCode:403}});
+      expect(aborted).toBe(true);expect(completed).toBe(false);expect(confirmed).toBe(false);expect(reported).toBe(0);
+    } else {
+      await expect(promise).resolves.toMatchObject({bytes:bytes.length});
+      expect(createHash("sha256").update(Buffer.concat([...parts.values()])).digest("hex")).toBe(sha256);
+      expect([...parts.values()].every(part=>part.length<=8*1024*1024)).toBe(true);
+      expect(attempts.get(2)).toBe(2);expect(reported).toBe(bytes.length);
+      expect(completed && confirmed && checked).toBe(true);expect(aborted).toBe(false);
+    }
+  } finally {
+    for(const [name,value] of Object.entries(prior)) {if(value===undefined)delete process.env[name];else process.env[name]=value;}
+    server.closeAllConnections();await new Promise(resolve=>server.close(resolve));await rm(directory,{recursive:true,force:true});
+  }
+});

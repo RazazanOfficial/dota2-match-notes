@@ -1,5 +1,7 @@
 # تحویل پروژه به چت یا توسعه‌دهندهٔ بعدی
 
+- تسک جاری `fix/local-analysis-sync` از main `24b4ce2`: لاگ VPS تأیید کرد `9054009159` فقط OpenDota parsed بود؛ سه Match دیگر local parsed ولی upload آرشیو شش‌دقیقه‌ای fail داشتند؛ حساب دوست کاربر sync pending قدیمی از آگوست داشت. Express اکنون فقط local overlay معتبر را تحلیل می‌کند؛ benchmark/log/position parser خارجی با خروجی محلی مخلوط نمی‌شود؛ projection نسخه۳ و آماده بودن تحلیل مستقل از backup است. manual در transaction فقط scheduled منتظر را supersede می‌کند و rollback cooldown/lease recovery حفظ است. آرشیو بزرگ multipart 8MiB و retry محدود/abort/HEAD دارد؛ کد امن transport ثبت می‌شود. worker/importer کامل بودن timeline را کنترل می‌کنند. OPENDOTA_PARSE_ENABLED پیش‌فرض false و timer legacy در استقرار خاموش می‌شود. schema/dependency/JAR/unit جدید ندارد؛ API build/release:prepare، نصاب تازه و تنظیم ENV لازم‌اند؛ Next build لازم نیست. ۴۲۸ تست API و۱۳۵ دسکتاپ و build هر دو موفق؛ شبکهٔ واقعی آرشیو هنوز نیازمند تأیید VPS است. [تغییرات، Git و فرمان‌های کامل VPS](local-analysis-sync.fa.md). هیچ داده/مرجع پاک نشده و commit/push/استقرار انجام نشده است.
+
 **آخرین بازبینی این سند: ۲۰ اکتبر ۲۰۲۶.** نقطهٔ شروع: [فهرست docs](README.md)، سپس `README.md` ریشه و فایل‌های کد مربوط به تسک. این سند جای بررسی `git status`، نسخهٔ مستقرشده و وضعیت VPS را نمی‌گیرد.
 
 ## متن شروع برای چت تازه

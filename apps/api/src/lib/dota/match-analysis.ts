@@ -157,7 +157,7 @@ export function buildMatchAnalysis(params: { rawData: unknown; replaySource?: "l
     const playerSlot = numeric(player.player_slot); const heroId = numeric(player.hero_id);
     if (playerSlot === null || heroId === null) return [];
     const hero = heroById(heroId); if (!hero) return [];
-    const heroMetrics = embeddedBenchmarks(player, durationMinutes);
+    const heroMetrics = params.replaySource === "local" ? [] : embeddedBenchmarks(player, durationMinutes);
     // The ten players in this match provide context, never a statistical baseline.
     const fallbackMetrics = heroMetrics;
     const positionResolution=positionResolutions.get(playerSlot);const position=positionResolution?.detectedPosition??null;

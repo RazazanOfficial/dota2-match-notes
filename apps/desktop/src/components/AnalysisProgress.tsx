@@ -24,7 +24,7 @@ export function AnalysisProgress({ preparation, t, compact = false, onCollapse }
     const failedStage = code?.includes("parser") || code?.startsWith("replay_identity_") ? 3
         : code?.includes("upload") || code?.includes("archive") ? 4
         : code?.includes("download") || code?.includes("checksum") || code?.includes("checkpoint") ? 2 : 1;
-    const active = failed ? failedStage : phaseIndex[phase] ?? (phase === "retry_wait" ? 1 : 0);
+    const active = failed ? failedStage : phaseIndex[phase] ?? (phase === "retry_wait" ? failedStage : 0);
     const stages = [t.analysisQueued, t.analysisConnect, t.analysisDownload, t.analysisParse, t.analysisSave];
     const downloading = phase === "downloading";
     const percent = downloading && progress?.totalBytes ? Math.min(100, Math.max(0, Math.round(progress.bytes / progress.totalBytes * 100))) : null;

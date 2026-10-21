@@ -12,7 +12,6 @@ import {
 import { ANALYSIS_SUMMARY_VERSION, referenceRevisionSql } from "./analysis-summary-version";
 import { buildMatchAnalysis } from "./match-analysis";
 import type { PerformanceReferenceData } from "./performance-cohort";
-import { hasParsedOpenDotaReplay } from "../opendota/validation";
 import { overlayReplayData } from "../replay/overlay";
 import { referenceMonthsForMatch, weekStartsInMonth } from "../monthly-reference/model";
 import { poolDivineImmortalMeta } from "../monthly-reference/selection";
@@ -139,7 +138,7 @@ export async function loadPublicMatchAnalysis(journalMatchId: string, requestedP
   if (!source) return { found: false as const, analysis: null, replayParsed: false };
   if (!source.dotaMatchId || !source.rawData) return { found: true as const, analysis: null, replayParsed: false };
   const overlaid = overlayReplayData(source.rawData, source.localReplayData);
-  const replayParsed = hasParsedOpenDotaReplay(overlaid.match);
+  const replayParsed = overlaid.source === "local";
 
   const rawPlayers = Array.isArray(overlaid.match.players) ? overlaid.match.players : [];
   const heroIds = [...new Set(rawPlayers.flatMap((value) => {
@@ -148,11 +147,11 @@ export async function loadPublicMatchAnalysis(journalMatchId: string, requestedP
   }))];
   let performanceReference: PerformanceReferenceData | undefined;
   try {
-    performanceReference = await loadPerformanceReference(heroIds, record(source.rawData)?.start_time, record(source.rawData)?.duration);
+    if (replayParsed) performanceReference = await loadPerformanceReference(heroIds, record(source.rawData)?.start_time, record(source.rawData)?.duration);
   } catch (error) {
-    console.warn("External performance reference unavailable; using embedded payload only", error);
+    console.warn("External performance reference unavailable; comparison remains unavailable", error);
   }
-  const analysis = buildMatchAnalysis({
+  const analysis = replayParsed ? buildMatchAnalysis({
       rawData: overlaid.match,
       replaySource: overlaid.source,
       profileAccountId: source.profileAccountId,
@@ -162,7 +161,7 @@ export async function loadPublicMatchAnalysis(journalMatchId: string, requestedP
         ? { ...(source.positionOverrides || {}), ...requestedPositionOverrides }
         : source.positionOverrides,
       performanceReference,
-    });
+    }) : null;
   // Persist the same values used by the analysis screen. History queries only read this small projection.
   if (!requestedPositionOverrides && source.sourceUpdatedAt) {
     const player = replayParsed ? analysis?.players.find(entry => entry.isProfilePlayer) : undefined;
@@ -190,14 +189,14 @@ export async function loadStandaloneMatchAnalysis(matchId: number, profileAccoun
     .from(dotaMatches).where(eq(dotaMatches.matchId, matchId)).limit(1);
   if (!source?.rawData) return { found: false as const, replayParsed: false, analysis: null };
   const overlaid = overlayReplayData(source.rawData, source.localReplayData);
-  const replayParsed = hasParsedOpenDotaReplay(overlaid.match);
+  const replayParsed = overlaid.source === "local";
   const rawPlayers = Array.isArray(overlaid.match.players) ? overlaid.match.players : [];
   const heroIds = [...new Set(rawPlayers.flatMap((value) => {
     const heroId = numberValue(record(value)?.hero_id);
     return heroId === null ? [] : [heroId];
   }))];
   let performanceReference: PerformanceReferenceData | undefined;
-  try { performanceReference = await loadPerformanceReference(heroIds, record(source.rawData)?.start_time, record(source.rawData)?.duration); }
+  try { if (replayParsed) performanceReference = await loadPerformanceReference(heroIds, record(source.rawData)?.start_time, record(source.rawData)?.duration); }
   catch (error) { console.warn("External performance reference unavailable", error); }
   return {
     found: true as const,

@@ -13,6 +13,10 @@ const state = vi.hoisted(() => ({ db: undefined as unknown }));
 vi.mock("../src/lib/db", () => ({ getDb: () => state.db, closeDatabase: async () => {} }));
 import { createApp } from "../src/app";
 import { users, sessions, syncJobs, journalDays, journalMatches, dotaMatches, localReplayJobs, monthlyReferenceVersions } from "../src/lib/db/schema";
+import { ANALYSIS_SUMMARY_VERSION } from "../src/lib/dota/analysis-summary-version";
+import { requestReplayByDotaId } from "../src/lib/replay/job-repository";
+import { recoverStaleScheduledJobs } from "../src/lib/sync/repository";
+import { getSyncWorkerConfig } from "../src/lib/sync/config";
 import { loadPublicMatchAnalysis } from "../src/lib/dota/match-analysis-repository";
 import { createSession } from "../src/lib/auth/session";
 import { createDesktopAuthCode } from "../src/lib/auth/desktop";
@@ -35,6 +39,12 @@ const apiFolder = fileURLToPath(new URL("..", import.meta.url));
 const migrationFolder = join(apiFolder, "drizzle");
 let userId = ""; let cookie = ""; let oldFolder = "";
 const password = "correct-test-password";
+function localReplay(matchId: number, players: Array<Record<string, unknown>>) {
+  return { match_id: matchId, version: 22, players: players.map(player => ({ ...player,
+    times: [0,60,120], gold_t: [600,1000,1400], xp_t: [0,500,1000], lh_t: [0,5,10],
+    dn_t: [0,0,1], networth_t: [600,1000,1400], camps_stacked_t: [0,0,0],
+    hero_damage_t: [0,0,10], hero_healing_t: [0,0,0] })) };
+}
 
 beforeAll(async () => {
   vi.stubEnv("APP_URL", "https://dota.example"); vi.stubEnv("API_ALLOWED_ORIGINS", "http://localhost:1420,http://tauri.localhost");
@@ -382,7 +392,7 @@ describe("PostgreSQL schema migration and real Express services", () => {
         times: [0,60,120], gold_t: [600,1000,1400], xp_t: [0,500,1000], lh_t: [0,5,10],
         benchmarks: { gold_per_min: { raw: 450, pct: .8 }, xp_per_min: { raw: 520, pct: .7 }, last_hits_per_min: { raw: 5, pct: .75 } } }));
       await db.insert(dotaMatches).values([
-        { matchId: ids[0], startedAt: start, rawData: { match_id: ids[0], start_time: start.getTime()/1000, duration: 1800, radiant_win: true, version: 1, game_mode: 22, lobby_type: 7, players }, gameMode: 22, lobbyType: 7 },
+        { matchId: ids[0], startedAt: start, rawData: { match_id: ids[0], start_time: start.getTime()/1000, duration: 1800, radiant_win: true, version: 1, game_mode: 22, lobby_type: 7, players }, localReplayData: localReplay(ids[0], players), gameMode: 22, lobbyType: 7 },
         { matchId: ids[1], startedAt: start, rawData: { match_id: ids[1], players: [] }, gameMode: 23, lobbyType: 0 },
         { matchId: ids[2], startedAt: start, rawData: { match_id: ids[2], players: [] }, gameMode: 2, lobbyType: 0 },
       ]);
@@ -391,14 +401,22 @@ describe("PostgreSQL schema migration and real Express services", () => {
       await db.insert(localReplayJobs).values({ matchId: ids[1], status: "pending", intent: "analysis" });
       const base = "/api/matches/me?from=2026-09-12&to=2026-09-18";
       const get = (extra = "") => request(app).get(base+extra).auth(token,{type:"bearer"});
+      await db.update(dotaMatches).set({ localReplayData: null }).where(eq(dotaMatches.matchId, ids[0]));
+      const remoteOnly = await get();
+      expect(remoteOnly.body.rows.find((row:{id:string})=>row.id===String(ids[0])))
+        .toMatchObject({ analyzed: false, score: null, analysisStatus: "basic" });
+      const remoteAnalysis = await loadPublicMatchAnalysis(entries[0].id);
+      expect(remoteAnalysis).toMatchObject({ replayParsed: false, analysis: null });
+      await db.update(dotaMatches).set({ localReplayData: localReplay(ids[0], players), updatedAt: new Date() })
+        .where(eq(dotaMatches.matchId, ids[0]));
       const result = await get(); expect(result.status).toBe(200); expect(result.body.summaryPending).toBe(false);
       const full = await loadPublicMatchAnalysis(entries[0].id), profile = full.analysis!.players.find(p => p.isProfilePlayer)!;
-      expect(profile.performanceScore).toBeTypeOf("number"); expect(profile.position).toBe(2);
-      expect(result.body.rows.find((row: {id:string}) => row.id === String(ids[0]))).toMatchObject({ analyzed: true, position: 2, score: profile.performanceScore, analysisStatus: "ready" });
+      expect(profile.performanceScore).toBeUndefined(); // No synthetic score from embedded OpenDota benchmarks. expect(profile.position).toBe(2);
+      expect(result.body.rows.find((row: {id:string}) => row.id === String(ids[0]))).toMatchObject({ analyzed: true, position: 2, score: profile.performanceScore ?? null, analysisStatus: "ready" });
       // A downloaded replay gets the owner's current compact analysis, never another user's journal.
       const replayInfo = await request(app).get(`/api/replays/${ids[0]}`).auth(token,{type:"bearer"});
       expect(replayInfo.status).toBe(200);
-      expect(replayInfo.body.match).toMatchObject({matchId:ids[0], heroId:1, position:2, score:profile.performanceScore, analyzed:true, mode:"Ranked", won:true, duration:1800});
+      expect(replayInfo.body.match).toMatchObject({matchId:ids[0], heroId:1, position:2, score:profile.performanceScore ?? null, analyzed:true, mode:"Ranked", won:true, duration:1800});
       const visitor = await request(app).get(`/api/replays/${ids[0]}`).set("Cookie",cookie);
       expect(visitor.status).toBe(200);
       expect(visitor.body.match).toMatchObject({heroId:null, position:null, score:null, won:null, analyzed:false});
@@ -409,9 +427,9 @@ describe("PostgreSQL schema migration and real Express services", () => {
       // the raw replay/reference/overrides did not change.
       const [oldProjection] = await db.select({ value: journalMatches.analysisSummary }).from(journalMatches).where(eq(journalMatches.id, entries[0].id));
       await db.update(journalMatches).set({ analysisSummary: { ...oldProjection.value!, version: 1, position: 0, score: -1 } }).where(eq(journalMatches.id, entries[0].id));
-      expect((await get()).body.rows.find((row:{id:string})=>row.id===String(ids[0]))).toMatchObject({ position: 2, score: profile.performanceScore });
+      expect((await get()).body.rows.find((row:{id:string})=>row.id===String(ids[0]))).toMatchObject({ position: 2, score: profile.performanceScore ?? null });
       const [refreshedProjection] = await db.select({ value: journalMatches.analysisSummary }).from(journalMatches).where(eq(journalMatches.id, entries[0].id));
-      expect(refreshedProjection.value?.version).toBe(2);
+      expect(refreshedProjection.value?.version).toBe(ANALYSIS_SUMMARY_VERSION);
       expect(result.body.rows.find((row: {id:string}) => row.id === String(ids[1]))).toMatchObject({ analyzed: false, position: null, score: null, analysisStatus: "pending" });
       expect(result.body.rows.find((row: {id:string}) => row.id === String(ids[1])).analysisPreparation).toMatchObject({ replay: "pending", progress: { phase: "queued" } });
       await db.update(localReplayJobs).set({ status: "processing", phase: "downloading", downloadedBytes: 512, totalBytes: 1024 }).where(eq(localReplayJobs.matchId, ids[1]));
@@ -420,9 +438,16 @@ describe("PostgreSQL schema migration and real Express services", () => {
       const failed = (await get()).body;
       expect(failed.rows.find((row:{id:string})=>row.id===String(ids[1])).analysisPreparation).toMatchObject({ replay: "failed", errorCode: "replay_identity_mismatch" });
       expect(JSON.stringify(failed)).not.toContain("private operator diagnostic");
-      // A parsed result does not hide the worker's remaining save stage.
+      // Archive upload is independent of completed local analysis.
       await db.insert(localReplayJobs).values({ matchId: ids[0], intent: "analysis", status: "processing", phase: "uploading" });
-      expect((await get()).body.rows.find((row:{id:string})=>row.id===String(ids[0]))).toMatchObject({ analyzed: true, analysisStatus: "processing", analysisPreparation: { replay: "processing", progress: { phase: "uploading" } } });
+      expect((await get()).body.rows.find((row:{id:string})=>row.id===String(ids[0]))).toMatchObject({ analyzed: true, analysisStatus: "ready", analysisPreparation: null });
+      await db.update(localReplayJobs).set({ status: "pending", phase: "retry_wait", attempts: 6,
+        errorCode: "replay_archive_upload_failed", archiveStatus: "active", archiveKey: "replays/2026/09/15/9100001001.dem.bz2" })
+        .where(eq(localReplayJobs.matchId, ids[0]));
+      expect((await get()).body.rows.find((row:{id:string})=>row.id===String(ids[0])))
+        .toMatchObject({ analyzed: true, analysisStatus: "ready", analysisPreparation: null });
+      // This must not contact storage at all, even with an unavailable archive endpoint.
+      expect(await requestReplayByDotaId(ids[0], "analysis")).toBe("ready");
       await db.delete(localReplayJobs).where(eq(localReplayJobs.matchId, ids[0]));
       expect(result.body.summary.positions).toEqual(expect.arrayContaining([{ id: 0, count: 2, wins: 2, losses: 0 }, { id: 2, count: 1, wins: 1, losses: 0 }]));
       expect((await get("&position=0")).body.total).toBe(2);
@@ -443,7 +468,7 @@ describe("PostgreSQL schema migration and real Express services", () => {
       expect(malformed.body.rows.find((row:{id:string})=>row.id===String(ids[2])).analyzed).toBe(false);
       // A cold period is hydrated in bounded batches rather than rebuilding every replay in a single request.
       const extras = Array.from({length:9},(_,i)=>9100001010+i); ids.push(...extras);
-      await db.insert(dotaMatches).values(extras.map(matchId=>({matchId,startedAt:start,gameMode:22,lobbyType:7,rawData:{match_id:matchId,start_time:start.getTime()/1000,duration:1800,radiant_win:true,version:1,players}})));
+      await db.insert(dotaMatches).values(extras.map(matchId=>({matchId,startedAt:start,gameMode:22,lobbyType:7,rawData:{match_id:matchId,start_time:start.getTime()/1000,duration:1800,radiant_win:true,version:1,players},localReplayData:localReplay(matchId,players)})));
       await db.insert(journalMatches).values(extras.map((dotaMatchId,i)=>({userId:owner.id,dayId:day.id,number:20+i,dotaMatchId,heroId:1,heroName:"Anti-Mage",result:"win" as const,startedAt:start,positionOverrides:{"0":2}})));
       const cold = await get(); expect(cold.body.summaryPending).toBe(true);
       const warm = await get(); expect(warm.body.summaryPending).toBe(false); expect(warm.body.total).toBe(12);
@@ -492,7 +517,7 @@ describe("PostgreSQL schema migration and real Express services", () => {
       expect(result.status).toBe(200); expect(match.analysis.replaySource).toBe("local");
       expect(match.participants[0]).toMatchObject({ position: 5, netWorth: 20100, neutralItemId: 289 });
       const player = match.analysis.players.find((player: { playerSlot: number }) => player.playerSlot === 0);
-      expect(player.performanceScore).toBeTypeOf("number");
+      expect(player.performanceScore).toBeUndefined(); // No lane events or local reference percentiles in this fixture.
       expect(player.summaryComparison).toMatchObject({ referenceMonth: "2026-08-01", versionId: snapshot.id,
         minute: 30, sampleCount: 1200, averages: { netWorth: 18000, xpPerMinute: 600,
           goldPerMinute: null, level: null, lastHits: 140, denies: 6 } });
@@ -549,6 +574,33 @@ describe("PostgreSQL schema migration and real Express services", () => {
     const duplicate=await request(app).post("/api/sync/me").set("Cookie",cookie).set("Origin","https://dota.example").send(payload);
     expect(duplicate.status).toBe(409);
     const jobs=await db.select().from(syncJobs).where(eq(syncJobs.userId,userId));expect(jobs).toHaveLength(1);expect(jobs[0].manualRequest).toEqual(payload);
+  });
+  it("replaces only a queued scheduled job and rolls queue/cooldown back on conflicts", async () => {
+    const [owner] = await db.insert(users).values({ steamId:"76561197960265999", steamAccountId:271,
+      handle:"legacy_sync_recovery",displayName:"Recovery",createdAt:new Date("2026-09-15"),onboardingCompletedAt:new Date() }).returning({id:users.id});
+    try {
+      const token=(await createSession(owner.id)).token, app=createApp();
+      const payload={scope:"day",from:"2026-09-15",to:"2026-09-15",mode:"basic"};
+      const [legacy]=await db.insert(syncJobs).values({userId:owner.id,kind:"scheduled",status:"pending",createdAt:new Date("2026-08-29"),runAfter:new Date("2026-08-29")}).returning({id:syncJobs.id});
+      const post=()=>request(app).post("/api/sync/me").auth(token,{type:"bearer"}).send(payload);
+      expect((await post()).status).toBe(202);
+      expect((await db.select().from(syncJobs).where(eq(syncJobs.id,legacy.id)))[0])
+        .toMatchObject({status:"failed",errorMessage:"scheduled_sync_superseded_by_manual"});
+      const jobs=await db.select().from(syncJobs).where(eq(syncJobs.userId,owner.id));
+      expect(jobs.filter(j=>j.status==="pending")).toHaveLength(1);
+      expect((await post()).status).toBe(409);
+      const claimed=(await db.select().from(users).where(eq(users.id,owner.id)))[0].lastDaySyncAt;
+      await db.delete(syncJobs).where(eq(syncJobs.userId,owner.id));
+      const [next]=await db.insert(syncJobs).values({userId:owner.id,kind:"scheduled",status:"pending"}).returning({id:syncJobs.id});
+      expect((await post()).status).toBe(429);
+      expect((await db.select().from(syncJobs).where(eq(syncJobs.id,next.id)))[0].status).toBe("pending");
+      expect((await db.select().from(users).where(eq(users.id,owner.id)))[0].lastDaySyncAt).toEqual(claimed);
+      await db.update(syncJobs).set({status:"processing",lockedAt:new Date()}).where(eq(syncJobs.id,next.id));
+      expect((await post()).status).toBe(409);
+      await db.update(syncJobs).set({lockedAt:null,createdAt:new Date(Date.now()-3600_000)}).where(eq(syncJobs.id,next.id));
+      expect(await recoverStaleScheduledJobs(getSyncWorkerConfig())).toMatchObject({recovered:1});
+      expect((await db.select().from(syncJobs).where(eq(syncJobs.id,next.id)))[0].status).toBe("pending");
+    } finally { await db.delete(users).where(eq(users.id,owner.id)); }
   });
   it("uses Tehran's Saturday boundary when UTC registration is still Friday", async () => {
     const saturday=saturdayWeekStart(toJournalDateKey(new Date()));

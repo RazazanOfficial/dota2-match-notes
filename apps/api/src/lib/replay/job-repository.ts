@@ -3,6 +3,7 @@ import { getDb } from "../db";
 import { dotaMatches, journalMatches, localReplayJobs } from "../db/schema";
 import { REPLAY_REQUEST_MAX_AGE_DAYS } from "../opendota/analysis-policy";
 import { replayObjectHead } from "./archive-storage";
+import { overlayReplayData } from "./overlay";
 import { progressFromRow } from "./progress";
 const progressFields = {
   phase: localReplayJobs.phase, downloadedBytes: localReplayJobs.downloadedBytes, totalBytes: localReplayJobs.totalBytes,
@@ -73,14 +74,15 @@ export async function requestReplayByDotaId(matchId: number, intent: ReplayInten
     .leftJoin(localReplayJobs, eq(dotaMatches.matchId, localReplayJobs.matchId))
     .where(eq(dotaMatches.matchId, matchId)).limit(1);
   if (!match?.rawData) return "not_found" as const;
-  const parsed = match.localReplayData?.match_id === matchId &&
-    Array.isArray(match.localReplayData.players) && match.localReplayData.players.length === 10;
+  const parsed = overlayReplayData(match.rawData, match.localReplayData).source === "local";
+  // Analysis is usable as soon as the validated parser output is committed.
+  // A slow or unavailable backup must not gate the analysis behind an S3 HEAD.
+  if (intent === "analysis" && parsed) return "ready" as const;
   let hasArchive = false;
   if (match.archiveKey && match.archiveStatus === "active") {
     hasArchive = Boolean(await getReplayArchive(matchId));
     if (hasArchive && (intent === "download" || parsed)) return "ready" as const;
   }
-  if (intent === "analysis" && parsed) return "ready" as const;
   if ((!match.startedAt || Date.now() - match.startedAt.getTime() > REPLAY_REQUEST_MAX_AGE_DAYS * 86_400_000) &&
       !hasArchive) return "expired" as const;
   const now = new Date();

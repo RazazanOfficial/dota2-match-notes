@@ -162,7 +162,7 @@ async function main() {
     await run("java", ["com.sun.tools.javac.Main", "-cp", jar, "-d", work, join(scriptDir, "ReplayInspector.java")], { timeoutMs: 30_000 });
     const inspect = await run("java", ["-Xmx512m", "-cp", `${jar}:${work}`, "ReplayInspector", "inspect", dem], { timeoutMs: 120_000 });
     const identity = JSON.parse(inspect.toString("utf8"));
-    const { validateReplayIdentity } = await import(new URL("../../dist/replay-identity.js", import.meta.url).href);
+    const { validateReplayIdentity, validateReplayBlob } = await import(new URL("../../dist/replay-identity.js", import.meta.url).href);
     let summary = null;
     if (!identity.matchIds?.some(id => id !== "0")) {
       if (!process.env.DATABASE_URL) throw new Error("replay_identity_unavailable: Full match summary is required");
@@ -177,6 +177,7 @@ async function main() {
     if (verified === "verified-roster") console.error("Replay identity verified by full roster");
     const result = await run("java", ["-Xmx1200m", "-cp", `${jar}:${work}`, "ReplayInspector", "parse", dem], { timeoutMs: 120_000, outputLimit: MAX_JSON });
     const blob = verifyBlob(JSON.parse(result.toString("utf8")), matchId);
+    validateReplayBlob(blob, matchId);
     try {
       await run("java", ["com.sun.tools.javac.Main", "-cp", jar, "-d", work, join(scriptDir, "LaneEvents.java")], { timeoutMs: 30_000 });
       blob.lane_events = await extractLaneEvents(jar, work, dem);

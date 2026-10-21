@@ -153,3 +153,22 @@ export async function downloadReplay(descriptor, directory, fetchImpl = fetch, p
   error.code = forbidden && lastCode !== "replay_proxy_auth_failed" ? "valve_access_blocked" : lastCode;
   throw error;
 }
+
+// Completion is about the local parser's validated timelines, never OpenDota's
+// version marker or merely ten placeholder player objects.
+export function hasCompleteLocalReplay(blob, matchId) {
+  if (!blob || blob.match_id !== matchId || !Number.isInteger(blob.version) || blob.version < 1 ||
+      !Array.isArray(blob.players) || blob.players.length !== 10) return false;
+  const expected = new Set([0,1,2,3,4,128,129,130,131,132]);
+  for (const player of blob.players) {
+    if (!player || !expected.delete(player.player_slot)) return false;
+    const times = player.times;
+    if (!Array.isArray(times) || times.length < 2 || times.length > 300 || times[0] !== 0 ||
+        !times.every((value,index)=>Number.isInteger(value) && (index===0 || value>times[index-1]))) return false;
+    for (const key of ["gold_t","lh_t","dn_t","xp_t","networth_t","camps_stacked_t","hero_damage_t","hero_healing_t"]) {
+      if (!Array.isArray(player[key]) || player[key].length !== times.length ||
+          !player[key].every(value=>typeof value === "number" && Number.isFinite(value))) return false;
+    }
+  }
+  return true;
+}

@@ -41,3 +41,5 @@ export function validateReplayIdentity(identity: ReplayIdentity, summary: Summar
   if (accounts < 2) throw new ReplayIdentityError("replay_identity_unavailable", "At least two known accounts and all ten heroes and teams are required for roster verification");
   return "verified-roster" as const;
 }
+
+export { validateReplayBlob } from "../src/lib/replay/overlay";

@@ -43,7 +43,8 @@ beforeEach(async()=>{
   mocks.upload.mockImplementation(async(_path,key,opts)=>{await opts?.onUploaded?.({key,bytes:payload.length});return {key,bytes:payload.length};});
   await db.exec("DELETE FROM replay_transport_routes; DELETE FROM replay_job_events; DELETE FROM local_replay_jobs WHERE match_id<>1; DELETE FROM dota_matches WHERE match_id<>1;");
   const summary={match_id:2,cluster:189,replay_salt:100,players:[]};
-  const parsed={match_id:2,players:Array(10).fill({})};
+  const parsed={match_id:2,version:22,players:[0,1,2,3,4,128,129,130,131,132].map(player_slot=>({player_slot,times:[0,60],
+    ...Object.fromEntries(["gold_t","lh_t","dn_t","xp_t","networth_t","camps_stacked_t","hero_damage_t","hero_healing_t"].map(key=>[key,[0,1]]))}))};
   await client.query("INSERT INTO dota_matches(match_id,raw_data,local_replay_data,started_at) VALUES(2,$1,$2,now())",[JSON.stringify(summary),JSON.stringify(parsed)]);
 });
 const row=async()=> (await client.query("SELECT * FROM local_replay_jobs WHERE match_id=2")).rows[0];

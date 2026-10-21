@@ -133,3 +133,17 @@ describe("local replay queue boundaries", () => {
     expect(await readdir(directory)).toEqual(["9013078038_724775528.dem.bz2"]);
   });
 });
+
+
+it("requires complete local timelines before skipping Java parsing", async () => {
+  const { hasCompleteLocalReplay } = await import("../scripts/replay-parser/replay-queue-utils.mjs");
+  const players=[0,1,2,3,4,128,129,130,131,132].map(player_slot=>({player_slot,times:[0,60],
+    ...Object.fromEntries(["gold_t","lh_t","dn_t","xp_t","networth_t","camps_stacked_t","hero_damage_t","hero_healing_t"].map(key=>[key,[0,1]]))}));
+  const blob={match_id:9000000001,version:22,players};
+  expect(hasCompleteLocalReplay(blob,blob.match_id)).toBe(true);
+  expect(hasCompleteLocalReplay({...blob,version:0},blob.match_id)).toBe(false);
+  expect(hasCompleteLocalReplay({...blob,players:Array(10).fill({})},blob.match_id)).toBe(false);
+  const incomplete=structuredClone(blob);incomplete.players[0].hero_damage_t.pop();
+  expect(hasCompleteLocalReplay(incomplete,blob.match_id)).toBe(false);
+  expect(hasCompleteLocalReplay(blob,9000000002)).toBe(false);
+});
