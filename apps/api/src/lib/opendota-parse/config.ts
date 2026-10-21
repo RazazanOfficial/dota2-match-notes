@@ -26,7 +26,7 @@ function toggle(name: string, fallback: boolean) {
 
 export function getOpenDotaParseConfig(): OpenDotaParseConfig {
   return {
-    enabled: toggle("OPENDOTA_PARSE_ENABLED", true),
+    enabled: toggle("OPENDOTA_PARSE_ENABLED", false),
     processBatchSize: integer("OPENDOTA_PARSE_PROCESS_BATCH_SIZE", 2, 1, 10),
     staleLockSeconds: integer("OPENDOTA_PARSE_STALE_LOCK_SECONDS", 300, 60, 3_600),
     pollIntervalSeconds: integer("OPENDOTA_PARSE_POLL_INTERVAL_SECONDS", 45, 15, 300),

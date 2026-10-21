@@ -3,7 +3,7 @@ import { getDb } from "../db";
 import { syncJobs, users } from "../db/schema";
 import { getOpenDotaConfig } from "../opendota/config";
 import { OpenDotaError } from "../opendota/errors";
-import { claimManualOpenDotaSync, markJournalRangeCompleted, releaseManualOpenDotaSyncClaim } from "../opendota/repository";
+import { claimManualOpenDotaSync, markJournalRangeCompleted } from "../opendota/repository";
 import { syncManualRangeBatch } from "../opendota/service";
 import { MATCH_SYNC_GAME_MODES, manualMatchSyncInputSchema, saturdayWeekStart, type ManualMatchSyncInput } from "../opendota/sync-request";
 import { toJournalDateKey } from "../journal/timezone";
@@ -23,22 +23,34 @@ export async function enqueueManualRangeSync(userId: string, request: ManualMatc
   if (request.from < saturdayWeekStart(toJournalDateKey(user.createdAt))) {
     throw new OpenDotaError(400, "before_tracking_window", "دریافت مچ فقط از ابتدای هفته ثبت‌نام امکان‌پذیر است");
   }
-  const [active] = await db.select({ id: syncJobs.id }).from(syncJobs)
-    .where(and(eq(syncJobs.userId, userId), sql`${syncJobs.status} in ('pending','processing')`)).limit(1);
-  if (active) throw new OpenDotaError(409, "sync_in_progress", "دریافت قبلی هنوز در حال انجام است");
   const config = getOpenDotaConfig();
-  const claimedAt = await claimManualOpenDotaSync(userId,
-    request.scope === "day" ? config.manualDayCooldownSeconds : request.scope === "month" ? config.manualMonthCooldownSeconds : config.manualSyncCooldownSeconds, request.scope);
-  try {
-    const [job] = await db.insert(syncJobs).values({
+  return db.transaction(async tx => {
+    // Serialize requests for this account, including independent scope cooldowns.
+    // Queue changes and the cooldown claim commit together or roll back together.
+    await tx.select({ id: users.id }).from(users).where(eq(users.id, userId)).for("update");
+    const [active] = await tx.select({ id: syncJobs.id, kind: syncJobs.kind, status: syncJobs.status })
+      .from(syncJobs).where(and(eq(syncJobs.userId, userId), sql`${syncJobs.status} in ('pending','processing')`))
+      .limit(1).for("update", { skipLocked: true });
+    if (active) {
+      if (active.kind !== "scheduled" || active.status !== "pending") {
+        throw new OpenDotaError(409, "sync_in_progress", "دریافت قبلی هنوز در حال انجام است");
+      }
+      // A queued background refresh (including legacy jobs left while scheduled
+      // sync is disabled) must yield to an explicit date-range request. Never
+      // replace a worker's live processing lease or another manual request.
+      await tx.update(syncJobs).set({ status: "failed", finishedAt: new Date(), lockedAt: null,
+        errorMessage: "scheduled_sync_superseded_by_manual" }).where(and(eq(syncJobs.id, active.id),
+        eq(syncJobs.kind, "scheduled"), eq(syncJobs.status, "pending")));
+    }
+    await claimManualOpenDotaSync(userId,
+      request.scope === "day" ? config.manualDayCooldownSeconds : request.scope === "month" ? config.manualMonthCooldownSeconds : config.manualSyncCooldownSeconds,
+      request.scope, tx);
+    const [job] = await tx.insert(syncJobs).values({
       userId, kind: "manual", status: "pending", manualRequest: request, manualAttempted: [], manualResult: emptyResult(),
     }).onConflictDoNothing().returning({ id: syncJobs.id });
     if (!job) throw new OpenDotaError(409, "sync_in_progress", "دریافت قبلی هنوز در حال انجام است");
     return job.id;
-  } catch (error) {
-    await releaseManualOpenDotaSyncClaim(userId, claimedAt, request.scope);
-    throw error;
-  }
+  });
 }
 
 export async function latestManualRangeJob(userId: string) {
@@ -57,11 +69,11 @@ export async function runManualRangeSyncTick() {
   await db.update(syncJobs).set({ status: "pending", lockedAt: null, runAfter: now,
     errorMessage: "manual_sync_stale_lock_recovered" })
     .where(and(eq(syncJobs.kind, "manual"), eq(syncJobs.status, "processing"),
-      lte(syncJobs.lockedAt, new Date(now.getTime() - 6 * 60_000)), sql`${syncJobs.attempts} < 30`));
+      sql`coalesce(${syncJobs.lockedAt}, ${syncJobs.createdAt}) <= ${new Date(now.getTime() - 6 * 60_000)}`, sql`${syncJobs.attempts} < 30`));
   await db.update(syncJobs).set({ status: "failed", lockedAt: null, finishedAt: now,
     errorMessage: "manual_sync_retry_exhausted" })
     .where(and(eq(syncJobs.kind, "manual"), eq(syncJobs.status, "processing"),
-      lte(syncJobs.lockedAt, new Date(now.getTime() - 6 * 60_000)), sql`${syncJobs.attempts} >= 30`));
+      sql`coalesce(${syncJobs.lockedAt}, ${syncJobs.createdAt}) <= ${new Date(now.getTime() - 6 * 60_000)}`, sql`${syncJobs.attempts} >= 30`));
   const claimed = await db.transaction(async (tx) => {
     const [candidate] = await tx.select({
       id: syncJobs.id, userId: syncJobs.userId, request: syncJobs.manualRequest,

@@ -3,9 +3,8 @@ type RecordValue = Record<string, unknown>;
 const SLOTS = [0, 1, 2, 3, 4, 128, 129, 130, 131, 132];
 
 // Fields that originate in the replay. Match identity, hero, account, result,
-// position, and OpenDota benchmark metadata must stay with the match summary.
-// Purchase logs and objectives differ between the raw parser and OpenDota's
-// enriched response; keep OpenDota's version until separately reconciled.
+// and final scoreboard totals stay with the basic match summary. Parser
+// metrics, logs and positional evidence are exclusively from the local replay.
 export const REPLAY_PLAYER_FIELDS = [
   "times", "gold_t", "lh_t", "dn_t", "xp_t", "networth_t",
   "camps_stacked_t", "hero_damage_t", "hero_healing_t",
@@ -108,19 +107,20 @@ export function overlayReplayData(
     for (const key of REPLAY_PLAYER_FIELDS) {
       if (parsed[key] !== undefined && parsed[key] !== null) additions[key] = parsed[key];
     }
-    // The raw parser's purchase_log is not identical to OpenDota's enriched
-    // log in the reference replay. Use it only when OpenDota has no log.
-    if (!Array.isArray(original.purchase_log) && Array.isArray(parsed.purchase_log)) {
-      additions.purchase_log = parsed.purchase_log;
-    }
-    return { ...original, ...additions };
+    const summary = { ...original };
+    for (const key of [...REPLAY_PLAYER_FIELDS, "purchase_log", "benchmarks",
+      "lane", "lane_role", "position_est", "is_roaming", "lane_efficiency", "lane_efficiency_pct"]) delete summary[key];
+    if (Array.isArray(parsed.purchase_log)) additions.purchase_log = parsed.purchase_log;
+    return { ...summary, ...additions };
   });
   const additions: RecordValue = {};
   for (const key of MATCH_FIELDS) {
     if (replay[key] !== undefined && replay[key] !== null) additions[key] = replay[key];
   }
-  if (!Array.isArray(openDota.objectives) && Array.isArray(replay.objectives)) {
+  if (Array.isArray(replay.objectives)) {
     additions.objectives = replay.objectives;
   }
-  return { match: { ...openDota, ...additions, players, version: replay.version }, source: "local" };
+  const summary = { ...openDota };
+  for (const key of [...MATCH_FIELDS, "objectives"]) delete summary[key];
+  return { match: { ...summary, ...additions, players, version: replay.version }, source: "local" };
 }

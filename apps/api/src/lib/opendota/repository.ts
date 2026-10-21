@@ -39,13 +39,14 @@ export async function claimManualOpenDotaSync(
   userId: string,
   cooldownSeconds: number,
   scope: "day" | "week" | "month" = "week",
+  db: Pick<ReturnType<typeof getDb>, "update" | "select"> = getDb(),
 ) {
   const field = scope === "day" ? users.lastDaySyncAt : scope === "month" ? users.lastMonthSyncAt : users.lastWeekSyncAt;
   const claimedAt = new Date();
   const availableBefore = new Date(
     claimedAt.getTime() - cooldownSeconds * 1_000,
   );
-  const [claim] = await getDb()
+  const [claim] = await db
     .update(users)
     .set({ lastManualSyncAt: claimedAt, ...(scope === "day" ? { lastDaySyncAt: claimedAt } : scope === "month" ? { lastMonthSyncAt: claimedAt } : { lastWeekSyncAt: claimedAt }) })
     .where(
@@ -61,7 +62,7 @@ export async function claimManualOpenDotaSync(
 
   if (claim?.claimedAt) return claim.claimedAt;
 
-  const [user] = await getDb()
+  const [user] = await db
     .select({ lastManualSyncAt: field })
     .from(users)
     .where(eq(users.id, userId))

@@ -51,18 +51,24 @@ function summary() {
 }
 
 describe("local replay overlay", () => {
-  it("uses verified parser timelines and preserves OpenDota identity, KDA and enriched logs", () => {
+  it("uses verified parser timelines and preserves basic identity/KDA without mixing OpenDota parser fields", () => {
     const input = summary();
-    const selected = overlayReplayData(input, replay());
+    const selected = overlayReplayData({ ...input, players: input.players.map(player => ({ ...player,
+      benchmarks: { gold_per_min: { raw: 999, pct: 1 } }, lane: 2, lane_role: 2,
+      obs_placed: 999, damage: { stale: 999 } })) }, replay());
     expect(selected.source).toBe("local");
     expect(selected.match).not.toBe(input);
     expect(input.players[0].gold_t).toEqual([0, 0, 0]);
     const players = selected.match.players as Array<Record<string, unknown>>;
     expect(players).toHaveLength(10);
     expect(players[0]).toMatchObject({ hero_id: 1, account_id: 20, kills: 1, camps_stacked: 1 });
+    expect(players[0].benchmarks).toBeUndefined();
+    expect(players[0].lane_role).toBeUndefined();
+    expect(players[0].obs_placed).toBeUndefined();
+    expect(players[0].damage).toBeUndefined();
     expect(players[0].networth_t).toEqual([598, 688, 748]);
-    expect(players[0].purchase_log).toEqual(input.players[0].purchase_log);
-    expect(selected.match.objectives).toEqual(input.objectives);
+    expect(players[0].purchase_log).toEqual(replay().players[0].purchase_log);
+    expect(selected.match.objectives).toEqual(replay().objectives);
     expect(selected.match.radiant_win).toBe(true);
     const analysis = buildMatchAnalysis({ rawData: selected.match, replaySource: selected.source });
     expect(analysis?.replaySource).toBe("local");
@@ -84,7 +90,7 @@ describe("local replay overlay", () => {
     expect(overlayReplayData(base, null).match).toBe(base);
   });
 
-  it("falls back to parser purchases and objectives only if OpenDota lacks them", () => {
+  it("uses local purchases and objectives when OpenDota lacks them", () => {
     const base = summary();
     const { objectives: _ignored, ...withoutObjectives } = base;
     const sparse = { ...withoutObjectives, players: base.players.map(({ purchase_log: _p, ...player }) => player) };

@@ -45,6 +45,15 @@ describe("updated match workspace",()=>{
   const view=render(<MatchTable matches={[processing]} t={messages.en} onOpen={vi.fn()}/>);expect(view.container.querySelector('.row-analysis-progress')).toBeNull();fireEvent.click(screen.getByRole("button",{name:messages.en.analysisQueued}));const progress=view.container.querySelector('.row-analysis-progress')!;expect(progress.querySelector('.signal-retry')).toBeTruthy();expect(progress.textContent).toContain('Attempt 2');expect(progress.querySelector('.analysis-progress-heading')?.textContent).not.toContain(messages.en.analysisRefresh);expect(progress.querySelector('.analysis-progress-heading')?.textContent).not.toContain(messages.en.analysisQueued);
   fireEvent.click(screen.getByRole("button",{name:messages.en.collapseProgress}));expect(view.container.querySelector('.row-analysis-progress')).toBeNull();fireEvent.click(screen.getByRole("button",{name:messages.en.analysisQueued}));expect(view.container.querySelector('.row-analysis-progress')).toBeTruthy();
  });
+ it("keeps a completed analysis usable while archive backup retries, then clears stale preparation",()=>{
+  const retry={replay:"pending",errorCode:"replay_archive_upload_failed"};
+  const view=render(<MatchTable matches={[{...rows[0],analysisPreparation:retry}]} t={messages.en} onOpen={vi.fn()} live/>);
+  expect(screen.getByRole("button",{name:messages.en.analysisDone})).toBeTruthy();
+  expect(screen.queryByRole("button",{name:messages.en.analysisQueued})).toBeNull();
+  expect(view.container.querySelector('.row-analysis-progress')).toBeNull();expect(mocks.api).not.toHaveBeenCalled();
+  view.rerender(<MatchTable matches={[{...rows[0],analyzed:false,analysisStatus:"basic",score:null}]} t={messages.en} onOpen={vi.fn()} live/>);
+  expect(screen.getByRole("button",{name:messages.en.analyze})).toBeTruthy();
+ });
  it("retains cached rows immediately when returning to a page during an outage",async()=>{
   const view=render(<LiveDashboard session={previewProfile} t={messages.en} onOpen={vi.fn()} onNavigate={vi.fn()}/>);await waitFor(()=>expect(view.container.querySelectorAll('[data-match-row]')).toHaveLength(10));view.unmount();setConnection('offline');mocks.list.mockRejectedValue(new Error('offline'));
   const cached=render(<LiveDashboard session={previewProfile} t={messages.en} onOpen={vi.fn()} onNavigate={vi.fn()}/>);expect(cached.container.querySelectorAll('[data-match-row]')).toHaveLength(10);expect(cached.container.querySelector('.match-list .loading-view')).toBeNull();

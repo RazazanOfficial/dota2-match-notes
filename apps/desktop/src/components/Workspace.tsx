@@ -43,13 +43,13 @@ type Preparation = { replay: string; progress?: ReplayProgress | null; errorCode
 export function MatchRow({ match, t, onOpen, live = false }: { match: HistoryMatch; t: Messages; onOpen: (m: HistoryMatch) => void; live?: boolean }) {
     const hero = heroById(match.heroId), [preparation, setPreparation] = useState<Preparation | null>(match.analysisPreparation || null), [busy, setBusy] = useState(false), [error, setError] = useState<unknown>(null), [ready, setReady] = useState(false), [expanded, setExpanded] = useState(false);
     useEffect(() => {
-        if (match.analysisPreparation) { setPreparation(match.analysisPreparation); setReady(false); }
-        else if (match.analyzed) { setPreparation(null); setReady(true); }
+        if (match.analyzed) { setPreparation(null); setReady(true); }
+        else if (match.analysisPreparation) { setPreparation(match.analysisPreparation); setReady(false); }
         else {
-            setReady(false);
+            setReady(false); setPreparation(null);
         }
     }, [match.analyzed, match.analysisPreparation]);
-    const running = busy || ["pending", "queued", "processing"].includes(preparation?.replay || (!ready && !match.analyzed ? match.analysisStatus || "" : ""));
+    const running = busy || (!(match.analyzed || ready) && ["pending", "queued", "processing"].includes(preparation?.replay || (!ready && !match.analyzed ? match.analysisStatus || "" : "")));
     useEffect(() => {
         if (!live || !running || busy || match.analysisPreparation) return;
         const controller = new AbortController(); let timer = 0;

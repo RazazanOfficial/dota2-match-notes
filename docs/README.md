@@ -6,7 +6,8 @@
 
 | موضوع | فایل |
 | --- | --- |
-| اصلاح ظاهر نمودار، انتخاب مستقیم ماه/هفته و امتیاز عملکرد (جاری) | [dashboard-visuals.fa.md](dashboard-visuals.fa.md) |
+| آنالیز صرفاً محلی، رفع قفل دریافت دستی و retry آرشیو (جاری) | [local-analysis-sync.fa.md](local-analysis-sync.fa.md) |
+| اصلاح ظاهر نمودار، انتخاب مستقیم ماه/هفته و امتیاز عملکرد | [dashboard-visuals.fa.md](dashboard-visuals.fa.md) |
 | کنترل بازهٔ داشبورد، توزیع مشترک و کارت‌های آمار | [dashboard-period-distribution.fa.md](dashboard-period-distribution.fa.md) |
 | خلاصهٔ سریع مچ، دادهٔ تحلیل و مقایسهٔ آماری | [match-quick-summary.fa.md](match-quick-summary.fa.md) |
 | Meta هفتگی، بازسازی بدون حذف مرجع فعال و Git/VPS | [weekly-meta-reference.fa.md](weekly-meta-reference.fa.md) |

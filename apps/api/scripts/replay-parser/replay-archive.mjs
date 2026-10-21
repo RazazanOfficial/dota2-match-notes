@@ -4,7 +4,7 @@ import { lstat, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { AbortMultipartUploadCommand, CompleteMultipartUploadCommand, CreateMultipartUploadCommand, UploadPartCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { MAX_REPLAY_BYTES } from "./replay-queue-utils.mjs";
 
 export function replayArchiveKey(startedAt, descriptor) {
@@ -47,6 +47,7 @@ function storage() {
     requestChecksumCalculation: "WHEN_REQUIRED",
     credentials: { accessKeyId: required("CLOUD_SPACE_ACCESS_KEY"), secretAccessKey: required("CLOUD_SPACE_SECRET_KEY") },
     maxAttempts: 1,
+    requestHandler: { connectionTimeout: 10_000, requestTimeout: 60_000, throwOnRequestTimeout: true },
   });
   return { client, bucket };
 }
@@ -58,6 +59,53 @@ export async function uploadReplay(path, key, { onProgress, onUploaded, signal }
   for await (const chunk of createReadStream(path)) hash.update(chunk);
   const sha256 = hash.digest("hex");
   const { client, bucket } = storage();
+  // Bound each network request instead of holding a single large PUT open.
+  // Memory is bounded by one 8 MiB part; failed parts restart from the same
+  // file range. An incomplete multipart upload is explicitly aborted.
+  const abortSignal = signal ? AbortSignal.any([signal, AbortSignal.timeout(360_000)]) : AbortSignal.timeout(360_000);
+  if (details.size > 16 * 1024 * 1024) {
+    let uploadId;
+    try {
+      const created = await client.send(new CreateMultipartUploadCommand({ Bucket: bucket, Key: key,
+        ContentType: "application/octet-stream", CacheControl: "private, no-store", Metadata: { sha256 } }), { abortSignal });
+      uploadId = created.UploadId;
+      if (!uploadId) throw new Error("Archive multipart upload ID is missing");
+      const parts = [], size = 8 * 1024 * 1024;
+      for (let start = 0, partNumber = 1; start < details.size; start += size, partNumber++) {
+        const end = Math.min(details.size, start + size) - 1;
+        let uploaded;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const body = createReadStream(path, { start, end });
+          try {
+            uploaded = await client.send(new UploadPartCommand({ Bucket: bucket, Key: key, UploadId: uploadId,
+              PartNumber: partNumber, Body: body, ContentLength: end - start + 1 }), { abortSignal });
+            break;
+          } catch (error) {
+            const status = error?.$metadata?.httpStatusCode;
+            if (abortSignal.aborted || attempt === 2 || (status && status < 500 && status !== 429)) throw error;
+          } finally { body.destroy(); }
+        }
+        if (!uploaded?.ETag) throw new Error("Archive multipart part confirmation is missing");
+        parts.push({ PartNumber: partNumber, ETag: uploaded.ETag });
+        if (onProgress) await onProgress(end - start + 1);
+      }
+      // S3 may respond 200 with an XML error; the SDK must confirm completion.
+      await client.send(new CompleteMultipartUploadCommand({ Bucket: bucket, Key: key, UploadId: uploadId,
+        MultipartUpload: { Parts: parts } }), { abortSignal });
+      uploadId = undefined;
+      if (onUploaded) await onUploaded({ key, bytes: details.size });
+      const head = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }), { abortSignal });
+      if (head.ContentLength !== details.size || head.Metadata?.sha256 !== sha256) throw new Error("Replay archive verification failed");
+      return { key, bytes: details.size };
+    } finally {
+      if (uploadId) {
+        try { await client.send(new AbortMultipartUploadCommand({ Bucket: bucket, Key: key, UploadId: uploadId }),
+          { abortSignal: AbortSignal.timeout(10_000) }); }
+        catch { console.warn(JSON.stringify({ code: "replay_archive_multipart_cleanup_failed" })); }
+      }
+      client.destroy();
+    }
+  }
   let pending = 0, last = Date.now();
   const body = createReadStream(path);
   const meter = new Transform({ transform(chunk, _, done) {
@@ -75,7 +123,7 @@ export async function uploadReplay(path, key, { onProgress, onUploaded, signal }
       Bucket: bucket, Key: key, Body: meter, ContentLength: details.size,
       ContentType: "application/octet-stream", CacheControl: "private, no-store",
       Metadata: { sha256 },
-    }), { abortSignal: signal ? AbortSignal.any([signal, AbortSignal.timeout(360_000)]) : AbortSignal.timeout(360_000) });
+    }), { abortSignal });
     if (onUploaded) await onUploaded({ key, bytes: details.size });
     const head = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }), { abortSignal: AbortSignal.timeout(30_000) });
     if (head.ContentLength !== details.size || head.Metadata?.sha256 !== sha256) {

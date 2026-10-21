@@ -105,9 +105,9 @@ export async function GET(request: HttpRequest) {
       k: row.kills, d: row.deaths, a: row.assists, score: row.score,
       mode: row.gameMode === 23 ? "Turbo" : [5, 6, 7].includes(row.lobbyType || 0) ? "Ranked" : [1,22].includes(row.gameMode || 0) ? "All Pick" : Object.entries(modes).find(([, ids]) => ids.includes(row.gameMode || 0))?.[0] || "Other",
       duration: row.duration, startedAt: row.startedAt?.toISOString() || `${row.day}T12:00:00.000Z`,
-      analyzed: row.parsed && row.projectionReady,
-      analysisStatus: row.jobIntent === "analysis" && ["pending", "processing"].includes(row.jobStatus || "") ? row.jobStatus : row.parsed ? (!row.projectionCurrent ? "processing" : row.projectionReady ? "ready" : "failed") : row.jobIntent === "analysis" && row.jobStatus === "failed" ? "failed" : "basic",
-      analysisPreparation: row.jobIntent === "analysis" && ["pending", "processing", "failed"].includes(row.jobStatus || "")
+      analyzed: row.parsed && row.projectionCurrent && row.projectionReady,
+      analysisStatus: row.parsed && row.projectionCurrent && row.projectionReady ? "ready" : row.jobIntent === "analysis" && ["pending", "processing"].includes(row.jobStatus || "") ? row.jobStatus : row.parsed ? (!row.projectionCurrent ? "processing" : row.projectionReady ? "ready" : "failed") : row.jobIntent === "analysis" && row.jobStatus === "failed" ? "failed" : "basic",
+      analysisPreparation: !(row.parsed && row.projectionCurrent && row.projectionReady) && row.jobIntent === "analysis" && ["pending", "processing", "failed"].includes(row.jobStatus || "")
         ? { replay: row.jobStatus, errorCode: row.errorCode, progress: progressFromRow(row) } : null,
     })),
     summary: { total, wins, losses: total - wins, winRate: total ? wins / total * 100 : 0, score: totals[0]?.score == null ? null : Number(totals[0].score),

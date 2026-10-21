@@ -22,11 +22,11 @@ import {
   matchBans,
   matchImageJobs,
   matchImages,
-  openDotaParseJobs,
+  localReplayJobs,
   users,
 } from "../db/schema";
 import { matchAnalysisStatus } from "../opendota/analysis-policy";
-import { hasParsedOpenDotaReplay } from "../opendota/validation";
+import { replayParsedSql } from "../dota/history-analysis";
 import { makePublicImageUrl } from "../storage/media";
 import type { DayInput, PublicPlayerIdentifier } from "./validation";
 import { toJournalDateKey } from "./timezone";
@@ -129,10 +129,9 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
           lobbyTypeId: dotaMatches.lobbyType,
           radiantWin: dotaMatches.radiantWin,
           rawData: journalMatchSummary,
-          localReplayReady: sql<boolean>`${dotaMatches.localReplayData} is not null
-            and ${dotaMatches.localReplayData}->>'match_id' = ${dotaMatches.matchId}::text`,
-          parseStatus: openDotaParseJobs.status,
-          parseErrorCode: openDotaParseJobs.errorCode,
+          localReplayReady: replayParsedSql,
+          parseStatus: sql<"pending" | "processing" | "completed" | "failed" | null>`case when ${localReplayJobs.intent} = 'analysis' then ${localReplayJobs.status} else null end`,
+          parseErrorCode: localReplayJobs.errorCode,
         })
         .from(journalMatches)
         .leftJoin(
@@ -140,8 +139,8 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
           eq(journalMatches.dotaMatchId, dotaMatches.matchId),
         )
         .leftJoin(
-          openDotaParseJobs,
-          eq(journalMatches.id, openDotaParseJobs.matchId),
+          localReplayJobs,
+          eq(journalMatches.dotaMatchId, localReplayJobs.matchId),
         )
         .where(inArray(journalMatches.dayId, dayIds))
         .orderBy(asc(journalMatches.number))
@@ -320,8 +319,7 @@ export async function loadJournalProfile(owner: JournalOwner, range: DateRange) 
                 images: imagesByMatch.get(match.id) || [],
                 imageJobStatus: imageJobByMatch.get(match.id) || null,
                 analysisStatus: matchAnalysisStatus({
-                  replayParsed: Boolean(match.localReplayReady ||
-                    (match.rawData && hasParsedOpenDotaReplay(match.rawData as Record<string, unknown>))),
+                  replayParsed: Boolean(match.localReplayReady),
                   parseStatus: match.parseStatus,
                   startedAt: match.startedAt,
                 }),
@@ -421,6 +419,10 @@ export async function loadJournalMatchPage(
         const player = players.get(participant.playerSlot);
         return player ? { ...participant, position: player.position } : participant;
       });
+    } else if (match.analysisStatus === "ready") {
+      // A lightweight SQL projection must not override runtime validation of
+      // old or malformed local payloads on the actual details endpoint.
+      match.analysisStatus = "basic";
     }
   }
   return { owner, dateKey: target.dateKey, day, match };

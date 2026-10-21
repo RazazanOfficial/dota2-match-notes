@@ -4,7 +4,7 @@ const repository = vi.hoisted(() => ({
   claimNextScheduledSyncJob: vi.fn(),
   completeScheduledSyncJob: vi.fn(),
   enqueueDueScheduledSyncJobs: vi.fn(),
-  recoverStaleScheduledJobs: vi.fn(),
+  recoverStaleScheduledJobs: vi.fn(async () => ({ recovered: 0, failed: 0 })),
   rescheduleOrFailScheduledSyncJob: vi.fn(),
 }));
 const syncScheduledMatchesFromOpenDota = vi.hoisted(() => vi.fn());
@@ -50,7 +50,7 @@ describe("scheduled sync toggle", () => {
       manual: { processed: 0 },
     });
 
-    expect(repository.recoverStaleScheduledJobs).not.toHaveBeenCalled();
+    expect(repository.recoverStaleScheduledJobs).toHaveBeenCalledTimes(1);
     expect(repository.enqueueDueScheduledSyncJobs).not.toHaveBeenCalled();
     expect(repository.claimNextScheduledSyncJob).not.toHaveBeenCalled();
     expect(syncScheduledMatchesFromOpenDota).not.toHaveBeenCalled();

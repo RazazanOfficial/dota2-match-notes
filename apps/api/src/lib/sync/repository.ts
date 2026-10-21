@@ -3,7 +3,6 @@ import {
   asc,
   eq,
   inArray,
-  isNotNull,
   isNull,
   lte,
   notExists,
@@ -97,8 +96,7 @@ export async function recoverStaleScheduledJobs(config: SyncWorkerConfig) {
         and(
           eq(syncJobs.kind, "scheduled"),
           eq(syncJobs.status, "processing"),
-          isNotNull(syncJobs.lockedAt),
-          lte(syncJobs.lockedAt, staleBefore),
+          sql`coalesce(${syncJobs.lockedAt}, ${syncJobs.createdAt}) <= ${staleBefore}`,
         ),
       )
       .orderBy(asc(syncJobs.lockedAt))
@@ -167,7 +165,7 @@ export async function claimNextScheduledSyncJob() {
       )
       .orderBy(asc(syncJobs.runAfter), asc(syncJobs.createdAt))
       .limit(1)
-      .for("update", { skipLocked: true });
+      .for("update", { of: syncJobs, skipLocked: true });
     if (!candidate) return null;
 
     const [claimed] = await tx
