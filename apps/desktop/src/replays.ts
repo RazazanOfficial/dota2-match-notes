@@ -13,6 +13,8 @@ export interface ReplayFile {
 export interface ReplayProgress {
     matchId: string;
     bytes: number;
+    totalBytes?: number | null;
+    stage?: string;
 }
 export const validReplayId = (id: string) => /^[1-9]\d{7,11}$/.test(id);
 export const playCommand = (id: string) => `playdemo replays/${id}`;

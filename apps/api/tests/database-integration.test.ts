@@ -621,3 +621,31 @@ describe("PostgreSQL schema migration and real Express services", () => {
     expect(result.status).toBe(400);
   });
 });
+
+describe("ready local replay delivery and account-scoped activity",()=>{
+ it("delivers a private checksum-verified checkpoint with storage offline and rejects tampered bytes",async()=>{
+  const folder=await mkdtemp(join(tmpdir(),"local-delivery-")),prior=process.env.LOCAL_REPLAY_INCOMING_DIR;process.env.LOCAL_REPLAY_INCOMING_DIR=folder;
+  const id=9057632491,name=".replay-12345678-1234-4234-8234-123456789abc.part",payload=Buffer.from("PBDEMS2\0verified local replay bytes");
+  try{
+   await writeFile(join(folder,name),payload,{mode:0o600});await db.insert(dotaMatches).values({matchId:id,startedAt:new Date(),rawData:{match_id:id,players:[]}});
+   await db.insert(localReplayJobs).values({matchId:id,intent:"download",status:"completed",phase:"completed",spoolName:name,spoolComplete:true,spoolSha256:createHash("sha256").update(payload).digest("hex"),totalBytes:payload.length,archiveStatus:"missing"});
+   expect((await request(createApp()).get(`/api/replays/${id}/file`)).status).toBe(401);
+   expect((await request(createApp()).get(`/api/replays/${id}`).set("Cookie",cookie)).body).toMatchObject({ok:true,archived:false,downloadReady:true});
+   await expect(requestReplayByDotaId(id,"download",userId)).resolves.toBe("ready");
+   const file=await request(createApp()).get(`/api/replays/${id}/file`).set("Cookie",cookie);expect(file.status).toBe(200);expect(file.body).toEqual(payload);expect(file.headers["content-length"]).toBe(String(payload.length));
+   await db.update(dotaMatches).set({startedAt:new Date("2020-01-01T00:00:00Z")}).where(eq(dotaMatches.matchId,id));await expect(requestReplayByDotaId(id,"analysis",userId)).resolves.toBe("queued");
+   await writeFile(join(folder,name),Buffer.alloc(payload.length,1),{mode:0o600});expect((await request(createApp()).get(`/api/replays/${id}/file`).set("Cookie",cookie)).status).toBe(404);
+   expect((await db.select().from(localReplayJobs).where(eq(localReplayJobs.matchId,id)))[0].spoolComplete).toBe(false);
+  }finally{if(prior===undefined)delete process.env.LOCAL_REPLAY_INCOMING_DIR;else process.env.LOCAL_REPLAY_INCOMING_DIR=prior;await db.delete(dotaMatches).where(eq(dotaMatches.matchId,id));await rm(folder,{recursive:true,force:true});}
+ });
+ it("returns only owned or requested tasks and does not expose another account",async()=>{
+  const ids=[9057632492,9057632493];try{
+   for(const id of ids)await db.insert(dotaMatches).values({matchId:id,startedAt:new Date(),rawData:{match_id:id,players:[]}});
+   await db.insert(localReplayJobs).values([{matchId:ids[0],requestedBy:userId,status:"pending",phase:"awaiting_parse"},{matchId:ids[1],requestedBy:"33333333-3333-4333-8333-333333333333",status:"pending",phase:"awaiting_parse"}]);
+   expect((await request(createApp()).get("/api/tasks")).status).toBe(401);
+   const result=await request(createApp()).get("/api/tasks").set("Cookie",cookie);expect(result.status).toBe(200);
+   expect(result.body.tasks.some((task:{matchId:string})=>task.matchId===String(ids[0]))).toBe(true);expect(result.body.tasks.some((task:{matchId:string})=>task.matchId===String(ids[1]))).toBe(false);
+   expect(result.text).not.toContain("33333333-3333-4333-8333-333333333333");
+  }finally{for(const id of ids)await db.delete(dotaMatches).where(eq(dotaMatches.matchId,id));}
+ });
+});

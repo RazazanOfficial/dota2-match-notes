@@ -1,17 +1,21 @@
 [Unit]
-Description=Dota2 Notes local replay download and parse (one match)
+Description=Dota2 Notes replay pipeline (2 transfers, 1 parser, 1 archive)
 After=network-online.target postgresql.service
 Wants=network-online.target
 
 [Service]
-Type=oneshot
+Type=simple
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+KillMode=control-group
 User=dota2notes
 Group=dota2notes
 WorkingDirectory=/var/www/dota2notes
 EnvironmentFile=/var/www/dota2notes/.env.production
 ExecStartPre=/usr/bin/node /var/www/dota2notes/apps/api/release/dist/preflight.js --role=replay
-ExecStart=/usr/bin/node /var/www/dota2notes/apps/api/release/scripts/replay-parser/run-queue.mjs
-TimeoutStartSec=1800s
+ExecStart=/usr/bin/node /var/www/dota2notes/apps/api/release/scripts/replay-parser/run-pipeline.mjs
+TimeoutStartSec=60s
 UMask=0077
 
 NoNewPrivileges=true
@@ -29,3 +33,6 @@ CapabilityBoundingSet=
 MemoryHigh=1700M
 MemoryMax=2100M
 CPUQuota=100%
+
+[Install]
+WantedBy=multi-user.target

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useTaskManager } from "./TaskCenter";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { FolderOpen, RefreshCw, Search } from "lucide-react";
 import { sampleHistory } from "../history";
 import type { HistoryMatch } from "../history";
@@ -16,6 +17,9 @@ export function Replay({ t, live = false }: {
     t: Messages;
     live?: boolean;
 }) {
+    const taskManager=useTaskManager();
+    const activity=useSyncExternalStore(taskManager?.subscribe || (()=>()=>{}),taskManager?.snapshot || (()=>null));
+    const globalDownloadBusy=activity?.downloads.some(task=>["preparing","transferring"].includes(task.status)) || false;
     const end = new Date(), start = new Date(end.getTime()-61*86400000);
     const historyPath = `/api/matches/me?${new URLSearchParams({from:start.toISOString().slice(0,10),to:end.toISOString().slice(0,10),page:"1"})}`;
     const [tab, setTab] = useState("find"), [id, setId] = useState(""), [searched, setSearched] = useState(""), [settings, setSettings] = useState<ReplaySettings>({ dotaPath: null, replayPath: null }), [files, setFiles] = useState<ReplayFile[]>([]), [busy, setBusy] = useState(""), [bytes, setBytes] = useState(0), [notice, setNotice] = useState(""), [recent, setRecent] = useState<HistoryMatch[]>(()=>cachedRead<{rows:HistoryMatch[]}>(historyPath)?.rows || []), [queued, setQueued] = useState("");
@@ -50,6 +54,11 @@ export function Replay({ t, live = false }: {
         void replayNative.progress(value => { if (active && value.matchId === transfer.current) setBytes(value.bytes); }).then(stop => { if (active) unlisten = stop; else stop(); }).catch(() => {});
         return () => { active = false; unlisten?.(); };
     }, [native]);
+    useEffect(()=>{
+        if(!native)return;
+        const refreshFiles=()=>{void replayNative.files().then(value=>{if(mounted.current){setFiles(value);setMetadataRevision(old=>old+1);setTab("local");}}).catch(()=>{});};
+        window.addEventListener("dota-notes:replay-downloaded",refreshFiles);return()=>window.removeEventListener("dota-notes:replay-downloaded",refreshFiles);
+    },[native]);
     async function chooseFolder() { setNotice(""); setError(null); setBusy("folder"); try {
         const value = await replayNative.chooseFolder();
         if (value) {
@@ -135,6 +144,7 @@ export function Replay({ t, live = false }: {
     transfer.current=matchId; setBusy(matchId); setBytes(0); setNotice(""); setError(null); try {
         const lookup = await apiRequest<{match?:ReplayMatchInfo}>("/api/replays/lookup", { method: "POST", body: JSON.stringify({ matchId: Number(matchId) }) });
         if (lookup.match) remember(lookup.match);
+        if(taskManager){await taskManager.download(matchId);return;}
         await apiRequest(`/api/replays/${matchId}`, { method: "POST", body: JSON.stringify({ intent: "download" }) });
         const state = await apiRequest<{ archived: boolean }>(`/api/replays/${matchId}`);
         if (state.archived) await saveArchived(matchId);
@@ -148,7 +158,7 @@ export function Replay({ t, live = false }: {
         transfer.current="";
     } }
 
-    return <div className="screen-stack"><div className="page-heading"><h1>{t.replay}</h1></div>{!!error && <ErrorNotice error={error} t={t}/>}<section className="panel replay-location"><div className="replay-folder-name"><FolderOpen size={20}/><div><strong>{t.dotaFolder}</strong>{settings.dotaPath ? <bdi>{settings.dotaPath}</bdi> : <p className="muted">{t.folderHint}</p>}</div></div><div className="replay-location-actions"><div className="replay-tutorial-buttons" role="group" aria-label={isPersian(t) ? "آموزش‌های ریپلی" : "Replay tutorials"}><ReplaySetupGuide t={t}/><ReplaySetupGuide t={t} kind="playback"/></div><button className="primary-button replay-folder-button" disabled={!native || !!busy || !!queued || nativeLoading} onClick={chooseFolder}><FolderOpen size={16}/>{isPersian(t) ? "بازکردن پوشه" : "Open folder"}</button></div>{settings.replayPath && <p className="replay-path"><small>{t.replayFolder}</small><bdi>{settings.replayPath}</bdi></p>}{!native && <small className="muted">{t.nativeRequired}</small>}</section><div className="detail-tabs" role="tablist" aria-label={t.replay}><button id="replay-find-tab" role="tab" aria-selected={tab === "find"} aria-controls="replay-panel" className={tab === "find" ? "active" : ""} onClick={() => setTab("find")}>{t.findReplay}</button><button id="replay-local-tab" role="tab" aria-selected={tab === "local"} aria-controls="replay-panel" className={tab === "local" ? "active" : ""} onClick={() => setTab("local")}>{t.localReplays}<small>{files.length}</small></button></div><div role="tabpanel" id="replay-panel" aria-labelledby={`replay-${tab}-tab`} className="screen-stack">
+    return <div className="screen-stack"><div className="page-heading"><h1>{t.replay}</h1></div>{!!error && <ErrorNotice error={error} t={t}/>}<section className="panel replay-location"><div className="replay-folder-name"><FolderOpen size={20}/><div><strong>{t.dotaFolder}</strong>{settings.dotaPath ? <bdi>{settings.dotaPath}</bdi> : <p className="muted">{t.folderHint}</p>}</div></div><div className="replay-location-actions"><div className="replay-tutorial-buttons" role="group" aria-label={isPersian(t) ? "آموزش‌های ریپلی" : "Replay tutorials"}><ReplaySetupGuide t={t}/><ReplaySetupGuide t={t} kind="playback"/></div><button className="primary-button replay-folder-button" disabled={!native || !!busy || !!queued || globalDownloadBusy || nativeLoading} onClick={chooseFolder}><FolderOpen size={16}/>{isPersian(t) ? "بازکردن پوشه" : "Open folder"}</button></div>{settings.replayPath && <p className="replay-path"><small>{t.replayFolder}</small><bdi>{settings.replayPath}</bdi></p>}{!native && <small className="muted">{t.nativeRequired}</small>}</section><div className="detail-tabs" role="tablist" aria-label={t.replay}><button id="replay-find-tab" role="tab" aria-selected={tab === "find"} aria-controls="replay-panel" className={tab === "find" ? "active" : ""} onClick={() => setTab("find")}>{t.findReplay}</button><button id="replay-local-tab" role="tab" aria-selected={tab === "local"} aria-controls="replay-panel" className={tab === "local" ? "active" : ""} onClick={() => setTab("local")}>{t.localReplays}<small>{files.length}</small></button></div><div role="tabpanel" id="replay-panel" aria-labelledby={`replay-${tab}-tab`} className="screen-stack">
     {tab === "find" && <>
         <section className="panel replay-search">
             <form onSubmit={event => { event.preventDefault(); void search(); }}>
@@ -168,5 +178,5 @@ export function Replay({ t, live = false }: {
         {files.length ? <><div className="replay-match-table" role="table" aria-label={t.localReplays}><ReplayMatchHeader t={t} downloadable={false}/>{visibleFiles.map(file => <ReplayMatchRow key={file.matchId} matchId={file.matchId} info={metadata[file.matchId]} file={file} t={t}/>)}</div>{files.length > localLimit && <button className="secondary-button replay-load-more" onClick={()=>setLocalLimit(value=>value+10)}>{t.loadMore}</button>}</>
             : <p className="empty-message">{nativeLoading ? t.loading : settings.replayPath ? t.noReplays : t.chooseFolder}</p>}
     </section>}
-  </div>{(busy && !["folder", "refresh"].includes(busy) || queued) && <section className="panel replay-transfer" role="status" aria-live="polite"><i className="signal-dot"/><div><strong>{busy && !["folder","refresh"].includes(busy) ? (isPersian(t) ? "درحال ذخیرهٔ ریپلی" : "Saving replay") : (isPersian(t) ? "آماده‌سازی ریپلی" : "Preparing replay")}</strong><small><bdi>{(bytes / 1024 / 1024).toFixed(1)} MB</bdi> · {isPersian(t) ? "فایل .dem روی سیستم شما" : "Local .dem file"}</small></div><CopyValue value={queued || busy} t={t}/></section>}<p role="status" className="replay-notice">{notice}</p></div>;
+  </div>{!taskManager && (busy && !["folder", "refresh"].includes(busy) || queued) && <section className="panel replay-transfer" role="status" aria-live="polite"><i className="signal-dot"/><div><strong>{busy && !["folder","refresh"].includes(busy) ? (isPersian(t) ? "درحال ذخیرهٔ ریپلی" : "Saving replay") : (isPersian(t) ? "آماده‌سازی ریپلی" : "Preparing replay")}</strong><small><bdi>{(bytes / 1024 / 1024).toFixed(1)} MB</bdi> · {isPersian(t) ? "فایل .dem روی سیستم شما" : "Local .dem file"}</small></div><CopyValue value={queued || busy} t={t}/></section>}<p role="status" className="replay-notice">{notice}</p></div>;
 }

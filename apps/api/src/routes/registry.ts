@@ -1,3 +1,4 @@
+import * as tasks from "./tasks/route";
 import * as playerPage from "./players/[identifier]/route";
 import * as matchPage from "./journal/matches/[matchId]/page/route";
 import * as r0 from "./admin/monthly-references/route";
@@ -111,6 +112,7 @@ export const routes = [
   { path: "/releases/:releaseId/read", method: "POST", handler: r31.POST },
   { path: "/releases", method: "GET", handler: r32.GET },
   // Literal routes must precede parameters: "lookup" is not a match ID.
+  { path: "/tasks", method: "GET", handler: tasks.GET },
   { path: "/replays/lookup", method: "POST", handler: r36.POST },
   { path: "/replays/:matchId/analysis", method: "GET", handler: r33.GET },
   { path: "/replays/:matchId/file", method: "GET", handler: r34.GET },

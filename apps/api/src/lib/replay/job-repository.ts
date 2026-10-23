@@ -1,3 +1,4 @@
+import { localReplayFile } from "./local-file";
 import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { dotaMatches, journalMatches, localReplayJobs } from "../db/schema";
@@ -57,11 +58,11 @@ export async function requestReplayJob(journalMatchId: string, userId: string, i
   const [owned] = await getDb().select({ matchId: journalMatches.dotaMatchId })
     .from(journalMatches).where(and(eq(journalMatches.id, journalMatchId), eq(journalMatches.userId, userId))).limit(1);
   if (!owned?.matchId) return "not_found" as const;
-  return requestReplayByDotaId(owned.matchId, intent);
+  return requestReplayByDotaId(owned.matchId, intent, userId);
 }
 
 // Standalone match requests use the same global job, without creating a journal entry.
-export async function requestReplayByDotaId(matchId: number, intent: ReplayIntent) {
+export async function requestReplayByDotaId(matchId: number, intent: ReplayIntent, userId?: string) {
   const db = getDb();
   const [match] = await db.select({
     startedAt: dotaMatches.startedAt,
@@ -78,19 +79,22 @@ export async function requestReplayByDotaId(matchId: number, intent: ReplayInten
   // Analysis is usable as soon as the validated parser output is committed.
   // A slow or unavailable backup must not gate the analysis behind an S3 HEAD.
   if (intent === "analysis" && parsed) return "ready" as const;
+  const hasLocal=Boolean(await localReplayFile(matchId));
+  if(intent === "download" && hasLocal)return "ready" as const;
   let hasArchive = false;
   if (match.archiveKey && match.archiveStatus === "active") {
     hasArchive = Boolean(await getReplayArchive(matchId));
     if (hasArchive && (intent === "download" || parsed)) return "ready" as const;
   }
   if ((!match.startedAt || Date.now() - match.startedAt.getTime() > REPLAY_REQUEST_MAX_AGE_DAYS * 86_400_000) &&
-      !hasArchive) return "expired" as const;
+      !hasArchive && !hasLocal) return "expired" as const;
   const now = new Date();
   const [queued] = await db.insert(localReplayJobs).values({
-    matchId, intent, runAfter: now, retryDeadlineAt: new Date(now.getTime() + 20 * 86_400_000), updatedAt: now,
+    matchId, intent, requestedBy:userId || null, runAfter: now, retryDeadlineAt: new Date(now.getTime() + 20 * 86_400_000), updatedAt: now,
   }).onConflictDoUpdate({
     target: localReplayJobs.matchId,
     set: {
+      requestedBy:sql`coalesce(${localReplayJobs.requestedBy},${userId || null}::uuid)`,
       intent: sql`CASE WHEN ${localReplayJobs.status} IN ('pending','processing')
         AND ${localReplayJobs.intent} = 'analysis' THEN 'analysis' ELSE ${intent} END`,
       status: sql`CASE WHEN ${localReplayJobs.status} = 'processing' THEN 'processing' ELSE 'pending' END`,
@@ -114,8 +118,9 @@ export async function replayStatusForMatch(matchId: number) {
     status: localReplayJobs.status, intent: localReplayJobs.intent, errorCode: localReplayJobs.errorCode,
     archiveStatus: localReplayJobs.archiveStatus,
   }).from(localReplayJobs).where(eq(localReplayJobs.matchId, matchId)).limit(1);
-  if (!row) return { status: "basic", archived: false, errorCode: null, progress: null };
+  if (!row) return { status: "basic", archived: false, downloadReady:false, errorCode: null, progress: null };
   // A completed analysis job may still have a downloadable archive.
-  const archived = row.archiveStatus === "active" && Boolean(await getReplayArchive(matchId));
-  return { status: row.status === "completed" && row.intent === "download" ? "basic" : row.status, archived, errorCode: row.errorCode, progress: progressFromRow(row) };
+  const archived = row.archiveStatus === "active";
+  const downloadReady=Boolean(await localReplayFile(matchId)) || archived;
+  return { status: row.status === "completed" && row.intent === "download" ? "basic" : row.status, archived, downloadReady, errorCode: row.errorCode, progress: progressFromRow(row) };
 }

@@ -6,7 +6,7 @@ import { ErrorNotice } from "./ErrorNotice";
 
 const phaseIndex: Record<string, number> = {
     queued: 0, checking_archive: 1, resolving_metadata: 1, restoring_archive: 1, connecting: 1,
-    downloading: 2, validating: 2, parsing: 3, uploading: 4, completed: 5,
+    downloading: 2, validating: 2, awaiting_parse: 3, parsing: 3, uploading: 4, completed: 5,
 };
 const mb = (bytes: number) => `${(bytes / 1048576).toFixed(1)} MB`;
 
@@ -28,7 +28,7 @@ export function AnalysisProgress({ preparation, t, compact = false, onCollapse }
     const stages = [t.analysisQueued, t.analysisConnect, t.analysisDownload, t.analysisParse, t.analysisSave];
     const downloading = phase === "downloading";
     const percent = downloading && progress?.totalBytes ? Math.min(100, Math.max(0, Math.round(progress.bytes / progress.totalBytes * 100))) : null;
-    const label = phase === "retry_wait" ? t.analysisRetry : stages[Math.min(active, stages.length - 1)];
+    const label = phase === "awaiting_parse" ? (isPersian(t) ? "منتظر آزادشدن موتور تحلیل" : "Waiting for the analysis engine") : phase === "retry_wait" ? t.analysisRetry : stages[Math.min(active, stages.length - 1)];
     return <div className={`analysis-progress ${compact ? "is-compact" : ""} ${failed ? "is-failed" : ""} ${phase === "retry_wait" ? "is-retrying" : ""}`} role="status" aria-live="polite">
         <div className="analysis-progress-heading"><span className="progress-signal" title={phase === "retry_wait" && progress?.nextTryAt ? `${t.nextRetryTime}: ${formatClock24(progress.nextTryAt,t)}` : failed ? t.analysisFailed : t.analysisRefresh}><i className={`signal-dot ${failed ? "signal-error" : phase === "retry_wait" ? "signal-retry" : ""}`}/>{phase === "retry_wait" && <small>{t.retryShort} <bdi>{formatCount(progress?.attempts || 1,t)}</bdi></small>}</span>{!compact && <strong>{failed ? t.analysisFailed : active === 5 ? t.analysisReady : label}</strong>}{onCollapse && <button className="progress-collapse" onClick={onCollapse} aria-label={t.collapseProgress}><ChevronUp size={19}/></button>}</div>
         <ol className="analysis-steps" dir="ltr">{stages.map((stage, index) => <li key={stage} aria-current={active === index ? "step" : undefined} className={active > index ? "done" : active === index ? failed ? "failed" : "active" : "waiting"}><span>{index + 1}</span><b className={compact && index === 0 ? "sr-only" : ""}>{stage}</b></li>)}</ol>
