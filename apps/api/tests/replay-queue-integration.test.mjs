@@ -19,7 +19,7 @@ beforeAll(async()=>{
   process.env.LOCAL_REPLAY_PROXY_TOKEN="a".repeat(64);
   worker=await import("../scripts/replay-parser/run-queue.mjs");
   db=new PGlite();
-  client={ query:async (query,args=[])=>{const r=await db.query(query,args);return {rows:r.rows,rowCount:r.rows.length || r.affectedRows || 0};} };
+  client={ query:async (query,args=[])=>{if(query.startsWith("SELECT pg_advisory_xact_lock"))return {rows:[],rowCount:0};const r=await db.query(query,args);return {rows:r.rows,rowCount:r.rows.length || r.affectedRows || 0};} };
   await db.exec(`CREATE TABLE dota_matches(match_id bigint PRIMARY KEY,raw_data jsonb,local_replay_data jsonb,started_at timestamptz,fetched_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now());
     CREATE TABLE local_replay_jobs(match_id bigint PRIMARY KEY REFERENCES dota_matches(match_id),status varchar(16) NOT NULL DEFAULT 'pending',
     intent varchar(16) NOT NULL DEFAULT 'analysis',archive_key text,archive_status varchar(16) NOT NULL DEFAULT 'missing',archive_bytes integer,
@@ -28,6 +28,7 @@ beforeAll(async()=>{
     INSERT INTO dota_matches(match_id) VALUES(1);
     INSERT INTO local_replay_jobs(match_id,status,archive_status,archive_key,archive_bytes) VALUES(1,'completed','active','replays/2026/09/01/1.dem.bz2',100);`);
   await db.exec(await readFile(new URL("../drizzle/0022_replay_resilience.sql",import.meta.url),"utf8"));
+  await db.exec(await readFile(new URL("../drizzle/0030_replay_pipeline.sql",import.meta.url),"utf8"));
 },30000);
 afterAll(async()=>{await db?.close();if(folder)await rm(folder,{recursive:true,force:true});});
 beforeEach(async()=>{
@@ -41,7 +42,7 @@ beforeEach(async()=>{
     return {path,source:"proxy",bytes:payload.length,sha256:hash};
   });
   mocks.upload.mockImplementation(async(_path,key,opts)=>{await opts?.onUploaded?.({key,bytes:payload.length});return {key,bytes:payload.length};});
-  await db.exec("DELETE FROM replay_transport_routes; DELETE FROM replay_job_events; DELETE FROM local_replay_jobs WHERE match_id<>1; DELETE FROM dota_matches WHERE match_id<>1;");
+  await db.exec("DELETE FROM replay_archive_jobs; DELETE FROM replay_transport_routes; DELETE FROM replay_job_events; DELETE FROM local_replay_jobs WHERE match_id<>1; DELETE FROM dota_matches WHERE match_id<>1;");
   const summary={match_id:2,cluster:189,replay_salt:100,players:[]};
   const parsed={match_id:2,version:22,players:[0,1,2,3,4,128,129,130,131,132].map(player_slot=>({player_slot,times:[0,60],
     ...Object.fromEntries(["gold_t","lh_t","dn_t","xp_t","networth_t","camps_stacked_t","hero_damage_t","hero_healing_t"].map(key=>[key,[0,1]]))}))};
@@ -176,4 +177,57 @@ describe("replay queue SQL and persisted lifecycle",()=>{
     const expired=await worker.claim(client);expect(expired.expired).toBe(1);expect(expired.job).toBeUndefined();
     expect(await row()).toMatchObject({status:"failed",error_code:"replay_retry_exhausted"});
   });
+});
+
+describe("independent replay pipeline",()=>{
+ it("completes foreground delivery before archiving and retains the verified checkpoint",async()=>{
+  const job=await start("download");await worker.handle(client,job,worker.hooksFor(client,job),{pipeline:true});
+  const saved=await row();expect(saved).toMatchObject({status:"completed",phase:"completed",spool_complete:true,archive_status:"missing",reserved_bytes:0});
+  expect(await readFile(join(folder,saved.spool_name))).toEqual(payload);expect(mocks.upload).not.toHaveBeenCalled();
+  expect((await client.query("SELECT status FROM replay_archive_jobs WHERE match_id=2")).rows[0].status).toBe("pending");
+ });
+ it("hands an unparsed prepared file to the parser lane without uploading or deleting it",async()=>{
+  await client.query("UPDATE dota_matches SET local_replay_data=NULL WHERE match_id=2");
+  const job=await start("analysis");await worker.handle(client,job,worker.hooksFor(client,job),{pipeline:true});
+  expect(await row()).toMatchObject({status:"pending",phase:"awaiting_parse",locked_at:null,spool_complete:true});expect(mocks.upload).not.toHaveBeenCalled();
+  const pipeline=await import("../scripts/replay-parser/run-pipeline.mjs");expect(await pipeline.claimLane(client,"prepare")).toBeUndefined();
+  expect(await pipeline.claimLane(client,"parse")).toMatchObject({match_id:2,status:"processing",phase:"parsing",attempts:1});expect(await pipeline.claimLane(client,"parse")).toBeUndefined();
+ });
+ it("isolates archive failure and opens a shared circuit without changing completed analysis",async()=>{
+  const job=await start("analysis");await worker.handle(client,job,worker.hooksFor(client,job),{pipeline:true});
+  const pipeline=await import("../scripts/replay-parser/run-pipeline.mjs"),archive=await pipeline.claimArchive(client);expect(archive.match_id).toBe(2);
+  mocks.upload.mockRejectedValueOnce(Object.assign(new Error("private detail"),{name:"TimeoutError",code:"ETIMEDOUT",archiveStage:"archive_upload_part"}));
+  await pipeline.archiveCheckpoint(client,archive);expect(await row()).toMatchObject({status:"completed",phase:"completed",spool_complete:true});
+  expect((await client.query("SELECT * FROM replay_archive_jobs WHERE match_id=2")).rows[0]).toMatchObject({status:"pending",error_code:"ETIMEDOUT"});
+  await client.query("UPDATE replay_archive_jobs SET run_after=now() WHERE match_id=2");expect(await pipeline.claimArchive(client)).toBeUndefined();
+ });
+ it("interleaves owners and recovers an interrupted parse without another network download",async()=>{
+  const pipeline=await import("../scripts/replay-parser/run-pipeline.mjs"),a="11111111-1111-4111-8111-111111111111",b="22222222-2222-4222-8222-222222222222";
+  await client.query("INSERT INTO dota_matches(match_id,raw_data,started_at) SELECT n,'{}',now() FROM generate_series(3,5) n");
+  await client.query("INSERT INTO local_replay_jobs(match_id,requested_by,request_started_at) VALUES(3,$1,now()-interval '3 minutes'),(4,$1,now()-interval '2 minutes'),(5,$2,now()-interval '1 minute')",[a,b]);
+  const first=await pipeline.claimLane(client,"prepare"),second=await pipeline.claimLane(client,"prepare");expect([first.match_id,second.match_id]).toEqual([3,5]);
+  await client.query("UPDATE local_replay_jobs SET phase='parsing',spool_complete=true,heartbeat_at=now()-interval '3 minutes' WHERE match_id=3");
+  await pipeline.recoverLeases(client);expect((await client.query("SELECT * FROM local_replay_jobs WHERE match_id=3")).rows[0]).toMatchObject({status:"pending",phase:"awaiting_parse",reserved_bytes:0});
+  expect((await pipeline.claimLane(client,"parse")).match_id).toBe(3);await expect(worker.updateJob(client,first,"source='proxy'")).rejects.toMatchObject({code:"replay_lease_lost"});
+ });
+ it("reserves space atomically and rolls back a second reservation when physical reserve is insufficient",async()=>{
+  const {reserveCapacity}=await import("../scripts/replay-parser/replay-pipeline-capacity.mjs"),{MAX_REPLAY_BYTES}=await import("../scripts/replay-parser/replay-queue-utils.mjs"),{MIN_FREE}=await import("../scripts/replay-parser/replay-spool.mjs"),pipeline=await import("../scripts/replay-parser/run-pipeline.mjs");
+  const first=await start("download");await client.query("INSERT INTO dota_matches(match_id,raw_data,started_at) VALUES(3,'{}',now())");await client.query("INSERT INTO local_replay_jobs(match_id) VALUES(3)");
+  const second=await pipeline.claimLane(client,"prepare"),disk=async()=>({bavail:MIN_FREE+MAX_REPLAY_BYTES+10,bsize:1});
+  await reserveCapacity(client,first,folder,0,disk);await expect(reserveCapacity(client,second,folder,0,disk)).rejects.toMatchObject({code:"replay_disk_capacity"});
+  expect(Number((await row()).reserved_bytes)).toBe(MAX_REPLAY_BYTES);expect(Number((await client.query("SELECT reserved_bytes FROM local_replay_jobs WHERE match_id=3")).rows[0].reserved_bytes)).toBe(0);
+ });
+ it("serializes heartbeat/progress pg queries and continues after a rejection",async()=>{
+  const {serializedClient}=await import("../scripts/replay-parser/run-pipeline.mjs");let concurrent=0,peak=0;
+  const wrapped=serializedClient({query:async value=>{concurrent++;peak=Math.max(peak,concurrent);await Promise.resolve();concurrent--;if(value==="fail")throw new Error("test");return value;}});
+  const result=await Promise.allSettled([wrapped.query("heartbeat"),wrapped.query("fail"),wrapped.query("progress")]);await wrapped.drain();
+  expect(peak).toBe(1);expect(result.map(item=>item.status)).toEqual(["fulfilled","rejected","fulfilled"]);
+ });
+ it("retries HEAD verification after a confirmed upload without uploading the replay again",async()=>{
+  const job=await start("analysis");await worker.handle(client,job,worker.hooksFor(client,job),{pipeline:true});const pipeline=await import("../scripts/replay-parser/run-pipeline.mjs");
+  mocks.upload.mockImplementationOnce(async(_path,key,opts)=>{await opts.onUploaded({key,bytes:payload.length});throw Object.assign(new Error("HEAD timeout"),{code:"ETIMEDOUT",archiveStage:"archive_head_object"});});
+  await pipeline.archiveCheckpoint(client,await pipeline.claimArchive(client));expect((await row()).archive_key).toMatch(/^replays\//);
+  await client.query("DELETE FROM replay_transport_routes WHERE route_key='archive-storage'");await client.query("UPDATE replay_archive_jobs SET run_after=now() WHERE match_id=2");mocks.exists.mockResolvedValueOnce(true);
+  await pipeline.archiveCheckpoint(client,await pipeline.claimArchive(client));expect(mocks.upload).toHaveBeenCalledOnce();expect(await row()).toMatchObject({status:"completed",archive_status:"active",spool_complete:true});
+ });
 });

@@ -19,7 +19,7 @@
   "type": "module",
   "scripts": {
     "start": "node dist/main.js",
-    "worker:replay": "node scripts/replay-parser/run-queue.mjs",
+    "worker:replay": "node scripts/replay-parser/run-pipeline.mjs",
     "preflight": "node dist/preflight.js",
     "db:migrate": "node dist/migrate.js",
     "db:check": "node dist/check-database.js",

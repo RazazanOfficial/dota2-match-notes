@@ -1,4 +1,4 @@
-use std::{fs::{self, File}, io::Read, path::{Path, PathBuf}, sync::{Arc, atomic::{AtomicBool, Ordering}}, time::{Duration, UNIX_EPOCH}};
+use std::{fs::{self, File}, io::Read, path::{Path, PathBuf}, sync::{Arc, atomic::{AtomicBool, AtomicU64, Ordering}}, time::{Duration, Instant, UNIX_EPOCH}};
 use crate::{replay_codec::{write_replay, MAX_REPLAY_BYTES}, replay_paths::display_path};
 use serde::{Deserialize, Serialize};
 use tauri::{Emitter, Manager};
@@ -14,7 +14,19 @@ pub struct ReplaySettings { dota_path: Option<String>, replay_path: Option<Strin
 pub struct ReplayFile { match_id: String, path: String, size_bytes: u64, modified_seconds: u64 }
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct ReplayProgress { match_id: String, bytes: u64 }
+struct ReplayProgress { match_id: String, bytes: u64, total_bytes: Option<u64>, stage: &'static str }
+// HTTP input bytes, rather than decompressed output, match Content-Length.
+struct TransferReader<R> { inner:R, received:Arc<AtomicU64>, total:Option<u64>, last:Instant, app:tauri::AppHandle, match_id:String }
+impl<R:Read> Read for TransferReader<R> {
+ fn read(&mut self,buffer:&mut [u8])->std::io::Result<usize>{
+  let count=self.inner.read(buffer)?;
+  let bytes=self.received.fetch_add(count as u64,Ordering::Relaxed)+count as u64;
+  if count==0 || self.last.elapsed()>=Duration::from_millis(250){
+   self.last=Instant::now();let _=self.app.emit("replay-progress",ReplayProgress{match_id:self.match_id.clone(),bytes,total_bytes:self.total,stage:if count==0{"finalizing"}else{"downloading"}});
+  }
+  Ok(count)
+ }
+}
 struct DownloadGuard(Arc<AtomicBool>);
 impl Drop for DownloadGuard { fn drop(&mut self) { self.0.store(false, Ordering::Release); } }
 fn err(e: impl std::fmt::Display) -> String { e.to_string() }
@@ -106,9 +118,12 @@ pub async fn download_replay(app: tauri::AppHandle, state: tauri::State<'_, Repl
             .suffix(".part")
             .tempfile_in(&directory)
             .map_err(|_| "replay_folder_write_failed")?;
-        write_replay(response, temporary.as_file_mut(), |bytes| {
-            let _ = app.emit("replay-progress", ReplayProgress { match_id: match_id.clone(), bytes });
-        })?;
+        let total=response.content_length();
+        let received=Arc::new(AtomicU64::new(0));
+        let reader=TransferReader{inner:response,received:received.clone(),total,last:Instant::now(),app:app.clone(),match_id:match_id.clone()};
+        write_replay(reader,temporary.as_file_mut(),|_|{})?;
+        if total.is_some_and(|expected|expected!=received.load(Ordering::Relaxed)){return Err("replay_transfer_failed".into());}
+        let _=app.emit("replay-progress",ReplayProgress{match_id:match_id.clone(),bytes:received.load(Ordering::Relaxed),total_bytes:total,stage:"finalizing"});
         // Publish the complete demo without replacing an existing replay.
         // A failed download drops and removes the temporary file automatically.
         temporary.persist_noclobber(&final_path).map_err(|_| "replay_write_failed")?;

@@ -6,7 +6,7 @@ export type ReplayProgress = {
 export const replayPhaseLabels: Record<string, string> = {
   queued: "منتظر شروع", checking_archive: "بررسی آرشیو Replay", resolving_metadata: "دریافت اطلاعات Replay", restoring_archive: "دریافت از آرشیو",
   connecting: "اتصال به سرور Replay", downloading: "دانلود Replay", validating: "بررسی فایل دریافت‌شده",
-  parsing: "تحلیل Replay", uploading: "ذخیره در آرشیو", retry_wait: "منتظر تلاش مجدد",
+  awaiting_parse: "منتظر آزادشدن موتور تحلیل", parsing: "تحلیل Replay", uploading: "ذخیره در آرشیو", retry_wait: "منتظر تلاش مجدد",
   completed: "آماده", failed: "درخواست تکمیل نشد",
 };
 export function replayErrorMessage(code: string | null | undefined) {

@@ -14,12 +14,12 @@ export function replayArchiveKey(startedAt, descriptor) {
   return `replays/${time.toISOString().slice(0, 10).replaceAll("-", "/")}/${descriptor.filename.split("_")[0]}.dem.bz2`;
 }
 
-export async function archivedReplayExists(key, expectedBytes) {
+export async function archivedReplayExists(key, expectedBytes, expectedHash) {
   if (!/^replays\/\d{4}\/\d{2}\/\d{2}\/\d+(?:_\d+)?\.dem(?:\.bz2)?$/.test(key)) throw new Error("Invalid archived replay reference");
   const { client, bucket } = storage();
   try {
     const head = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }), { abortSignal: AbortSignal.timeout(30_000) });
-    if (head.ContentLength !== expectedBytes || !/^[0-9a-f]{64}$/.test(head.Metadata?.sha256 || "")) throw new Error("Archived replay metadata does not match the database");
+    if (head.ContentLength !== expectedBytes || !/^[0-9a-f]{64}$/.test(head.Metadata?.sha256 || "") || expectedHash && head.Metadata.sha256 !== expectedHash) throw new Error("Archived replay metadata does not match the database");
     return true;
   } catch (error) {
     if (error?.name === "NotFound" || error?.name === "NoSuchKey" || error?.$metadata?.httpStatusCode === 404) return false;
@@ -52,7 +52,7 @@ function storage() {
   return { client, bucket };
 }
 
-export async function uploadReplay(path, key, { onProgress, onUploaded, signal } = {}) {
+export async function uploadReplay(path, key, { onProgress, onUploaded, onStage, signal } = {}) {
   const details = await lstat(path);
   if (!details.isFile() || details.size < 8 || details.size > MAX_REPLAY_BYTES) throw new Error("Invalid replay archive input");
   const hash = createHash("sha256");
@@ -63,10 +63,15 @@ export async function uploadReplay(path, key, { onProgress, onUploaded, signal }
   // Memory is bounded by one 8 MiB part; failed parts restart from the same
   // file range. An incomplete multipart upload is explicitly aborted.
   const abortSignal = signal ? AbortSignal.any([signal, AbortSignal.timeout(360_000)]) : AbortSignal.timeout(360_000);
+  const send=async(command,options)=>{
+    const stage=`archive_${command.constructor.name.replace(/Command$/,"").replace(/[A-Z]/g,c=>`_${c.toLowerCase()}`).replace(/^_/,"")}`;
+    await onStage?.(stage);
+    try {return await client.send(command,options);}catch(error){error.archiveStage=stage;throw error;}
+  };
   if (details.size > 16 * 1024 * 1024) {
     let uploadId;
     try {
-      const created = await client.send(new CreateMultipartUploadCommand({ Bucket: bucket, Key: key,
+      const created = await send(new CreateMultipartUploadCommand({ Bucket: bucket, Key: key,
         ContentType: "application/octet-stream", CacheControl: "private, no-store", Metadata: { sha256 } }), { abortSignal });
       uploadId = created.UploadId;
       if (!uploadId) throw new Error("Archive multipart upload ID is missing");
@@ -77,7 +82,7 @@ export async function uploadReplay(path, key, { onProgress, onUploaded, signal }
         for (let attempt = 0; attempt < 3; attempt++) {
           const body = createReadStream(path, { start, end });
           try {
-            uploaded = await client.send(new UploadPartCommand({ Bucket: bucket, Key: key, UploadId: uploadId,
+            uploaded = await send(new UploadPartCommand({ Bucket: bucket, Key: key, UploadId: uploadId,
               PartNumber: partNumber, Body: body, ContentLength: end - start + 1 }), { abortSignal });
             break;
           } catch (error) {
@@ -90,16 +95,16 @@ export async function uploadReplay(path, key, { onProgress, onUploaded, signal }
         if (onProgress) await onProgress(end - start + 1);
       }
       // S3 may respond 200 with an XML error; the SDK must confirm completion.
-      await client.send(new CompleteMultipartUploadCommand({ Bucket: bucket, Key: key, UploadId: uploadId,
+      await send(new CompleteMultipartUploadCommand({ Bucket: bucket, Key: key, UploadId: uploadId,
         MultipartUpload: { Parts: parts } }), { abortSignal });
       uploadId = undefined;
       if (onUploaded) await onUploaded({ key, bytes: details.size });
-      const head = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }), { abortSignal });
+      const head = await send(new HeadObjectCommand({ Bucket: bucket, Key: key }), { abortSignal });
       if (head.ContentLength !== details.size || head.Metadata?.sha256 !== sha256) throw new Error("Replay archive verification failed");
       return { key, bytes: details.size };
     } finally {
       if (uploadId) {
-        try { await client.send(new AbortMultipartUploadCommand({ Bucket: bucket, Key: key, UploadId: uploadId }),
+        try { await send(new AbortMultipartUploadCommand({ Bucket: bucket, Key: key, UploadId: uploadId }),
           { abortSignal: AbortSignal.timeout(10_000) }); }
         catch { console.warn(JSON.stringify({ code: "replay_archive_multipart_cleanup_failed" })); }
       }
@@ -119,13 +124,13 @@ export async function uploadReplay(path, key, { onProgress, onUploaded, signal }
   meter.on("error", () => {});
   body.pipe(meter);
   try {
-    await client.send(new PutObjectCommand({
+    await send(new PutObjectCommand({
       Bucket: bucket, Key: key, Body: meter, ContentLength: details.size,
       ContentType: "application/octet-stream", CacheControl: "private, no-store",
       Metadata: { sha256 },
     }), { abortSignal });
     if (onUploaded) await onUploaded({ key, bytes: details.size });
-    const head = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }), { abortSignal: AbortSignal.timeout(30_000) });
+    const head = await send(new HeadObjectCommand({ Bucket: bucket, Key: key }), { abortSignal: AbortSignal.timeout(30_000) });
     if (head.ContentLength !== details.size || head.Metadata?.sha256 !== sha256) {
       throw new Error("Replay archive verification failed");
     }

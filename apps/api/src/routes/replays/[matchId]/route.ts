@@ -32,7 +32,7 @@ export async function POST(request: HttpRequest, context: Context) {
   const input = z.object({ intent: z.enum(["download", "analysis"]) }).safeParse(await request.json().catch(() => null));
   if (!id.success || !input.success) return Response.json({ ok: false, error: { message: "درخواست معتبر نیست" } }, { status: 400 });
   try {
-    const status = await requestReplayByDotaId(id.data, input.data.intent);
+    const status = await requestReplayByDotaId(id.data, input.data.intent, user.id);
     if (status === "not_found") return Response.json({ ok: false, error: { message: "ابتدا Match ID را جست‌وجو کنید" } }, { status: 404 });
     if (status === "expired") return Response.json({ ok: false, error: { message: "Replay در پارس‌پک موجود نیست و از مهلت دریافت آن گذشته است" } }, { status: 409 });
     return Response.json({ ok: true, status }, { status: status === "ready" ? 200 : 202, headers: { "Cache-Control": "private, no-store" } });

@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useTaskManager } from "./TaskCenter";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { ArrowUpRight, Download, Search, LoaderCircle, Check, AlertCircle } from "lucide-react";
 import type { Session } from "@/lib/types";
 import { getSyncStatus, listMatches, matchListPath, requestMatchSync, type MatchListResponse, type SyncJob } from "../api";
@@ -22,8 +23,11 @@ const refreshEvent = "dota-notes:matches-updated";
 const refreshMatches = () => window.dispatchEvent(new Event(refreshEvent));
 
 function useSyncFeed() {
+    const manager=useTaskManager();
+    const activity=useSyncExternalStore(manager?.subscribe || (()=>()=>{}),manager?.snapshot || (()=>null));
     const [job, setJob] = useState<SyncJob | null>(null);
     useEffect(() => {
+        if(manager)return;
         let active = true, timer = 0, sequence = 0, lastFingerprint = "";
         const poll = async () => {
             const current = ++sequence; window.clearTimeout(timer);
@@ -44,8 +48,8 @@ function useSyncFeed() {
         const onRequest = (event: Event) => { const detail = (event as CustomEvent<SyncJob>).detail; if (detail) setJob(detail); void poll(); };
         window.addEventListener("dota-notes:sync-requested", onRequest);
         return () => { active = false; sequence++; window.clearTimeout(timer); window.removeEventListener("dota-notes:sync-requested", onRequest); };
-    }, []);
-    return job;
+    }, [manager]);
+    return manager ? activity?.sync || null : job;
 }
 
 function SyncNotice({ job, t }: { job: SyncJob | null; t: Messages }) {

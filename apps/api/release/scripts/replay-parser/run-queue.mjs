@@ -13,6 +13,7 @@ import { fetchReplayMetadata } from "./replay-metadata.mjs";
 import { refreshMatchMetadata } from "./refresh-match-metadata.mjs";
 import { downloadResilient, ReplayError, sha256File, transportConfig } from "./replay-transport.mjs";
 import { cleanSpool, ensureCapacity, inspectSpool, spoolPath, verifyCheckpoint } from "./replay-spool.mjs";
+import { reserveCapacity } from "./replay-pipeline-capacity.mjs";
 import { processingPlan, retryDecision } from "./replay-job-policy.mjs";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
@@ -139,13 +140,13 @@ async function complete(client, job, hooks, source) {
     finished_at=CASE WHEN $3='download' AND intent='analysis' THEN NULL ELSE now() END,
     run_after=now(),source=$4,error_code=NULL,error_message=NULL,locked_at=NULL,download_bps=0`, [job.intent, source]);
 }
-async function handle(client, job, hooks) {
+async function handle(client, job, hooks, { pipeline=false }={}) {
   job.currentPhase = "checking_archive";
   const match = (await client.query("SELECT raw_data,local_replay_data,started_at FROM dota_matches WHERE match_id=$1", [job.match_id])).rows[0];
   if (!match?.raw_data) throw new ReplayError("match_missing", "Match summary is missing", { retryable: false });
   const parsed = hasCompleteLocalReplay(match.local_replay_data, Number(job.match_id));
-  let archived = false;
-  if (job.archive_key && job.archive_status !== "deleted") {
+  let archived = Boolean(pipeline && job.spool_complete && job.archive_status === "active" && job.archive_key);
+  if (job.archive_key && job.archive_status !== "deleted" && !(pipeline && job.spool_complete)) {
     archived = await (await archive()).archivedReplayExists(job.archive_key, job.archive_bytes); // only 404 means missing
     if (!archived) await updateJob(client, job, "archive_status='missing'");
     else if (job.archive_status !== "active") await updateJob(client, job, "archive_status='active',archived_at=now()");
@@ -158,7 +159,7 @@ async function handle(client, job, hooks) {
     await hooks.event("validating", "checkpoint_discarded", "Saved replay checksum did not match");
   }
   const plan = processingPlan({ archived, parsed, intent: job.intent, checkpoint: validCheckpoint });
-  if (plan === "complete") { await complete(client, job, hooks, "existing"); return; }
+  if (plan === "complete") { if(pipeline) await finishForeground(client,job,hooks,"archive"); else await complete(client,job,hooks,"existing"); return; }
   let descriptor = replayDescriptor(match.raw_data, Number(job.match_id));
   if (!descriptor && !archived && !validCheckpoint) {
     await hooks.phase("resolving_metadata");
@@ -215,7 +216,8 @@ async function handle(client, job, hooks) {
   const path = spoolPath(incoming, job.spool_name);
   let source = job.source || "proxy";
   if (!validCheckpoint) {
-    await ensureCapacity(incoming, file?.bytes || 0);
+    if(pipeline) await reserveCapacity(client,job,incoming,plan === "restore-archive" ? 0 : file?.bytes || 0);
+    else await ensureCapacity(incoming,file?.bytes || 0);
     if (plan === "restore-archive") {
       await hooks.phase("restoring_archive");
       const restored = await (await archive()).retrieveReplay(job.archive_key, job.archive_bytes, incoming);
@@ -231,6 +233,15 @@ async function handle(client, job, hooks) {
     }
     await updateJob(client, job, "source=$3", [source]);
   } else await hooks.event("validating", "checkpoint_reused", "Complete replay reused; skipping download");
+  if(pipeline) {
+    if(!archived) await client.query(`INSERT INTO replay_archive_jobs(match_id) VALUES($1)
+      ON CONFLICT(match_id) DO UPDATE SET status='pending',run_after=now(),updated_at=now()
+      WHERE replay_archive_jobs.status IN ('completed','failed')`,[job.match_id]);
+    if(job.intent === "analysis" && !parsed) await updateJob(client,job,
+      "status='pending',phase='awaiting_parse',phase_started_at=now(),run_after=now(),locked_at=NULL,reserved_bytes=0,error_code=NULL,error_message=NULL");
+    else await finishForeground(client,job,hooks,source);
+    return;
+  }
   if (job.intent === "analysis" && !parsed) {
     await hooks.phase("parsing");
     await hooks.event("parsing", "parse_started", "Parsing replay");
@@ -251,6 +262,23 @@ async function handle(client, job, hooks) {
   }
   await complete(client, job, hooks, source);
 }
+async function finishForeground(client,job,hooks,source) {
+  await hooks.event("completed","job_complete",`Intent ${job.intent}; source ${source}`);
+  await updateJob(client,job,`status=CASE WHEN $3='download' AND intent='analysis' THEN 'pending' ELSE 'completed' END,
+    phase=CASE WHEN $3='download' AND intent='analysis' THEN 'awaiting_parse' ELSE 'completed' END,
+    finished_at=CASE WHEN $3='download' AND intent='analysis' THEN NULL ELSE now() END,
+    run_after=now(),source=$4,error_code=NULL,error_message=NULL,locked_at=NULL,reserved_bytes=0,download_bps=0`,[job.intent,source]);
+}
+async function parsePrepared(client,job,hooks) {
+  const file=await inspectSpool(incoming,job.spool_name);
+  if(!await verifyCheckpoint(file,job.spool_sha256,job.total_bytes)) throw new ReplayError("replay_checkpoint_invalid","Prepared replay checksum did not match",{retryable:false});
+  const match=(await client.query("SELECT local_replay_data FROM dota_matches WHERE match_id=$1",[job.match_id])).rows[0];
+  if(!hasCompleteLocalReplay(match?.local_replay_data,Number(job.match_id))) {
+    await hooks.phase("parsing");await hooks.event("parsing","parse_started","Parsing replay");
+    await importReplay(job,file.path);await hooks.event("parsing","parse_complete","Ten players stored");
+  }
+  await finishForeground(client,job,hooks,job.source || "proxy");
+}
 async function failJob(client, job, hooks, error) {
       // Operator diagnostics without URLs, credentials, provider bodies or paths.
       const safeToken = value => typeof value === "string" && /^[A-Za-z0-9_.-]{1,80}$/.test(value) ? value : undefined;
@@ -262,7 +290,7 @@ async function failJob(client, job, hooks, error) {
       const decision = retryDecision(fault, job);
       await hooks.event(job.currentPhase || "queued", decision.code, safeError(fault));
       await updateJob(client, job, `status=$3::varchar(16),phase=$4::varchar(24),error_code=$5,error_message=$6,run_after=now()+$7*interval '1 second',
-        locked_at=NULL,download_bps=0,finished_at=CASE WHEN $3::varchar(16)='failed' THEN now() ELSE NULL END`,
+        locked_at=NULL,reserved_bytes=0,download_bps=0,finished_at=CASE WHEN $3::varchar(16)='failed' THEN now() ELSE NULL END`,
         [decision.status, decision.status === "failed" ? "failed" : "retry_wait", decision.code, safeError(fault), decision.delay]);
       log({ enabled: true, processed: 1, result: { matchId: Number(job.match_id), status: decision.status, code: decision.code, retryIn: decision.delay } });
 }
@@ -312,7 +340,7 @@ export function parserFailure(exitCode, stderr) {
     .replace(/((?:token|password|secret|api[_-]?key)\s*[=:]\s*)\S+/gi, "$1[redacted]").slice(-1600);
   return { code, detail, message: code.startsWith("replay_identity_") ? "Replay identity could not be verified" : code === "replay_parser_timeout" ? "Replay parser exceeded its time budget" : "Replay parser failed; consult the private worker log" };
 }
-export { enqueueOne, claim, hooksFor, complete, handle, updateJob, failJob };
+export { enqueueOne, claim, hooksFor, complete, handle, updateJob, failJob, parsePrepared, finishForeground, incoming, abort };
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   main().catch(error => { console.error(JSON.stringify({ code: "replay_worker_failed", message: safeError(error) })); process.exitCode = 1; });
 }

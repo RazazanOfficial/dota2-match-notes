@@ -64,6 +64,7 @@ export async function getServiceMonitor() {
   const rows = await getDb().execute(sql`
     SELECT source, status, count(*)::integer AS total FROM (
       SELECT 'replay' AS source, status::text FROM local_replay_jobs
+      UNION ALL SELECT 'replay_archive', status::text FROM replay_archive_jobs
       UNION ALL SELECT 'images', status::text FROM match_image_jobs
       UNION ALL SELECT 'opendota_parse', status::text FROM open_dota_parse_jobs
       UNION ALL SELECT 'sync', status::text FROM sync_jobs
@@ -72,6 +73,7 @@ export async function getServiceMonitor() {
   const latest = await getDb().execute(sql`
     SELECT source, status, detail, updated_at FROM (
       SELECT 'replay' AS source, status::text, coalesce(error_code, '') AS detail, updated_at FROM local_replay_jobs WHERE status = 'failed'
+      UNION ALL SELECT 'replay_archive', status::text, coalesce(error_code, ''), updated_at FROM replay_archive_jobs WHERE error_code IS NOT NULL
       UNION ALL SELECT 'images', status::text, coalesce(error_code, ''), updated_at FROM match_image_jobs WHERE status = 'failed'
       UNION ALL SELECT 'opendota_parse', status::text, coalesce(error_code, ''), updated_at FROM open_dota_parse_jobs WHERE status = 'failed'
       UNION ALL SELECT 'sync', status::text, coalesce(error_message, ''), coalesce(finished_at, created_at) FROM sync_jobs WHERE status = 'failed'

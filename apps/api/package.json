@@ -43,7 +43,7 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:check": "tsx scripts/check-database.ts",
     "db:studio": "drizzle-kit studio",
-    "worker:replay": "node scripts/replay-parser/run-queue.mjs",
+    "worker:replay": "node scripts/replay-parser/run-pipeline.mjs",
     "worker:monitor": "node scripts/service-monitor/collect.mjs",
     "parser:build": "bash scripts/replay-parser/build-parser.sh",
     "replay:import": "node scripts/replay-parser/import-replay.mjs",

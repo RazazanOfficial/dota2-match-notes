@@ -1,3 +1,4 @@
+import { localReplayFile } from "../../../../lib/replay/local-file";
 import { logFailure } from "../../../../http/log";
 import type { HttpRequest } from "../../../../http/protocol";
 import { Readable } from "node:stream";
@@ -14,6 +15,10 @@ export async function GET(request: HttpRequest, context: Context) {
   const id = z.coerce.number().int().positive().safe().safeParse((await context.params).matchId);
   if (!id.success) return Response.json({ ok: false, error: { message: "Match ID معتبر نیست" } }, { status: 400 });
   try {
+    const local=await localReplayFile(id.data,true);
+    if(local?.stream)return new Response(Readable.toWeb(local.stream) as ReadableStream,{headers:{
+      "Content-Type":"application/octet-stream","Content-Length":String(local.bytes),"Content-Disposition":`attachment; filename="${id.data}.dem"`,
+      "Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"}});
     const archived = await getReplayArchive(id.data);
     if (!archived) return Response.json({ ok: false, error: { message: "فایل در پارس‌پک پیدا نشد؛ درخواست دانلود را دوباره بزنید" } }, { status: 404 });
     const result = await replayObjectStream(archived.key);
