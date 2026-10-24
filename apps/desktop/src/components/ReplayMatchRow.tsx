@@ -1,7 +1,7 @@
 import { CircleHelp, Download, Film } from "lucide-react";
 import { heroById, heroImage } from "@/data/heroes";
 import { durationText, type HistoryMatch } from "../history";
-import { type Messages } from "../i18n";
+import { isPersian, type Messages } from "../i18n";
 import { playCommand, type ReplayFile } from "../replays";
 import { CopyValue } from "./Shared";
 import { ModeIcon, Position, Score } from "./Workspace";
@@ -24,8 +24,8 @@ export const replayInfoFromHistory = (row: HistoryMatch): ReplayMatchInfo => ({
 export function ReplayMatchHeader({ t, downloadable }: { t: Messages; downloadable: boolean }) {
     return <div className="replay-match-header" role="row">{[t.heroColumn, t.result, t.posColumn, "IMP", t.mode, t.duration, t.matchId, t.playCommand, ...(downloadable ? [t.download] : [])].map((label,index) => <span key={index} role="columnheader">{label}</span>)}</div>;
 }
-export function ReplayMatchRow({ matchId, info, file, t, onDownload, disabled }: {
-    matchId: string; info?: ReplayMatchInfo; file?: ReplayFile; t: Messages; onDownload?: () => void; disabled?: boolean;
+export function ReplayMatchRow({ matchId, info, file, t, onDownload, disabled, queued=false }: {
+    matchId: string; info?: ReplayMatchInfo; file?: ReplayFile; t: Messages; onDownload?: () => void; disabled?: boolean; queued?:boolean;
 }) {
     const hero = info?.heroId ? heroById(info.heroId) : null;
     return <article className={`replay-match-row ${onDownload ? "with-download" : ""}`} role="row" data-replay-match={matchId}>
@@ -37,6 +37,6 @@ export function ReplayMatchRow({ matchId, info, file, t, onDownload, disabled }:
         <span role="cell"><bdi>{info?.duration == null ? "—" : durationText(info.duration)}</bdi></span>
         <span role="cell"><CopyValue value={matchId} t={t}/></span>
         <span role="cell" className="replay-command-cell"><CopyValue value={playCommand(matchId)} label={t.playCommand} t={t} className="replay-command-copy"/>{file && <small><bdi>{(file.sizeBytes/1024/1024).toFixed(1)} MB · .dem</bdi></small>}</span>
-        {onDownload && <span role="cell"><button className="secondary-button" disabled={disabled} onClick={onDownload}><Download size={15}/>{t.download}</button></span>}
+        {onDownload && <span role="cell"><button className="secondary-button" disabled={disabled} onClick={onDownload}><Download size={15}/>{queued?(isPersian(t)?"در صف دانلود":"Queued"):t.download}</button></span>}
     </article>;
 }

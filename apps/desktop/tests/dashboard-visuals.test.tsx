@@ -73,10 +73,12 @@ describe("month and week explorer",()=>{
         fireEvent.click(within(weeks).getByRole("button",{name:/Week 1:/}));
         expect(periodRange("week",choose.mock.calls[0][0])).toEqual({from:"2026-08-22",to:"2026-08-28"});
     });
-    it("keeps an older selected month visible among the month shortcuts",()=>{
+    it("keeps an older selected month visible in the compact trigger and explorer",()=>{
         function Harness(){const [anchor,setAnchor]=useState("2025-06-01");return <PeriodControls period="month" setPeriod={vi.fn()} {...{anchor,setAnchor}} t={messages.en} registration="2024-01-01" maxDate="2026-10-02"/>;}
-        render(<Harness/>); const strip=screen.getByRole("group",{name:messages.en.chooseMonth});
-        expect(within(strip).getAllByRole("button").filter(button=>button.getAttribute("aria-pressed")==="true")).toHaveLength(1);
+        render(<Harness/>);const trigger=screen.getByRole("button",{name:messages.en.selectedDate});
+        expect(trigger.textContent).toContain("1404");fireEvent.click(trigger);
+        expect(screen.getByRole("dialog").textContent).toContain("1404");
+        expect(screen.queryByRole("group",{name:messages.en.chooseWeek})).toBeNull();
     });
 });
 describe("explicit performance and victory meter",()=>{

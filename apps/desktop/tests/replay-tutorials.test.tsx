@@ -45,11 +45,13 @@ describe("replay metadata and screenshot tutorials",()=>{
   const choose=vi.spyOn(replayNative,"chooseFolder").mockResolvedValue(null);render(<Replay t={t} live/>);
   const group=screen.getByRole("group",{name:t===messages.fa ? "آموزش‌های ریپلی" : "Replay tutorials"});
   expect(within(group).getAllByRole("button")).toHaveLength(2);
+  await waitFor(()=>expect(screen.getByRole("button",{name:t.dotaFolder}).getAttribute("aria-expanded")).toBe("false"));
+  fireEvent.click(screen.getByRole("button",{name:t.dotaFolder}));
   const folder=screen.getByRole("button",{name:t===messages.fa ? "بازکردن پوشه" : "Open folder"});
   expect(group.contains(folder)).toBe(false);expect(folder.className).toContain("primary-button");
   fireEvent.click(within(group).getAllByRole("button")[0]);expect(choose).not.toHaveBeenCalled();
   fireEvent.click(within(screen.getByRole("dialog")).getByRole("button",{name:t.close}));await act(async()=>{});
-  fireEvent.click(folder);await waitFor(()=>expect(choose).toHaveBeenCalledOnce());
+  await waitFor(()=>expect(screen.getByRole("button",{name:t===messages.fa ? "بازکردن پوشه" : "Open folder"})).toHaveProperty("disabled",false));fireEvent.click(screen.getByRole("button",{name:t===messages.fa ? "بازکردن پوشه" : "Open folder"}));await waitFor(()=>expect(choose).toHaveBeenCalledOnce());
  });
  it.each([messages.fa,messages.en])("shows real metadata and copies the exact command in search and downloaded tabs",async(t)=>{
   render(<Replay t={t} live/>);

@@ -231,3 +231,34 @@ describe("independent replay pipeline",()=>{
   await pipeline.archiveCheckpoint(client,await pipeline.claimArchive(client));expect(mocks.upload).toHaveBeenCalledOnce();expect(await row()).toMatchObject({status:"completed",archive_status:"active",spool_complete:true});
  });
 });
+
+describe("provider cooldown and automatic retry limits",()=>{
+ it("shares a provider rate limit across jobs without charging another network attempt",async()=>{
+  await client.query("UPDATE dota_matches SET raw_data=$1 WHERE match_id=2",[JSON.stringify({match_id:2,players:[]})]);
+  const job=await start(),hooks=worker.hooksFor(client,job);await hooks.metadataLimit(900);
+  let failure;try{await worker.handle(client,job,hooks,{pipeline:true});}catch(error){failure=error;}
+  expect(failure).toMatchObject({code:"replay_metadata_cooldown"});expect(failure.retryAfter).toBeGreaterThan(0);expect(mocks.refresh).not.toHaveBeenCalled();expect(mocks.metadata).not.toHaveBeenCalled();
+  await worker.failJob(client,job,hooks,failure);expect(await row()).toMatchObject({status:"pending",phase:"retry_wait",attempts:0});
+ });
+ it("stops an old 111-attempt request at recovery without touching parsed match data",async()=>{
+  await worker.enqueueOne(client,2,"analysis");await client.query("UPDATE local_replay_jobs SET attempts=111,error_code='replay_metadata_rate_limited' WHERE match_id=2");
+  const before=(await client.query("SELECT local_replay_data FROM dota_matches WHERE match_id=2")).rows[0].local_replay_data;
+  const pipeline=await import("../scripts/replay-parser/run-pipeline.mjs");await pipeline.recoverLeases(client);
+  expect(await row()).toMatchObject({status:"failed",phase:"failed",error_code:"replay_metadata_attempts_exhausted"});expect(await pipeline.claimLane(client,"prepare")).toBeUndefined();
+  expect((await client.query("SELECT local_replay_data FROM dota_matches WHERE match_id=2")).rows[0].local_replay_data).toEqual(before);
+ });
+ it("stops archive retries at their own budget while keeping completed analysis and spool",async()=>{
+  const job=await start("analysis");await worker.handle(client,job,worker.hooksFor(client,job),{pipeline:true});await client.query("UPDATE replay_archive_jobs SET attempts=8 WHERE match_id=2");
+  const pipeline=await import("../scripts/replay-parser/run-pipeline.mjs");await pipeline.recoverLeases(client);
+  expect((await client.query("SELECT status,error_code FROM replay_archive_jobs WHERE match_id=2")).rows[0]).toMatchObject({status:"failed",error_code:"replay_archive_attempts_exhausted"});
+  expect(await row()).toMatchObject({status:"completed",spool_complete:true});expect(await pipeline.claimArchive(client)).toBeUndefined();
+ });
+});
+
+it("allows an already prepared replay to reach Java after the network retry window expires",async()=>{
+ const job=await start("analysis");await worker.handle(client,job,worker.hooksFor(client,job),{pipeline:true});
+ // Existing parsed data makes the above complete; explicitly model a valid
+ // downloaded checkpoint awaiting the independent parser lane.
+ await client.query("UPDATE local_replay_jobs SET status='pending',phase='awaiting_parse',request_started_at=now()-interval '2 days',retry_deadline_at=now()-interval '1 day',run_after=now() WHERE match_id=2");
+ const pipeline=await import("../scripts/replay-parser/run-pipeline.mjs");await pipeline.recoverLeases(client);expect(await pipeline.claimLane(client,"parse")).toMatchObject({match_id:2,status:"processing",phase:"parsing"});
+});

@@ -7,6 +7,7 @@ import {handle,hooksFor,updateJob,failJob,parsePrepared,incoming,abort} from "./
 import {inspectSpool,verifyCheckpoint} from "./replay-spool.mjs";
 import {replayDescriptor} from "./replay-queue-utils.mjs";
 import {replayArchiveKey,uploadReplay,archivedReplayExists} from "./replay-archive.mjs";
+import {MAX_ARCHIVE_ATTEMPTS,MAX_METADATA_ATTEMPTS,MAX_NETWORK_ATTEMPTS} from "./replay-job-policy.mjs";
 const log=value=>console.log(JSON.stringify(value));
 const delay=ms=>new Promise(resolve=>{
   if(abort.signal.aborted)return resolve();
@@ -24,14 +25,21 @@ export async function recoverLeases(client) {
     WHERE status='processing' AND coalesce(heartbeat_at,locked_at)<now()-interval '2 minutes'`);
   await client.query(`UPDATE replay_archive_jobs SET status='pending',locked_at=NULL,run_after=now(),updated_at=now()
     WHERE status='processing' AND coalesce(heartbeat_at,locked_at)<now()-interval '2 minutes'`);
-  await client.query(`UPDATE local_replay_jobs SET status='failed',phase='failed',error_code='replay_retry_exhausted',finished_at=now(),reserved_bytes=0,updated_at=now()
-    WHERE status='pending' AND retry_deadline_at<=now()`);
+  await client.query(`UPDATE local_replay_jobs SET status='failed',phase='failed',
+    error_code=CASE WHEN error_code IN ('replay_metadata_pending','replay_metadata_rate_limited','replay_metadata_unavailable','replay_metadata_cooldown')
+      THEN 'replay_metadata_attempts_exhausted' ELSE 'replay_attempts_exhausted' END,
+    error_message='Automatic checks stopped; request again later',finished_at=now(),reserved_bytes=0,updated_at=now()
+    WHERE status='pending' AND phase<>'awaiting_parse' AND (
+      retry_deadline_at<=now() OR request_started_at<=now()-interval '1 day' OR
+      attempts>=CASE WHEN error_code IN ('replay_metadata_pending','replay_metadata_rate_limited','replay_metadata_unavailable','replay_metadata_cooldown') THEN ${MAX_METADATA_ATTEMPTS} ELSE ${MAX_NETWORK_ATTEMPTS} END)`);
+  await client.query(`UPDATE replay_archive_jobs SET status='failed',error_code='replay_archive_attempts_exhausted',locked_at=NULL,updated_at=now()
+    WHERE status='pending' AND attempts>=${MAX_ARCHIVE_ATTEMPTS}`);
 }
 export async function claimLane(client,lane) {
   const parse=lane==="parse";
   const result=await client.query(`UPDATE local_replay_jobs SET status='processing',phase=$1,phase_started_at=now(),locked_at=now(),heartbeat_at=now(),
     dispatched_at=now(),updated_at=now(),attempts=least(attempts+${parse?0:1},32767)
-    WHERE match_id=(SELECT j.match_id FROM local_replay_jobs j WHERE j.status='pending' AND j.run_after<=now() AND j.retry_deadline_at>now()
+    WHERE match_id=(SELECT j.match_id FROM local_replay_jobs j WHERE j.status='pending' AND j.run_after<=now() ${parse?"":"AND j.retry_deadline_at>now()"}
       AND ${parse?"j.phase='awaiting_parse'":"j.phase<>'awaiting_parse'"}
       ORDER BY (SELECT max(p.dispatched_at) FROM local_replay_jobs p WHERE p.requested_by IS NOT DISTINCT FROM j.requested_by) NULLS FIRST,
       j.request_started_at,j.match_id LIMIT 1 FOR UPDATE OF j SKIP LOCKED) RETURNING *,locked_at::text AS lease`,[parse?"parsing":"checking_archive"]);
@@ -75,12 +83,13 @@ export async function archiveCheckpoint(client,task) {
     await client.query("DELETE FROM replay_transport_routes WHERE route_key='archive-storage'");log({code:"archive_complete",matchId:Number(task.match_id)});
   }catch(error){
     const token=value=>typeof value==="string"&&/^[A-Za-z0-9_.-]{1,64}$/.test(value)?value:"archive_transport_failed";
-    const code=token(error.code||error.name),terminal=["archive_checkpoint_invalid","archive_key_invalid"].includes(error.message);
+    const exhausted=Number(task.attempts)>=MAX_ARCHIVE_ATTEMPTS;
+    const code=exhausted?"replay_archive_attempts_exhausted":token(error.code||error.name),terminal=exhausted||["archive_checkpoint_invalid","archive_key_invalid"].includes(error.message);
     finished=true;await update("status=$3,locked_at=NULL,error_code=$4,run_after=now()+interval '10 minutes'",[terminal?"failed":"pending",code]);
     if(!terminal)await client.query(`INSERT INTO replay_transport_routes(route_key,endpoint,address,failures,open_until,last_error_code)
       VALUES('archive-storage','archive','storage',1,now()+interval '10 minutes',$1) ON CONFLICT(route_key) DO UPDATE SET
       failures=replay_transport_routes.failures+1,open_until=now()+interval '10 minutes',last_error_code=$1,updated_at=now()`,[code]);
-    log({code:"archive_retry_scheduled",matchId:Number(task.match_id),transportCode:code,stage:token(error.archiveStage),httpStatus:error.$metadata?.httpStatusCode,retrySeconds:600});
+    log({code:terminal?"archive_stopped":"archive_retry_scheduled",matchId:Number(task.match_id),transportCode:code,stage:token(error.archiveStage),httpStatus:error.$metadata?.httpStatusCode,retrySeconds:600});
   }finally{clearInterval(timer);}
 }
 async function foreground(client,lane) {

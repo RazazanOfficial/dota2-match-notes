@@ -8,6 +8,6 @@ export const HealthSchema = z.object({
 export type HealthResponse = z.infer<typeof HealthSchema>;
 export const ApiErrorSchema = z.object({ ok: z.literal(false), error: z.string() });
 export type Language = "en" | "fa";
-export type ThemeName = "obsidian" | "radiant" | "nebula";
+export type ThemeName = "obsidian" | "radiant" | "nebula" | "dire" | "glacier" | "abyss";
 export type Appearance = "light" | "dark" | "system";
 export interface Preferences { language: Language; theme: ThemeName; appearance: Appearance }

@@ -26,7 +26,8 @@
     "mobile:dev": "npm run start -w @dota-notes/mobile",
     "mobile:android": "npm run android -w @dota-notes/mobile",
     "mobile:ios": "npm run ios -w @dota-notes/mobile",
-    "desktop:installer": "npm run tauri -w @dota-notes/desktop -- build"
+    "desktop:installer": "npm run tauri -w @dota-notes/desktop -- build",
+    "test:desktop": "vitest run apps/desktop/tests packages/design-tokens/tests"
   },
   "devDependencies": {
     "@types/node": "24.10.1",

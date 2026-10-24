@@ -1,6 +1,6 @@
 import type { Appearance, Preferences, ThemeName } from "@dota-notes/contracts";
 export type { Preferences, ThemeName, Appearance } from "@dota-notes/contracts";
-export const themeNames = ["obsidian", "radiant", "nebula"] as const;
+export const themeNames = ["obsidian", "radiant", "nebula", "dire", "glacier", "abyss"] as const;
 export const appearances = ["light", "dark", "system"] as const;
 export const defaultPreferences: Preferences = { language: "en", theme: "obsidian", appearance: "system" };
 export const preferenceKey = "dota-notes.preferences.v1";
@@ -21,6 +21,18 @@ export function resolveAppearance(appearance: Appearance, systemDark: boolean): 
 }
 export interface Palette { bg: string; panel: string; panel2: string; text: string; muted: string; line: string; accent: string; accentText: string; good: string; bad: string }
 export const palettes: Record<ThemeName, Record<"light" | "dark", Palette>> = {
+  dire: {
+    dark: {bg:"#130f12",panel:"#1e171c",panel2:"#2b2027",text:"#f9eff1",muted:"#bca3af",line:"#443039",accent:"#f18b83",accentText:"#2a1015",good:"#7bd6b3",bad:"#ff7f96"},
+    light: {bg:"#f9f2f1",panel:"#fffdfc",panel2:"#f3e6e4",text:"#3b2529",muted:"#785c62",line:"#e5d0ce",accent:"#a1343c",accentText:"#ffffff",good:"#17634a",bad:"#a42a43"},
+  },
+  glacier: {
+    dark: {bg:"#0e151e",panel:"#162130",panel2:"#1e2e41",text:"#edf5ff",muted:"#a0b5cd",line:"#30465f",accent:"#8fc7fa",accentText:"#10283d",good:"#7ddab8",bad:"#ff94a8"},
+    light: {bg:"#f0f5fb",panel:"#ffffff",panel2:"#e6eef8",text:"#1e314a",muted:"#546b88",line:"#ccdaeb",accent:"#245e9f",accentText:"#ffffff",good:"#196648",bad:"#a22d48"},
+  },
+  abyss: {
+    dark: {bg:"#0c171a",panel:"#132328",panel2:"#1b333b",text:"#e7f5f8",muted:"#98b7c0",line:"#2b4853",accent:"#67d4dc",accentText:"#092a30",good:"#9ed5a0",bad:"#f69ca9"},
+    light: {bg:"#eef7f8",panel:"#ffffff",panel2:"#e1eff2",text:"#203c45",muted:"#526e77",line:"#c6dfe3",accent:"#096b7b",accentText:"#ffffff",good:"#196648",bad:"#a22d48"},
+  },
   obsidian: {
     dark: { bg: "#111317", panel: "#191c22", panel2: "#22262f", text: "#edf0f6", muted: "#a2aab9", line: "#333a46", accent: "#d9b774", accentText: "#19150d", good: "#78d8ae", bad: "#f098a6" },
     light: { bg: "#f2f3f5", panel: "#ffffff", panel2: "#edf0f4", text: "#202735", muted: "#626d80", line: "#d8dee7", accent: "#855c20", accentText: "#ffffff", good: "#196648", bad: "#a22d48" },

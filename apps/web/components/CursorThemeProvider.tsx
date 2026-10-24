@@ -48,12 +48,16 @@ export default function CursorThemeProvider({ children, showSettings = true }: {
   }, [effect, pack, ready]);
 
   useEffect(() => {
+    if (effect === "none") { effectRef.current?.classList.remove("is-active"); return; }
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    let frame = 0, pointer: { clientX: number; clientY: number; buttons: number } | null = null;
     const hideAura = () => {
       effectRef.current?.classList.remove("is-active");
+      cancelAnimationFrame(frame); frame = 0; pointer = null;
     };
 
-    const moveAura = (event: PointerEvent) => {
-      if (event.pointerType === "touch") return;
+    const drawAura = () => {
+      frame = 0; const event = pointer; if (!event || document.visibilityState === "hidden" || reduced?.matches || document.documentElement.dataset.motion === "reduced") return;
       document.documentElement.style.setProperty("--cursor-x", `${event.clientX}px`);
       document.documentElement.style.setProperty("--cursor-y", `${event.clientY}px`);
       const isOverPageContent =
@@ -69,6 +73,12 @@ export default function CursorThemeProvider({ children, showSettings = true }: {
       }
     };
 
+    const moveAura = (event: PointerEvent) => {
+      if (event.pointerType === "touch" || reduced?.matches || document.documentElement.dataset.motion === "reduced") return;
+      pointer = { clientX: event.clientX, clientY: event.clientY, buttons: event.buttons };
+      if (!frame) frame = requestAnimationFrame(drawAura);
+    };
+
     const hideWhenPageIsBackgrounded = () => {
       if (document.visibilityState !== "visible") hideAura();
     };
@@ -82,6 +92,7 @@ export default function CursorThemeProvider({ children, showSettings = true }: {
     document.documentElement.addEventListener("mouseleave", hideAura);
     document.addEventListener("visibilitychange", hideWhenPageIsBackgrounded);
     return () => {
+      cancelAnimationFrame(frame);
       window.removeEventListener("pointermove", moveAura);
       window.removeEventListener("pointerdown", hideAura, true);
       window.removeEventListener("pointercancel", hideAura);
@@ -91,7 +102,7 @@ export default function CursorThemeProvider({ children, showSettings = true }: {
       document.documentElement.removeEventListener("mouseleave", hideAura);
       document.removeEventListener("visibilitychange", hideWhenPageIsBackgrounded);
     };
-  }, []);
+  }, [effect]);
 
   return (
     <CursorContext.Provider value={{pack, effect, setPack, setEffect}}>
