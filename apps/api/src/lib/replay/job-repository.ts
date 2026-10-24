@@ -90,7 +90,7 @@ export async function requestReplayByDotaId(matchId: number, intent: ReplayInten
       !hasArchive && !hasLocal) return "expired" as const;
   const now = new Date();
   const [queued] = await db.insert(localReplayJobs).values({
-    matchId, intent, requestedBy:userId || null, runAfter: now, retryDeadlineAt: new Date(now.getTime() + 20 * 86_400_000), updatedAt: now,
+    matchId, intent, requestedBy:userId || null, runAfter: now, retryDeadlineAt: new Date(now.getTime() + 1 * 86_400_000), updatedAt: now,
   }).onConflictDoUpdate({
     target: localReplayJobs.matchId,
     set: {
@@ -101,7 +101,7 @@ export async function requestReplayByDotaId(matchId: number, intent: ReplayInten
       phase: sql`CASE WHEN ${localReplayJobs.status} = 'processing' THEN ${localReplayJobs.phase} ELSE 'queued' END`,
       attempts: sql`CASE WHEN ${localReplayJobs.status} IN ('pending','processing') THEN ${localReplayJobs.attempts} ELSE 0 END`,
       requestStartedAt: sql`CASE WHEN ${localReplayJobs.status} IN ('pending','processing') THEN ${localReplayJobs.requestStartedAt} ELSE ${now} END`,
-      retryDeadlineAt: sql`CASE WHEN ${localReplayJobs.status} IN ('pending','processing') THEN ${localReplayJobs.retryDeadlineAt} ELSE now() + interval '20 days' END`,
+      retryDeadlineAt: sql`CASE WHEN ${localReplayJobs.status} IN ('pending','processing') THEN ${localReplayJobs.retryDeadlineAt} ELSE now() + interval '1 day' END`,
       runAfter: sql`CASE WHEN ${localReplayJobs.status} IN ('pending','processing') THEN ${localReplayJobs.runAfter} ELSE ${now} END`,
       lockedAt: sql`CASE WHEN ${localReplayJobs.status} = 'processing' THEN ${localReplayJobs.lockedAt} ELSE NULL END`,
       finishedAt: null, errorCode: null, errorMessage: null, updatedAt: now,

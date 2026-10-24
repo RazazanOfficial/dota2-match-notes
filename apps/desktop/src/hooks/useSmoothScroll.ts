@@ -1,37 +1,26 @@
-import { useEffect } from "react";
-
-// Smooth the outer workspace only; dialogs, editable controls, nested scroll
-// containers, touch gestures and browser zoom keep their native behavior.
-export function useSmoothScroll() {
-    useEffect(() => {
-        let frame = 0, target = 0, previousTime = 0;
-        const stop = () => { if (frame) cancelAnimationFrame(frame); frame = 0; };
-        const animate = (time: number) => {
-            const step = Math.min(40, Math.max(1, time - previousTime)); previousTime = time;
-            const top = window.scrollY + (target - window.scrollY) * (1 - Math.exp(-step / 65));
-            if (Math.abs(target - top) < .8) { window.scrollTo({ top: target, behavior: "instant" }); frame = 0; return; }
-            window.scrollTo({ top, behavior: "instant" }); frame = requestAnimationFrame(animate);
-        };
-        const wheel = (event: WheelEvent) => {
-            if (event.defaultPrevented || event.ctrlKey || event.shiftKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
-            if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { stop(); return; }
-            let element = event.target instanceof Element ? event.target : null;
-            if (element?.closest('[role="dialog"],input,textarea,select,[contenteditable="true"]')) return;
-            while (element && element !== document.documentElement && element !== document.body) {
-                if (element instanceof HTMLElement && element.scrollHeight > element.clientHeight && /auto|scroll/.test(getComputedStyle(element).overflowY)) return;
-                element = element.parentElement;
-            }
-            const max = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight) - window.innerHeight;
-            if (max <= 0 || !event.deltaY) return;
-            const delta = event.deltaY * (event.deltaMode === 1 ? 18 : event.deltaMode === 2 ? window.innerHeight : 1);
-            const next = Math.max(0, Math.min(max, (frame ? target : window.scrollY) + delta));
-            if (next === window.scrollY && !frame) return;
-            event.preventDefault(); target = next;
-            if (!frame) { previousTime = performance.now(); frame = requestAnimationFrame(animate); }
-        };
-        const keyboard = (event: KeyboardEvent) => { if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " ", "Escape"].includes(event.key)) stop(); };
-        window.addEventListener("wheel", wheel, { passive: false });
-        window.addEventListener("pointerdown", stop); window.addEventListener("keydown", keyboard);
-        return () => { stop(); window.removeEventListener("wheel", wheel); window.removeEventListener("pointerdown", stop); window.removeEventListener("keydown", keyboard); };
-    }, []);
+import {useEffect} from "react";
+import {useExperience} from "../experience";
+// Native scrolling is the default. Lenis replaces the old wheel interceptor
+// only when explicitly enabled. Dialogs and nested scrolling stay native.
+export function useSmoothScroll(){
+  const settings=useExperience();
+  useEffect(()=>{
+    const query=window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    if(!settings.smoothScroll||settings.motion==="reduced"||query?.matches)return;
+    let cancelled=false,frame=0,lenis:import("lenis").default|null=null;
+    const stop=()=>{cancelAnimationFrame(frame);frame=0;};
+    const animate=(time:number)=>{frame=0;if(cancelled||!lenis||document.visibilityState==="hidden")return;lenis.raf(time);if(lenis.isScrolling)frame=requestAnimationFrame(animate);};
+    const wake=()=>{if(!frame&&document.visibilityState!=="hidden")frame=requestAnimationFrame(animate);};
+    const visibility=()=>{if(document.visibilityState==="hidden"){stop();lenis?.stop();}else lenis?.start();};
+    const reduce=()=>{if(query?.matches){stop();lenis?.stop();}else lenis?.start();};
+    void import("lenis").then(({default:Lenis})=>{
+      if(cancelled)return;
+      lenis=new Lenis({autoRaf:false,duration:.45,smoothWheel:true,syncTouch:false,allowNestedScroll:true,
+        prevent:node=>!!node.closest('[role="dialog"],[data-native-scroll],input,textarea,select,[contenteditable="true"]')});
+      lenis.on("virtual-scroll",wake);lenis.on("scroll",wake);
+      window.addEventListener("wheel",wake,{passive:true});document.addEventListener("visibilitychange",visibility);query?.addEventListener("change",reduce);
+      visibility();
+    });
+    return()=>{cancelled=true;stop();lenis?.destroy();window.removeEventListener("wheel",wake);document.removeEventListener("visibilitychange",visibility);query?.removeEventListener("change",reduce);};
+  },[settings.smoothScroll,settings.motion]);
 }

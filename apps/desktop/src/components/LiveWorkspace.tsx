@@ -11,6 +11,7 @@ import { ErrorNotice } from "./ErrorNotice";
 import { profileRegistrationDate } from "./Shared";
 import { MatchTable, Modal, ModeIcon, type ShortcutPage } from "./Workspace";
 
+import { HistoryFilters } from "./HistoryFilters";
 import { DashboardHeader, PeriodControls } from "./DashboardControls";
 import { HeroPositionDistribution } from "./HeroPositionDistribution";
 import { Stats } from "./DashboardStats";
@@ -71,8 +72,10 @@ export function useRows(query: HistoryQuery, collectAll = false) {
     useEffect(()=>{
         const controller=new AbortController();
         let timer=0, inFlight=false, refreshAgain=false;
+        let lastRows="";
         const load=async()=>{
             if (controller.signal.aborted) return;
+            if(document.visibilityState==="hidden"){window.clearTimeout(timer);timer=window.setTimeout(load,30_000);return;}
             if (inFlight) { refreshAgain=true; return; }
             window.clearTimeout(timer); inFlight=true; setRefreshing(true);
             let delay=30_000;
@@ -92,7 +95,8 @@ export function useRows(query: HistoryQuery, collectAll = false) {
                     }
                 }
                 if (controller.signal.aborted) return;
-                cachedWrite(key,result); setState({key,data:result,error:null});
+                const fingerprint=JSON.stringify(result,(name,value)=>name==="heartbeatAt"?undefined:value);
+                if(fingerprint!==lastRows){lastRows=fingerprint;cachedWrite(key,result);setState({key,data:result,error:null});}
                 const running=result.rows.some(row=>["pending","queued","processing"].includes(row.analysisPreparation?.replay || row.analysisStatus || ""));
                 delay=result.summaryPending ? 2_000 : running ? 5_000 : 30_000;
             } catch(failure) {
@@ -137,18 +141,18 @@ export function LiveMatches({ session,t,onOpen }: {session:Session;t:Messages;on
     const {data,error}=useRows({period,anchor,query,mode,position,hero,page:1,pageSize:100},true);
     const registration=profileRegistrationDate(session);
     const filter=(hero:string,position:string)=>{setHero(hero);setPosition(position);};
-    return <div className="screen-stack"><div className="page-heading"><h1>{t.matches}</h1><button className="primary-button" onClick={()=>setFetchOpen(true)}><Download size={16}/>{t.fetchMatches}</button></div><div className="history-toolbar"><PeriodControls {...{period,setPeriod,anchor,setAnchor,t,registration}} maxDate={today()}/><div className="filters"><label className="search-box"><Search size={16}/><input aria-label={t.search} placeholder={`${t.matchId} / Hero`} value={query} onChange={event=>setQuery(event.target.value)}/></label><select aria-label={t.mode} value={mode} onChange={event=>setMode(event.target.value)}><option value="all">{t.allModes}</option>{["Ranked","Turbo","All Pick","Captains Mode","Captains Draft","Single Draft","All Random","Random Draft","Ability Draft","Other"].map(value=><option key={value} value={value}>{modeLabel(value,t)}</option>)}</select><select aria-label={t.position} value={position} onChange={event=>setPosition(event.target.value)}><option value="all">{t.allPositions}</option><option value="0">{t.unknownPosition}</option>{roles.slice(1).map((label,index)=><option key={label} value={index+1}>{label}</option>)}</select></div></div>{data && <Stats summary={data.summary} t={t} hero={hero} position={position} filtered={Boolean(query) || mode !== "all"}/>}<SyncNotice job={syncJob} t={t}/><div className="history-grid"><section className="panel match-list"><div className="section-heading"><h2>{t.matches}</h2>{data && <small>{data.total} {t.matches}</small>}</div>{!!error && <ErrorNotice error={error} t={t}/>} {!data && !error && <LoadingView t={t}/>} {data && <><MatchTable matches={data.rows} t={t} onOpen={onOpen} groupDays live/>{!data.total && <p className="empty-message">{t.noData}</p>}</>}</section><HeroPositionDistribution summary={data?.summary || null} {...{t,period,position,hero}} onFilter={filter} onReset={()=>{setHero("all");setPosition("all");}}/></div>{fetchOpen && <LiveFetchDialog session={session} t={t} onClose={()=>setFetchOpen(false)}/>}</div>;
+    return <div className="screen-stack"><DashboardHeader session={session} heading={t.matches} {...{period,setPeriod,anchor,setAnchor,t}} registration={registration} maxDate={today()} onFetch={()=>setFetchOpen(true)}><HistoryFilters {...{t,mode,setMode,position,setPosition,query,setQuery}}/></DashboardHeader>{data && <Stats summary={data.summary} t={t} hero={hero} position={position} filtered={Boolean(query) || mode !== "all"}/>}<SyncNotice job={syncJob} t={t}/><div className="history-grid"><section className="panel match-list"><div className="section-heading"><h2>{t.matches}</h2>{data && <small>{data.total} {t.matches}</small>}</div>{!!error && <ErrorNotice error={error} t={t}/>} {!data && !error && <LoadingView t={t}/>} {data && <><MatchTable matches={data.rows} t={t} onOpen={onOpen} groupDays live/>{!data.total && <p className="empty-message">{t.noData}</p>}</>}</section><HeroPositionDistribution summary={data?.summary || null} {...{t,period,position,hero}} onFilter={filter} onReset={()=>{setHero("all");setPosition("all");}}/></div>{fetchOpen && <LiveFetchDialog session={session} t={t} onClose={()=>setFetchOpen(false)}/>}</div>;
 }
 export function LiveDashboard({session,t,onOpen,onNavigate}: {session:Session;t:Messages;onOpen:(match:HistoryMatch)=>void;onNavigate:(page:ShortcutPage)=>void}) {
     const syncJob=useSyncFeed();
     const [period,setPeriod]=useHistoryPeriod(session);
     const [anchor,setAnchor]=useState(today()),[fetchOpen,setFetchOpen]=useState(false);
-    const [page,setPage]=useState(1),[visible,setVisible]=useState(10),[hero,setHero]=useState("all"),[position,setPosition]=useState("all");
-    const {data,error,refreshing}=useRows({period,anchor,page:1,offset:(page-1)*30,query:"",mode:"all",position,hero,pageSize:visible});
-    useEffect(()=>{setPage(1);setVisible(10);},[period,anchor,hero,position]);
+    const [page,setPage]=useState(1),[visible,setVisible]=useState(10),[hero,setHero]=useState("all"),[position,setPosition]=useState("all"),[mode,setMode]=useState("all");
+    const {data,error,refreshing}=useRows({period,anchor,page:1,offset:(page-1)*30,query:"",mode,position,hero,pageSize:visible});
+    useEffect(()=>{setPage(1);setVisible(10);},[period,anchor,hero,position,mode]);
 
     const filter=(hero:string,position:string)=>{setHero(hero);setPosition(position);};
-    return <div className="screen-stack"><DashboardHeader session={session} {...{period,setPeriod,anchor,setAnchor,t}} maxDate={today()} onFetch={()=>setFetchOpen(true)}/>{data && <Stats summary={data.summary} t={t} hero={hero} position={position}/>}<SyncNotice job={syncJob} t={t}/><div className="history-grid"><section className="panel match-list"><div className="section-heading"><h2>{t.recent}</h2><button className="text-button" onClick={()=>onNavigate("matches")}>{t.matches}<ArrowUpRight size={15}/></button></div>{!!error && <ErrorNotice error={error} t={t}/>} {data ? <><MatchTable matches={data.rows.slice(0,visible)} t={t} onOpen={onOpen} groupDays live/>{!data.total && <p className="empty-message">{t.noData}</p>}{visible < Math.min(30,data.total-(page-1)*30) && <button className="load-more secondary-button" disabled={refreshing} onClick={()=>setVisible(count=>Math.min(30,count+10))}>{t.loadMore}</button>}{(visible >= 30 || page>1) && data.total>30 && <div className="pagination"><button disabled={page<=1} onClick={()=>{setPage(value=>value-1);setVisible(10);}}>{t.previous}</button><span>{t.page} {page} {t.of} {Math.ceil(data.total/30)}</span><button disabled={page*30>=data.total} onClick={()=>{setPage(value=>value+1);setVisible(10);}}>{t.next}</button></div>}</> : !error && <LoadingView t={t}/>}</section><HeroPositionDistribution summary={data?.summary || null} {...{t,period,hero,position}} onFilter={filter} onReset={()=>{setHero("all");setPosition("all");}}/></div>{fetchOpen && <LiveFetchDialog session={session} t={t} onClose={()=>setFetchOpen(false)}/>}</div>;
+    return <div className="screen-stack"><DashboardHeader session={session} {...{period,setPeriod,anchor,setAnchor,t}} maxDate={today()} onFetch={()=>setFetchOpen(true)}><HistoryFilters {...{t,mode,setMode,position,setPosition}}/></DashboardHeader>{data && <Stats summary={data.summary} t={t} hero={hero} position={position} filtered={mode!=="all"}/>}<SyncNotice job={syncJob} t={t}/><div className="history-grid"><section className="panel match-list"><div className="section-heading"><h2>{t.recent}</h2><button className="text-button" onClick={()=>onNavigate("matches")}>{t.matches}<ArrowUpRight size={15}/></button></div>{!!error && <ErrorNotice error={error} t={t}/>} {data ? <><MatchTable matches={data.rows.slice(0,visible)} t={t} onOpen={onOpen} groupDays live/>{!data.total && <p className="empty-message">{t.noData}</p>}{visible < Math.min(30,data.total-(page-1)*30) && <button className="load-more secondary-button" disabled={refreshing} onClick={()=>setVisible(count=>Math.min(30,count+10))}>{t.loadMore}</button>}{(visible >= 30 || page>1) && data.total>30 && <div className="pagination"><button disabled={page<=1} onClick={()=>{setPage(value=>value-1);setVisible(10);}}>{t.previous}</button><span>{t.page} {page} {t.of} {Math.ceil(data.total/30)}</span><button disabled={page*30>=data.total} onClick={()=>{setPage(value=>value+1);setVisible(10);}}>{t.next}</button></div>}</> : !error && <LoadingView t={t}/>}</section><HeroPositionDistribution summary={data?.summary || null} {...{t,period,hero,position}} onFilter={filter} onReset={()=>{setHero("all");setPosition("all");}}/></div>{fetchOpen && <LiveFetchDialog session={session} t={t} onClose={()=>setFetchOpen(false)}/>}</div>;
 }
 
 function LiveFetchDialog({ session, t, onClose }: { session: Session; t: Messages; onClose: () => void }) {

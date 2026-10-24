@@ -63,7 +63,11 @@ describe("replay resilient transport", () => {
   it("keeps a resumable partial checkpoint after an interrupted body", async () => {
     const path = await target(), recording = recorder();
     await expect(downloadResilient(descriptor, path, {}, config, recording.hooks, { resolver, maxAttempts: 1, request: async () => ({
-      ...response(200), body: Readable.from((async function* () { yield payload.subarray(0,40); await new Promise(resolve => setTimeout(resolve,10)); throw new Error("socket reset"); })()),
+      ...response(200), body: Readable.from((async function* () { yield payload.subarray(0,40);
+        // Interrupt after the first chunk reaches disk, not after an arbitrary
+        // 10 ms that races filesystem scheduling in parallel test runs.
+        const deadline=Date.now()+2000;while((await readFile(path).catch(()=>Buffer.alloc(0))).length<40&&Date.now()<deadline)await new Promise(resolve=>setTimeout(resolve,5));
+        throw new Error("socket reset"); })()),
     })})).rejects.toMatchObject({ code: "replay_body_interrupted" });
     expect((await readFile(path)).length).toBe(40);
     expect(recording.checkpoints[0]).toMatchObject({ etag: '"stable-file"', total: payload.length, complete:false });

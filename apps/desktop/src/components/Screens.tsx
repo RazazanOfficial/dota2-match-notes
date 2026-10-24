@@ -1,2 +1,4 @@
 // Compatibility exports for the redesigned workspace screens.
-export { Matches, Replay, ComingSoon } from "./Workspace";
+export { Matches, ComingSoon } from "./Workspace";
+
+export {Replay} from "./Replay";

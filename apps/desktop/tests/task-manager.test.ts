@@ -35,3 +35,19 @@ describe("application-wide tasks",()=>{
   await vi.advanceTimersByTimeAsync(1000);progress({matchId:"9057632410",bytes:1024,totalBytes:4096});expect(manager.snapshot().downloads[0]).toMatchObject({bytes:1024,totalBytes:4096,speed:1024});
  });
 });
+
+describe("task update budgets",()=>{
+ it("does not publish heartbeat-only server changes",async()=>{
+  const pending=task("pending");mocks.api.mockResolvedValue({tasks:[pending]});const listener=vi.fn();manager.subscribe(listener);manager.start();await flush();listener.mockClear();
+  mocks.api.mockResolvedValue({tasks:[{...pending,progress:{...pending.progress,heartbeatAt:"2026-10-24T12:00:00Z"}}]});
+  await vi.advanceTimersByTimeAsync(3000);await flush();expect(listener).not.toHaveBeenCalled();
+ });
+ it("keeps transfer progress in memory instead of writing storage for every event",async()=>{
+  let progress!:(value:any)=>void;mocks.progress.mockImplementation(async callback=>{progress=callback;return vi.fn();});mocks.download.mockReturnValue(new Promise(()=>{}));manager.start();await flush();await manager.download("9057632410");await flush();
+  const storage=vi.spyOn(Storage.prototype,"setItem");storage.mockClear();await vi.advanceTimersByTimeAsync(1000);progress({matchId:"9057632410",bytes:1024,totalBytes:4096,stage:"downloading"});await vi.advanceTimersByTimeAsync(200);progress({matchId:"9057632410",bytes:2048,totalBytes:4096,stage:"downloading"});
+  expect(manager.snapshot().downloads[0].bytes).toBe(2048);expect(storage).not.toHaveBeenCalled();storage.mockRestore();
+ });
+ it("pauses the notification deadline while hovered and supports immediate dismissal",async()=>{
+  mocks.download.mockResolvedValue({});manager.start();await flush();await manager.download("9057632410");await flush();expect(manager.snapshot().toast).not.toBeNull();await vi.advanceTimersByTimeAsync(2000);manager.pauseToast(true);await vi.advanceTimersByTimeAsync(10000);expect(manager.snapshot().toast).not.toBeNull();manager.pauseToast(false);await vi.advanceTimersByTimeAsync(4999);expect(manager.snapshot().toast).not.toBeNull();await vi.advanceTimersByTimeAsync(1);expect(manager.snapshot().toast).toBeNull();
+ });
+});

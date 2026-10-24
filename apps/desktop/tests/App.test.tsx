@@ -44,10 +44,11 @@ describe("redesigned desktop", () => {
         const id = view.container.querySelector('[data-match-row]')!.getAttribute('data-match-row');
         fireEvent.click(within(view.container.querySelector(".pagination") as HTMLElement).getByRole("button", { name: "Next", exact: true }));
         await waitFor(() => expect(view.container.querySelector('[data-match-row]')!.getAttribute('data-match-row')).not.toBe(id));
-        fireEvent.change(screen.getByLabelText("Game mode"), { target: { value: "Turbo" } });
+        fireEvent.click(screen.getByRole("button", { name: "Game mode", exact:true }));
+        fireEvent.click(within(screen.getByRole("dialog",{name:"Game mode"})).getByRole("button",{name:"Turbo",exact:true}));
         await waitFor(() => expect(view.container.querySelectorAll('[data-match-row]')).toHaveLength(5));
         expect(within(view.container.querySelector(".pagination") as HTMLElement).getByRole("button", { name: "Next", exact: true })).toHaveProperty("disabled", true);
-        fireEvent.click(within(view.container.querySelector(".history-toolbar") as HTMLElement).getByRole("button", { name: "Monthly", exact: true }));
+        fireEvent.click(within(view.container.querySelector(".history-command-bar") as HTMLElement).getByRole("button", { name: "Monthly", exact: true }));
         await waitFor(() => expect(view.container.querySelectorAll('[data-match-row]')).toHaveLength(7));
     });
     it("keeps independent cooldowns across reopening and leaves untouched scopes ready", async () => {
@@ -87,8 +88,10 @@ describe("original match analysis retained", () => {
         expect(view.container.querySelector(".selected-metrics, .summary-focus")).toBeNull();
         fireEvent.click(screen.getByRole('tab', { name: 'Full analysis' }));
         expect(await screen.findByText('Benchmark Spectrum', {}, { timeout: 5000 })).toBeTruthy();
+        expect(screen.getAllByText('Performance Score').length).toBeGreaterThan(0);
+        fireEvent.click(screen.getByRole('button', {name: 'Lane Efficiency', exact:true}));
         expect(view.container.querySelectorAll('[data-lane-part]')).toHaveLength(8);
-        expect(screen.getByText('Performance Score')).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', {name: 'Benchmark Spectrum', exact:true}));
         expect(view.container.querySelectorAll('.benchmark-cell')).toHaveLength(12);
         fireEvent.click(screen.getByRole('button', { name: /Progression/ }));
         expect(view.container.querySelector('.line-chart')).toBeTruthy();
@@ -107,10 +110,10 @@ describe("original match analysis retained", () => {
 describe("compact dashboard and shared chart", () => {
     it("uses the Steam avatar and keeps shortcuts out of the dashboard", () => {
         const view = render(<App session={{ mode: "player", username: "player", displayName: "Player", avatarUrl: "https://avatars.steamstatic.com/player.jpg", registeredDate: "2026-09-15" }}/>);
-        expect(view.container.querySelector(".profile-banner .avatar img")).toHaveProperty("src", "https://avatars.steamstatic.com/player.jpg");
+        expect(view.container.querySelector(".workspace-header .avatar img")).toHaveProperty("src", "https://avatars.steamstatic.com/player.jpg");
         expect(view.container.querySelector(".win-panel, .activity-panel")).toBeNull();
         expect(view.container.querySelector(".shortcut-grid")).toBeNull();
-        expect(within(view.container.querySelector(".profile-banner") as HTMLElement).getByRole("button", { name: "Fetch matches" })).toBeTruthy();
+        expect(within(view.container.querySelector(".workspace-header") as HTMLElement).getByRole("button", { name: "Fetch matches" })).toBeTruthy();
         expect(view.container.querySelectorAll(".row-hero small, .row-hero span, .row-duration small")).toHaveLength(0);
         expect(view.container.querySelectorAll(".match-row:not(.table-head) .copy-value")).toHaveLength(10);
     });
@@ -119,7 +122,7 @@ describe("compact dashboard and shared chart", () => {
         const chart = view.container.querySelector(".distribution") as HTMLElement;
         expect(chart.querySelector(".ring-center strong")?.textContent).toBe("28");
         expect(within(chart).queryByRole("button", { name: "Monthly", exact: true })).toBeNull();
-        fireEvent.click(within(view.container.querySelector(".profile-banner") as HTMLElement).getByRole("button", { name: "Monthly", exact: true }));
+        fireEvent.click(within(view.container.querySelector(".workspace-header") as HTMLElement).getByRole("button", { name: "Monthly", exact: true }));
         expect(chart.querySelector(".ring-center strong")?.textContent).toBe("40");
         expect(view.container.querySelectorAll("[data-match-row]")).toHaveLength(PAGE_SIZE);
         const segment = chart.querySelector('svg g[aria-label^="Carry:"]')!;
@@ -131,7 +134,7 @@ describe("compact dashboard and shared chart", () => {
         fireEvent.click(within(screen.getByRole("navigation")).getByRole("button", { name: "Matches", exact: true }));
         await waitFor(() => expect(view.container.querySelectorAll("[data-match-row]")).toHaveLength(PAGE_SIZE));
         const newChart = view.container.querySelector(".distribution") as HTMLElement;
-        fireEvent.click(within(view.container.querySelector(".history-toolbar") as HTMLElement).getByRole("button", { name: "Monthly", exact: true }));
+        fireEvent.click(within(view.container.querySelector(".history-command-bar") as HTMLElement).getByRole("button", { name: "Monthly", exact: true }));
         await waitFor(() => expect(view.container.querySelectorAll("[data-match-row]")).toHaveLength(PAGE_SIZE));
         expect(newChart.querySelector(".ring-center strong")?.textContent).toBe("40");
     });
@@ -181,28 +184,28 @@ describe("native replay library", () => {
         mocks();
         const file = { matchId: "9026000101", path: "replays/9026000101.dem", sizeBytes: 1048576, modifiedSeconds: 1790000000 };
         const download = vi.spyOn(replayNative, "download").mockResolvedValue(file);
-        vi.mocked(replayNative.files).mockResolvedValueOnce([]).mockResolvedValueOnce([file]);
+        vi.mocked(replayNative.files).mockResolvedValue([file]);
         render(<Replay t={messages.en} live/>);
-        await screen.findByText("C:/Steam/steamapps/common/dota 2 beta/game/dota/replays");
+        await screen.findByText("C:/Steam/steamapps/common/dota 2 beta");
         fireEvent.change(screen.getByRole("textbox", { name: "Match ID" }), { target: { value: file.matchId } });
         fireEvent.click(screen.getByRole("button", { name: messages.en.replaySearch }));
-        await waitFor(() => expect(within(document.querySelector(".replay-result") as HTMLElement).getByRole("button", { name: "Download replay" })).toHaveProperty("disabled", false));
-        fireEvent.click(within(document.querySelector(".replay-result") as HTMLElement).getByRole("button", { name: "Download replay" }));
+        await waitFor(() => expect(within(document.querySelector(".replay-search-result") as HTMLElement).getByRole("button", { name: "Download replay" })).toHaveProperty("disabled", false));
+        fireEvent.click(within(document.querySelector(".replay-search-result") as HTMLElement).getByRole("button", { name: "Download replay" }));
         await waitFor(() => expect(screen.getByRole("tab", { name: /Downloaded replays/ }).getAttribute("aria-selected")).toBe("true"));
         expect(download).toHaveBeenCalledWith(file.matchId,"test-session",replayApi.API_ORIGIN);
-        expect(screen.getByRole("button", { name: "Copy Play command" })).toBeTruthy();
+        await screen.findByRole("button", { name: "Copy Play command" });
         expect(screen.getByText(playCommand(file.matchId))).toBeTruthy();
     });
     it("keeps failed downloads out of the local library", async () => {
         mocks();
         vi.spyOn(replayNative, "download").mockRejectedValue(new Error("Replay expired"));
         render(<Replay t={messages.en} live/>);
-        await screen.findByText("C:/Steam/steamapps/common/dota 2 beta/game/dota/replays");
+        await screen.findByText("C:/Steam/steamapps/common/dota 2 beta");
         fireEvent.click(screen.getAllByRole("button", { name: "Download replay" })[0]);
-        expect((await screen.findByRole("alert")).textContent).toContain("This step couldn't finish");
+        expect((await screen.findByRole("alert")).textContent).toContain("could not finish");
         expect(screen.queryByText("Error: Replay expired")).toBeNull();
         fireEvent.click(screen.getByRole("tab", { name: /Downloaded replays/ }));
-        expect(screen.getByText("No .dem replays in this folder yet.")).toBeTruthy();
+        await screen.findByText("No .dem replays in this folder yet.");
     });
     it("validates numeric IDs before IPC and keeps the demo command extension-free", () => {
         expect(validReplayId("9026000101")).toBe(true);

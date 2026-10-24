@@ -19,6 +19,7 @@ export function usePreferences() {
     root.dir = preferences.language === "fa" ? "rtl" : "ltr";
     root.style.colorScheme = mode;
     root.dataset.appearance = mode;
+    root.dataset.theme = preferences.theme;
     const colors = palettes[preferences.theme][mode];
     for (const [name, value] of Object.entries(colors)) root.style.setProperty(`--${name}`, value);
     try { localStorage.setItem(preferenceKey, JSON.stringify(preferences)); } catch { /* Still usable if storage is unavailable. */ }

@@ -6,7 +6,8 @@
 
 | موضوع | فایل |
 | --- | --- |
-| صف موازی ریپلی، آرشیو مستقل و فعالیت‌های سراسری (جاری) | [replay-pipeline-tasks.fa.md](replay-pipeline-tasks.fa.md) |
+| بازسازی تجربهٔ دسکتاپ، Replay، تحلیل و محدودیت retry (جاری) | [desktop-experience-overhaul.fa.md](desktop-experience-overhaul.fa.md) |
+| صف موازی ریپلی، آرشیو مستقل و فعالیت‌های سراسری (مرحلهٔ قبل) | [replay-pipeline-tasks.fa.md](replay-pipeline-tasks.fa.md) |
 | آنالیز صرفاً محلی، رفع قفل دریافت دستی و retry آرشیو (مرحلهٔ قبل) | [local-analysis-sync.fa.md](local-analysis-sync.fa.md) |
 | اصلاح ظاهر نمودار، انتخاب مستقیم ماه/هفته و امتیاز عملکرد | [dashboard-visuals.fa.md](dashboard-visuals.fa.md) |
 | کنترل بازهٔ داشبورد، توزیع مشترک و کارت‌های آمار | [dashboard-period-distribution.fa.md](dashboard-period-distribution.fa.md) |

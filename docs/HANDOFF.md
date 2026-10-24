@@ -1,5 +1,7 @@
 # تسک صف ریپلی — ۲۳ اکتبر ۲۰۲۶
 
+تسک جاری `feat/desktop-experience-overhaul` از main `8ec8682`: هدر و فیلتر مشترک، Replay lazy و فایل‌های محلی deferred، Full Analysis حوزه‌ای با حفظ Quick Summary/فرمول‌ها و مقادیر، Dire/Glacier/Abyss، GSAP deferred و Lenis اختیاری و native پیش‌فرض، مرکز فعالیت قابل بستن و اعلان/صدای اختیاری. Retry metadata حداکثر۱۲ نوبت/۲۴ساعت، شبکه۶ و آرشیو۸؛ cooldown مشترک provider و توقف درخواست قدیمی۱۱۱تلاش بدون حذف parsed/spool. Shared CursorThemeProvider هم بهینه شده، بنابراین build وب لازم است. schema/ENV/JAR/unit تغییر نکرده؛ API build+release:prepare، نصاب تازه و npm ci لازم‌اند. [نتیجهٔ تست‌ها، محدودیت سنجش، Git و استقرار دقیق](desktop-experience-overhaul.fa.md). وضعیت فضای VPS/مسیر MSS و پاک‌سازی انجام‌شده در همین راهنما ثبت است؛ TeamSpeak دست‌نخورده بماند. هیچ push/merge یا استقرار از محیط دستیار انجام نشده.
+
 - مبنا main با commit `df6edb2`، branch `feat/replay-pipeline-tasks`؛ [Git، تست و VPS](replay-pipeline-tasks.fa.md).
 - migration0030 و daemon با prepare2/parse1/archive1؛ `dota2notes-replay.timer` باید disable و service دائمی enable شود. همان قفل advisory قدیمی جلوی اجرای دو orchestrator را می‌گیرد. CPUQuota100% و MemoryMax2100M حفظ شده‌اند.
 - آرشیو retry مستقل دارد؛ فایل کامل محلی با auth/NOFOLLOW/SHA256 قابل دانلود است. خطای backup تحلیل کامل‌شده را pending نمی‌کند. score/Lane/JAR/web source تغییر نکرده‌اند.

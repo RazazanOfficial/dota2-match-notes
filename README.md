@@ -5,7 +5,9 @@ Monorepo اپ‌های Dota Notes: دفتر مچ، دریافت و تحلیل ر
 
 برنامهٔ آیندهٔ آموزش و تمرین، همراه با نیازهای فایل‌های دانلودی، در [Learn & Practice Feature TODO](docs/learn-and-practice-feature-todo.fa.md) ثبت شده است؛ این قابلیت‌ها هنوز پیاده‌سازی نشده‌اند.
 
-تغییر جاری: دو دریافت هم‌زمان، یک موتور Java، آرشیو مستقل و فعالیت‌های سراسری دسکتاپ؛ [تغییرات، Git، تست و استقرار](docs/replay-pipeline-tasks.fa.md).
+تغییر جاری: بازسازی هدرها و Replay و Full Analysis، جلوه‌های کنترل‌شده، تم‌های تازه و retry محدود؛ [تغییرات، تست، Git و VPS](docs/desktop-experience-overhaul.fa.md).
+
+تغییر قبلی: دو دریافت هم‌زمان، یک موتور Java، آرشیو مستقل و فعالیت‌های سراسری دسکتاپ؛ [تغییرات، Git، تست و استقرار](docs/replay-pipeline-tasks.fa.md).
 
 تغییر قبلی: معتبر بودن آنالیز فقط با پارسر محلی، رفع job دریافت دستی قدیمی و جداسازی retry آرشیو؛ [تغییرات، تست، Git و VPS](docs/local-analysis-sync.fa.md).
 

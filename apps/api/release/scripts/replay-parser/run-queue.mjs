@@ -28,14 +28,14 @@ const safeError = error => error instanceof ReplayError ? error.message.slice(0,
 
 async function enqueueOne(client, matchId, intent) {
   const result = await client.query(`INSERT INTO local_replay_jobs (match_id, intent, retry_deadline_at)
-    SELECT match_id, $2, now()+interval '20 days' FROM dota_matches WHERE match_id=$1 AND raw_data IS NOT NULL
+    SELECT match_id, $2, now()+interval '1 day' FROM dota_matches WHERE match_id=$1 AND raw_data IS NOT NULL
     ON CONFLICT (match_id) DO UPDATE SET
       intent=CASE WHEN local_replay_jobs.status IN ('pending','processing') AND local_replay_jobs.intent='analysis' THEN 'analysis' ELSE EXCLUDED.intent END,
       status=CASE WHEN local_replay_jobs.status='processing' THEN 'processing' ELSE 'pending' END,
       phase=CASE WHEN local_replay_jobs.status='processing' THEN local_replay_jobs.phase ELSE 'queued' END,
       attempts=CASE WHEN local_replay_jobs.status IN ('pending','processing') THEN local_replay_jobs.attempts ELSE 0 END,
       request_started_at=CASE WHEN local_replay_jobs.status IN ('pending','processing') THEN local_replay_jobs.request_started_at ELSE now() END,
-      retry_deadline_at=CASE WHEN local_replay_jobs.status IN ('pending','processing') THEN local_replay_jobs.retry_deadline_at ELSE now()+interval '20 days' END,
+      retry_deadline_at=CASE WHEN local_replay_jobs.status IN ('pending','processing') THEN local_replay_jobs.retry_deadline_at ELSE now()+interval '1 day' END,
       run_after=CASE WHEN local_replay_jobs.status IN ('pending','processing') THEN local_replay_jobs.run_after ELSE now() END,
       finished_at=NULL, error_code=NULL, error_message=NULL, updated_at=now()
     WHERE local_replay_jobs.status IN ('failed','waiting_file') OR
@@ -51,6 +51,10 @@ async function updateJob(client, job, assignments, values = []) {
 }
 function hooksFor(client, job) {
   return {
+    metadataWait:async()=>Number((await client.query("SELECT greatest(0,ceil(extract(epoch from (open_until-now()))))::int AS seconds FROM replay_transport_routes WHERE route_key='metadata-provider'")).rows[0]?.seconds || 0),
+    metadataLimit:async(seconds)=>client.query(`INSERT INTO replay_transport_routes(route_key,endpoint,address,failures,open_until,last_error_code)
+      VALUES('metadata-provider','metadata','provider',1,now()+$1*interval '1 second','replay_metadata_rate_limited')
+      ON CONFLICT(route_key) DO UPDATE SET open_until=greatest(replay_transport_routes.open_until,EXCLUDED.open_until),last_error_code=EXCLUDED.last_error_code,updated_at=now()`,[Math.max(600,Math.min(14400,Number(seconds)||600))]),
     routes: async () => (await client.query("SELECT * FROM replay_transport_routes")).rows,
     phase: async (phase, route = {}) => {
       job.currentPhase = phase;
@@ -163,6 +167,11 @@ async function handle(client, job, hooks, { pipeline=false }={}) {
   let descriptor = replayDescriptor(match.raw_data, Number(job.match_id));
   if (!descriptor && !archived && !validCheckpoint) {
     await hooks.phase("resolving_metadata");
+    const providerWait=await hooks.metadataWait?.();
+    if(providerWait>0){
+      await updateJob(client,job,"attempts=greatest(attempts-1,0)");job.attempts=Math.max(0,Number(job.attempts)-1);
+      throw new ReplayError("replay_metadata_cooldown","Replay information provider is cooling down",{retryAfter:providerWait});
+    }
     // A partial early OpenDota response is never a usable replay descriptor.
     // Keep the basic match and its journal links; discard only replay fields.
     await client.query(`UPDATE dota_matches SET raw_data=raw_data - 'cluster' - 'replay_salt' - 'replay_url',updated_at=now()
@@ -287,6 +296,7 @@ async function failJob(client, job, hooks, error) {
         httpStatus: Number.isInteger(error?.$metadata?.httpStatusCode) ? error.$metadata.httpStatusCode : undefined });
       const fault = error instanceof ReplayError ? error : new ReplayError(
         job.currentPhase === "uploading" ? "replay_archive_upload_failed" : job.currentPhase === "checking_archive" ? "replay_archive_check_failed" : "replay_processing_failed", safeError(error));
+      if(fault.code==="replay_metadata_rate_limited")await hooks.metadataLimit?.(fault.retryAfter || 600);
       const decision = retryDecision(fault, job);
       await hooks.event(job.currentPhase || "queued", decision.code, safeError(fault));
       await updateJob(client, job, `status=$3::varchar(16),phase=$4::varchar(24),error_code=$5,error_message=$6,run_after=now()+$7*interval '1 second',
