@@ -43,7 +43,7 @@ export function parseCurlResponse(buffer: Buffer, maxResponseBytes: number): Res
 
 export async function fetchWithCurlDirectIp(endpoint: string, init: RequestInit, directIp: string, maxResponseBytes: number) {
   const url = new URL(endpoint);
-  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash || isIP(directIp) !== 4 || typeof init.body !== "string" || init.method !== "POST") throw new Error("Invalid STRATZ curl request");
+  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash || (directIp !== "" && isIP(directIp) !== 4) || typeof init.body !== "string" || init.method !== "POST") throw new Error("Invalid STRATZ curl request");
   if (init.signal?.aborted) throw new DOMException("Request aborted", "AbortError");
   const headers = new Headers(init.headers);
   headers.delete("host");
@@ -52,7 +52,7 @@ export async function fetchWithCurlDirectIp(endpoint: string, init: RequestInit,
   // Credentials and query go through a private pipe, never argv, a shell or a file.
   const config = [
     `url = ${JSON.stringify(url.toString())}`,
-    `resolve = ${JSON.stringify(`${url.hostname}:${url.port || 443}:${directIp}`)}`,
+    ...(directIp ? [`resolve = ${JSON.stringify(`${url.hostname}:${url.port || 443}:${directIp}`)}`] : []),
     ...Array.from(headers, ([name, value]) => `header = ${JSON.stringify(`${name}: ${value}`)}`),
     `data-binary = ${JSON.stringify(init.body)}`,
   ].join("\n") + "\n";

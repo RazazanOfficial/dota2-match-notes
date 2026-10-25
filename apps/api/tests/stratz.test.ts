@@ -11,6 +11,7 @@ import { nextStratzReservationAt } from "../src/lib/stratz/rate-limit";
 import { stratzDiagnosticsQuerySchema } from "../src/lib/stratz/validation";
 
 const ENV_NAMES = [
+  "STRATZ_ROUTING",
   "STRATZ_API_URL",
   "STRATZ_API_TOKEN",
   "STRATZ_DIRECT_IP",
@@ -33,6 +34,7 @@ const originalEnv = Object.fromEntries(
 );
 
 beforeEach(() => {
+  delete process.env.STRATZ_ROUTING;
   process.env.STRATZ_API_URL = "https://stratz.example.test/graphql/";
   process.env.STRATZ_API_TOKEN = "server-only-token";
   process.env.STRATZ_DIRECT_IP = "104.26.8.64";
@@ -278,5 +280,19 @@ describe("STRATZ client and validation", () => {
       code: "stratz_ip_conflict",
       details: { destinationIp: "104.26.8.64", cfRay: "example-ray" },
     });
+  });
+});
+
+describe("STRATZ routing on Germany", () => {
+  it("uses ordinary DNS without requiring or retaining an old pinned IP", () => {
+    process.env.STRATZ_ROUTING = "dns";
+    delete process.env.STRATZ_DIRECT_IP;
+    expect(getStratzConfig().directIp).toBe("");
+    process.env.STRATZ_DIRECT_IP = "127.0.0.1";
+    expect(getStratzConfig().directIp).toBe("");
+  });
+  it("rejects a misspelled routing mode", () => {
+    process.env.STRATZ_ROUTING = "dms";
+    expect(() => getStratzConfig()).toThrow("STRATZ_ROUTING");
   });
 });

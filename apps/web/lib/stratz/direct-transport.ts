@@ -25,7 +25,8 @@ function requestAddress(
 
     const request = httpsRequest({
       protocol: "https:",
-      hostname: address,
+      hostname: address || url.hostname,
+      family: 4,
       port: url.port ? Number(url.port) : 443,
       path: `${url.pathname}${url.search}`,
       method: init.method || "GET",

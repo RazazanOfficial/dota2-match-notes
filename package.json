@@ -41,5 +41,9 @@
   "engines": {
     "node": ">=22.13.0",
     "npm": ">=10"
+  },
+  "overrides": {
+    "body-parser": "^2.4.0",
+    "source-map-js": "^1.2.2"
   }
 }

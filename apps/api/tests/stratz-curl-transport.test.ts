@@ -52,6 +52,12 @@ function request(path:string,max=4096,signal=AbortSignal.timeout(3000)) {
   return fetchWithCurlDirectIp(origin+path,{method:"POST",headers:{Authorization:'Bearer private-token',"Content-Type":"application/json","User-Agent":"STRATZ_API"},body:JSON.stringify({query:'query { value(text: "a\\b") }'}),signal},"127.0.0.1",max);
 }
 describe("curl pinned HTTPS STRATZ transport",()=>{
+  it("can use ordinary DNS with certificate verification and no pinned route",async()=>{
+    vi.stubEnv("CURL_CA_BUNDLE",join(folder,"cert.pem"));
+    const response=await fetchWithCurlDirectIp(origin+"/ok",{method:"POST",headers:{"User-Agent":"STRATZ_API"},body:'{"query":"{ __typename }"}',signal:AbortSignal.timeout(3000)},"",4096);
+    expect(response.status).toBe(200);expect(await response.json()).toMatchObject({ok:true});
+  });
+
   it("verifies TLS, sends exact JSON and decodes gzip including non-ASCII content",async()=>{
     await checkStratzCurlAvailable();
     const response=await request("/ok");

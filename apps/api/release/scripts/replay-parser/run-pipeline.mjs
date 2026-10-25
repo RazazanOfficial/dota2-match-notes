@@ -100,16 +100,30 @@ async function foreground(client,lane) {
   catch(error){finished=true;await failJob(client,job,hooks,error);}finally{clearInterval(timer);}
   return true;
 }
+export function pipelineLanes(env = process.env) {
+  const count = (key, fallback, max) => {
+    const raw = env[key]?.trim();
+    const value = raw ? Number(raw) : fallback;
+    if (!Number.isInteger(value) || value < 1 || value > max) throw new Error(`Invalid ${key}`);
+    return value;
+  };
+  return [
+    ...Array(count("LOCAL_REPLAY_PREPARE_CONCURRENCY", 2, 4)).fill("prepare"),
+    ...Array(count("LOCAL_REPLAY_PARSE_CONCURRENCY", 1, 2)).fill("parse"),
+    ...Array(count("LOCAL_REPLAY_ARCHIVE_CONCURRENCY", 1, 2)).fill("archive"),
+  ];
+}
 export async function main() {
   if(process.env.LOCAL_REPLAY_WORKER_ENABLED!=="true"){log({enabled:false});return;}
+  const lanes=pipelineLanes();
   const directory=await lstat(incoming);
   if(!directory.isDirectory()||directory.isSymbolicLink()||directory.mode&0o077||directory.uid!==process.getuid())throw new Error("Replay staging must be private and owned by worker");
-  const pool=new pg.Pool({connectionString:process.env.DATABASE_URL,max:6,connectionTimeoutMillis:5000,statement_timeout:10000});
+  const pool=new pg.Pool({connectionString:process.env.DATABASE_URL,max:lanes.length+2,connectionTimeoutMillis:5000,statement_timeout:10000});
   const owner=await pool.connect();let locked=false;
   try{
     locked=(await owner.query("SELECT pg_try_advisory_lock(73341017) AS locked")).rows[0].locked;
     if(!locked)throw new Error("Another replay worker is active");
-    owner.on("error",()=>abort.abort());await recoverLeases(owner);log({enabled:true,prepare:2,parse:1,archive:1,cleanup:false});
+    owner.on("error",()=>abort.abort());await recoverLeases(owner);log({enabled:true,prepare:lanes.filter(x=>x==="prepare").length,parse:lanes.filter(x=>x==="parse").length,archive:lanes.filter(x=>x==="archive").length,cleanup:false});
     let lastRecovery=Date.now();
     async function loop(lane){
       const raw=await pool.connect(),client=serializedClient(raw),disconnected=()=>abort.abort();raw.on("error",disconnected);
@@ -121,7 +135,7 @@ export async function main() {
       }}finally{await client.drain();raw.removeListener("error",disconnected);raw.release();}
     }
     let failure;
-    await Promise.all(["prepare","prepare","parse","archive"].map(lane=>loop(lane).catch(error=>{failure ||= error;abort.abort();})));
+    await Promise.all(lanes.map(lane=>loop(lane).catch(error=>{failure ||= error;abort.abort();})));
     if(failure)throw failure;
   }finally{abort.abort();if(locked)await owner.query("SELECT pg_advisory_unlock(73341017)").catch(()=>{});owner.release();await pool.end();}
 }

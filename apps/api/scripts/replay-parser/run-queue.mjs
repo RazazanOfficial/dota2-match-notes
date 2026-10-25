@@ -188,6 +188,11 @@ async function handle(client, job, hooks, { pipeline=false }={}) {
       refreshError = error;
       await hooks.event("resolving_metadata", "metadata_direct_failed", error instanceof ReplayError ? error.code : "request_failed");
     }
+    if (!descriptor && transportConfig().mode === "direct") {
+      throw refreshError instanceof ReplayError ? refreshError : new ReplayError(
+        refreshError ? "replay_metadata_unavailable" : "replay_metadata_pending",
+        "Direct match metadata is not available yet", { retryAfter: 600 });
+    }
     if (!descriptor) {
       try {
         const metadata = await fetchReplayMetadata(Number(job.match_id), match.raw_data, transportConfig(), hooks, { signal: abort.signal });

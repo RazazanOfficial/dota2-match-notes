@@ -10,10 +10,10 @@
     "drizzle-orm": "^0.45.2",
     "express": "5.2.1",
     "helmet": "8.3.0",
-    "nodemailer": "10.0.13",
+    "nodemailer": "10.2.1",
     "pg": "^8.22.0",
-    "sharp": "^0.35.4",
-    "zod": "^4.4.3"
+    "sharp": "^0.35.5",
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",
@@ -58,5 +58,8 @@
     "db:check:prod": "node dist/check-database.js",
     "worker:prod": "node dist/worker.js",
     "release:prepare": "node scripts/prepare-release.mjs"
+  },
+  "overrides": {
+    "body-parser": "^2.4.0"
   }
 }
