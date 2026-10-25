@@ -62,6 +62,9 @@ function parseBoolean(name: string, fallback = false) {
 }
 
 function parseDirectIp() {
+  const routing = process.env.STRATZ_ROUTING?.trim() || "pinned";
+  if (routing === "dns") return "";
+  if (routing !== "pinned") throw new Error("Invalid env: STRATZ_ROUTING");
   const address = process.env.STRATZ_DIRECT_IP?.trim();
   if (!address || !isPublicIpv4(address)) {
     throw new Error("Invalid env: STRATZ_DIRECT_IP");

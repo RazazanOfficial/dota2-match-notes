@@ -69,6 +69,20 @@ export async function preflight(role: PreflightRole = "api") {
     });
   }
   if (role === "replay") {
+    await check("replay_download_mode", () => {
+      const mode = process.env.LOCAL_REPLAY_DOWNLOAD_MODE?.trim() || "proxy";
+      if (!["proxy", "direct"].includes(mode)) throw new Error();
+    });
+    await check("replay_lane_capacity", () => {
+      for (const [key, fallback, max] of [
+        ["LOCAL_REPLAY_PREPARE_CONCURRENCY", 2, 4],
+        ["LOCAL_REPLAY_PARSE_CONCURRENCY", 1, 2],
+        ["LOCAL_REPLAY_ARCHIVE_CONCURRENCY", 1, 2],
+      ] as const) {
+        const value = Number(process.env[key]?.trim() || fallback);
+        if (!Number.isInteger(value) || value < 1 || value > max) throw new Error();
+      }
+    });
     await check("replay_parser_jar", async () => {
       const jar = process.env.REPLAY_PARSER_JAR;
       if (!jar || !isAbsolute(jar)) throw new Error();

@@ -1,3 +1,7 @@
+# آماده‌سازی آلمان — ۲۵ اکتبر ۲۰۲۶
+
+تسک `fix/germany-direct-replay` از `main d4cbc67`: دانلود مستقیم canonical Valve با modeاختیاری، DNS عادی اختیاری STRATZ، concurrency محدود۲پارسر و drop-in مخصوص4CPU/8GB، اصلاح وابستگی‌های runtime و smoke-test دانلود بدون enqueue. [Git و فرمان‌های آلمان](germany-direct-replay.fa.md). پیش‌فرض ایران حفظ است. هدر STRATZ_API از قبل موجود بود. initial restore و شبکهٔ آلمان تأیید شده‌اند، اما DNS/cutover، TeamSpeak، machine-id تکراری و شروع workerهای آلمان هنوز انجام نشده‌اند. هیچ داده/secret واقعی، unit نصب‌شده یا TeamSpeak از محیط دستیار تغییر نکرده است. commit/push با کاربر است؛ snapshot اولیه جای انتقال نهایی DB و فایل‌های mutable را نمی‌گیرد.
+
 # تسک صف ریپلی — ۲۳ اکتبر ۲۰۲۶
 
 تسک جاری `feat/desktop-experience-overhaul` از main `8ec8682`: هدر و فیلتر مشترک، Replay lazy و فایل‌های محلی deferred، Full Analysis حوزه‌ای با حفظ Quick Summary/فرمول‌ها و مقادیر، Dire/Glacier/Abyss، GSAP deferred و Lenis اختیاری و native پیش‌فرض، مرکز فعالیت قابل بستن و اعلان/صدای اختیاری. Retry metadata حداکثر۱۲ نوبت/۲۴ساعت، شبکه۶ و آرشیو۸؛ cooldown مشترک provider و توقف درخواست قدیمی۱۱۱تلاش بدون حذف parsed/spool. Shared CursorThemeProvider هم بهینه شده، بنابراین build وب لازم است. schema/ENV/JAR/unit تغییر نکرده؛ API build+release:prepare، نصاب تازه و npm ci لازم‌اند. [نتیجهٔ تست‌ها، محدودیت سنجش، Git و استقرار دقیق](desktop-experience-overhaul.fa.md). وضعیت فضای VPS/مسیر MSS و پاک‌سازی انجام‌شده در همین راهنما ثبت است؛ TeamSpeak دست‌نخورده بماند. هیچ push/merge یا استقرار از محیط دستیار انجام نشده.

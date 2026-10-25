@@ -1,11 +1,12 @@
 import https from "node:https";
+import http from "node:http";
 import { lookup, resolve4 } from "node:dns/promises";
 import { isIP } from "node:net";
 import { createHash, randomUUID } from "node:crypto";
 import { createReadStream, createWriteStream } from "node:fs";
 import { lstat, truncate } from "node:fs/promises";
 import { once } from "node:events";
-import { MAX_REPLAY_BYTES, replayProxySettings, validateReplayHeader } from "./replay-queue-utils.mjs";
+import { MAX_REPLAY_BYTES, replayDescriptor, replayProxySettings, validateReplayHeader } from "./replay-queue-utils.mjs";
 
 export class ReplayError extends Error {
   constructor(code, message, extra = {}) {
@@ -22,6 +23,9 @@ export function publicIPv4(address) {
     a === 198 && (b === 18 || b === 19));
 }
 function readTransportConfig(env) {
+  const mode = env.LOCAL_REPLAY_DOWNLOAD_MODE?.trim() || "proxy";
+  if (!["proxy", "direct"].includes(mode)) throw new ReplayError("replay_transport_config_invalid", "Replay download mode must be proxy or direct", { retryable: false });
+  if (mode === "direct") return { mode, origins: [], addresses: [], token: "" };
   const primary = replayProxySettings(env);
   if (!primary) throw new ReplayError("replay_proxy_not_configured", "Configure the authenticated replay relay", { retryable: false });
   const origins = [primary.url];
@@ -66,7 +70,7 @@ export async function selectRoutes(config, store = {}, resolver = resolveAddress
 // No redirect following and no disabling certificate validation.
 export function requestRoute(url, route, headers, {
   connectMs = 8_000, headersMs = 20_000, idleMs = 45_000, totalMs = 300_000,
-  signal, requestImpl = https.request,
+  signal, requestImpl = new URL(url).protocol === "http:" ? http.request : https.request,
 } = {}) {
   return new Promise((resolve, reject) => {
     let received = false;
@@ -82,7 +86,7 @@ export function requestRoute(url, route, headers, {
     const header = arm(headersMs, fail("replay_headers_timeout", "Relay response headers timed out"));
     arm(totalMs, fail("replay_total_timeout", "Replay transfer exceeded its time budget"));
     const cleanup = () => timers.forEach(clearTimeout);
-    req.once("socket", socket => { socket.once("secureConnect", () => clearTimeout(connect)); });
+    req.once("socket", socket => { socket.once(new URL(url).protocol === "http:" ? "connect" : "secureConnect", () => clearTimeout(connect)); });
     req.once("response", res => {
       received = true; clearTimeout(connect); clearTimeout(header);
       res.setTimeout(idleMs, () => res.destroy(fail("replay_body_timeout", "Replay transfer stopped receiving data")));
@@ -103,9 +107,9 @@ function retryAfter(value) {
   const seconds = /^\d+$/.test(value) ? Number(value) : Math.ceil((Date.parse(value) - Date.now()) / 1000);
   return Number.isFinite(seconds) ? Math.min(86_400, Math.max(1, seconds)) : null;
 }
-export function responseError(response) {
+export function responseError(response, sourceOverride) {
   const status = response.status;
-  const source = response.headers.get("x-replay-error-source") || "edge";
+  const source = sourceOverride || response.headers.get("x-replay-error-source") || "edge";
   const code = status === 401 ? "replay_proxy_auth_failed" : status === 403 ? (source === "valve" ? "valve_access_blocked" : "replay_relay_forbidden")
     : status === 404 ? "replay_not_found" : status === 429 ? "replay_rate_limited"
       : status === 413 ? "replay_too_large" : status >= 300 && status < 400 ? "replay_redirect_rejected"
@@ -124,7 +128,16 @@ export async function sha256File(path) {
 
 // Durable checkpoint is owned by the queue lease. Only strong ETags allow resume.
 export async function downloadResilient(descriptor, path, checkpoint, config, hooks = {}, options = {}) {
-  const routes = await selectRoutes(config, hooks, options.resolver, options.now?.() ?? Date.now());
+  const direct = config.mode === "direct";
+  if (direct) {
+    // Rebuild the only permitted destination from validated identifiers. Never
+    // trust descriptor.urls or replay_url, and never send relay credentials.
+    const safe = replayDescriptor({ match_id: descriptor?.matchId, cluster: descriptor?.cluster, replay_salt: descriptor?.salt }, descriptor?.matchId);
+    if (!safe) throw new ReplayError("replay_metadata_invalid", "Invalid Valve replay identifiers", { retryable: false });
+    descriptor = safe;
+  }
+  const routeConfig = direct ? { origins: [`http://replay${descriptor.cluster}.valve.net`], addresses: [] } : config;
+  const routes = await selectRoutes(routeConfig, hooks, options.resolver, options.now?.() ?? Date.now());
   const request = options.request || requestRoute;
   const now = options.now || Date.now;
   const size = (await lstat(path).catch(e => { if (e.code === "ENOENT") return null; throw e; }))?.size || 0;
@@ -143,11 +156,11 @@ export async function downloadResilient(descriptor, path, checkpoint, config, ho
       if (offset && (!etag || !total || offset >= total)) { await truncate(path, 0); offset = 0; etag = null; total = null; }
       await hooks.phase?.("connecting", { endpoint: route.endpoint, address: route.address });
       await hooks.event?.("connecting", "route_attempt", `Attempt ${attempt + 1}; request ${requestId}`, route);
-      response = await request(`${route.endpoint}/v1/replay/${descriptor.cluster}/${descriptor.matchId}/${descriptor.salt}`, route, {
-        Authorization: `Bearer ${config.token}`, "User-Agent": "Dota2Notes-ReplayWorker/2", "X-Replay-Request-Id": requestId,
+      response = await request(direct ? `${route.endpoint}/570/${descriptor.filename}` : `${route.endpoint}/v1/replay/${descriptor.cluster}/${descriptor.matchId}/${descriptor.salt}`, route, {
+        ...(!direct ? { Authorization: `Bearer ${config.token}` } : {}), "User-Agent": "Dota2Notes-ReplayWorker/2", "X-Replay-Request-Id": requestId,
         ...(offset ? { Range: `bytes=${offset}-`, "If-Range": etag } : {}),
       }, options.requestOptions);
-      if (![200, 206].includes(response.status)) throw responseError(response);
+      if (![200, 206].includes(response.status)) throw responseError(response, direct ? "valve" : undefined);
       const lengthHeader = response.headers.get("content-length");
       const length = lengthHeader === null ? null : /^\d+$/.test(lengthHeader) ? Number(lengthHeader) : NaN;
       if (length !== null && (!Number.isSafeInteger(length) || length > MAX_REPLAY_BYTES)) throw new ReplayError("replay_too_large", "Replay exceeds the size limit", { retryable: false });
@@ -189,7 +202,7 @@ export async function downloadResilient(descriptor, path, checkpoint, config, ho
       await hooks.checkpoint?.({ etag, total: offset + added, complete: true, sha256: hash });
       await hooks.routeSuccess?.(route);
       await hooks.event?.("validating", "download_complete", `Verified ${offset + added} bytes in ${now() - started}ms`, { ...route, bytes: added, httpStatus: response.status });
-      return { path, source: "proxy", bytes: offset + added, sha256: hash };
+      return { path, source: direct ? "valve" : "proxy", bytes: offset + added, sha256: hash };
     } catch (error) {
       if (error?.code === "replay_lease_lost" || options.requestOptions?.signal?.aborted) throw error;
       last = error instanceof ReplayError ? error : new ReplayError("replay_body_interrupted", "Replay stream was interrupted", { circuit: error?.code !== "ENOSPC" });

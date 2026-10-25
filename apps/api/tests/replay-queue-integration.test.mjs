@@ -32,6 +32,7 @@ beforeAll(async()=>{
 },30000);
 afterAll(async()=>{await db?.close();if(folder)await rm(folder,{recursive:true,force:true});});
 beforeEach(async()=>{
+  delete process.env.LOCAL_REPLAY_DOWNLOAD_MODE;
   vi.clearAllMocks();mocks.exists.mockResolvedValue(false);
   mocks.refresh.mockResolvedValue(null);
   mocks.metadata.mockResolvedValue({cluster:436,salt:123456789});
@@ -51,6 +52,14 @@ beforeEach(async()=>{
 const row=async()=> (await client.query("SELECT * FROM local_replay_jobs WHERE match_id=2")).rows[0];
 const start=async(intent="download")=>{await worker.enqueueOne(client,2,intent);return (await worker.claim(client)).job;};
 describe("replay queue SQL and persisted lifecycle",()=>{
+  it("does not contact the relay in direct mode when metadata is not ready", async()=>{
+    process.env.LOCAL_REPLAY_DOWNLOAD_MODE="direct";
+    await client.query("UPDATE dota_matches SET raw_data=$1 WHERE match_id=2",[JSON.stringify({match_id:2,players:[]})]);
+    const job=await start();
+    await expect(worker.handle(client,job,worker.hooksFor(client,job))).rejects.toMatchObject({code:"replay_metadata_pending",retryAfter:600});
+    expect(mocks.refresh).toHaveBeenCalledTimes(1);expect(mocks.metadata).not.toHaveBeenCalled();expect(mocks.download).not.toHaveBeenCalled();
+  });
+
   it("refreshes missing salt in the existing match and then downloads the replay", async()=>{
     await client.query("UPDATE dota_matches SET raw_data=$1 WHERE match_id=2", [JSON.stringify({match_id:2,cluster:436,players:[{hero_id:1}],version:22})]);
     const job=await start();
