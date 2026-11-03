@@ -16,6 +16,6 @@ describe("compact activity centre",()=>{
   fireEvent.pointerDown(document.body);expect(screen.queryByRole("dialog")).toBeNull();
   fireEvent.click(trigger);fireEvent.keyDown(window,{key:"Escape"});expect(screen.queryByRole("dialog")).toBeNull();expect(document.activeElement).toBe(trigger);
   fireEvent.click(trigger);fireEvent.click(within(screen.getByRole("dialog")).getByRole("button",{name:messages.en.close}));expect(screen.queryByRole("dialog")).toBeNull();
-  expect(screen.getByRole("button",{name:/Match analysis/})).toBeTruthy();expect(mocks.api.mock.calls.every(([path,options])=>path==="/api/tasks"&&!options)).toBe(true);
+  expect(screen.getByRole("button",{name:/Match analysis/})).toBeTruthy();expect(mocks.api.mock.calls.every(([path,options])=>path==="/api/tasks"&&(!options?.method||options.method==="GET"))).toBe(true);
  });
 });

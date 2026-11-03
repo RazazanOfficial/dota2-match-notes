@@ -2,7 +2,9 @@ import type { Session } from "@/lib/types";
 import type { HistoryMatch, HistoryQuery, Summary } from "./history";
 import { periodRange } from "./history";
 import { cacheableRead, cachedRead, cachedWrite, clearOfflineAccount, saveOfflineSession } from "./offlineCache";
-import { connectionState, setConnection } from "./connection";
+import { connectionState, recordConnectionSuccess, recordOperationFailure, resetConnectionFailures, setConnection } from "./connection";
+import { recordConnectionEvent } from "./connectionDiagnostics";
+import { abortable, cancellation, failureName, REQUEST_POLICY, retryPause } from "./requestPolicy";
 
 const configuredOrigin = import.meta.env.VITE_API_ORIGIN || (import.meta.env.DEV ? "http://127.0.0.1:4100" : "https://api.dota2notes.ir");
 export const API_ORIGIN = new URL(configuredOrigin).origin;
@@ -12,47 +14,130 @@ export class ApiError extends Error {
     constructor(message: string, readonly status: number, readonly code?: string) { super(message); this.name = "ApiError"; }
 }
 
-export function setBearer(token: string | null) { bearer = token; }
+interface SharedRead {
+    controller: AbortController;
+    promise: Promise<unknown>;
+    consumers: number;
+    settled: boolean;
+}
+let accountRevision = 0;
+const operations = new Set<AbortController>();
+const reads = new Map<string, SharedRead>();
+
+export function setBearer(token: string | null) {
+    if (bearer === token) return;
+    bearer = token; accountRevision++;
+    for (const controller of operations) controller.abort(cancellation());
+    reads.clear(); resetConnectionFailures();
+    window.dispatchEvent(new Event("dota-notes:account-changed"));
+}
 export function hasBearer() { return bearer !== null; }
 export function getBearer() { return bearer; }
 
-export async function apiRequest<T>(path: string, init: RequestInit = {}, timeoutMs = 12000): Promise<T> {
+function consume<T>(read: SharedRead, signal?: AbortSignal | null): Promise<T> {
+    read.consumers++;
+    return new Promise<T>((resolve, reject) => {
+        let done = false;
+        const finish = (callback: () => void) => {
+            if (done) return;
+            done = true; signal?.removeEventListener("abort", abort); read.consumers--;
+            if (!read.consumers && !read.settled) read.controller.abort(cancellation());
+            callback();
+        };
+        const abort = () => finish(() => reject(cancellation()));
+        signal?.addEventListener("abort", abort, { once: true });
+        read.promise.then(value => finish(() => resolve(value as T)), error => finish(() => reject(error)));
+        if (signal?.aborted) abort();
+    });
+}
+
+export async function apiRequest<T>(path: string, init: RequestInit = {}, timeoutMs?: number): Promise<T> {
     if (!path.startsWith("/api/") || path.startsWith("//")) throw new Error("Invalid API path");
-    const method = (init.method || "GET").toUpperCase(), read = method === "GET" && cacheableRead(path);
+    if (init.signal?.aborted) throw cancellation();
+    if (typeof navigator !== "undefined" && navigator.onLine === false) setConnection("offline");
+    const method = (init.method || "GET").toUpperCase();
     if (method !== "GET" && connectionState() === "offline") throw new ApiError("Offline mode", 0, "offline_mode");
-    if (read && connectionState() === "offline") { const cached = cachedRead<T>(path); if (cached !== null) return cached; }
-    const requestToken = bearer;
+    const requestToken = bearer, revision = accountRevision;
     const headers = new Headers(init.headers);
     if (requestToken) headers.set("Authorization", `Bearer ${requestToken}`);
     if (init.body) headers.set("Content-Type", "application/json");
-    const controller = new AbortController(), abort = () => controller.abort();
-    init.signal?.addEventListener("abort", abort, { once: true });
-    if (init.signal?.aborted) controller.abort();
-    const timeout = window.setTimeout(abort, Math.max(1000, Math.min(timeoutMs, 600000)));
-    try {
-        const response = await fetch(`${API_ORIGIN}${path}`, { ...init, signal: controller.signal, headers, credentials: "omit", cache: "no-store" });
-        const body = await response.json().catch(() => null);
-        if (!response.ok) {
-            if (response.status >= 500) setConnection("offline"); else setConnection("online");
-            const error = body?.error, code = typeof error?.code === "string" ? error.code : undefined;
-            if (response.status === 401 && requestToken && requestToken === bearer) { clearOfflineAccount(); window.dispatchEvent(new Event("dota-notes:auth-invalid")); }
-            throw new ApiError(typeof error?.message === "string" ? error.message : code || `API ${response.status}`, response.status, code);
+    const deadline = Math.max(1000, Math.min(timeoutMs ?? (method === "GET" ? REQUEST_POLICY.getTimeoutMs : REQUEST_POLICY.mutationTimeoutMs), 600000));
+    // Tokens exist only in this in-memory key; diagnostics never see the key.
+    // Distinct headers/options/deadlines must not share incompatible responses.
+    const key = JSON.stringify([method, path, requestToken, deadline, [...headers], init.redirect, init.mode, init.integrity]);
+    let shared = method === "GET" ? reads.get(key) : undefined;
+    if (shared?.controller.signal.aborted) shared = undefined;
+    if (!shared) {
+        const controller = new AbortController();
+        shared = { controller, consumers: 0, settled: false, promise: Promise.resolve() };
+        const current = shared;
+        operations.add(controller);
+        current.promise = performRequest(path, method, init, headers, deadline, requestToken, revision, controller.signal).finally(() => {
+            current.settled = true; operations.delete(controller);
+            if (reads.get(key) === current) reads.delete(key);
+        });
+        if (method === "GET") reads.set(key, current);
+    }
+    return consume<T>(shared, init.signal);
+}
+
+async function performRequest(path: string, method: string, init: RequestInit, headers: Headers, timeoutMs: number,
+    requestToken: string | null, revision: number, signal: AbortSignal): Promise<unknown> {
+    const read = method === "GET" && cacheableRead(path);
+    const maxAttempts = method === "GET" ? REQUEST_POLICY.getAttempts : 1;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        if (signal.aborted || revision !== accountRevision) throw cancellation();
+        const controller = new AbortController();
+        const abort = () => controller.abort(cancellation());
+        signal.addEventListener("abort", abort, { once: true });
+        const timer = window.setTimeout(() => controller.abort(new DOMException("Request timed out", "TimeoutError")), timeoutMs);
+        const before = connectionState(), started = Date.now();
+        let status: number | null = null, success = false, errorName: string | null = null, shouldRetry = false;
+        try {
+            const response = await abortable(fetch(`${API_ORIGIN}${path}`, { ...init, method, signal: controller.signal, headers, credentials: "omit", cache: "no-store" }), controller.signal);
+            status = response.status;
+            let body: any = null;
+            try { body = await abortable(response.json(), controller.signal); }
+            catch (error) { if (!(error instanceof SyntaxError) && !(response.status >= 400 && response.status < 500)) throw error; }
+            if (signal.aborted || revision !== accountRevision) throw cancellation();
+            if (!response.ok) {
+                const error = body?.error, code = typeof error?.code === "string" ? error.code : undefined;
+                if (response.status >= 400 && response.status < 500) recordConnectionSuccess();
+                if (response.status === 401 && requestToken && requestToken === bearer) {
+                    clearOfflineAccount(); window.dispatchEvent(new Event("dota-notes:auth-invalid"));
+                }
+                throw new ApiError(typeof error?.message === "string" ? error.message : code || `API ${response.status}`, response.status, code);
+            }
+            recordConnectionSuccess(); success = true;
+            if (read) cachedWrite(path, body);
+            return body;
+        } catch (failure) {
+            errorName = failureName(failure);
+            const cancelled = signal.aborted || revision !== accountRevision;
+            if (cancelled) throw cancellation();
+            const unavailable = !(failure instanceof ApiError) || failure.status >= 500 || failure.status === 0;
+            if (!unavailable) throw failure;
+            shouldRetry = attempt < maxAttempts;
+            if (!shouldRetry) {
+                recordOperationFailure();
+                const cached = read ? cachedRead(path) : null;
+                if (cached !== null) return cached;
+                // Keep actionable HTTP errors (e.g. email delivery) intact.
+                if (failure instanceof ApiError) throw failure;
+                throw new ApiError(errorName === "TimeoutError" ? "Request timed out" : "Network request failed", 0,
+                    connectionState() === "offline" ? "offline_mode" : errorName === "TimeoutError" ? "request_timeout" : "network_error");
+            }
+        } finally {
+            window.clearTimeout(timer); signal.removeEventListener("abort", abort);
+            recordConnectionEvent({ source: "request", method, path, success, status, errorName, durationMs: Date.now() - started,
+                attempt, connectionBefore: before, connectionAfter: connectionState() });
         }
-        if (requestToken !== bearer) throw new DOMException("Account changed", "AbortError");
-        setConnection("online");
-        if (read) cachedWrite(path, body);
-        return body as T;
-    } catch (failure) {
-        if (init.signal?.aborted || requestToken !== bearer) throw failure;
-        const unavailable = !(failure instanceof ApiError) || failure.status >= 500 || failure.status === 0;
-        if (unavailable) {
-            setConnection("offline");
-            const cached = read ? cachedRead<T>(path) : null;
-            if (cached !== null) return cached;
-            throw new ApiError("Offline mode", 0, "offline_mode");
+        if (shouldRetry) {
+            const delay = REQUEST_POLICY.retryDelaysMs[attempt - 1] * (0.8 + Math.random() * 0.4);
+            await retryPause(delay, signal);
         }
-        throw failure;
-    } finally { window.clearTimeout(timeout); init.signal?.removeEventListener("abort", abort); }
+    }
+    throw new Error("Unreachable request state");
 }
 
 export async function currentSession() {
@@ -92,8 +177,8 @@ export interface SyncJob {
     request?: { scope: "day" | "week" | "month"; from: string; to: string };
     result?: { imported?: string[]; checked?: number; failed?: unknown[] };
 }
-export async function getSyncStatus() {
-    return apiRequest<{ ok: true; status: { nextAllowedAt: string | null; nextDayAllowedAt: string | null; nextWeekAllowedAt: string | null; nextMonthAllowedAt: string | null; manualJob?: SyncJob | null } }>("/api/sync/me");
+export async function getSyncStatus(signal?: AbortSignal) {
+    return apiRequest<{ ok: true; status: { nextAllowedAt: string | null; nextDayAllowedAt: string | null; nextWeekAllowedAt: string | null; nextMonthAllowedAt: string | null; manualJob?: SyncJob | null } }>("/api/sync/me", { signal });
 }
 
 export async function logout() {

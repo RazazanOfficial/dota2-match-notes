@@ -13,11 +13,11 @@ describe("account-bound offline snapshots",()=>{
   await saveOfflineSession("token-a",session);expect(localStorage.getItem("dota-notes.offline.v1.session")).not.toContain("token-a");
   expect(await restoreOfflineSession("token-a")).toEqual(session);expect(await restoreOfflineSession("token-b")).toBeNull();
  });
- it("uses cached reads during outages and refuses writes without enqueueing them",async()=>{
+ it("uses cached reads after retries and refuses writes while explicitly offline",async()=>{
   setCacheOwner(session.steamId);cachedWrite("/api/matches/me?from=2026-10-01&to=2026-10-07",{rows:[{id:"1"}]});
   const fetch=vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));vi.stubGlobal("fetch",fetch);
-  expect(await apiRequest("/api/matches/me?from=2026-10-01&to=2026-10-07")).toEqual({rows:[{id:"1"}]});expect(connectionState()).toBe("offline");
-  await expect(apiRequest("/api/sync/me",{method:"POST",body:"{}"})).rejects.toMatchObject({code:"offline_mode"});expect(fetch).toHaveBeenCalledTimes(1);
+  expect(await apiRequest("/api/matches/me?from=2026-10-01&to=2026-10-07")).toEqual({rows:[{id:"1"}]});expect(connectionState()).toBe("online");setConnection("offline");
+  await expect(apiRequest("/api/sync/me",{method:"POST",body:"{}"})).rejects.toMatchObject({code:"offline_mode"});expect(fetch).toHaveBeenCalledTimes(3);
  });
  it("never substitutes cached data for a rejected session or client error",async()=>{
   setCacheOwner(session.steamId);cachedWrite("/api/sync/me",{private:true});vi.stubGlobal("fetch",vi.fn().mockResolvedValue(Response.json({error:{code:"unauthorized"}},{status:401})));

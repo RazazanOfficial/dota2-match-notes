@@ -1,8 +1,7 @@
-import { useTaskManager } from "./TaskCenter";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { ArrowUpRight, Download, Search, LoaderCircle, Check, AlertCircle } from "lucide-react";
 import type { Session } from "@/lib/types";
-import { getSyncStatus, listMatches, matchListPath, requestMatchSync, type MatchListResponse, type SyncJob } from "../api";
+import { listMatches, matchListPath, requestMatchSync, type MatchListResponse, type SyncJob } from "../api";
 import { durationText, roles, type HistoryMatch, type HistoryQuery, type Scope } from "../history";
 import { modeLabel, type Messages } from "../i18n";
 import { Calendar, requestRange, trackingStart } from "./Calendar";
@@ -18,40 +17,12 @@ import { Stats } from "./DashboardStats";
 import { useHistoryPeriod } from "../hooks/useHistoryPeriod";
 import { cachedRead, cachedWrite, cachedHistory } from "../offlineCache";
 import { connectionState, useConnection } from "../connection";
+import { useSyncStatus } from "../hooks/useSyncStatus";
 
 const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tehran", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 const refreshEvent = "dota-notes:matches-updated";
-const refreshMatches = () => window.dispatchEvent(new Event(refreshEvent));
 
-function useSyncFeed() {
-    const manager=useTaskManager();
-    const activity=useSyncExternalStore(manager?.subscribe || (()=>()=>{}),manager?.snapshot || (()=>null));
-    const [job, setJob] = useState<SyncJob | null>(null);
-    useEffect(() => {
-        if(manager)return;
-        let active = true, timer = 0, sequence = 0, lastFingerprint = "";
-        const poll = async () => {
-            const current = ++sequence; window.clearTimeout(timer);
-            let inProgress = false;
-            try {
-                if (connectionState() === "offline") { if (active) timer = window.setTimeout(poll,15000); return; }
-                const { status } = await getSyncStatus();
-                if (!active || current !== sequence) return;
-                const next = status.manualJob || null; setJob(next);
-                inProgress = next?.status === "pending" || next?.status === "processing";
-                const fingerprint = next ? `${next.id}:${next.status}:${next.attempted?.length ?? 0}:${next.result?.imported?.length ?? 0}` : "";
-                if (fingerprint && fingerprint !== lastFingerprint) refreshMatches();
-                lastFingerprint = fingerprint;
-            } catch { inProgress = true; }
-            if (active && current === sequence) timer = window.setTimeout(poll, inProgress ? 5_000 : 30_000);
-        };
-        void poll();
-        const onRequest = (event: Event) => { const detail = (event as CustomEvent<SyncJob>).detail; if (detail) setJob(detail); void poll(); };
-        window.addEventListener("dota-notes:sync-requested", onRequest);
-        return () => { active = false; sequence++; window.clearTimeout(timer); window.removeEventListener("dota-notes:sync-requested", onRequest); };
-    }, [manager]);
-    return manager ? activity?.sync || null : job;
-}
+function useSyncFeed() { return useSyncStatus().data?.status.manualJob || null; }
 
 function SyncNotice({ job, t }: { job: SyncJob | null; t: Messages }) {
     if (!job || !["pending", "processing", "failed"].includes(job.status)) return null;
@@ -158,22 +129,16 @@ export function LiveDashboard({session,t,onOpen,onNavigate}: {session:Session;t:
 function LiveFetchDialog({ session, t, onClose }: { session: Session; t: Messages; onClose: () => void }) {
     const [scope, setScope] = useState<Scope>("day"), [date, setDate] = useState(today());
     const [modes, setModes] = useState(["ranked", "turbo", "all_pick", "captains", "other"]);
-    const cachedStatus = cachedRead<Awaited<ReturnType<typeof getSyncStatus>>>("/api/sync/me")?.status;
-    const [deadlines, setDeadlines] = useState<Record<Scope, number>>({day:Date.parse(cachedStatus?.nextDayAllowedAt || "") || 0,week:Date.parse(cachedStatus?.nextWeekAllowedAt || "") || 0,month:Date.parse(cachedStatus?.nextMonthAllowedAt || "") || 0});
-    const [now, setNow] = useState(Date.now()), [busy, setBusy] = useState(false), [activeJob, setActiveJob] = useState(false), [notice, setNotice] = useState(""), [loaded, setLoaded] = useState(!!cachedStatus);
+    const sync = useSyncStatus();
+    const status = sync.data?.status;
+    const deadlines = {day:Date.parse(status?.nextDayAllowedAt || "") || 0,week:Date.parse(status?.nextWeekAllowedAt || "") || 0,month:Date.parse(status?.nextMonthAllowedAt || "") || 0};
+    const activeJob = ["pending", "processing"].includes(status?.manualJob?.status || "");
+    const loaded = !!status;
+    const [now, setNow] = useState(Date.now()), [busy, setBusy] = useState(false), [notice, setNotice] = useState("");
     useEffect(() => {
-        let active = true;
-        const refresh = () => void getSyncStatus().then(result => {
-            if (!active) return;
-            setDeadlines({ day: Date.parse(result.status.nextDayAllowedAt || "") || 0,
-                week: Date.parse(result.status.nextWeekAllowedAt || "") || 0,
-                month: Date.parse(result.status.nextMonthAllowedAt || "") || 0 });
-            const running = ["pending", "processing"].includes(result.status.manualJob?.status || "");
-            setActiveJob(running);
-            setLoaded(true); setNotice("");
-        }).catch(failure => { if (active) { setNotice(connectionState()==="offline" ? "" : String(failure)); setLoaded(false); } });
-        refresh(); const clock = setInterval(() => { setNow(Date.now()); refresh(); }, 5_000);
-        return () => { active = false; clearInterval(clock); };
+        // Local countdown only. Network polling belongs to the shared feed.
+        const clock = window.setInterval(() => { if (document.visibilityState !== "hidden") setNow(Date.now()); }, 1_000);
+        return () => window.clearInterval(clock);
     }, []);
     const registration = profileRegistrationDate(session), min = trackingStart(registration), range = requestRange(scope, date, registration, today());
     const remaining = Math.max(0, Math.ceil((deadlines[scope] - now) / 1000));
@@ -186,5 +151,5 @@ function LiveFetchDialog({ session, t, onClose }: { session: Session; t: Message
         finally { setBusy(false); }
     }
 
-    return <Modal title={t.fetchMatches} onClose={onClose}><div className="segmented scope-switch">{(["day", "week", "month"] as const).map(value => <button key={value} aria-pressed={scope === value} className={scope === value ? "active" : ""} onClick={() => setScope(value)}>{t[value]}</button>)}</div><Calendar value={date} onChange={setDate} scope={scope} min={min} max={today()} t={t}/><p className="request-range"><bdi>{range ? `${range.from} — ${range.to}` : "—"}</bdi></p><small className="muted">{t.trackingSince}: <bdi>{min}</bdi></small><fieldset className="mode-picker"><legend>{t.modesTitle}</legend><div className="mode-options">{Object.entries({ ranked: "Ranked", turbo: "Turbo", all_pick: "All Pick", captains: "Captains Mode", other: "Other" }).map(([value, label]) => <label className={modes.includes(value) ? "selected" : ""} key={value}><input type="checkbox" checked={modes.includes(value)} onChange={() => setModes(items => items.includes(value) ? items.filter(item => item !== value) : [...items, value])}/><ModeIcon mode={label} t={t}/><Check size={13}/></label>)}</div></fieldset><div className="cooldown-grid">{(["day", "week", "month"] as const).map(value => <div key={value}><span>{t[value]}</span><small>{Math.max(0, Math.ceil((deadlines[value] - now) / 1000))}s {t.remaining}</small></div>)}</div><button className="primary-button" disabled={(!loaded && connectionState() !== "offline") || !!remaining || !range || !modes.length || busy || activeJob} onClick={() => void submit()}>{busy || (!loaded && connectionState() !== "offline") ? t.checking : activeJob ? t.syncRunning : remaining ? `${t.readyIn} ${durationText(remaining)}` : t.fetchMatches}</button>{notice && <p role="alert" className="fetch-error">{notice}</p>}</Modal>;
+    return <Modal title={t.fetchMatches} onClose={onClose}><div className="segmented scope-switch">{(["day", "week", "month"] as const).map(value => <button key={value} aria-pressed={scope === value} className={scope === value ? "active" : ""} onClick={() => setScope(value)}>{t[value]}</button>)}</div><Calendar value={date} onChange={setDate} scope={scope} min={min} max={today()} t={t}/><p className="request-range"><bdi>{range ? `${range.from} — ${range.to}` : "—"}</bdi></p><small className="muted">{t.trackingSince}: <bdi>{min}</bdi></small><fieldset className="mode-picker"><legend>{t.modesTitle}</legend><div className="mode-options">{Object.entries({ ranked: "Ranked", turbo: "Turbo", all_pick: "All Pick", captains: "Captains Mode", other: "Other" }).map(([value, label]) => <label className={modes.includes(value) ? "selected" : ""} key={value}><input type="checkbox" checked={modes.includes(value)} onChange={() => setModes(items => items.includes(value) ? items.filter(item => item !== value) : [...items, value])}/><ModeIcon mode={label} t={t}/><Check size={13}/></label>)}</div></fieldset><div className="cooldown-grid">{(["day", "week", "month"] as const).map(value => <div key={value}><span>{t[value]}</span><small>{Math.max(0, Math.ceil((deadlines[value] - now) / 1000))}s {t.remaining}</small></div>)}</div><button className="primary-button" disabled={(!loaded && connectionState() !== "offline") || !!remaining || !range || !modes.length || busy || activeJob} onClick={() => void submit()}>{busy || (!loaded && connectionState() !== "offline") ? t.checking : activeJob ? t.syncRunning : remaining ? `${t.readyIn} ${durationText(remaining)}` : t.fetchMatches}</button>{(notice || sync.error && connectionState() !== "offline") ? <p role="alert" className="fetch-error">{notice || String(sync.error)}</p> : null}</Modal>;
 }

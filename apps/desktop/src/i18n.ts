@@ -1,5 +1,10 @@
 export const messages = {
     en: {
+        connectionDiagnostics: "Connection diagnostics",
+        connectionDiagnosticsDetail: "Copy the last 100 request attempts to help investigate connection problems. Tokens and query values are excluded.",
+        copyConnectionReport: "Copy connection report",
+        connectionReportCopied: "Connection report copied.",
+        connectionReportCopyFailed: "Could not copy the report. Please try again.",
         wholeMonth: "Full month",
         chooseWeek: "Choose a week",
         chooseMonth: "Choose a month",
@@ -65,6 +70,11 @@ export const messages = {
         minute: "Minute", lane12: "Lane score at 12 minutes", rankLabel: "Sample score", timelineDetail: "Key moments from the sample match", event1: "First lane trade", event2: "Level 6 timing", event3: "Lane phase complete", event4: "First team fight", event5: "Radiant victory", noLive: "Demo · Offline", localNote: "Local note", noMatches: "No sample match found.",
     },
     fa: {
+        connectionDiagnostics: "گزارش اتصال",
+        connectionDiagnosticsDetail: "برای بررسی مشکلات اتصال، گزارش ۱۰۰ تلاش آخر را کپی کن. توکن‌ها و مقدار پارامترهای درخواست در گزارش ثبت نمی‌شوند.",
+        copyConnectionReport: "کپی گزارش اتصال",
+        connectionReportCopied: "گزارش اتصال کپی شد.",
+        connectionReportCopyFailed: "گزارش کپی نشد. دوباره تلاش کن.",
         wholeMonth: "تمام ماه",
         chooseWeek: "انتخاب هفته",
         chooseMonth: "انتخاب ماه",
