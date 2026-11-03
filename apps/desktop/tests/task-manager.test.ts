@@ -18,8 +18,8 @@ describe("application-wide tasks",()=>{
  });
  it("announces a live analysis completion once but never old completed history",async()=>{
   mocks.api.mockResolvedValueOnce({tasks:[task("completed")]});const update=vi.fn();window.addEventListener("dota-notes:matches-updated",update);
-  try{manager.start();await flush();expect(manager.snapshot().toast).toBeNull();const pending={...task("pending"),requestedAt:"2026-10-23T11:00:00Z"};mocks.api.mockResolvedValue({tasks:[pending]});await vi.advanceTimersByTimeAsync(15000);await flush();
-   mocks.api.mockResolvedValue({tasks:[{...pending,status:"completed"}]});await vi.advanceTimersByTimeAsync(3000);await flush();expect(manager.snapshot().toast?.kind).toBe("analysis");expect(update).toHaveBeenCalledOnce();await vi.advanceTimersByTimeAsync(15000);await flush();expect(update).toHaveBeenCalledOnce();
+  try{manager.start();await flush();expect(manager.snapshot().toast).toBeNull();const pending={...task("pending"),requestedAt:"2026-10-23T11:00:00Z"};mocks.api.mockResolvedValue({tasks:[pending]});await vi.advanceTimersByTimeAsync(30000);await flush();
+   mocks.api.mockResolvedValue({tasks:[{...pending,status:"completed"}]});await vi.advanceTimersByTimeAsync(5000);await flush();expect(manager.snapshot().toast?.kind).toBe("analysis");expect(update).toHaveBeenCalledOnce();await vi.advanceTimersByTimeAsync(15000);await flush();expect(update).toHaveBeenCalledOnce();
   }finally{window.removeEventListener("dota-notes:matches-updated",update);}
  });
  it("accepts multiple downloads but performs one native transfer at a time",async()=>{
