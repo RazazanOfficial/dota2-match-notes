@@ -1,3 +1,5 @@
+> مرجع تکمیلی یا تاریخی: برای نقش سرورها و دستور استقرار، [راهنمای جاری](deployment-ubuntu.md) و [handoff](HANDOFF.md) مرجع هستند. دستورهای تک سروری این سند بدون تطبیق اجرا نشوند.
+
 # انتقال کامل بک‌اند Next.js به Express
 
 مبنای انتقال، ریپوی `RazazanOfficial/dota2-match-notes` در commit زیر است:

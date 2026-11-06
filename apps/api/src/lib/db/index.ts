@@ -1,6 +1,7 @@
 import { logFailure } from "../../http/log";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
+import { validateDatabaseTopology } from "../../runtime/topology";
 
 type DatabaseState = {
   pool?: Pool;
@@ -18,6 +19,7 @@ export function getDb() {
     throw new Error("DATABASE_URL is not configured");
   }
 
+  validateDatabaseTopology(connectionString);
   const state = (databaseState.__dotaNotesDatabase ??= {});
 
   if (!state.pool) {

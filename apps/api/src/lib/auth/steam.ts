@@ -1,3 +1,4 @@
+import { requireComputeNode } from "../../runtime/topology";
 import { logFailure } from "../../http/log";
 import { getApiPublicUrl } from "./config";
 
@@ -89,6 +90,7 @@ export function extractSteamId(params: URLSearchParams) {
 }
 
 export async function verifySteamOpenId(params: URLSearchParams, state: string) {
+  requireComputeNode();
   if (params.get("openid.mode") !== "id_res") {
     throw new Error("Steam did not return a successful identity response");
   }
@@ -155,6 +157,7 @@ function fallbackSteamProfile(steamId: string): SteamProfile {
 }
 
 async function requestSteamProfile(steamId: string) {
+  requireComputeNode();
   const fallback = fallbackSteamProfile(steamId);
   const apiKey = process.env.STEAM_WEB_API_KEY?.trim();
 

@@ -249,7 +249,7 @@ async function handle(client, job, hooks, { pipeline=false }={}) {
   } else await hooks.event("validating", "checkpoint_reused", "Complete replay reused; skipping download");
   if(pipeline) {
     if(!archived) await client.query(`INSERT INTO replay_archive_jobs(match_id) VALUES($1)
-      ON CONFLICT(match_id) DO UPDATE SET status='pending',run_after=now(),updated_at=now()
+      ON CONFLICT(match_id) DO UPDATE SET status='pending',attempts=0,locked_at=NULL,heartbeat_at=NULL,error_code=NULL,run_after=now(),updated_at=now()
       WHERE replay_archive_jobs.status IN ('completed','failed')`,[job.match_id]);
     if(job.intent === "analysis" && !parsed) await updateJob(client,job,
       "status='pending',phase='awaiting_parse',phase_started_at=now(),run_after=now(),locked_at=NULL,reserved_bytes=0,error_code=NULL,error_message=NULL");
@@ -310,6 +310,8 @@ async function failJob(client, job, hooks, error) {
       log({ enabled: true, processed: 1, result: { matchId: Number(job.match_id), status: decision.status, code: decision.code, retryIn: decision.delay } });
 }
 async function main() {
+  const { requireComputeNode } = await import("../node-role.mjs");
+  requireComputeNode();
   const args = process.argv.slice(2);
   if (args.length && !((args.length === 2 || args.length === 3 && args[2] === "--download-only") && args[0] === "--enqueue" &&
     /^[1-9]\d{0,15}$/.test(args[1]) && Number.isSafeInteger(Number(args[1])))) throw new Error("Usage: run-queue.mjs [--enqueue MATCH_ID [--download-only]]");

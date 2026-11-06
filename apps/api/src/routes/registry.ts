@@ -1,4 +1,5 @@
 import * as tasks from "./tasks/route";
+import * as replayDownload from "./replays/[matchId]/download/route";
 import * as playerPage from "./players/[identifier]/route";
 import * as matchPage from "./journal/matches/[matchId]/page/route";
 import * as r0 from "./admin/monthly-references/route";
@@ -116,6 +117,7 @@ export const routes = [
   { path: "/replays/lookup", method: "POST", handler: r36.POST },
   { path: "/replays/:matchId/analysis", method: "GET", handler: r33.GET },
   { path: "/replays/:matchId/file", method: "GET", handler: r34.GET },
+  { path: "/replays/:matchId/download", method: "GET", handler: replayDownload.GET },
   { path: "/replays/:matchId", method: "GET", handler: r35.GET },
   { path: "/replays/:matchId", method: "POST", handler: r35.POST },
   { path: "/sync/me", method: "GET", handler: r37.GET },

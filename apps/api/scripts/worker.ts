@@ -6,6 +6,9 @@ import { routes } from "../src/routes/registry";
 import type { HttpHandler } from "../src/http/protocol";
 import { setTimeout } from "node:timers/promises";
 
+import { requireComputeNode } from "./node-role.mjs";
+requireComputeNode();
+
 const kinds = ["sync", "images", "stratz", "performance-reference", "opendota-parse"];
 const kind = process.argv[2];
 if (!kinds.includes(kind)) throw new Error(`Worker kind must be one of ${kinds.join(", ")}`);

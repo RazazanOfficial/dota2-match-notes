@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import "../env.mjs";
+import { requireComputeNode } from "../node-role.mjs";
 import pg from "pg";
 import {lstat} from "node:fs/promises";
 import {fileURLToPath} from "node:url";
@@ -114,6 +115,7 @@ export function pipelineLanes(env = process.env) {
   ];
 }
 export async function main() {
+  requireComputeNode();
   if(process.env.LOCAL_REPLAY_WORKER_ENABLED!=="true"){log({enabled:false});return;}
   const lanes=pipelineLanes();
   const directory=await lstat(incoming);

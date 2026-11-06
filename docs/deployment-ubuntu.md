@@ -1,350 +1,326 @@
-# استقرار Dota2 Notes روی Ubuntu 24.04 بدون Docker
+# استقرار جاری: برنامه در ایران، پردازش در آلمان
 
-برای وضعیت جاری، ترتیب راهنماها و کارهای باز، ابتدا [handoff](HANDOFF.md) را بخوانید.
-این راهنما شامل نصب اولیه و روال انتشار است؛ unitهای قدیمی ممکن است روی سرور وجود
-داشته باشند، پس فعال‌بودن timer را با `systemctl` بررسی کنید.
+مرجع معماری: [دو VPS](two-vps-architecture.fa.md). مسیر دانلود:
+[دانلود مستقیم](direct-replay-download.fa.md). این راهنما checkout موجود
+`/var/www/dota2notes` و کاربر `dota2notes` را حفظ می کند. clone، reset/clean، نصب
+مجدد OS یا حذف دیتابیس قبلی لازم نیست. دستیار روی VPS چیزی اجرا نکرده است.
 
-این راهنما برای سرور با دامنه `dota2notes.ir` و مسیر ثابت
-`/var/www/dota2notes` نوشته شده است. دستورها را به‌ترتیب اجرا کنید. رمزها و کلیدهای واقعی
-نباید داخل Git ثبت شوند.
-
-**از مرحلهٔ monorepo:** فرمان‌های npm در ریشه اجرا می‌شوند؛ برنامهٔ Next و parser در `apps/web` هستند. env و `deploy` در ریشه باقی می‌مانند. برای اولین انتقال، [راهنمای اختصاصی](monorepo-desktop-foundation.md) مرجع ترتیب نصب unitهاست.
-
-## ۱. آماده‌کردن DNS
-
-در پنل دامنه یک رکورد `A` برای `dota2notes.ir` بسازید و آن را به IPv4 سرور متصل کنید.
-رکورد `www` اختیاری است؛ اگر می‌خواهید `www.dota2notes.ir` هم کار کند، برای آن نیز رکورد
-`A` یا `CNAME` بسازید. انتشار DNS ممکن است کمی زمان ببرد.
-
-روی سیستم خودتان بررسی کنید:
+## ۱. Windows: pull، شاخه، Copy/Replace و بررسی
 
 ```powershell
-Resolve-DnsName dota2notes.ir
+git status --short
+git switch main
+git pull --ff-only origin main
+git switch -c feat/two-vps-processing
 ```
 
-IP نمایش‌داده‌شده باید IP عمومی VPS باشد.
+تغییر محلی را پیش از switch تعیین تکلیف کنید. فایل های ZIP را با مسیر نسبی روی
+همین checkout جایگزین کنید؛ env واقعی را بازنویسی نکنید. سپس:
 
-## ۲. اتصال و به‌روزرسانی Ubuntu
-
-با MobaXterm وارد VPS شوید و اجرا کنید:
-
-```bash
-sudo apt update
-sudo apt upgrade -y
-sudo apt install -y nginx postgresql postgresql-contrib git curl ca-certificates
+```powershell
+npm ci
+npm test
+npm run test -w @dota-notes/api
+npm run test:desktop
+npm run typecheck
+npm run api:build
+npm run desktop:build
+npm run test:native-replay
+cargo test --locked --manifest-path apps/desktop/src-tauri/Cargo.toml
+npm run desktop:installer
+git diff --check
+git status --short
+git add -A
+git commit -m "Split Iran application and Germany compute services"
+git push -u origin feat/two-vps-processing
+git switch main
+git pull --ff-only origin main
+git merge --no-ff feat/two-vps-processing -m "Merge branch 'feat/two-vps-processing'"
+git push origin main
 ```
 
-Node.js باید به‌صورت system-wide نصب شود تا systemd آن را در `/usr/bin/node` پیدا کند.
-برای این پروژه Node.js 24 مناسب است:
+نصاب بعد از استقرار API نصب شود. خروجی NSIS در
+`apps/desktop/src-tauri/target/release/bundle/nsis/` است.
+
+## ۲. پیش بررسی نسخه و توقف نویسنده ها
+
+IP فعلی ایران `87.107.165.50` و آلمان `143.20.60.45` است. روی هر دو VPS:
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
-sudo apt install -y nodejs
+sudo -u dota2notes -H git -C /var/www/dota2notes status -sb
+sudo -u postgres psql -d dota_notes -Atc "SHOW server_version;"
+pg_dump --version
 node --version
-npm --version
-which node
 ```
 
-خروجی `which node` باید `/usr/bin/node` باشد.
+Node.js 24 و npm 11 استفاده شود. برای این روال restore، major PostgreSQL مقصد
+و ابزارها را با منبع آلمان هماهنگ کنید. اگر متفاوت اند، ابتدا همین مورد بررسی
+شود؛ dump جدید را به سرور قدیمی تر تحمیل نکنید.
 
-## ۳. ساخت کاربر محدود برنامه
+داده نهایی از آلمان می آید. برای حفظ دیتابیس قبلی ایران، مقصد تازه
+`dota_notes_primary` خواهد بود. داده دو دیتابیس را با هم merge نکنید.
 
-برنامه با کاربر `root` اجرا نمی‌شود:
+در هر دو VPS، فقط سرویس های موجود همین پروژه را متوقف کنید:
 
 ```bash
-sudo adduser --system --group --home /var/lib/dota2notes --shell /usr/sbin/nologin dota2notes
-sudo install -d -o dota2notes -g dota2notes /var/www/dota2notes
+for DOTA_UNIT in dota2notes-replay.timer dota2notes-sync.timer dota2notes-sync-manual.timer dota2notes-images.timer dota2notes-performance-reference.timer dota2notes-opendota-parse.timer dota2notes-stratz.timer dota2notes-monitor.timer; do
+  if systemctl cat "$DOTA_UNIT" >/dev/null 2>&1; then sudo systemctl disable --now "$DOTA_UNIT"; fi
+done
+for DOTA_UNIT in dota2notes-sync-daemon.service dota2notes-replay.service dota2notes-sync.service dota2notes-images.service dota2notes-performance-reference.service dota2notes-opendota-parse.service dota2notes-stratz.service dota2notes-api.service dota2notes.service; do
+  if systemctl cat "$DOTA_UNIT" >/dev/null 2>&1; then sudo systemctl stop "$DOTA_UNIT"; fi
+done
 ```
 
-اگر پیام داد کاربر از قبل وجود دارد، ساخت مجدد لازم نیست.
+این مرحله پنجره توقف دارد. TeamSpeak و سایر سرویس ها در این دستورها نیستند.
 
-## ۴. ساخت PostgreSQL روی VPS
+## ۳. snapshot خصوصی و restore در ایران
 
-دیتابیس ویندوز به VPS منتقل نمی‌شود؛ روی VPS یک دیتابیس مستقل بسازید. ابتدا یک رمز تصادفی
-فقط شامل حروف و عدد تولید کنید تا در URL نیاز به encode نداشته باشد:
+روی آلمان، در نشست root:
 
 ```bash
-openssl rand -hex 24
+umask 077
+sudo -u postgres pg_dump --format=custom --no-owner --no-privileges --dbname=dota_notes > /root/dota-two-vps-final.dump
+sha256sum /root/dota-two-vps-final.dump > /root/dota-two-vps-final.dump.sha256
+sudo cp -a /var/www/dota2notes/.env.production /root/dota-germany-env.before-two-vps
 ```
 
-رمز را موقتاً در Password Manager نگه دارید و سپس وارد PostgreSQL شوید:
+dump و فایل sha را با SFTP به `/root/` ایران منتقل کنید. آنها را در Git، گفتگو
+یا storage عمومی قرار ندهید. parser و spool روی آلمان می مانند و پاک نمی شوند.
+روی ایران، در نشست root:
 
 ```bash
-sudo -u postgres psql
+cd /root
+sha256sum -c dota-two-vps-final.dump.sha256
+sudo cat /root/dota-two-vps-final.dump | sudo -u postgres pg_restore --list
+sudo -u postgres createdb --owner=dota_notes_app dota_notes_primary
+sudo cat /root/dota-two-vps-final.dump | sudo -u postgres pg_restore --exit-on-error --single-transaction --no-owner --no-privileges --role=dota_notes_app --dbname=dota_notes_primary
+sudo -u postgres psql -d dota_notes_primary -P pager=off -c \
+"SELECT count(*) AS users FROM users; SELECT count(*) AS matches FROM dota_matches; SELECT count(*) AS replay_jobs FROM local_replay_jobs;"
 ```
 
-به‌جای `YOUR_DATABASE_PASSWORD` رمز تولیدشده را قرار دهید:
+مالک موجود ایران `dota_notes_app` باید وجود داشته باشد. اگر مقصد تازه از قبل
+وجود دارد، آن را drop نکنید؛ نام و وضعیت آن قبل از ادامه بررسی شود.
+role محدود worker را فقط اگر وجود ندارد بسازید:
+
+```bash
+sudo -u postgres psql -d dota_notes_primary
+```
 
 ```sql
-CREATE ROLE dota_notes_app WITH LOGIN PASSWORD 'YOUR_DATABASE_PASSWORD';
-CREATE DATABASE dota_notes OWNER dota_notes_app;
-\c dota_notes
-SELECT current_database(), current_user;
+CREATE ROLE dota_notes_compute LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION;
+\password dota_notes_compute
+GRANT CONNECT ON DATABASE dota_notes_primary TO dota_notes_compute;
+GRANT USAGE ON SCHEMA public TO dota_notes_compute;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO dota_notes_compute;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO dota_notes_compute;
+ALTER DEFAULT PRIVILEGES FOR ROLE dota_notes_app IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO dota_notes_compute;
+ALTER DEFAULT PRIVILEGES FOR ROLE dota_notes_app IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO dota_notes_compute;
+ALTER ROLE dota_notes_compute SET statement_timeout = '60s';
+ALTER ROLE dota_notes_compute SET lock_timeout = '5s';
+ALTER ROLE dota_notes_compute SET idle_in_transaction_session_timeout = '60s';
 \q
 ```
 
-طبیعی است که `current_user` در این بررسی `postgres` باشد، چون اتصال جاری را با postgres
-باز کرده‌اید؛ مالک دیتابیس همچنان `dota_notes_app` است.
+رمز در prompt خصوصی psql وارد و در URL آلمان encode می شود. PostgreSQL روی
+loopback:5432 بماند؛ پورت اینترنتی لازم نیست. migration آینده با مالک DB در ایران
+اجرا شود، نه با role محدود compute.
 
-## ۵. دریافت کد پروژه
-
-این مرحله را بعد از merge شدن آخرین پچ در شاخه `main` انجام دهید:
-
-```bash
-sudo -u dota2notes -H git clone https://github.com/RazazanOfficial/dota2-match-notes.git /var/www/dota2notes
-cd /var/www/dota2notes
-```
-
-برای به‌روزرسانی‌های بعدی clone مجدد انجام ندهید؛ از `git pull --ff-only` استفاده می‌کنیم.
-روی Windows برای ترکیب branchهای پچ با `main`، طبق [قرارداد Git](HANDOFF.md)
-از merge با commit استفاده می‌شود؛ این فرمان pull فقط برای به‌روزکردن checkout است.
-
-## ۶. ساخت تنظیمات production
+## ۴. دریافت سورس و ساخت runtime روی هر دو سرور
 
 ```bash
-sudo -u dota2notes -H cp deploy/env.production.example .env.production
-sudo nano .env.production
-```
-
-حداقل این مقادیر را کامل کنید:
-
-- `STEAM_WEB_API_KEY`
-- `SUPER_ADMIN_STEAM_IDS`
-- رمز موجود در `DATABASE_URL`
-- `SYNC_WORKER_SECRET`
-- تمام متغیرهای `CLOUD_SPACE_*`
-- برای صف Replay درخواستی و ذخیره در ParsPack، راهنمای
-  [Replay درخواستی](replay-on-demand-archive.md) را نیز ببینید.
-- در صورت داشتن کلید OpenDota، مقدار `OPENDOTA_API_KEY`
-
-برای ساخت Worker Secret اجرا کنید و خروجی را در `SYNC_WORKER_SECRET` بگذارید:
-
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
-```
-
-سپس مالکیت و سطح دسترسی را محدود کنید:
-
-```bash
-sudo chown dota2notes:dota2notes .env.production
-sudo chmod 600 .env.production
-```
-
-فایل واقعی `.env.production` توسط `.gitignore` نادیده گرفته می‌شود.
-
-## ۷. نصب، Migration و Build اولیه
-
-```bash
+sudo -u dota2notes -H git -C /var/www/dota2notes pull --ff-only origin main
 cd /var/www/dota2notes
 sudo -u dota2notes -H npm ci
-sudo -u dota2notes -H env DOTENV_CONFIG_PATH=.env.production npm run db:migrate
-sudo -u dota2notes -H npm test
-sudo -u dota2notes -H npm run typecheck
+sudo -u dota2notes -H npm run api:build
+sudo -u dota2notes -H npm run release:prepare -w @dota-notes/api
+sudo -u dota2notes -H npm ci --prefix apps/api/release --workspaces=false
+```
+
+در اولین مهاجرت، وب ایران نیز با سورس فعلی build شود:
+
+```bash
 sudo -u dota2notes -H npm run build
 ```
 
-Migration فقط schema را به‌روز می‌کند و در اجرای مجدد migrationهای انجام‌شده را تکرار
-نمی‌کند.
+انتشار بعدی بدون تغییر سورس/dependency وب به Next build نیاز ندارد. release را
+دستی ویرایش نکنید. هنگام `npm ci` ریشه، وب و workerهای وابسته متوقف باشند.
 
-## ۸. نصب سرویس و Workerها
+## ۵. کلید اختصاصی و حساب محدود SSH
+
+روی آلمان، فقط اگر کلید از قبل وجود ندارد:
 
 ```bash
-sudo cp deploy/systemd/dota2notes.service /etc/systemd/system/
-sudo cp deploy/systemd/dota2notes-images.service /etc/systemd/system/
-sudo cp deploy/systemd/dota2notes-images.timer /etc/systemd/system/
-sudo cp deploy/systemd/dota2notes-performance-reference.service /etc/systemd/system/
-sudo cp deploy/systemd/dota2notes-performance-reference.timer /etc/systemd/system/
-sudo cp deploy/systemd/dota2notes-opendota-parse.service /etc/systemd/system/
-sudo cp deploy/systemd/dota2notes-opendota-parse.timer /etc/systemd/system/
-sudo cp deploy/systemd/dota2notes-sync.service /etc/systemd/system/
-sudo cp deploy/systemd/dota2notes-sync-manual.timer /etc/systemd/system/
+sudo install -d -o dota2notes -g dota2notes -m 700 /var/lib/dota2notes/.ssh
+sudo -u dota2notes -H ssh-keygen -t ed25519 -N "" -f /var/lib/dota2notes/.ssh/compute_link_ed25519
+sudo cat /var/lib/dota2notes/.ssh/compute_link_ed25519.pub
+```
+
+کلید موجود overwrite نشود. فقط `.pub` را به ایران منتقل کنید. روی ایران:
+
+```bash
+sudo adduser --system --group --home /var/lib/dota-link --shell /usr/sbin/nologin dota-link
+sudo install -d -o dota-link -g dota-link -m 700 /var/lib/dota-link/.ssh
+sudo nano /var/lib/dota-link/.ssh/authorized_keys
+```
+
+یک خط شامل گزینه های زیر و سپس متن کامل public key آلمان در همان خط:
+
+```text
+from="143.20.60.45",restrict,port-forwarding,permitopen="127.0.0.1:5432",permitlisten="127.0.0.1:14100" ssh-ed25519 YOUR_GERMANY_PUBLIC_KEY
+```
+
+```bash
+sudo chown dota-link:dota-link /var/lib/dota-link/.ssh/authorized_keys
+sudo chmod 600 /var/lib/dota-link/.ssh/authorized_keys
+sudo cp -a /etc/ssh/sshd_config /root/sshd_config.before-dota-link
+sudo grep -n "Match User dota-link" /etc/ssh/sshd_config
+```
+
+بلوک `deploy/ssh/dota-compute-link.conf` فقط یک بار در انتهای فایل اصلی اضافه
+شود؛ در Include ابتدای فایل قرار نگیرد. پورت SSH و دسترسی administrator عوض نشود.
+اگر `AllowUsers/AllowGroups` محدود است، حساب جدید باید طبق همان سیاست مجاز شود.
+
+```bash
+sudo sh -c 'printf "\n" >> /etc/ssh/sshd_config; cat /var/www/dota2notes/deploy/ssh/dota-compute-link.conf >> /etc/ssh/sshd_config'
+sudo /usr/sbin/sshd -t && sudo systemctl reload ssh
+sudo /usr/sbin/sshd -T | sed -n '/^port /p'
+sudo ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+```
+
+روی آلمان، پورت واقعی بالا را وارد و fingerprint را با خود ایران مقایسه کنید:
+
+```bash
+read -r -p "Iran SSH port: " DOTA_IRAN_SSH_PORT
+ssh-keyscan -p "$DOTA_IRAN_SSH_PORT" -t ed25519 87.107.165.50 > /root/dota-iran-hostkey.candidate
+ssh-keygen -lf /root/dota-iran-hostkey.candidate
+```
+
+فقط پس از تطبیق دقیق fingerprint:
+
+```bash
+sudo sh -c 'cat /root/dota-iran-hostkey.candidate >> /var/lib/dota2notes/.ssh/known_hosts'
+sudo chown dota2notes:dota2notes /var/lib/dota2notes/.ssh/known_hosts
+sudo chmod 600 /var/lib/dota2notes/.ssh/known_hosts
+sudo install -d -m 700 /etc/dota2notes
+sudo install -m 600 /var/www/dota2notes/deploy/tunnel.env.example /etc/dota2notes/tunnel.env
+sudo nano /etc/dota2notes/tunnel.env
+```
+
+IP و پورت واقعی را وارد کنید؛ پورت 22 را حدس نزنید.
+
+## ۶. env نقش ها و شروع پل
+
+از env فعلی هر میزبان کپی خصوصی بگیرید. فایل مثال را با آن merge کنید، نه اینکه
+کل فایل را با placeholder جایگزین کنید:
+
+- ایران: `deploy/env.app.example` با دیتابیس محلی `dota_notes_primary`.
+- آلمان: `deploy/env.compute.example` با role compute و پورت 15432.
+- `DOTA_COMPUTE_TOKEN`: مقدار تصادفی یکسان حداقل ۴۳ کاراکتری در دو میزبان.
+- `SYNC_WORKER_SECRET`، super admin و سیاست های حساب/زمان یکسان باشند.
+- کلید Steam، STRATZ و ایمیل روی آلمان. CLOUD_SPACE_* برای امضای GET در ایران
+  و upload در آلمان لازم است. URL عمومی callback همان API ایران می ماند.
+
+```bash
+node -e 'console.log(require("crypto").randomBytes(32).toString("base64url"))'
+sudo chown dota2notes:dota2notes /var/www/dota2notes/.env.production
+sudo chmod 600 /var/www/dota2notes/.env.production
+```
+
+مقدار واقعی secret فقط در env خصوصی دو سرور قرار بگیرد. روی آلمان:
+
+```bash
+sudo cp /var/www/dota2notes/deploy/systemd/dota2notes-link.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now dota2notes.service
+sudo systemctl enable --now dota2notes-link.service
+sudo systemctl status dota2notes-link.service --no-pager
+sudo ss -lntp 'sport = :15432'
 ```
 
-وضعیت برنامه را ببینید:
+روی ایران `ss -lntp 'sport = :14100'` باید listener loopback نشان دهد.
+
+## ۷. API ایران و workerهای آلمان
+
+روی هر دو، unit API ریپو را نصب کنید. روی ایران:
 
 ```bash
-sudo systemctl status dota2notes.service --no-pager
-sudo -u dota2notes -H bash deploy/scripts/health-check.sh
+cd /var/www/dota2notes
+sudo cp deploy/systemd/dota2notes-api.service /etc/systemd/system/
+sudo -u dota2notes -H env DOTENV_CONFIG_PATH=/var/www/dota2notes/.env.production node apps/api/release/dist/migrate.js
+sudo -u dota2notes -H env DOTENV_CONFIG_PATH=/var/www/dota2notes/.env.production node apps/api/release/dist/preflight.js --check-db
+sudo cp deploy/systemd/dota2notes.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now dota2notes-api.service dota2notes.service
+curl -fS --max-time 10 http://127.0.0.1:4100/health/ready
 ```
 
-پس از موفقیت Health Check، Timerهای تصاویر، parse و آمار مرجع را فعال کنید:
+هیچ worker پردازشی روی ایران فعال نشود. روی آلمان JAR معتبر و incoming خصوصی
+قبلی حفظ شوند؛ این تغییر JAR تازه لازم ندارد. سپس:
 
 ```bash
+cd /var/www/dota2notes
+sudo cp deploy/systemd/dota2notes-api.service deploy/systemd/dota2notes-replay.service deploy/systemd/dota2notes-sync-daemon.service /etc/systemd/system/
+sudo cp deploy/systemd/dota2notes-images.service deploy/systemd/dota2notes-images.timer /etc/systemd/system/
+sudo cp deploy/systemd/dota2notes-performance-reference.service deploy/systemd/dota2notes-performance-reference.timer /etc/systemd/system/
+for DOTA_SERVICE in dota2notes-api dota2notes-replay dota2notes-images dota2notes-performance-reference; do
+  sudo install -d "/etc/systemd/system/$DOTA_SERVICE.service.d"
+  sudo cp deploy/systemd/overrides/compute-link.conf "/etc/systemd/system/$DOTA_SERVICE.service.d/20-compute-link.conf"
+done
+sudo cp deploy/systemd/overrides/germany-replay.conf /etc/systemd/system/dota2notes-replay.service.d/30-germany-resources.conf
+sudo systemctl daemon-reload
+sudo systemctl enable --now dota2notes-api.service
+curl -fS --max-time 15 http://127.0.0.1:4100/health/ready
+sudo systemctl enable --now dota2notes-replay.service dota2notes-sync-daemon.service
 sudo systemctl enable --now dota2notes-images.timer
 sudo systemctl enable --now dota2notes-performance-reference.timer
-sudo systemctl enable --now dota2notes-opendota-parse.timer
-sudo systemctl enable --now dota2notes-sync-manual.timer
-systemctl list-timers 'dota2notes-*'
 ```
 
-از پچ مرجع ماهانه، Timer آمار هر دقیقه فقط یک بخش کوچک از Meta و Performance را
-پیش می‌برد. اولین بار نسخهٔ ماه قبل ساخته می‌شود؛ شروع دستی و دریافت ماه‌های
-قدیمی‌تر از پنل Super Admin، بخش «مرجع آماری ماهانه»، انجام می‌شود. وضعیت
-`active` به معنی تکمیل همهٔ بخش‌هاست؛ برای جزئیات جدول‌ها و شرط‌های منبع،
-`docs/monthly-reference-services.md` را ببینید. بعد از کپی Unit تازه و
-`daemon-reload`، اگر Timer از قبل فعال بود آن را یک بار restart کنید:
+timer قدیمی sync/manual-sync و replay، enrichment بازنشسته STRATZ و OpenDota parse
+خاموش بمانند. وب آلمان لازم نیست. collector آلمان را نیز با نسخه root-owned جدید
+طبق [راهنمای مانیتور](service-monitoring.md) جایگزین کنید تا unit پل و daemon دیده شوند.
+
+## ۸. بررسی HTTPS، DNS و پذیرش
+
+روی ایران health محلی و health پل را بخوانید:
 
 ```bash
-sudo systemctl restart dota2notes-performance-reference.timer
-```
-
-Sync کاربران فقط با دکمه داخل سایت درخواست می‌شود؛ `dota2notes-sync-manual.timer`
-هر ۳۰ ثانیه صف درخواست‌های روز و هفته را در دسته‌های کوچک پیش می‌برد. زمان‌بند
-ساعتی `dota2notes-sync.timer` با `SCHEDULED_SYNC_ENABLED=off` لازم نیست.
-Workerهای تصاویر و OpenDota parse صف‌های مستقل را پردازش می‌کنند. Worker قدیمی STRATZ برای مچ‌ها بازنشسته شده است:
-
-```bash
-sudo systemctl disable --now dota2notes-stratz.timer 2>/dev/null || true
-```
-
-فایل‌های Scheduler ساعتی برای توسعه آینده در مخزن باقی مانده‌اند، اما در این نسخه
-`dota2notes-sync.timer` را نصب یا فعال نکنید؛ فقط timer دستی بالا لازم است.
-
-برای اجرای دستی روی VPS:
-
-```bash
-sudo systemctl start dota2notes-images.service
-sudo systemctl start dota2notes-performance-reference.service
-sudo systemctl start dota2notes-opendota-parse.service
-sudo systemctl start dota2notes-sync.service
-```
-
-برای دیدن Logها:
-
-```bash
-sudo journalctl -u dota2notes.service -n 100 --no-pager
-sudo journalctl -u dota2notes-images.service -n 100 --no-pager
-sudo journalctl -u dota2notes-performance-reference.service -n 100 --no-pager
-sudo journalctl -u dota2notes-opendota-parse.service -n 100 --no-pager
-sudo journalctl -u dota2notes-sync.service -n 100 --no-pager
-```
-
-## ۹. فعال‌کردن Nginx
-
-```bash
-sudo cp deploy/nginx/dota2notes.ir.conf /etc/nginx/sites-available/dota2notes.ir
-sudo ln -s /etc/nginx/sites-available/dota2notes.ir /etc/nginx/sites-enabled/dota2notes.ir
-sudo rm -f /etc/nginx/sites-enabled/default
+curl -fS --max-time 10 http://127.0.0.1:4100/health/ready
+curl -fS --max-time 15 http://127.0.0.1:14100/health/ready
 sudo nginx -t
-sudo systemctl reload nginx
+sudo certbot certificates
 ```
 
-حالا این آدرس باید پاسخ بدهد:
+HTTPS ایران باید گواهی معتبر دامنه های فعلی را داشته باشد. اگر ندارد، پیش از
+cutover گواهی معتبر آماده شود؛ از `-k` استفاده نکنید. config HTTP نمونه را روی
+config HTTPS موجود کورکورانه کپی نکنید. upstream عمومی همان loopback:4100 و 3000 است.
+قبل از DNS، روی Windows:
+
+```powershell
+curl.exe -4 --noproxy "*" --resolve api.dota2notes.ir:443:87.107.165.50 --connect-timeout 10 --max-time 20 https://api.dota2notes.ir/health/live
+curl.exe -4 --noproxy "*" --resolve dota2notes.ir:443:87.107.165.50 --connect-timeout 10 --max-time 20 -o NUL -w "HTTP=%{http_code} TOTAL=%{time_total}\n" https://dota2notes.ir/
+```
+
+بعد از موفقیت، رکورد A سایت/API و www را به ایران ببرید. برای مسیر مستقیم
+فعلی proxy DNS خاموش بماند. AAAA متناقض حذف شود؛ nameserver و رکوردهای ایمیل به
+این مهاجرت ربطی ندارند و تغییر نمی کنند. cache DNS را پاک و تست عادی را تکرار کنید.
+
+بعد از نصب جدید: session و مچ ها از ایران، دریافت مچ و آنالیز در آلمان، نتیجه
+در DB ایران و دانلود از میزبان پارس پک با هش درست بررسی شوند. یک بار پل را عمدا
+stop کنید: خواندن اطلاعات و enqueue محلی باید ادامه داشته باشند و عملیات خارجی
+خطای مشخص بدهند. بعد پل و سرویس های وابسته را صریح restart کنید:
 
 ```bash
-curl --fail --show-error http://dota2notes.ir/api/health
+sudo systemctl stop dota2notes-link.service
+sudo systemctl start dota2notes-link.service
+sudo systemctl restart dota2notes-api.service dota2notes-replay.service dota2notes-sync-daemon.service
 ```
 
-چهار endpoint داخلی عمداً از طریق دامنه مسدود شده‌اند و باید `404` بدهند:
+این سه فرمان برای آزمون کنترل شده روی آلمان اند. `Requires` در stop عمدی می تواند
+وابسته ها را متوقف کند. در قطع عادی شبکه reconnect/Restart و بازیابی lease فعال اند.
+زمان دریافت، parse، نوشتن نتیجه و upload واقعی multipart جدا سنجیده شوند.
 
-```bash
-curl -i -X POST http://dota2notes.ir/api/internal/sync/tick
-curl -i -X POST http://dota2notes.ir/api/internal/images/tick
-curl -i -X POST http://dota2notes.ir/api/internal/stratz/tick
-curl -i -X POST http://dota2notes.ir/api/internal/performance-reference/tick
-```
+## rollback
 
-## ۱۰. Firewall بدون قطع‌شدن SSH
-
-قبل از فعال‌کردن UFW، پورت SSH خود را بررسی کنید. اگر MobaXterm با پورتی غیر از `22` وصل
-می‌شود، ابتدا همان پورت را مجاز کنید. برای پورت استاندارد:
-
-```bash
-sudo ufw allow OpenSSH
-sudo ufw allow 'Nginx Full'
-sudo ufw status
-```
-
-فقط وقتی مطمئن شدید قانون SSH صحیح است:
-
-```bash
-sudo ufw enable
-sudo ufw status verbose
-```
-
-پورت‌های `3000` و `5432` نباید عمومی شوند.
-
-## ۱۱. HTTPS با Let's Encrypt
-
-بعد از اینکه DNS و HTTP درست شدند:
-
-```bash
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d dota2notes.ir
-```
-
-اگر رکورد `www` را نیز ساخته‌اید، می‌توانید به‌جای دستور بالا اجرا کنید:
-
-```bash
-sudo certbot --nginx -d dota2notes.ir -d www.dota2notes.ir
-```
-
-بررسی نهایی:
-
-```bash
-curl --fail --show-error https://dota2notes.ir/api/health
-sudo certbot renew --dry-run
-```
-
-`APP_URL` باید از ابتدا `https://dota2notes.ir` باشد تا Steam OpenID فقط به دامنه نهایی
-برگردد.
-
-## ۱۲. روال هر انتشار بعدی
-
-**وضعیت تأییدشدهٔ ۷ اکتبر ۲۰۲۶:** Git main در خود `/var/www/dota2notes`؛ Express runtime در `apps/api/release` و وب Next در `apps/web`. دامنهٔ API `api.dota2notes.ir` است. مراحل نصب اولیهٔ قدیمی این سند برای تغییر معماری دوباره اجرا نشوند. فولدر source جدا نداریم.
-
-ابتدا تغییرات هر تسک در branch جدا تست، commit و push و با merge commit (`--no-ff`) وارد main شوند؛ سپس VPS `git pull --ff-only origin main` می‌گیرد. تغییرات محلی VPS را reset/clean نکنید؛ اول بررسی و نگهداری کنید.
-
-فرمان‌های کامل انتشار API و ریپلی، توقف/راه‌اندازی شش timer فعال و تست سلامت در [راهنمای جاری](replay-validation-progress.fa.md#استقرار-روی-vps-موجود-پس-از-push-به-main) هستند. خلاصهٔ ترتیب:
-
-1. وضعیت Git؛ توقف timerها، workerهای مربوط، API و هنگام npm ci ریشه، وب.
-2. Pull main؛ npm ci؛ build API؛ `release:prepare`؛ نصب production dependencies در release.
-3. فقط اگر migration جدید دارد، migration را با ENV production اجرا کنید. سپس preflight `--check-db` و preflight نقش replay.
-4. اگر وب/dependencyهای آن تغییر کرده‌اند، build Next قبل از start لازم است. برای پچ API-only نیازی به بازنویسی `.next` نیست.
-5. Start API و وب؛ readiness محلی و liveness عمومی؛ سپس timerهای قبلاً فعال.
-
-برای docs-only توقف/build لازم نیست. unitها تنها در صورت تغییر خودشان نصب و daemon-reload شوند. فایل Worker Cloudflare انتشار مستقل Wrangler دارد. backup cutover در `/var/backups/dota2notes-20261007-135840` و ENV فعلی حفظ شوند؛ قبل از migration بزرگ از دیتابیس backup تازه بگیرید.
-
-اگر فرمانی شکست خورد قبل از بخش بعد همان خطا را بررسی کنید. `health/ready` عمومی در nginx فعلی عمداً 404 است؛ محلی `http://127.0.0.1:4100/health/ready` و عمومی `https://api.dota2notes.ir/health/live` را بررسی کنید.
-
-## عیب‌یابی سریع
-
-```bash
-sudo systemctl status dota2notes.service --no-pager
-sudo journalctl -u dota2notes.service -n 200 --no-pager
-sudo nginx -t
-sudo ss -lntp | grep -E ':80|:443|:3000|:5432'
-systemctl list-timers 'dota2notes-*'
-```
-
-- `127.0.0.1:3000` باید فقط محلی باشد.
-- PostgreSQL باید روی localhost بماند.
-- خطای Steam callback معمولاً از `APP_URL` یا DNS/HTTPS است.
-- خطای Worker را ابتدا در unit مربوطه و سپس در جدول Job مربوطه بررسی کنید.
-
-### مسیر مستقیم STRATZ
-
-اگر مسیر DNS سرور بعضی دامنه‌ها را از یک واسط با IP چرخشی عبور می‌دهد، یک IP فعلی
-مقصد STRATZ را خارج از VPS دریافت و در `.env.production` ثبت کنید:
-
-```dotenv
-STRATZ_DIRECT_IP=IP_1
-STRATZ_MIN_REQUEST_INTERVAL_MS=1000
-STRATZ_MAX_ATTEMPTS=2
-STRATZ_RETRY_DELAY_MS=2000
-```
-
-این گزینه در زمان درخواست از DNS استفاده نمی‌کند و DNS سراسری سیستم یا ارتباط سرویس‌های
-دیگر را تغییر نمی‌دهد. پیش از استفاده از توکن، مسیر مستقیم را بدون ارسال توکن بررسی کنید:
-
-```bash
-sudo -u dota2notes -H npm run stratz:route-check -- IP_1
-```
-
-مقدار `Observed direct egress IP` باید IP ثابت VPS باشد. این مسیر فقط برای
-snapshot آماری و ابزار تشخیصی اختیاری است؛ worker مربوط به مچ غیرفعال شده است.
-
-
-راهنمای پایداری دانلود Replay، استقرار و تست failover: [Replay resilience](replay-resilience.md).
+قبل از اولین نوشتن در DB تازه ایران، با توقف writerها، برگرداندن env و سرویس
+های قبلی آلمان و DNS می توان به منبع قبلی برگشت. DB و spool قبلی حذف نشده اند.
+بعد از پذیرفتن نوشتن جدید در ایران، بازگرداندن صرف DNS/env کافی نیست: writerها
+باید متوقف و آخرین DB ایران به مقصد rollback منتقل شود تا دو شاخه داده ایجاد نشود.

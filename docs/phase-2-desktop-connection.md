@@ -1,3 +1,5 @@
+> مرجع تکمیلی یا تاریخی: برای نقش سرورها و دستور استقرار، [راهنمای جاری](deployment-ubuntu.md) و [handoff](HANDOFF.md) مرجع هستند. دستورهای تک سروری این سند بدون تطبیق اجرا نشوند.
+
 # Stage 2: desktop connection to Express
 
 This patch connects the installed Tauri app to the Express API. It expects the Stage 1 patch to be present at the project root.

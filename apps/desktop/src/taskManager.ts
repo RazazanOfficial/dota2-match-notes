@@ -9,6 +9,7 @@ export interface DownloadTask {matchId:string;status:"preparing"|"transferring"|
 export interface TaskSnapshot {analysis:AnalysisTask[];downloads:DownloadTask[];sync:SyncJob|null;toast:{id:string;kind:"analysis"|"download"|"sync";matchId?:string}|null}
 const storageKey=(owner:string)=>`dota-notes.tasks.v1.${owner}`;
 export class TaskManager {
+  private nativeRetryAt=new Map<string,number>();
   private state:TaskSnapshot={analysis:[],downloads:[],sync:null,toast:null};
   private listeners=new Set<()=>void>();private generation=0;private alive=false;private checking=false;private transferring=false;
   private timer=0;private stopProgress?:()=>void;private baseline=false;private previous=new Map<string,string>();
@@ -63,6 +64,7 @@ export class TaskManager {
   async download(matchId:string){
     if(!validReplayId(matchId))throw {code:"invalid_match_id"};if(connectionState()==="offline")throw {code:"offline_mode"};
     if(this.state.downloads.some(task=>task.matchId===matchId&&["preparing","transferring"].includes(task.status)))return;
+    this.nativeRetryAt.delete(matchId);
     await apiRequest(`/api/replays/${matchId}`,{method:"POST",body:JSON.stringify({intent:"download"})});if(!this.alive)return;
     this.state.downloads=this.state.downloads.filter(task=>task.matchId!==matchId).concat({matchId,status:"preparing",bytes:0,totalBytes:null,speed:0,updatedAt:Date.now(),requestedAt:Date.now()}).slice(-30);
     this.publish();void this.tick(true);
@@ -99,12 +101,14 @@ export class TaskManager {
   private async transferNext(signal:AbortSignal){
     const generation=this.generation;
     for(const task of this.state.downloads.filter(task=>["preparing","transferring"].includes(task.status))){
+      if((this.nativeRetryAt.get(task.matchId)||0)>Date.now())continue;
       if(!this.alive||generation!==this.generation||signal.aborted)return;if(task.status==="transferring"&&Date.now()-task.updatedAt<15000)continue;
       try{
-        const status=await apiRequest<{downloadReady?:boolean;archived:boolean;status:string;errorCode?:string}>(`/api/replays/${task.matchId}`,{signal});
+        const status=await apiRequest<{downloadReady?:boolean;directDownloadReady?:boolean;downloadErrorCode?:string|null;archived:boolean;status:string;errorCode?:string}>(`/api/replays/${task.matchId}`,{signal});
         if(!this.alive||generation!==this.generation||signal.aborted)return;
+        if(status.downloadErrorCode&&!status.archived){task.status="failed";task.errorCode=status.downloadErrorCode;this.publish();continue;}
         if(status.status==="failed"&&!status.downloadReady&&!status.archived){task.status="failed";task.errorCode=status.errorCode;this.publish();continue;}
-        if(!status.downloadReady&&!status.archived)continue;const token=getBearer();if(!token)return;
+        if(!(status.directDownloadReady??status.archived))continue;const token=getBearer();if(!token)return;
         this.transferring=true;task.status="transferring";task.updatedAt=Date.now();this.publish();
         // Do not await native I/O: other task/status polls continue meanwhile.
         void replayNative.download(task.matchId,token,API_ORIGIN).then(()=>{
@@ -112,7 +116,7 @@ export class TaskManager {
           this.notify("download",task.matchId);window.dispatchEvent(new Event("dota-notes:replay-downloaded"));
         }).catch(error=>{if(!this.alive||generation!==this.generation)return;
           const current=this.state.downloads.find(row=>row.matchId===task.matchId&&row.requestedAt===task.requestedAt);if(!current)return;
-          if(error?.code==="replay_busy"){current.status="preparing";current.updatedAt=Date.now();}else{current.status="failed";current.errorCode=error?.code||"replay_transfer_failed";}
+          if(error?.code==="replay_busy"||error?.code==="replay_archive_pending"){current.status="preparing";current.updatedAt=Date.now();this.nativeRetryAt.set(task.matchId,Date.now()+5000);}else{current.status="failed";current.errorCode=error?.code||"replay_transfer_failed";}
         }).finally(()=>{this.transferring=false;if(this.alive&&generation===this.generation){this.publish();void this.tick(true);}});break;
       }catch{/* Status timeout never discards a queued transfer. */}
     }

@@ -1,9 +1,11 @@
+import { requireComputeNode } from "../../runtime/topology";
 import { timingSafeEqual } from "node:crypto";
 import type { HttpRequest } from "../../http/protocol";
 import { getSyncWorkerConfig } from "./config";
 import { SyncWorkerError } from "./errors";
 
 export function requireSyncWorkerSecret(request: HttpRequest) {
+  requireComputeNode();
   const authorization = request.headers.get("authorization") || "";
   const expected = `Bearer ${getSyncWorkerConfig().secret}`;
   const receivedBuffer = Buffer.from(authorization);

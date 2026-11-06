@@ -151,6 +151,8 @@ async function store(matchId, blob) {
 }
 
 async function main() {
+  const { requireComputeNode } = await import("../node-role.mjs");
+  requireComputeNode();
   const { matchId, file, dryRun } = options(process.argv.slice(2));
   const jar = process.env.REPLAY_PARSER_JAR;
   if (!jar || !(await stat(jar).catch(() => null))?.isFile()) throw new Error("REPLAY_PARSER_JAR must point to the built OpenDota parser jar");

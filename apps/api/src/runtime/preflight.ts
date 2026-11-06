@@ -1,3 +1,4 @@
+import { getTopology, requireComputeNode, validateDatabaseTopology } from "./topology";
 import { access, readdir } from "node:fs/promises";
 import { constants } from "node:fs";
 import { resolve, isAbsolute, join } from "node:path";
@@ -23,6 +24,15 @@ export async function preflight(role: PreflightRole = "api") {
   async function check(name: string, run: () => unknown | Promise<unknown>) {
     try { await run(); checked.push(name); } catch { failures.push(name); }
   }
+  await check("node_topology", () => {
+    const topology = getTopology();
+    if (role !== "api") requireComputeNode();
+    if (topology.role === "compute" && !["127.0.0.1", "::1"].includes(process.env.API_HOST || "127.0.0.1")) throw new Error();
+    validateDatabaseTopology(process.env.DATABASE_URL || "");
+  });
+  if (process.env.DOTA_NODE_ROLE === "app") await check("direct_download_storage", () => {
+    if (new URL(getStorageConfig().endpoint).protocol !== "https:") throw new Error();
+  });
   await check("DATABASE_URL", () => {
     const url = new URL(process.env.DATABASE_URL || "");
     if (!["postgres:", "postgresql:"].includes(url.protocol) || !url.hostname || url.pathname.length < 2) throw new Error();
@@ -58,7 +68,7 @@ export async function preflight(role: PreflightRole = "api") {
       if (/CHANGE_ME|YOUR_|REPLACE_/i.test(process.env.STRATZ_API_TOKEN || "")) throw new Error();
     });
   }
-  if (process.env.STRATZ_TRANSPORT?.trim() === "curl") {
+  if (process.env.DOTA_NODE_ROLE !== "app" && process.env.STRATZ_TRANSPORT?.trim() === "curl") {
     await check("stratz_curl_transport", () => checkStratzCurlAvailable());
   }
   if (role === "images" || role === "replay") {

@@ -1,0 +1,15 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { createReplayDownloadTicket } from "../src/lib/replay/download-ticket";
+import { HttpRequest } from "../src/http/protocol";
+const state=vi.hoisted(()=>({user:null as null|{id:string},archive:null as null|{key:string;bytes:number;sha256:string}}));
+vi.mock("../src/lib/auth/request",()=>({getRequestUser:async()=>state.user}));
+vi.mock("../src/lib/replay/job-repository",()=>({getReplayArchive:async()=>state.archive}));
+import { GET } from "../src/routes/replays/[matchId]/download/route";
+const archive={key:"replays/2026/11/05/9070494281.dem.bz2",bytes:157286400,sha256:"a".repeat(64)};
+function configure(){for(const [k,v]of Object.entries({CLOUD_SPACE_END_POINT_URL:"https://c677095.parspack.net",CLOUD_SPACE_BUCKET:"test",CLOUD_SPACE_PUBLIC_BASE_URL:"https://c677095.parspack.net/test",CLOUD_SPACE_REGION:"us-east-1",CLOUD_SPACE_ACCESS_KEY:"test-access-key",CLOUD_SPACE_SECRET_KEY:"test-secret-key",CLOUD_SPACE_FORCE_PATH_STYLE:"true"}))vi.stubEnv(k,v);}
+afterEach(()=>{vi.unstubAllEnvs();vi.restoreAllMocks();state.user=null;state.archive=null;});
+describe("direct replay tickets",()=>{
+ it("signs a single object GET for 15 minutes without downloading it",async()=>{configure();const fetch=vi.spyOn(globalThis,"fetch");const ticket=await createReplayDownloadTicket(9070494281,archive);const u=new URL(ticket.url);expect(u.hostname).toBe("c677095.parspack.net");expect(u.pathname).toBe(`/test/${archive.key}`);expect(u.searchParams.get("X-Amz-Expires")).toBe("900");expect(u.searchParams.get("X-Amz-SignedHeaders")).toBe("host");expect(u.searchParams.get("X-Amz-Signature")).toMatch(/^[a-f0-9]{64}$/);expect(ticket.sha256).toBe(archive.sha256);expect(JSON.stringify(ticket)).not.toContain("test-secret-key");expect(fetch).not.toHaveBeenCalled();});
+ it("rejects different matches, traversal, oversized input and invalid hashes",async()=>{configure();for(const a of [{...archive,key:"replays/2026/11/05/9070494282.dem.bz2"},{...archive,key:"replays/../secret"},{...archive,bytes:0},{...archive,bytes:201*1024*1024},{...archive,sha256:"bad"}])await expect(createReplayDownloadTicket(9070494281,a)).rejects.toThrow();vi.stubEnv("CLOUD_SPACE_END_POINT_URL","http://c677095.parspack.net");await expect(createReplayDownloadTicket(9070494281,archive)).rejects.toThrow();});
+ it("requires authentication and does not cache private URLs",async()=>{const q=new HttpRequest("https://api.dota2notes.ir/api/replays/9070494281/download");const c={params:Promise.resolve({matchId:"9070494281"})};expect((await GET(q,c)).status).toBe(401);state.user={id:"owner"};expect((await GET(q,{params:Promise.resolve({matchId:"bad"})})).status).toBe(400);expect((await GET(q,c)).status).toBe(409);configure();state.archive=archive;const r=await GET(q,c);expect(r.status).toBe(200);expect(r.headers.get("cache-control")).toBe("private, no-store");expect(r.headers.get("referrer-policy")).toBe("no-referrer");expect((await r.json()).download.sha256).toBe(archive.sha256);});
+});

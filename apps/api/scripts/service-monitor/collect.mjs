@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 // Installed as a root-owned file outside the application checkout. No request input
 // is ever passed to systemctl or journalctl.
 export const UNITS = Object.freeze([
+  "dota2notes-link.service", "dota2notes-sync-daemon.service",
   "dota2notes.service", "dota2notes-api.service", "dota2notes-images.timer", "dota2notes-images.service",
   "dota2notes-opendota-parse.timer", "dota2notes-opendota-parse.service",
   "dota2notes-replay.timer", "dota2notes-replay.service",
