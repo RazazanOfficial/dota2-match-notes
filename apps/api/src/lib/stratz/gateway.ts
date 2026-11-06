@@ -1,3 +1,4 @@
+import { requireComputeNode } from "../../runtime/topology";
 import { fetchStratzGraphqlOnce, fetchStratzMatchOnce } from "./client";
 import { getStratzConfig } from "./config";
 import { StratzError } from "./errors";
@@ -18,6 +19,7 @@ export function shouldImmediatelyRetryStratz(error: unknown) {
 }
 
 export async function fetchStratzMatch(matchId: number) {
+  requireComputeNode();
   const config = getStratzConfig();
   let lastError: unknown;
 
@@ -41,6 +43,7 @@ export async function fetchStratzMatch(matchId: number) {
 }
 
 export async function fetchStratzGraphql(query: string, operationName: string) {
+  requireComputeNode();
   const config = getStratzConfig();
   let lastError: unknown;
   for (let attempt = 1; attempt <= config.maxAttempts; attempt += 1) {

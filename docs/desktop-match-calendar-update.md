@@ -1,3 +1,5 @@
+> مرجع تکمیلی یا تاریخی: برای نقش سرورها و دستور استقرار، [راهنمای جاری](deployment-ubuntu.md) و [handoff](HANDOFF.md) مرجع هستند. دستورهای تک سروری این سند بدون تطبیق اجرا نشوند.
+
 # Desktop match history and calendar update
 
 Base: GitHub main `6bf978b063b4bd8c8e7d561727a1eb8a05fdbfbc`.

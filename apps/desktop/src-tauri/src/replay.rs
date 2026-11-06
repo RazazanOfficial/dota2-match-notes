@@ -1,3 +1,4 @@
+use crate::replay_download::{fetch_ticket, storage_request, VerifiedInput};
 use std::{fs::{self, File}, io::Read, path::{Path, PathBuf}, sync::{Arc, atomic::{AtomicBool, AtomicU64, Ordering}}, time::{Duration, Instant, UNIX_EPOCH}};
 use crate::{replay_codec::{write_replay, MAX_REPLAY_BYTES}, replay_paths::display_path};
 use serde::{Deserialize, Serialize};
@@ -106,10 +107,10 @@ pub async fn download_replay(app: tauri::AppHandle, state: tauri::State<'_, Repl
         let directory=replay_directory(&app)?;let final_path=directory.join(format!("{match_id}.dem"));
         if final_path.exists() {if valid_header(&final_path){return file_info(&final_path,&match_id);}return Err("replay_existing_invalid".into());}
         let client=reqwest::blocking::Client::builder().redirect(reqwest::redirect::Policy::none()).connect_timeout(Duration::from_secs(20)).timeout(Duration::from_secs(900)).user_agent("DotaNotesDesktop/0.1").build().map_err(err)?;
-        let url=origin.join(&format!("/api/replays/{match_id}/file")).map_err(err)?;
-        let response=client.get(url).bearer_auth(token).send().map_err(|_| "replay_transfer_failed")?;
-        if response.status() == reqwest::StatusCode::UNAUTHORIZED { return Err("unauthorized".into()); }
-        if response.content_length().is_some_and(|n| n > MAX_REPLAY_BYTES) { return Err("replay_size_limit".into()); }
+        let ticket=fetch_ticket(&client,&origin,&match_id,&token)?;
+        // Never attach the app bearer to the signed storage request.
+        let response=client.execute(storage_request(&client,&ticket,&match_id)?).map_err(|_| "replay_transfer_failed")?;
+        if response.content_length().is_some_and(|n| n != ticket.bytes || n > MAX_REPLAY_BYTES) { return Err("replay_size_limit".into()); }
         if response.status()!=reqwest::StatusCode::OK || response.headers().get(reqwest::header::CONTENT_TYPE).and_then(|v|v.to_str().ok()).map(|v|v.starts_with("application/octet-stream"))!=Some(true) {
             return Err("replay_archive_unavailable".into());
         }
@@ -118,10 +119,12 @@ pub async fn download_replay(app: tauri::AppHandle, state: tauri::State<'_, Repl
             .suffix(".part")
             .tempfile_in(&directory)
             .map_err(|_| "replay_folder_write_failed")?;
-        let total=response.content_length();
+        let total=Some(ticket.bytes);
         let received=Arc::new(AtomicU64::new(0));
-        let reader=TransferReader{inner:response,received:received.clone(),total,last:Instant::now(),app:app.clone(),match_id:match_id.clone()};
-        write_replay(reader,temporary.as_file_mut(),|_|{})?;
+        let mut reader=TransferReader{inner:VerifiedInput::new(response,ticket.bytes),received:received.clone(),total,last:Instant::now(),app:app.clone(),match_id:match_id.clone()};
+        write_replay(&mut reader,temporary.as_file_mut(),|_|{})?;
+        std::io::copy(&mut reader,&mut std::io::sink()).map_err(|_| "replay_transfer_failed")?;
+        reader.inner.verify(&ticket.sha256)?;
         if total.is_some_and(|expected|expected!=received.load(Ordering::Relaxed)){return Err("replay_transfer_failed".into());}
         let _=app.emit("replay-progress",ReplayProgress{match_id:match_id.clone(),bytes:received.load(Ordering::Relaxed),total_bytes:total,stage:"finalizing"});
         // Publish the complete demo without replacing an existing replay.

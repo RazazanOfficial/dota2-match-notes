@@ -1,118 +1,78 @@
-> آماده‌سازی آلمان و دانلود مستقیم: [راهنمای جاری](docs/germany-direct-replay.fa.md).
-
 # Dota Notes
 
-Monorepo اپ‌های Dota Notes: دفتر مچ، دریافت و تحلیل ریپلی و کلاینت‌های جدید دسکتاپ و موبایل.
-برای ادامهٔ توسعه ابتدا [فهرست مستندات](docs/README.md) و [HANDOFF](docs/HANDOFF.md) را بخوانید.
+Windows desktop client, Express API and replay processing, in a monorepo with
+an existing Next.js website and shared packages.
 
-برنامهٔ آیندهٔ آموزش و تمرین، همراه با نیازهای فایل‌های دانلودی، در [Learn & Practice Feature TODO](docs/learn-and-practice-feature-todo.fa.md) ثبت شده است؛ این قابلیت‌ها هنوز پیاده‌سازی نشده‌اند.
+## Current architecture
 
-تغییر جاری: بازسازی هدرها و Replay و Full Analysis، جلوه‌های کنترل‌شده، تم‌های تازه و retry محدود؛ [تغییرات، تست، Git و VPS](docs/desktop-experience-overhaul.fa.md).
-
-تغییر قبلی: دو دریافت هم‌زمان، یک موتور Java، آرشیو مستقل و فعالیت‌های سراسری دسکتاپ؛ [تغییرات، Git، تست و استقرار](docs/replay-pipeline-tasks.fa.md).
-
-تغییر قبلی: معتبر بودن آنالیز فقط با پارسر محلی، رفع job دریافت دستی قدیمی و جداسازی retry آرشیو؛ [تغییرات، تست، Git و VPS](docs/local-analysis-sync.fa.md).
-
-تغییر قبلی: نمودار با آیکن‌های بدون قاب و پالت خود هیرو، انتخاب مستقیم ماه/هفته و نمایش واضح امتیاز عملکرد؛ [تغییرات، تست، Git و استقرار](docs/dashboard-visuals.fa.md).
-
-کنترل بازه و توزیع مشترک قبلی: [راهنما](docs/dashboard-period-distribution.fa.md).
-
-خلاصهٔ سریع مچ، هدر پیروزی و مقایسهٔ آماری: [راهنمای قبلی](docs/match-quick-summary.fa.md).
-
-مرجع هفتگی STRATZ برای آگوست و سپتامبر روی VPS فعال‌شدن کامل را گذرانده است؛ [قرارداد و راهنما](docs/weekly-meta-reference.fa.md).
-
-## ساختار
-
-| مسیر | مسئولیت | وضعیت این مرحله |
+| Responsibility | Iran application node | Germany compute node |
 | --- | --- | --- |
-| `apps/web` | Next.js 16: سایت معرفی و دفتر وب فعلی | `/` معرفی؛ `/journal` دفتر؛ API و Workerهای فعلی حفظ شده‌اند |
-| `apps/desktop` | Tauri 2 + React + Vite + Tailwind 4 | کلاینت ویندوز متصل به Express؛ ورود، دریافت مچ، تحلیل و ریپلی |
-| `apps/mobile` | React Native + Expo SDK 57 | پایهٔ مشترک Android و iOS؛ صفحهٔ آغاز و تنظیمات نمایشی |
-| `apps/api` | Express 5 | بک‌اند فعال؛ APIها، احراز هویت، تحلیل، صف‌ها و سرویس‌های داده |
-| `packages/contracts` | قرارداد TypeScript و اعتبارسنجی Zod | قرارداد سلامت v1 و نوع تنظیمات |
-| `packages/api-client` | HTTP client مشترک | سلامت API، اعتبارسنجی پاسخ و لغو درخواست |
-| `packages/design-tokens` | رنگ، فاصله و منطق تنظیمات | Obsidian / Radiant / Nebula × Light / Dark / System |
-| `deploy` و `docs` | عملیات سرور و مستندات | در ریشه باقی می‌مانند |
+| Public website/API, sessions, history, task status | Local | Private handlers only |
+| Authoritative PostgreSQL | Local | Same database via restricted encrypted SSH |
+| Durable queue submission | Local | Claims the same jobs |
+| Replay acquisition, Java processing, sync, STRATZ reference and images | Disabled | Enabled |
+| Steam/email/provider operations | Explicit selected routes forwarded privately | Executed here |
+| Replay downloads | Authorizes a 15-minute object URL | Uploads to ParsPack |
+| File bytes to desktop | Direct from ParsPack | Not proxied through Germany |
 
-Expo ابزار توسعهٔ React Native است؛ این دو یک اپ موبایل‌اند. Tauri هم میزبان رابط React دسکتاپ است.
-پوشه‌ها بر اساس برنامهٔ قابل‌اجرا جدا شده‌اند، نه تعداد frameworkها.
+This is one authoritative database, not two synchronized databases. Standalone
+local development remains supported (`DOTA_NODE_ROLE=standalone`). A link outage
+can delay background work and upstream-dependent actions; saved Iran data and
+local queue submission remain available. It is not global automatic failover.
 
-## شروع محلی
+Read [handoff](docs/HANDOFF.md), [architecture](docs/two-vps-architecture.fa.md),
+[deployment](docs/deployment-ubuntu.md), and
+[direct replay downloads](docs/direct-replay-download.fa.md).
 
-Node.js **24** و npm 10 یا بالاتر پیشنهاد می‌شود؛ حداقل Node موردنیاز 22.13 است.
-تمام فرمان‌های زیر از **ریشهٔ مخزن** اجرا می‌شوند و یک `package-lock.json` مشترک داریم.
+## Development and checks
+
+Use Node.js 24 and npm 11. Keep private env files outside Git.
 
 ```bash
 npm ci
-```
-
-برای وب و API نمونهٔ `.env.example` را به `.env.local` در **ریشه** کپی کنید.
-کلیدها و دیتابیس برای API/وب هستند؛ دسکتاپ از آدرس API استفاده می‌کند.
-فایل production را به دسکتاپ یا موبایل کپی نکنید.
-
-```bash
+npm run api:dev
 npm run desktop:dev
 ```
 
-رابط دسکتاپ در مرورگر: `http://127.0.0.1:1420`. پنجرهٔ Native ویندوز:
-
-```bash
-npm run desktop:tauri
-```
-
-اجرای Native به Rust با toolchain MSVC، ابزار C++ ویژوال‌استودیو و WebView2 نیاز دارد.
-[راهنمای دسکتاپ و مهاجرت](docs/monorepo-desktop-foundation.md) مراحل و محدودیت‌ها را توضیح می‌دهد.
-
-```bash
-npm run api:dev
-npm run mobile:dev
-npm run dev
-```
-
-این سه برنامه را در ترمینال‌های جدا اجرا کنید: API روی `127.0.0.1:4100`، Expo با QR، وب روی `localhost:3000`.
-برای بازکردن simulator آیفون با `npm run mobile:ios` به macOS/Xcode نیاز است؛ Expo مسیر مشترک هر دو پلتفرم است.
-
-## وضعیت محصول
-
-وب فعلی: Steam OpenID، ژورنال شخصی و عمومی، همگام‌سازی OpenDota، صف ریپلی محلی و آرشیو ParsPack،
-مرجع آماری و پنل نظارت. قرارداد داده و migrationهای دیتابیس تغییر نکرده‌اند.
-دسکتاپ: ورود Steam/رمز، ثبت‌نام مرحله‌ای، بازیابی حساب، دریافت و تاریخچهٔ مچ، تحلیل واقعی و دانلود بومی ریپلی؛ پروفایل، پنل ادمین و نظارت سرویس‌ها؛ تم‌ها و فارسی/انگلیسی با RTL.
-گزارش هوشمند و بعضی بخش‌های محصول هنوز Coming soon هستند؛ هدیهٔ ثبت‌نام صرفاً نمایشی است.
-موبایل فعلاً scaffold است و تنظیماتش فقط در نشست جاری باقی می‌ماند.
-
-دکمهٔ دانلود سایت تا انتشار installer غیرفعال است. بعد از انتشار و بررسی فایل، URL عمومی HTTPS را
-در `NEXT_PUBLIC_DOWNLOAD_WINDOWS_URL` تنظیم و وب را دوباره build کنید.
-
-## بررسی و build
-
 ```bash
 npm test
+npm run test -w @dota-notes/api
+npm run test:desktop
 npm run typecheck
-npm run desktop:build
 npm run api:build
+npm run desktop:build
 npm run build
+npm run test:native-replay
 ```
 
-`npm run build` فقط وبِ مستقر روی VPS را build می‌کند؛ روی VPS نیازی به ساخت Rust یا اپ موبایل نیست.
+Prepare the independent API runtime after an API build:
 
 ```bash
-npm run desktop:bundle
+npm run release:prepare -w @dota-notes/api
+npm ci --prefix apps/api/release --workspaces=false
 ```
 
-Installer آزمایشی Windows در `apps/desktop/src-tauri/target/release/bundle/nsis` ساخته می‌شود.
-Workflow دستی `Windows desktop test installer` فایل را به‌صورت artifact تحویل می‌دهد و release عمومی منتشر نمی‌کند.
-امضای installer و auto-update در این مرحله پیاده نشده‌اند. `Cargo.lock` پس از اولین build واقعی تولید و باید commit شود.
+On Windows with Tauri prerequisites installed:
 
-## دیتابیس و استقرار
-
-```bash
-npm run db:migrate
-npm run db:studio
+```powershell
+cargo test --locked --manifest-path apps/desktop/src-tauri/Cargo.toml
+npm run desktop:installer
 ```
 
-مقادیر `.env.local` ریشه برای Drizzle و Next خوانده می‌شوند؛ در production فایل ریشهٔ `.env.production` حفظ شده است.
-`DOTENV_CONFIG_PATH=.env.production` برای migration از ریشه resolve می‌شود.
+Vite build success is not proof of a successful Windows native build. The manual
+Windows workflow checks native tests before building the installer. Native
+replay contracts also have a GUI-independent test harness.
 
-**برای اولین استقرار این تغییر فولدربندی، فقط pull کافی نیست:** unit سایت و Replay باید از مخزن دوباره نصب شوند.
-[راهنمای این انتشار](docs/monorepo-desktop-foundation.md) و [راهنمای کامل Ubuntu](docs/deployment-ubuntu.md) را دنبال کنید.
-Worker Cloudflare در این مرحله تغییر نکرده است.
+## Source map
+
+- `apps/api/src`: authentication, local reads/queue submission, private forwarding.
+- `apps/api/scripts/replay-parser`: durable worker, checksummed spool and archive.
+- `apps/api/release`: generated production runtime; regenerate instead of editing it.
+- `apps/desktop`: frontend and native direct replay transfer.
+- `apps/web`: existing website/legacy server source. Public `/api` routes go to Express.
+- `deploy`: role-specific examples, private SSH link and systemd configuration.
+- `docs`: current guides and explicitly labeled historical references.
+
+A Game Coordinator client, Telegram bot and automatic match detection are future
+features, not additions made by this deployment. Match STRATZ enrichment is
+retired; STRATZ population/reference processing remains active.

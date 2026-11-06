@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import "../env.mjs";
+import { requireComputeNode } from "../node-role.mjs";
+requireComputeNode();
 // Reparse a single existing archived replay to add trusted minute-12 events.
 // Operator-only; keeps the same archived file and does not enqueue downloads.
 import { constants } from "node:fs";

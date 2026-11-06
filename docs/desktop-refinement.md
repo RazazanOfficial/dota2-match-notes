@@ -1,3 +1,5 @@
+> مرجع تکمیلی یا تاریخی: برای نقش سرورها و دستور استقرار، [راهنمای جاری](deployment-ubuntu.md) و [handoff](HANDOFF.md) مرجع هستند. دستورهای تک سروری این سند بدون تطبیق اجرا نشوند.
+
 # Desktop refinement
 
 This patch applies over the previously delivered desktop redesign. Archive paths are relative to the monorepo root. It contains source changes only, with no apply scripts or build output.

@@ -1,0 +1,176 @@
+> سند تاریخی؛ دستورهای استقرار این سند برای معماری جاری نیستند. [راهنمای جاری](../deployment-ubuntu.md).
+
+# آماده‌سازی آلمان — ۲۵ اکتبر ۲۰۲۶
+
+تسک `fix/germany-direct-replay` از `main d4cbc67`: دانلود مستقیم canonical Valve با modeاختیاری، DNS عادی اختیاری STRATZ، concurrency محدود۲پارسر و drop-in مخصوص4CPU/8GB، اصلاح وابستگی‌های runtime و smoke-test دانلود بدون enqueue. [Git و فرمان‌های آلمان](../germany-direct-replay.fa.md). پیش‌فرض ایران حفظ است. هدر STRATZ_API از قبل موجود بود. initial restore و شبکهٔ آلمان تأیید شده‌اند، اما DNS/cutover، TeamSpeak، machine-id تکراری و شروع workerهای آلمان هنوز انجام نشده‌اند. هیچ داده/secret واقعی، unit نصب‌شده یا TeamSpeak از محیط دستیار تغییر نکرده است. commit/push با کاربر است؛ snapshot اولیه جای انتقال نهایی DB و فایل‌های mutable را نمی‌گیرد.
+
+# تسک صف ریپلی — ۲۳ اکتبر ۲۰۲۶
+
+تسک جاری `feat/desktop-experience-overhaul` از main `8ec8682`: هدر و فیلتر مشترک، Replay lazy و فایل‌های محلی deferred، Full Analysis حوزه‌ای با حفظ Quick Summary/فرمول‌ها و مقادیر، Dire/Glacier/Abyss، GSAP deferred و Lenis اختیاری و native پیش‌فرض، مرکز فعالیت قابل بستن و اعلان/صدای اختیاری. Retry metadata حداکثر۱۲ نوبت/۲۴ساعت، شبکه۶ و آرشیو۸؛ cooldown مشترک provider و توقف درخواست قدیمی۱۱۱تلاش بدون حذف parsed/spool. Shared CursorThemeProvider هم بهینه شده، بنابراین build وب لازم است. schema/ENV/JAR/unit تغییر نکرده؛ API build+release:prepare، نصاب تازه و npm ci لازم‌اند. [نتیجهٔ تست‌ها، محدودیت سنجش، Git و استقرار دقیق](../desktop-experience-overhaul.fa.md). وضعیت فضای VPS/مسیر MSS و پاک‌سازی انجام‌شده در همین راهنما ثبت است؛ TeamSpeak دست‌نخورده بماند. هیچ push/merge یا استقرار از محیط دستیار انجام نشده.
+
+- مبنا main با commit `df6edb2`، branch `feat/replay-pipeline-tasks`؛ [Git، تست و VPS](../replay-pipeline-tasks.fa.md).
+- migration0030 و daemon با prepare2/parse1/archive1؛ `dota2notes-replay.timer` باید disable و service دائمی enable شود. همان قفل advisory قدیمی جلوی اجرای دو orchestrator را می‌گیرد. CPUQuota100% و MemoryMax2100M حفظ شده‌اند.
+- آرشیو retry مستقل دارد؛ فایل کامل محلی با auth/NOFOLLOW/SHA256 قابل دانلود است. خطای backup تحلیل کامل‌شده را pending نمی‌کند. score/Lane/JAR/web source تغییر نکرده‌اند.
+- TaskManager حساب‌محور بیرون صفحه‌ها، دانلودهای پایدار، feed تحلیل/sync، نشانگر شناور، بایت واقعی، ETA و اعلان تکمیل دارد. bearer ذخیره نمی‌شود. بستن کل app انتقال ناقص محلی را قطع می‌کند؛ resume بایتی محلی نداریم.
+- اتصال واقعی S3 هنوز تأیید نشده؛ stage diagnostics و circuit مستقل اضافه شده‌اند. موفقیت تست mock به معنی رفع شبکهٔ VPS نیست.
+- **یادآوری کاربر:** پس از تست این تحویل، incoming حدود۷۰۰MiB و فضای VPS بررسی شود؛ مرحله۵ کامل الزاماً backup موفق نیست. ابتدا DB/فایل/آرشیو تطبیق داده شوند. auto-cleanup نداریم و فایلی حذف نشده است. **TeamSpeak را دست نزنید؛ پاک‌سازی عمومی VPS یا volume سرویس‌های دیگر ممنوع است.**
+- دستیار Git push/merge یا استقرار نکرده؛ کاربر انجام می‌دهد. نصاب Windows، Java واقعی و شبکهٔ VPS اینجا تست نشده‌اند.
+
+---
+
+# تحویل پروژه به چت یا توسعه‌دهندهٔ بعدی
+
+- تسک جاری `fix/local-analysis-sync` از main `24b4ce2`: لاگ VPS تأیید کرد `9054009159` فقط OpenDota parsed بود؛ سه Match دیگر local parsed ولی upload آرشیو شش‌دقیقه‌ای fail داشتند؛ حساب دوست کاربر sync pending قدیمی از آگوست داشت. Express اکنون فقط local overlay معتبر را تحلیل می‌کند؛ benchmark/log/position parser خارجی با خروجی محلی مخلوط نمی‌شود؛ projection نسخه۳ و آماده بودن تحلیل مستقل از backup است. manual در transaction فقط scheduled منتظر را supersede می‌کند و rollback cooldown/lease recovery حفظ است. آرشیو بزرگ multipart 8MiB و retry محدود/abort/HEAD دارد؛ کد امن transport ثبت می‌شود. worker/importer کامل بودن timeline را کنترل می‌کنند. OPENDOTA_PARSE_ENABLED پیش‌فرض false و timer legacy در استقرار خاموش می‌شود. schema/dependency/JAR/unit جدید ندارد؛ API build/release:prepare، نصاب تازه و تنظیم ENV لازم‌اند؛ Next build لازم نیست. ۴۲۸ تست API و۱۳۵ دسکتاپ و build هر دو موفق؛ شبکهٔ واقعی آرشیو هنوز نیازمند تأیید VPS است. [تغییرات، Git و فرمان‌های کامل VPS](../local-analysis-sync.fa.md). هیچ داده/مرجع پاک نشده و commit/push/استقرار انجام نشده است.
+
+**آخرین بازبینی این سند: ۲۰ اکتبر ۲۰۲۶.** نقطهٔ شروع: [فهرست docs](../README.md)، سپس `README.md` ریشه و فایل‌های کد مربوط به تسک. این سند جای بررسی `git status`، نسخهٔ مستقرشده و وضعیت VPS را نمی‌گیرد.
+
+## متن شروع برای چت تازه
+
+متن زیر را همراه لینک مخزن و در صورت وجود فایل ZIP/لاگ جدید بفرستید:
+
+> پروژهٔ Dota2 Notes را ادامه بده. ابتدا `README.md`، `docs/README.md` و
+> `docs/HANDOFF.md` را از آخرین `main` بخوان؛ سپس مستندات و کد مرتبط با تسک
+> را بررسی کن. وضعیت branch و تغییرات محلی را پیش از ویرایش ببین. حضور پچ
+> Position/Lane دقیقهٔ ۱۲ در Git و استقرار آن روی VPS را فرض نگیر. قواعد Git،
+> تحویل ZIP، SQL و VPS در handoff را رعایت کن. کار فعلی من: [تسک/Match ID/لاگ].
+
+اگر فایل‌ها در چت تازه در دسترس نبودند، لینک مخزن GitHub را بدهید. وضعیت
+تولید را تنها با لاگ یا خروجی VPS همان زمان می‌توان تأیید کرد.
+
+## وضعیت هنگام تحویل
+
+- تسک جاری `fix/dashboard-visuals` بر پایهٔ آخرین main مشاهده‌شده `113bdef` (merge تسک قبلی) است. آیکن‌های نمودار بدون circle clip/زمینه/قاب‌اند؛ سهم‌های مثبت هیچ threshold حذفی ندارند و چیدمان شعاعی برای سهم‌های متراکم، زاویه و مساحت واقعی هر سهم را حفظ می‌کند. پالت‌های ثابت از ۱۲۷ آیکن محلی هیرو و پوزیشن‌های ۰ تا ۵ تولید شده‌اند؛ runtime استخراج رنگ یا درخواست سروری جدید ندارد. زمینهٔ هر سهم گرادیان سه‌رنگ و sheen شیشه‌ای دارد. کارت نرخ برد meter بیست‌بخشی دقیق به‌جای دایره دارد؛ نام کامل امتیاز عملکرد، مقیاس ۱۰۰ و محدودهٔ مچ‌های فیلترشده روشن است. انتخاب بازه با timeline هفته‌ها، میانبر ماه‌های اخیر و پنل مستقیم ماه/سال جایگزین کنترل دو تاریخ/دو فلش شده؛ تقویم دریافت مچ دست نخورده و شرط هفتهٔ ثبت‌نام، شنبه و ماه شمسی در هر دو زبان حفظ شده است. محاسبات UI مرز ماه‌ها سبک و cache محدود دارند؛ پنل ماه‌ها lazy است. ۱۳۴ تست در ۱۵ فایل با timeout بیست‌ثانیه‌ای محیط کند، TypeScript و desktop build پاس شدند. UI در مرورگر/WebView واقعی بررسی نشده: مرورگر ابری به localhost وصل نشد و file URL طبق خط‌مشی مسدود شد. نصاب Windows/VPS هم اینجا اجرا نشده‌اند. Backend/فرمول نمره/DB/schema/ENV/dependency/JAR/Next/واحدها تغییر ندارند؛ فقط نصاب دسکتاپ تازه لازم است و VPS برای همین تسک فقط main را pull می‌کند. هیچ commit/push/استقراری انجام نشده. [راهنمای جاری](../dashboard-visuals.fa.md).
+
+- تسک قبلی `feat/dashboard-period-distribution` بر پایهٔ main `a994101`: کنترل بازهٔ خواناتر با تقویم موجود و میانبر جاری؛ انتخاب هفتگی/ماهانه در localStorage همان حساب باقی می‌ماند و داشبورد و مچ‌ها مشترک‌اند. تاریخ تاریخی و فیلترها ذخیره نمی‌شوند. chart همان summary جدول را مصرف می‌کند؛ کنترل/درخواست/poll مستقل حذف شده است. همهٔ سهم‌های مثبت آیکن داخل clip دارند؛ سهم‌های کوچک هدف خوانای ثانویه، پوزیشن‌ها legend دکمه‌ای و فیلتر ترکیبی، رنگ ثابت و صفحهٔ تیرهٔ زیر آیکن دارند. کارت‌های آمار بازطراحی و میانگین IMP با عنوان بازه/مچ‌های فیلترشده و توضیح هیرو/پوزیشن مشخص است. فرمول نمره، API، DB، schema، ENV، dependency، JAR و واحد سرویس تغییر ندارند. ۱۲۳ تست دسکتاپ و TypeScript/build موفق؛ WebView/نصاب Windows و ظاهر واقعی هنوز باید کاربر بررسی کند. فایل‌های خروجی پیشین در فضای کاری باقی نمانده بودند؛ بستهٔ تحویل مجدد بازسازی و دوباره بررسی شد. هیچ commit/push/استقرار انجام نشده. VPS برای این تسک فقط pull می‌خواهد. [راهنمای جاری](../dashboard-period-distribution.fa.md).
+
+- تسک قبلی `feat/match-quick-summary` از main `39eed0f`: فقط Quick Summary بازسازی شد. هدر هر دو تیم و Victory فقط برای برنده، هالهٔ ثابت سبز/قرمز، آیکن تیم‌ها کنار مرز roster، انتخاب مشخص هیرو، حذف متن راهنما و Net Worth زیر inventory و پوشاندن کامل دایرهٔ آیتم Neutral با object-fit:cover. API page اکنون همان replay overlay/analysis/resolver را می‌خواند و analysis آماده را همراه participants برمی‌گرداند. دسکتاپ مستقل از tab پردازش را poll می‌کند، انتخاب را نگه می‌دارد، focus/reconnect/event را serialize می‌کند و کش صفحه را با نتیجهٔ تازه به‌روز می‌کند؛ polling کامل‌شده متوقف می‌شود. آمار با مرجع فعال همان Hero/Position/دقیقه (STRATZ time = floor(duration/60)+1) مقایسه می‌شود؛ شرط Ranked All Pick، sample eligibility و ماه قبلی/fallback حفظ است. XPM از میانگین XP تقسیم بر دقیقه به‌دست می‌آید؛ GPM و Level مستقیم در ۱۴ فیلد مرجع نیستند و با placeholder/توضیح نشان داده می‌شوند. مرجع غلط هیرو/پوزیشن، دقیقهٔ غایب، بازی طولانی‌تر از پوشش، Turbo یا cohort کم‌نمونه جایگزین ساختگی نمی‌گیرد. فرمول IMP و Lane عوض نشده؛ query دقیقهٔ ۱۳ Lane همچنان جدا فیلتر می‌شود. schema/dependency/ENV/JAR/unit/Worker جدید نداریم. shared types وب فقط گسترش اختیاری دارند؛ UI وب تغییر ندارد. ۴۲۴ تست API، ۱۱۱ تست دسکتاپ، TypeScript/build هر دو و release:prepare موفق؛ نصاب Windows و ظاهر روی WebView واقعی هنوز باید کاربر بررسی کند. دانلود مرورگر تست در محیط ساخت ناموفق بود؛ بررسی تصویری مرورگر ادعا نمی‌شود. هیچ commit/push یا استقرار از این محیط انجام نشده. [راهنمای جاری](../match-quick-summary.fa.md).
+
+- تسک `fix/weekly-meta-reference` در main `39eed0f` merge شده و بازسازی واقعی پس از حذف مرجع دو ماه توسط خود کاربر روی VPS موفق بود: آگوست و سپتامبر هر دو active با سیاست `stratz-weekly-di-v3`، Meta=4، Performance=128، Position=380؛ Hero به‌ترتیب 31004 و30314 و Meta rows=2540 و2538. زمان تکمیل UTC اوت `2026-10-11 23:52:49.873` و سپتامبر `2026-10-12 02:29:14.1`. دادهٔ هفتگی دقیقاً بر اساس هفته‌های شروع‌شده در ماه است؛ فرمول IMP/Lane با تسک قبلی تغییر نکرد. حذف یا queue مجدد این ماه‌ها برای تسک خلاصه لازم نیست. خروجی idle/waiting-meta سرویس در نبود builder نشانهٔ گیرکردن نیست. [قرارداد](../weekly-meta-reference.fa.md).
+
+- تسک قبلی `fix/stratz-reference-transfer` روی VPS main `d27d748` نصب و انتقال واقعی curl/Performance موفق تأیید شد؛ انتظار winMonth سپتامبر دلیل پچ جاری هفتگی است. راهنمای قبلی [stratz-reference-transfer.fa.md](../stratz-reference-transfer.fa.md) تاریخی است و برای بازخوانی جاری از سند جدید استفاده کنید.
+
+- برنامهٔ Learn & Practice در [Feature TODO](../learn-and-practice-feature-todo.fa.md) ثبت شده است؛ این سند فیچر پیاده‌شده نیست. پس از بررسی استقرار اصلاح STRATZ، کار بعدی توضیحات کاربر برای بررسی/بازطراحی جزئیات مچ و IMP است؛ فرمول امتیاز هنوز با این تسک تغییر نکرده است.
+
+- تسک پیشین `feat/desktop-profile-admin` بر پایه آخرین main بررسی‌شده `0603a7e`: پروفایل واقعی، هفت تب ادمین با پوشش قابلیت‌های پنل Next، badge مستقل Super Admin، جابه‌جایی میان‌برها به سایدبار، W/L رنگی و هیروی sticky هنگام اسکرول افقی. APIهای امن پروفایل اضافه شده‌اند؛ collector و readerهای API/وب timerهای واقعی دریافت دستی و مانیتور را می‌شناسند. پروفایل خود حساب cache می‌شود، داده مدیریتی نه. Tiptap 3.31.3 با نسخه موجود در lock به دسکتاپ اضافه شده؛ schema/ENV/JAR/unit تغییر ندارند. npm ci ریشه، API build/release:prepare، Next build و نصب collector خارجی لازم‌اند؛ [فرمان‌های کامل](../desktop-profile-admin.fa.md). کاربر تسک قبلی ریپلی را merge کرده اما هنوز به VPS نبرده؛ استقرار این تسک API قبلی را هم پوشش می‌دهد. نصب واقعی ویندوز/VPS هنوز تأیید نشده است.
+- مخزن GitHub `RazazanOfficial/dota2-match-notes`، شاخهٔ انتشار `main`. آخرین HEAD مشاهده‌شدهٔ checkout VPS و آخرین main دریافت‌شده برای این تسک در ۱۱ اکتبر `d27d748` است. main دریافت‌شده برای تسک ۱۲ اکتبر `39eed0f` است؛ HEAD دقیق checkout VPS برای این تسک گزارش نشده، ولی فعال‌شدن هر دو مرجع v3 با SQL تأیید شده است. HEAD مخزن به‌تنهایی نسخهٔ release/dist در حال اجرا را ثابت نمی‌کند. برای تسک تازه main را fetch کنید؛ این سند فرض نمی‌کند نسخهٔ تازه‌تر مستقر شده است.
+- Express در `apps/api` شامل احراز هویت Steam/رمز، ثبت‌نام مرحله‌ای، بازیابی/ایمیل، APIهای مچ، تحلیل، صف‌ها و منطق دادهٔ مهاجرت‌شده است. دسکتاپ Tauri به API واقعی متصل است؛ موبایل هنوز scaffold است. گزارش هوشمند/ژورنال و هدیهٔ سه‌روزه فعلاً UI دارند، هدیه اشتراک واقعی فعال نمی‌کند.
+- روش ایمیل production از SMTP تأییدشده استفاده می‌کند؛ تست ارسال واقعی موفق بوده است. secrets فقط در ENV سرور هستند.
+- وب قدیمی Next هنوز روی همین VPS فعال است. حذف آن یا جایگزینی با سایت معرفی مستقل کار بعدی است؛ merge یا pull خودبه‌خود وب را حذف نمی‌کند.
+- استقرار Git در خود `/var/www/dota2notes` انجام شده است؛ فولدر `dota2notes-source` نداریم و لازم نیست ساخته شود. API: `apps/api/release/dist/main.js`، وب: `apps/web/.next`، ENV: `.env.production` ریشه. آرشیو و parser خارج از checkout در `/var/lib/dota2notes` هستند.
+- نسخهٔ پشتیبان cutover: `/var/backups/dota2notes-20261007-135840` شامل پروژه، unitها و dump دیتابیس؛ تغییرات دستی قدیمی در stash حفظ شده‌اند. آن‌ها را خودکار apply/delete نکنید. migration تا `0029` و preflight API/replay موفق گزارش شده‌اند.
+- شش timer فعال: replay، sync-manual، opendota-parse، images، performance-reference و monitor. workerهای HTTP به Express متصل‌اند و replay به `apps/api/release/scripts/replay-parser/run-queue.mjs` اشاره دارد. `inactive (dead)` برای oneshot موفق طبیعی است.
+- پچ قبلی `fix/replay-validation-progress` در main `8801541` ادغام شده است: در ریپلی مچ `9028060850` تنها CDemoFileInfo دارای ID صفر و ۱۰ بازیکن بود. wrapper قبلی پیش از parse آن را رد می‌کرد. پچ هویت صفر را فقط با تطبیق کامل roster و حداقل دو Steam account معلوم می‌پذیرد، تشخیص شناسهٔ مثبت نامرتبط حفظ شده است. پیشرفت جدول از DB بازیابی و خطاها با متن fa/en نمایش داده می‌شوند. نتیجهٔ parse روی خود فایل VPS هنوز بعد از استقرار باید تأیید شود؛ [راهنمای این تسک](../replay-validation-progress.fa.md).
+- تسک قبلی `fix/support-position-time-ui` در main `3285c5f` ادغام شده است: fallback عمومی پوزیشن ۴/۵ بعد از شناسایی مطمئن Coreها، بر اساس نسبت Safe/Off در lane_pos ده دقیقهٔ اول بدون اثر Mid؛ نسخهٔ summary API به ۲ برای بازسازی محدود projectionهای قدیمی تغییر کرده. علامت سؤال واضح‌تر، پوزیشن نامشخصِ تحلیل‌شده قرمز با گزارش صرفاً نمایشی و ساعت‌ها ۲۴ ساعته‌اند. resolver وب هم هماهنگ شده و در استقرار این تسک **build Next لازم است**. schema/ENV/JAR تغییر نکرده‌اند؛ [دستورات و حدود تست](../support-position-time-ui.fa.md). نتیجهٔ واقعی مچ `9032098145` و نسخهٔ جدید مستقر VPS هنوز باید تأیید شوند.
+- تسک قبلی `fix/offline-match-workspace` در main `db47f0e` ادغام شده است: کش حساب آفلاین بدون دورزدن onboarding/401، بارگذاری پس‌زمینه، جدول ۱۱ستونی هم‌ترتیب fa/en با شش آیتم و باف واقعی، فیلتر ترکیبی حلقه‌ها، recent ده‌تایی تا ۳۰، کل هفته/ماه و پیشرفت جمع‌شونده. Track فقط با منبع صریح parser محاسبه می‌شود، نه طلای حدسی؛ ریپلی قدیمی خودکار reparse نمی‌شود. schema/ENV/dependency/JAR تغییر ندارند؛ API build و release:prepare و Next build لازم‌اند. [راهنمای کامل و حدود تست](../offline-match-workspace.fa.md). تست VPS/installer ویندوز هنوز باید توسط کاربر انجام شود.
+- تسک قبلی `fix/fixed-window-loadout` در main `773076b` ادغام شده است. اصلاح نام باف ۱۶ Lifestealer و آیکن‌های محلی حفظ می‌شود؛ طرح اندازهٔ ثابت و جدول wrap با تسک جاری جایگزین شده است. [سند تاریخی](../fixed-window-loadout.fa.md).
+- تسک قبلی `fix/replay-setup-live-status` بر پایهٔ `2f11918`: refresh پذیرفته‌شدن تحلیل و retry، polling سری و ادامه پس از failure، بازخوانی با focus/reconnect؛ راهنمای شش‌تصویری داخلی ریپلی؛ نمایش تمیز canonical path ویندوز؛ دانلود محتوامحور BZip2/Zstandard/DEM با خروجی `.dem`؛ قفل صف تا پایان انتقال؛ خطاهای محلی قابل‌فهم؛ Launch Dota 2 از URI ثابت رسمی Steam و ACL مخصوص window اصلی. سورس API/schema/ENV/JAR تغییر نکرده؛ VPS فقط main را pull می‌کند، build یا restart لازم نیست. [دستورهای دقیق و حدود تست](../replay-setup-live-status.fa.md).
+- تسک قبلی چیدمان جمع‌وجور/نسبت پنجره در `main` و در VPS لاگ ارسالی نصب شده است؛ رفتار پنجره و جدول آن حفظ شد.
+- هر دو مچ `9033813921` و `9034129766` با spool کامل در parse شکست خورده‌اند؛ آزمون مستقیم مچ اول خطای `ArrayIndexOutOfBoundsException` در Clarity 4.0.1 را نشان داد. دانلود ناقص/OOM اثبات نشده است. فایل اول Zstandard بود. آزمایش جداگانهٔ واقعی VPS، OpenDota revision `e17d09ef40e63c387512057cef7250eebc96be96` با Clarity **4.0.3** / protobuf **6.3** و Java17 را برای **parse مچ اول** موفق نشان داد. field دقیق codec که خطا را رفع کرد ایزوله نشده؛ نسخهٔ 4.0.1 از قبل ResourceId patch داشته، آن را علت قطعی معرفی نکنید. build-parser.sh همان revision/schema را حفظ و همین dependencies را pin می‌کند. importer ابتدای exception را در log محدود حفظ و در نتیجهٔ dry-run وضعیت Lane snapshots را هم نشان می‌دهد.
+- وضعیت parser واقعی در لاگ ارسالی بعدی ۸ اکتبر تأیید شد: Clarity 4.0.3/protobuf 6.3 ساخته و نصب شده؛ dry-run importer هر دو مچ `9033813921` و `9034129766` با ۱۰ بازیکن/۱۰ lane snapshot موفق بود؛ هر دو job completed، archive active و local_replay_data موجودند. برای تسک دسکتاپ جاری JAR را دوباره نسازید و jobها/spool را حذف یا requeue نکنید. خطای دانلود دسکتاپ مربوط به decoder صرفاً BZip2 با فایل واقعی Zstandard بود؛ کلید قدیمی .dem.bz2 فرمت واقعی را تضمین نمی‌کند.
+- تسک پیشین `fix/replay-lookup-request` بر پایهٔ `07b948a`: POST ثابت `/replays/lookup` در registry بعد از `/replays/:matchId` بود؛ درخواست lookup به handler عددی می‌رفت و فوراً 400 می‌شد. route ثابت جلو آمده؛ handler/auth/Origin/schema/dependency تغییری ندارند. تست واقعی PostgreSQL/Express قبل از پچ 400 و بعد از پچ برای دو شناسهٔ گزارش‌شده روی هر دو prefix، lookup=200 و enqueue=202 داد. همهٔ routeها در تست transport از نظر انتخاب handler کنترل می‌شوند. VPS API build و release:prepare و restart می‌خواهد؛ نصاب دسکتاپ، Next build، migration و JAR لازم نیست. [دستورهای کامل](../replay-lookup-routing.fa.md).
+- بررسی محلی تسک جاری: ۴۲۲ تست ریشه، ۲۷۸ وب و ۴۰۲ API پاس؛ typecheck همهٔ workspaceها، API build و release:prepare موفق. شبکهٔ واقعی VPS و دریافت DEM روی ویندوز باید بعد از استقرار بررسی شوند.
+- بررسی تسک قبلی راهنمای ریپلی: ۴ تست Rust واقعی codec/path در harness مستقل پاس؛ SVGهای راهنما render/بازبینی شدند. اجرای installer و Steam واقعی اینجا انجام نشده بود.
+- نمونهٔ CPU عمدتاً idle بود؛ tick خالی replay حدود ۱٫۸ ثانیه CPU مصرف می‌کرد. پچ، SDK آرشیو را lazy می‌کند و DB schema modules را در یک entry جدا فقط برای preflight `--check-db` بارگذاری می‌کند. در سه اندازه‌گیری محلی هزینهٔ import صف از حدود ۸۷–۱۴۱ به ۳۱–۳۹ ms CPU و preflight از حدود ۴۲۱–۴۶۹ به ۶٫۷–۶٫۸ ms CPU رسید؛ این اعداد صرفاً startup محلی‌اند و کاهش واقعی VPS باید اندازه‌گیری شود. STRATZ 502 مستقل است و هنوز رفع قطعی آن تأیید نشده.
+- ورود کاربر آزمایشی `steam_988195076` قبلاً با درخواست صریح خودش reset شده بود؛ script حذف حساب را در تسک عادی دوباره اجرا نکنید. SUPER_ADMIN_STEAM_IDS حفظ شده است.
+
+## تغییر جاری ریپلی — ۹ اکتبر
+
+- branch `feat/replay-match-tutorials` بر پایهٔ آخرین `origin/main` با commit `7549eaa` ساخته شده؛ پچ مسیر lookup در این main موجود است. این به معنای تأیید استقرار آن روی VPS نیست.
+- دو تب ریپلی، مشخصات یکسان hero/result/position/IMP/mode/duration/ID/copy-command دارند. جست‌وجوی واقعی از lookup استفاده می‌کند؛ فقط دکمهٔ دانلود intent=download ثبت می‌کند. کپی دستور دقیق `playdemo replays/MATCH_ID` است.
+- GET موجود `/api/replays/:matchId` یک `match` کوچک اضافه دارد: دادهٔ عمومی پایه + projection ژورنال **همان کاربر**. این خواندن quota، دریافت خارجی، تحلیل یا ثبت job انجام نمی‌دهد. مچ دیگران W/L و هیرو شخصی ندارد؛ آمار حساب دیگر هرگز به کاربر نسبت داده نمی‌شود. score/position از همان SQL projection معتبر تاریخچه استفاده می‌کنند؛ projection نامعتبر score نمی‌سازد.
+- اطلاعات local DEM فقط برای ده فایل قابل‌مشاهده با دو درخواست موازی خوانده و در کش محدود حساب ذخیره می‌شود. افزودن ده فایل بعدی موارد قبلی را دوباره fetch نمی‌کند؛ Refresh امکان واکشی مجدد را می‌دهد. نبود metadata مانع کپی دستور یا نمایش فایل نیست.
+- آموزش folder از ۱۲ PNG ارسال‌شدهٔ کاربر استفاده می‌کند، با ابعاد دقیق **1672×941**، بدون تبدیل یا بازطراحی تصویر. راهنمای playback هفت مرحلهٔ تصویری فارسی/انگلیسی دارد؛ step1 مشترک است، step3 باکس copy شناور `-console` دارد. کاربر تصاویر جدید، از جمله step6، را روی سیستم خودش در مسیر معرفی‌شده گذاشته است؛ نسخهٔ این تصاویر در workspace تحویل نشده و پچ اصلاح کنترل‌ها آن‌ها را بازنویسی نمی‌کند. در صورت نبود فایل، فقط آیکن خنثی نمایش داده می‌شود؛ هیچ متن زیر عکس یا پیام به‌زودی نداریم.
+- modal آموزش حدود ۵۴٪ عرض با حداقل خوانا روی نمایشگر کوچک است؛ تصویر کامل با contain، فلش‌های قبلی/بعدی وسط کناره‌های عکس، Escape/بازگشت focus، close محلی‌شده و overlay تار/تیره دارد. تصاویر داخل installer هستند، از VPS بارگیری نمی‌شوند.
+- backend نیاز به API build، release:prepare و restart دارد؛ دسکتاپ نصاب تازه می‌خواهد. schema، dependency، ENV، JAR و وب Next تغییر نکرده‌اند. Next build و migration لازم نیست.
+- بررسی این تحویل: ۴۳۱ تست ریشه، ۲۷۸ وب، ۴۰۲ API پاس؛ typecheck همهٔ workspaceها، desktop:build، api:build و release:prepare موفق. مهلت تست چندمرحله‌ای pagination به ۱۵ ثانیه تغییر کرده، assertionها حفظ شده‌اند. نصاب ویندوز/Steam/Dota و VPS واقعی اینجا تست نشده‌اند.
+- اصلاح تکمیلی UI روی همان branch مرج‌نشده است: دو trigger آموزش در یک کنترل دو‌بخشی، جدا از دکمهٔ primary بازکردن پوشه؛ حذف captionها/footer؛ فلش‌ها با RTL صحیح؛ copy شناور فقط متن و آیکن. این اصلاح backend جدید ندارد. ZIP اصلاحی مکمل ZIP قبلی است و هیچ تصویری را شامل نمی‌شود.
+- [دستورهای دقیق و وضعیت تصاویر](../replay-match-tutorials.fa.md). Git/ZIP/VPS مطابق قرارداد پایین انجام شود؛ patch/bundle تحویل نشود.
+
+## ترجیح‌های همکاری و Git
+
+- تغییر کد را روی آخرین `origin/main` و یک branch جدا بسازید. تغییرات محلی دیگری را بازنویسی یا حذف نکنید.
+- tag فقط برای انتشار قطعی و در صورت درخواست کاربر است؛ روی merge commit در main ساخته می‌شود. برای پچ معمولی خودکار tag نسازید؛ [قرارداد انتشار](../releasing.md).
+- تحویل تغییرات برای کاربر **ZIP شامل فایل‌های تغییرکرده با مسیر نسبی مخزن** است؛ patch یا `git am` نفرستید. کاربر فایل‌ها را روی Windows جایگزین می‌کند، تست می‌گیرد و Git را خودش انجام می‌دهد.
+- پس از `git add`، `git commit` و `git push -u origin BRANCH`، روی `main` از `git merge --no-ff BRANCH -m "Merge branch 'BRANCH'"` و سپس `git push origin main` استفاده کنید. `git pull --ff-only origin main` برای تازه‌کردن branch مجاز است؛ `merge --ff-only` با خواستهٔ کاربر سازگار نیست.
+- دستورهای VPS را ساده و مستقل بنویسید؛ wrapperهایی مانند `( set -euo pipefail ... )` نفرستید. نمونهٔ SQL را در قالب `sudo -u postgres psql -d dota_notes -P pager=off -c \` و رشتهٔ SQL خط بعد بدهید. فرمان تخریبی فقط برای مورد مشخص و با شناخت رابطهٔ آرشیو/DB نوشته شود.
+- بدون دادهٔ واقعی ادعای رفع قطعی باگ شبکه، تشخیص Position یا دسترسی به VPS نکنید. secrets را در گفتگو، log، Git یا ZIP قرار ندهید.
+
+### قرارداد تغییر کد
+
+- منطق API و DB دسکتاپ در `apps/api/src/lib/` و routeهای `apps/api/src/routes/` است؛ نسخهٔ وب قدیمی در `apps/web` حفظ شده؛ Workerهای طولانی در فرایندهای جدا از درخواست مرورگر اجرا می‌شوند. اعتبارسنجی ورودی، احراز هویت و مجوز مالک Match را در مسیرهای کاربر حفظ کنید؛ route داخلی به secret سرور وابسته است.
+- Jobهای پس‌زمینه باید پس از قطع و اجرای دوباره قابل ادامه باشند؛ `status`، `run_after`، deadline و eventهای خطا را به‌صورت سازگار با schema و UI تغییر دهید. ثبت یک Match یا آرشیو موفق نباید با retry تبدیل به دادهٔ تکراری شود.
+- تغییر schema با migration نسخه‌دار همراه است. دادهٔ مرجع خارجی، raw summary، replay محلی و override کاربر را بدون بررسی قرارداد منشأ داده روی هم ننویسید.
+- تست سناریوهای معنادار را در app مربوط اضافه کنید؛ سپس `npm test`، `npm run test -w @dota-notes/api` و `npm run typecheck` و build همان app را اجرا کنید. تست ساختگی موفق به معنای موفقیت مسیر شبکه یا دو مچ واقعی روی VPS نیست.
+
+## معماری و مسیرهای کد (Express فعال و وب قدیمی)
+
+| بخش | منبع و مسئولیت |
+| --- | --- |
+| وب | Next.js در `apps/web/app/`، کامپوننت‌ها در `apps/web/components/`، API در `apps/web/app/api/`. `apps/web/app/api/health/route.ts` برای بررسی سلامت. |
+| حساب و مجوز | ورود Steam OpenID و مسیرهای رمز عبور در `apps/api/src/lib/auth/` و `apps/api/src/routes/auth/`؛ دسترسی Super Admin در `apps/api/src/lib/admin/`. |
+| دیتابیس | PostgreSQL با Drizzle؛ schema در `apps/api/src/lib/db/schema.ts`، migrationها در `apps/api/drizzle/`. |
+| ژورنال | `apps/api/src/lib/journal/repository.ts` و `apps/api/src/lib/journal/match-summary.ts`؛ وضعیت نمایشی ژورنال از خلاصهٔ Match و Position استخراج می‌شود. |
+| همگام‌سازی دستی | `apps/api/src/routes/sync/me/route.ts`، `apps/api/src/lib/sync/manual-service.ts`، `apps/api/src/lib/opendota/service.ts`؛ اسکن صفحه‌ای History و دریافت کامل Match در Worker مستقل. |
+| تحلیل و Position | `apps/api/src/lib/dota/match-analysis.ts`، `match-details.ts`، `position-resolver.ts`، `match-analysis-repository.ts`؛ override دستی در `journal_matches.position_overrides` اولویت دارد. |
+| Replay | `apps/api/src/lib/replay/` و `apps/api/release/scripts/replay-parser/`؛ صف Node در systemd، دانلود از Worker خصوصی Cloudflare، parser جاوا، آرشیو S3 سازگار ParsPack. |
+| تصاویر | `apps/api/src/lib/match-image-job/`، `apps/api/src/lib/match-image/`، timer تصاویر؛ ذخیرهٔ تصاویر در ParsPack. |
+| مرجع آماری | `apps/api/src/lib/monthly-reference/`؛ Meta و میانگین STRATZ، نسخه‌های ماهانه در PostgreSQL؛ Match کاربر مرجع آماری جمعیت نمی‌سازد. |
+| تنظیمات انتشار | `deploy/env.production.example`، `deploy/systemd/`، `deploy/cloudflare/replay-proxy/` و [راهنمای VPS](../deployment-ubuntu.md). |
+
+### دادهٔ Match و Replay
+
+1. دریافت ساده یا جست‌وجو: اطلاعات پایه از OpenDota در `dota_matches.raw_data` ذخیره و در `journal_matches` به کاربر وصل می‌شود. صف دستی روز/هفته صفحه‌های History را تا پوشش بازه می‌خواند؛ Turbo و Modeهای دیگر با تطبیق Match کامل بررسی می‌شوند. کار زمان‌بر در Worker ادامه می‌یابد، نه در همان پاسخ مرورگر. دریافت ساده خودکار Replay را دانلود نمی‌کند.
+2. درخواست دانلود یا تحلیل: یک `local_replay_jobs` برای Match با `intent` مناسب ثبت می‌شود. `dota2notes-replay.timer` هر ۱۵ ثانیه یک نوبت را بررسی می‌کند؛ اجرای service از نوع `oneshot` است و ممکن است پس از موفقیت `inactive (dead)` دیده شود.
+3. ابتدا آرشیو فعال بررسی می‌شود. برای metadata ناقص، worker فیلدهای Replay ناقص را پاک می‌کند، GET تازهٔ Match را مستقیم از VPS به OpenDota می‌زند و در صورت نیاز مسیر metadata در Cloudflare Worker را می‌سنجد. تنها با cluster، salt و URL معتبر مرتبط با همان Match اطلاعات Replay یکجا ذخیره می‌شود. `429` یا هنوز آماده‌نبودن Replay به معنای انتظار و retry است؛ فاصلهٔ metadata دست‌کم ۱۰ دقیقه و مهلت job تازه ۲۰ روز است. [جزئیات](../replay-metadata-recovery.md).
+4. فایل از Valve از طریق relay خصوصی به VPS stream می‌شود. درخواست «دریافت Replay» فقط دانلود و آرشیو است؛ «تحلیل» Replay را هم با parser محلی پردازش می‌کند. آرشیو در ParsPack با کلید `replays/YYYY/MM/DD/MATCH_ID.dem.bz2` نگه داشته می‌شود. دادهٔ parser در `dota_matches.local_replay_data` قرار می‌گیرد؛ `apps/api/src/lib/replay/overlay.ts` فیلدهای قابل‌اعتماد آن را با خلاصهٔ OpenDota ترکیب می‌کند. [جزئیات](../replay-on-demand-archive.md).
+5. تغییر Position در UI با override ذخیره می‌شود و روی محاسبهٔ Score اثر می‌گذارد. Position استنباطی برای موارد مبهم تضمین قطعی ندارد. Lane Impact و Denies @10 همچنان ده دقیقه‌ای‌اند؛ Lane Efficiency پچ اخیر از Snapshot Replay دقیقهٔ ۱۲ و مرجع ماهانهٔ `time: 13` استفاده می‌کند. Replayهای قبلی با رویداد دقیقهٔ ۱۰ برای امتیاز جدید نیاز به بازپردازش از آرشیو دارند. [قرارداد](../lane-efficiency-next-step.md).
+
+### زمان، Mode و سهمیه
+
+- زمان دیتابیس و systemd غالباً UTC است؛ روز ژورنال با `JOURNAL_TIME_ZONE=Asia/Tehran` تعیین می‌شود. هنگام مقایسهٔ timestampها صریحاً منطقهٔ زمانی را بنویسید.
+- Cooldown دریافت روزانه ۹۰ ثانیه ، هفتگی ۳ دقیقه و ماهیانه ۱۲۰ دقیقه است. سهمیهٔ سراسری OpenDota جداگانه اعمال می‌شود. حد `OPENDOTA_MAX_NEW_MATCHES_PER_SYNC=20` برای sync زمان‌بندی‌شده است؛ صف دستی بازهٔ انتخابی را در batchهای بعدی ادامه می‌دهد. اسکن History سقف ایمنی ۳۰ صفحهٔ ۱۰۰تایی دارد و اگر پوشش بازه کامل نشود خطا می‌دهد؛ روز ناقص نباید کامل علامت بخورد.
+- مرجع مقایسهٔ Lane فقط برای Ranked All Pick با دادهٔ Divine/Immortal است. نسخهٔ `active` ماه قبلِ تاریخ Match انتخاب می‌شود؛ اگر آماده نباشد فقط نسخهٔ فعال یک ماه عقب‌تر fallback است. آخرین هفتهٔ STRATZ باید تمام شده و ۴۸ ساعت گذشته باشد. [زمان‌بندی و محدودیت](../monthly-reference-services.md).
+- `SCHEDULED_SYNC_ENABLED=off` مسیر Sync زمان‌بندی‌شدهٔ عمومی را غیرفعال می‌کند؛ timer مستقل همگام‌سازی دستی و timerهای Replay/مرجع را با آن یکی نگیرید.
+
+## محیط و استقرار
+
+- VPS ایران: IP `87.107.165.50`، کاربر `dota2notes`، PostgreSQL دیتابیس `dota_notes`. سایت `dota2notes.ir` روی Next محلی 3000، API `api.dota2notes.ir` روی Express محلی 4100، هر دو پشت nginx/HTTPS.
+- ENV محرمانه `/var/www/dota2notes/.env.production`. مقدار secret چاپ یا وارد Git/ZIP نشود. مسیر parser `/var/lib/dota2notes/parser/parser.jar`؛ incoming `/var/lib/dota2notes/replays/incoming`.
+- checkout موجود `/var/www/dota2notes` را از Git main به‌روز کنید. `npm ci` ریشه، `npm run api:build` و `npm run release:prepare -w @dota-notes/api` سپس `npm ci --prefix apps/api/release --workspaces=false` خروجی مستقل API می‌سازند. build مستقیم API بدون release:prepare، runtime فعال را به‌روز نمی‌کند.
+- پیش از بازنویسی فایل‌های runtime، timerها و workerهای فعال و API متوقف شوند؛ برای npm ci ریشه، وب هم موقتاً متوقف شود. اگر سورس یا dependencies وب تغییر نکرده، build Next لازم نیست. unitها را تنها هنگام تغییر خودشان دوباره نصب کنید.
+- روال به‌روز در [deployment-ubuntu.md بخش ۱۲](../deployment-ubuntu.md#۱۲-روال-هر-انتشار-بعدی) و فرمان‌های دقیق تسک جاری در [match-quick-summary.fa.md](../match-quick-summary.fa.md) است. برای docs-only توقف یا build لازم نیست. Cloudflare Worker فقط در صورت تغییر کد خودش جدا deploy می‌شود.
+- سلامت API: `http://127.0.0.1:4100/health/ready` و `https://api.dota2notes.ir/health/live`. readiness عمومی عمداً 404 می‌دهد.
+
+## بررسی سریع روی VPS
+
+دستورها فقط وضعیت را می‌خوانند؛ بعد از دریافت لاگ، Match ID و زمان محلی را با UTC تطبیق دهید.
+
+```bash
+cd /var/www/dota2notes
+sudo -u dota2notes -H git log -1 --oneline
+sudo systemctl status dota2notes-api.service dota2notes.service dota2notes-replay.timer dota2notes-sync-manual.timer dota2notes-performance-reference.timer --no-pager
+sudo systemctl list-timers --all --no-pager 'dota2notes-*'
+sudo journalctl -u dota2notes-replay.service -n 40 --no-pager
+sudo -u dota2notes -H bash deploy/scripts/health-check.sh
+```
+
+برای یک Match مشخص، بدون نمایش secret یا payload بزرگ:
+
+```bash
+sudo -u postgres psql -d dota_notes -P pager=off -c \
+"SELECT j.match_id, j.status, j.intent, j.phase, j.attempts, j.error_code,
+        j.run_after AT TIME ZONE 'Asia/Tehran' AS next_try_tehran,
+        j.archive_status, d.raw_data->>'replay_salt' AS replay_salt
+ FROM local_replay_jobs j JOIN dota_matches d USING (match_id)
+ WHERE j.match_id = 9023606320;"
+```
+
+همان Match ID را برای مچ مورد بررسی عوض کنید. `replay_job_events` علت تلاش اخیر را نشان می‌دهد؛ `status=completed` را با `archive_status=active` و در صورت تحلیل با حضور `local_replay_data` تطبیق دهید. پاسخ `200` پروکسی برای metadata به‌تنهایی اثبات‌کنندهٔ آماده‌بودن salt نیست.
+
+## خطاها، محدودیت‌ها و کارهای باز
+
+- آماده‌شدن URL در Valve به‌تنهایی به معنای انتشار metadata در OpenDota نیست. مسیر مستقیم VPS، Worker و سهمیهٔ API ممکن است مستقل خطا بدهند. وعدهٔ دانلود قطعی برای هر مچ ندهید؛ نمونهٔ تازه را از ابتدا تا انتها آزمایش کنید.
+- Position با شواهد lane، OpenDota و اطلاعات تیم حدس زده می‌شود. نمونه‌ها: `9025195882` (Doom در Off Lane با Enigma جنگل‌رو) و `9025138259` (Sky به‌عنوان Position باقی‌مانده). نتیجهٔ واقعی بعد از استقرار پچ باید در UI بررسی شود؛ تست ساختگی جای دادهٔ خام همان مچ نیست.
+- برای امتیاز دقیقهٔ ۱۲ روی Replayهای قدیمیِ دارای آرشیو فعال، `apps/api/release/scripts/replay-parser/backfill-lane.mjs --match MATCH_ID` Replay آرشیوشده را دوباره parse می‌کند. اگر آرشیو فعال نیست، آن اسکریپت را روی آن مچ اجرا نکنید. دانلود تازه از Valve و آپلود دوبارهٔ آرشیو هدف این فرمان نیست.
+- دادهٔ مرجع STRATZ باید از نظر نمونه، ماه و Mode در UI بررسی شود. `null` را به امتیاز صفر یا میانگین ساختگی تبدیل نکنید.
+- پس از آزمون مچ تازه، نتایج Sync Turbo/Ranked و پوشش بیش از ۲۰ Match، و خطاهای Position را با Match ID و evidence ثبت کنید؛ سپس تسک بعدی را انتخاب کنید.

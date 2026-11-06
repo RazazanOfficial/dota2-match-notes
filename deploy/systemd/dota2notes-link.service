@@ -1,0 +1,40 @@
+[Unit]
+Description=Dota Notes private Germany-Iran database and API link
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+[Service]
+Type=simple
+User=dota2notes
+Group=dota2notes
+WorkingDirectory=/var/lib/dota2notes
+EnvironmentFile=/etc/dota2notes/tunnel.env
+ExecStart=/usr/bin/ssh -F /dev/null -NT \
+    -o BatchMode=yes -o IdentitiesOnly=yes \
+    -o IdentityFile=/var/lib/dota2notes/.ssh/compute_link_ed25519 \
+    -o UserKnownHostsFile=/var/lib/dota2notes/.ssh/known_hosts \
+    -o StrictHostKeyChecking=yes -o UpdateHostKeys=no \
+    -o ExitOnForwardFailure=yes -o ConnectTimeout=10 \
+    -o ServerAliveInterval=15 -o ServerAliveCountMax=3 \
+    -o LogLevel=ERROR \
+    -L 127.0.0.1:15432:127.0.0.1:5432 \
+    -R 127.0.0.1:14100:127.0.0.1:4100 \
+    -p ${IRAN_SSH_PORT} dota-link@${IRAN_SSH_HOST}
+Restart=always
+RestartSec=5s
+TimeoutStopSec=10s
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+MemoryMax=128M
+TasksMax=32
+[Install]
+WantedBy=multi-user.target

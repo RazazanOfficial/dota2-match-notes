@@ -1,3 +1,5 @@
+> مرجع تکمیلی یا تاریخی: برای نقش سرورها و دستور استقرار، [راهنمای جاری](deployment-ubuntu.md) و [handoff](HANDOFF.md) مرجع هستند. دستورهای تک سروری این سند بدون تطبیق اجرا نشوند.
+
 # Performance Intelligence — Phase 2
 
 > This document explains the earlier scoring design. Lane Impact and Denies @10

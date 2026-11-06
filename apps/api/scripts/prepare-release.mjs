@@ -31,6 +31,7 @@ for (const directory of ["dist", "drizzle", "public"]) {
 await rm(join(release, "scripts/replay-parser"), { recursive: true, force: true });
 await mkdir(join(release, "scripts"), { recursive: true });
 await cp(join(root, "scripts/env.mjs"), join(release, "scripts/env.mjs"));
+await cp(join(root, "scripts/node-role.mjs"), join(release, "scripts/node-role.mjs"));
 await cp(join(root, "scripts/replay-parser"), join(release, "scripts/replay-parser"), { recursive: true });
 await writeFile(join(release, "RELEASE-MANIFEST.txt"), "Express runtime files, original SQL history, hero portraits and native replay scripts. Install dependencies with npm ci in this directory.\n");
 console.info(`Prepared independent Express runtime in ${release}`);

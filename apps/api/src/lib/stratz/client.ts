@@ -1,3 +1,4 @@
+import { requireComputeNode } from "../../runtime/topology";
 import { getStratzConfig } from "./config";
 import { StratzError } from "./errors";
 import { parseStratzResponse } from "./validation";
@@ -172,6 +173,7 @@ export async function fetchStratzGraphqlOnce(
   operationName: string,
   transport?: typeof fetchWithDirectIp,
 ) : Promise<unknown> {
+  requireComputeNode();
   const config = getStratzConfig();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), config.timeoutMs);

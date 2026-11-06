@@ -1,3 +1,4 @@
+import { requireComputeNode } from "../../runtime/topology";
 import { randomBytes } from "node:crypto";
 import { compare, hash } from "bcryptjs";
 import nodemailer from "nodemailer";
@@ -64,6 +65,7 @@ export async function reissueSignupRecoveryCodes(userId: string, password: strin
 }
 
 export async function sendAccountEmail(to: string, purpose: "verify" | "reset", value: string) {
+  requireComputeNode();
   const key = process.env.RESEND_API_KEY?.trim();
   const from = process.env.AUTH_EMAIL_FROM?.trim();
   if (!key || !from || /[\r\n]/.test(from)) throw new PasswordAuthError(503, "email_not_configured", "ارسال ایمیل هنوز روی سرور فعال نشده است");

@@ -10,9 +10,12 @@ import type { HttpHandler } from "./http/protocol";
 import { verifyDatabaseSchema } from "./lib/db/compatibility";
 import { getSessionUser } from "./lib/auth/session";
 import { SESSION_COOKIE } from "./lib/auth/config";
+import { getTopology } from "./runtime/topology";
+import { topologyMiddleware } from "./http/compute-proxy";
 
 export function createApp(allowedOrigins: readonly string[] = []) {
   const app = express();
+  const topology = getTopology();
   const origins = configuredOrigins(allowedOrigins);
   const publicOrigin = process.env.API_PUBLIC_ORIGIN || process.env.APP_URL || "http://127.0.0.1:4100";
   const trustedProxies = (process.env.API_TRUST_PROXY || "").split(",").map(x => x.trim()).filter(Boolean);
@@ -31,6 +34,7 @@ export function createApp(allowedOrigins: readonly string[] = []) {
     catch { response.status(503).json({ ok: false, status: "database_unavailable_or_unmigrated" }); }
   });
   app.use(requestRateLimit(600, 60_000));
+  app.use(topologyMiddleware(topology));
   // Preserve the original desktop SDK contract; readiness has separate endpoints.
   app.get("/api/v1/health", (_request, response) => {
     response.setHeader("Deprecation", "true");

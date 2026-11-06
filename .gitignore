@@ -17,3 +17,5 @@ apps/mobile/ios/
 apps/desktop/src-tauri/target/
 
 /apps/api/release/dist/
+
+apps/desktop/native-tests/target/

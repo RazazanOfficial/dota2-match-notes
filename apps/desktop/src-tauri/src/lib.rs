@@ -1,4 +1,5 @@
 mod replay;
+mod replay_download;
 mod replay_codec;
 mod replay_paths;
 mod recovery;

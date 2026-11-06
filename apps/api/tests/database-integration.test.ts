@@ -12,7 +12,7 @@ import request from "supertest";
 const state = vi.hoisted(() => ({ db: undefined as unknown }));
 vi.mock("../src/lib/db", () => ({ getDb: () => state.db, closeDatabase: async () => {} }));
 import { createApp } from "../src/app";
-import { users, sessions, syncJobs, journalDays, journalMatches, dotaMatches, localReplayJobs, monthlyReferenceVersions } from "../src/lib/db/schema";
+import { users, sessions, syncJobs, journalDays, journalMatches, dotaMatches, localReplayJobs, replayArchiveJobs, monthlyReferenceVersions } from "../src/lib/db/schema";
 import { ANALYSIS_SUMMARY_VERSION } from "../src/lib/dota/analysis-summary-version";
 import { requestReplayByDotaId } from "../src/lib/replay/job-repository";
 import { recoverStaleScheduledJobs } from "../src/lib/sync/repository";
@@ -623,6 +623,18 @@ describe("PostgreSQL schema migration and real Express services", () => {
 });
 
 describe("ready local replay delivery and account-scoped activity",()=>{
+ it("keeps Iran reads and recorded-checkpoint queue submission available without Germany",async()=>{
+  const priorRole=process.env.DOTA_NODE_ROLE,priorToken=process.env.DOTA_COMPUTE_TOKEN;const id=9057632494;
+  try{
+   process.env.DOTA_NODE_ROLE="app";process.env.DOTA_COMPUTE_TOKEN="a".repeat(43);
+   await db.insert(dotaMatches).values({matchId:id,startedAt:new Date("2020-01-01T00:00:00Z"),rawData:{match_id:id,players:[]}});
+   await db.insert(localReplayJobs).values({matchId:id,status:"completed",phase:"completed",intent:"download",spoolName:".replay-12345678-1234-4234-8234-123456789abc.part",spoolComplete:true,spoolSha256:"a".repeat(64),totalBytes:100,archiveStatus:"missing"});
+   await db.insert(replayArchiveJobs).values({matchId:id,status:"failed",attempts:8,errorCode:"replay_archive_attempts_exhausted"});
+   const app=createApp();const s=await request(app).get(`/api/replays/${id}`).set("Cookie",cookie);expect(s.status).toBe(200);expect(s.body).toMatchObject({downloadReady:false,directDownloadReady:false,downloadErrorCode:"replay_archive_attempts_exhausted"});
+   expect((await request(app).get("/api/auth/session").set("Cookie",cookie)).body.authenticated).toBe(true);expect((await request(app).get("/api/tasks").set("Cookie",cookie)).status).toBe(200);expect((await request(app).post("/api/internal/sync/tick")).status).toBe(404);
+   const queued=await request(app).post(`/api/replays/${id}`).set("Cookie",cookie).set("Origin","https://dota.example").send({intent:"download"});expect(queued.status).toBe(202);expect((await db.select().from(localReplayJobs).where(eq(localReplayJobs.matchId,id)))[0].status).toBe("pending");
+  }finally{if(priorRole===undefined)delete process.env.DOTA_NODE_ROLE;else process.env.DOTA_NODE_ROLE=priorRole;if(priorToken===undefined)delete process.env.DOTA_COMPUTE_TOKEN;else process.env.DOTA_COMPUTE_TOKEN=priorToken;await db.delete(dotaMatches).where(eq(dotaMatches.matchId,id));}
+ });
  it("delivers a private checksum-verified checkpoint with storage offline and rejects tampered bytes",async()=>{
   const folder=await mkdtemp(join(tmpdir(),"local-delivery-")),prior=process.env.LOCAL_REPLAY_INCOMING_DIR;process.env.LOCAL_REPLAY_INCOMING_DIR=folder;
   const id=9057632491,name=".replay-12345678-1234-4234-8234-123456789abc.part",payload=Buffer.from("PBDEMS2\0verified local replay bytes");

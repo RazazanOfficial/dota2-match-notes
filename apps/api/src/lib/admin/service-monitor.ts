@@ -11,6 +11,7 @@ export type MonitorUnit = {
 
 const snapshotPath = "/var/lib/dota2notes/monitor/status.json";
 const ids = new Set([
+  "dota2notes-link.service", "dota2notes-sync-daemon.service",
   "dota2notes.service", "dota2notes-api.service", "dota2notes-images.timer", "dota2notes-images.service",
   "dota2notes-opendota-parse.timer", "dota2notes-opendota-parse.service",
   "dota2notes-replay.timer", "dota2notes-replay.service",

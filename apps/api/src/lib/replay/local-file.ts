@@ -7,8 +7,11 @@ import {and,eq} from "drizzle-orm";
 import {getDb} from "../db";
 import {localReplayJobs} from "../db/schema";
 import {REPLAY_MAX_BYTES} from "./archive-storage";
+import {getNodeRole} from "../../runtime/topology";
 // Validate and stream the same descriptor; symlinks cannot replace the file.
 export async function localReplayFile(matchId:number,verify=false) {
+  // Shared DB spool names belong to Germany, not the application host.
+  if (getNodeRole() === "app") return null;
   const [row]=await getDb().select({name:localReplayJobs.spoolName,complete:localReplayJobs.spoolComplete,bytes:localReplayJobs.totalBytes,sha256:localReplayJobs.spoolSha256}).from(localReplayJobs).where(eq(localReplayJobs.matchId,matchId)).limit(1);
   if(!row?.complete||!/^\.replay-[0-9a-f-]{36}\.part$/.test(row.name||"")||!/^[0-9a-f]{64}$/.test(row.sha256||"")||!row.bytes||row.bytes>REPLAY_MAX_BYTES)return null;
   const directory=process.env.LOCAL_REPLAY_INCOMING_DIR||"/var/lib/dota2notes/replays/incoming";let file;

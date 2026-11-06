@@ -1,3 +1,4 @@
+import { requireComputeNode } from "../../runtime/topology";
 import { getOpenDotaConfig } from "./config";
 import { OpenDotaError } from "./errors";
 import {
@@ -15,6 +16,7 @@ export async function fetchOpenDotaJson(
   notFound: { code: string; message: string },
   method: "GET" | "POST" = "GET",
 ) {
+  requireComputeNode();
   const config = getOpenDotaConfig();
   const url = new URL(`${config.baseUrl}/${path.replace(/^\/+/, "")}`);
   if (config.apiKey) url.searchParams.set("api_key", config.apiKey);

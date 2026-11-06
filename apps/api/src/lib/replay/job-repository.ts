@@ -1,7 +1,8 @@
+import { getNodeRole } from "../../runtime/topology";
 import { localReplayFile } from "./local-file";
 import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "../db";
-import { dotaMatches, journalMatches, localReplayJobs } from "../db/schema";
+import { dotaMatches, journalMatches, localReplayJobs, replayArchiveJobs } from "../db/schema";
 import { REPLAY_REQUEST_MAX_AGE_DAYS } from "../opendota/analysis-policy";
 import { replayObjectHead } from "./archive-storage";
 import { overlayReplayData } from "./overlay";
@@ -51,7 +52,7 @@ export async function getReplayArchive(matchId: number) {
     return null;
   }
   if (head.bytes !== row.bytes || !/^[0-9a-f]{64}$/.test(head.sha256 || "")) throw new Error("Replay archive metadata mismatch");
-  return { key: row.key, bytes: head.bytes };
+  return { key: row.key, bytes: head.bytes, sha256: head.sha256! };
 }
 
 export async function requestReplayJob(journalMatchId: string, userId: string, intent: ReplayIntent) {
@@ -71,6 +72,8 @@ export async function requestReplayByDotaId(matchId: number, intent: ReplayInten
     archiveKey: localReplayJobs.archiveKey,
     archiveStatus: localReplayJobs.archiveStatus,
     jobStatus: localReplayJobs.status,
+    spoolComplete: localReplayJobs.spoolComplete, spoolName: localReplayJobs.spoolName,
+    spoolSha256: localReplayJobs.spoolSha256, spoolBytes: localReplayJobs.totalBytes,
   }).from(dotaMatches)
     .leftJoin(localReplayJobs, eq(dotaMatches.matchId, localReplayJobs.matchId))
     .where(eq(dotaMatches.matchId, matchId)).limit(1);
@@ -80,6 +83,10 @@ export async function requestReplayByDotaId(matchId: number, intent: ReplayInten
   // A slow or unavailable backup must not gate the analysis behind an S3 HEAD.
   if (intent === "analysis" && parsed) return "ready" as const;
   const hasLocal=Boolean(await localReplayFile(matchId));
+  // The compute host validates this checkpoint; Iran must not stat its own disk.
+  const hasComputeCheckpoint = getNodeRole() === "app" && match.spoolComplete &&
+    /^\.replay-[0-9a-f-]{36}\.part$/.test(match.spoolName || "") && /^[0-9a-f]{64}$/.test(match.spoolSha256 || "") &&
+    (match.spoolBytes || 0) > 0 && (match.spoolBytes || 0) <= 200 * 1024 * 1024;
   if(intent === "download" && hasLocal)return "ready" as const;
   let hasArchive = false;
   if (match.archiveKey && match.archiveStatus === "active") {
@@ -87,7 +94,7 @@ export async function requestReplayByDotaId(matchId: number, intent: ReplayInten
     if (hasArchive && (intent === "download" || parsed)) return "ready" as const;
   }
   if ((!match.startedAt || Date.now() - match.startedAt.getTime() > REPLAY_REQUEST_MAX_AGE_DAYS * 86_400_000) &&
-      !hasArchive && !hasLocal) return "expired" as const;
+      !hasArchive && !hasLocal && !hasComputeCheckpoint) return "expired" as const;
   const now = new Date();
   const [queued] = await db.insert(localReplayJobs).values({
     matchId, intent, requestedBy:userId || null, runAfter: now, retryDeadlineAt: new Date(now.getTime() + 1 * 86_400_000), updatedAt: now,
@@ -117,10 +124,12 @@ export async function replayStatusForMatch(matchId: number) {
     ...progressFields,
     status: localReplayJobs.status, intent: localReplayJobs.intent, errorCode: localReplayJobs.errorCode,
     archiveStatus: localReplayJobs.archiveStatus,
-  }).from(localReplayJobs).where(eq(localReplayJobs.matchId, matchId)).limit(1);
-  if (!row) return { status: "basic", archived: false, downloadReady:false, errorCode: null, progress: null };
+    archiveJobStatus: replayArchiveJobs.status, archiveErrorCode: replayArchiveJobs.errorCode,
+  }).from(localReplayJobs).leftJoin(replayArchiveJobs, eq(replayArchiveJobs.matchId, localReplayJobs.matchId)).where(eq(localReplayJobs.matchId, matchId)).limit(1);
+  if (!row) return { status: "basic", archived: false, downloadReady:false, directDownloadReady:false, downloadErrorCode:null, errorCode: null, progress: null };
   // A completed analysis job may still have a downloadable archive.
   const archived = row.archiveStatus === "active";
   const downloadReady=Boolean(await localReplayFile(matchId)) || archived;
-  return { status: row.status === "completed" && row.intent === "download" ? "basic" : row.status, archived, downloadReady, errorCode: row.errorCode, progress: progressFromRow(row) };
+  const downloadErrorCode = !archived && row.archiveJobStatus === "failed" && !["pending","processing"].includes(row.status) ? row.archiveErrorCode || "replay_archive_attempts_exhausted" : null;
+  return { status: row.status === "completed" && row.intent === "download" ? "basic" : row.status, archived, downloadReady, directDownloadReady:archived, downloadErrorCode, errorCode: row.errorCode, progress: progressFromRow(row) };
 }
