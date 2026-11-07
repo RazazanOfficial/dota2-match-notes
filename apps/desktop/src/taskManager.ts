@@ -4,11 +4,13 @@ import {connectionState,subscribeConnection} from "./connection";
 import {syncStatusFeed} from "./syncStatusFeed";
 import {replayNative,validReplayId} from "./replays";
 import type {ReplayProgress} from "@/lib/replay/progress";
-export interface AnalysisTask {matchId:string;kind:string;status:string;requestedAt:string;progress:ReplayProgress;queueAhead:number|null;estimatedParseSeconds:number|null}
+export interface AnalysisTask {matchId:string;kind:string;status:string;requestedAt:string;updatedAt?:string;progress:ReplayProgress;queueAhead:number|null;estimatedParseSeconds:number|null}
 export interface DownloadTask {matchId:string;status:"preparing"|"transferring"|"completed"|"failed";bytes:number;totalBytes:number|null;speed:number;errorCode?:string;updatedAt:number;requestedAt:number;preparation?:ReplayProgress;phase?:string}
 export interface TaskSnapshot {analysis:AnalysisTask[];downloads:DownloadTask[];sync:SyncJob|null;toast:{id:string;kind:"analysis"|"download"|"sync";matchId?:string}|null}
 const storageKey=(owner:string)=>`dota-notes.tasks.v1.${owner}`;
 export class TaskManager {
+  private transferTimer=0;private transferChecking=false;
+  private dismissedAnalysis=new Set<string>();
   private nativeRetryAt=new Map<string,number>();
   private state:TaskSnapshot={analysis:[],downloads:[],sync:null,toast:null};
   private listeners=new Set<()=>void>();private generation=0;private alive=false;private checking=false;private transferring=false;
@@ -21,8 +23,9 @@ export class TaskManager {
   private syncRequested=(event:Event)=>{const detail=(event as CustomEvent<SyncJob>).detail;if(detail){this.state.sync=detail;this.publish();}void this.tick(true);};
   constructor(private owner:string,private live=true,private collectSync=true){
     if(!live)return;
+    try{this.dismissedAnalysis=new Set(JSON.parse(localStorage.getItem(`dota-notes.task-dismissals.${owner}`)||"[]"));}catch{}
     try{const rows:unknown=JSON.parse(localStorage.getItem(storageKey(owner))||"[]");if(Array.isArray(rows))this.state.downloads=rows
-      .filter((row):row is DownloadTask=>row&&validReplayId(row.matchId)&&Number.isFinite(row.requestedAt)).slice(-30)
+      .filter((row):row is DownloadTask=>row&&validReplayId(row.matchId)&&Number.isFinite(row.requestedAt)&&Date.now()-row.requestedAt<86400000&&["preparing","transferring"].includes(row.status)).slice(-30)
       .map(row=>({...row,status:["preparing","transferring"].includes(row.status)?"preparing":row.status,bytes:0,speed:0,totalBytes:null,updatedAt:Date.now()}));}catch{}
   }
   subscribe=(callback:()=>void)=>{this.listeners.add(callback);return()=>{this.listeners.delete(callback);};};
@@ -57,9 +60,9 @@ export class TaskManager {
     document.addEventListener("visibilitychange",this.visibility);
     if(this.collectSync){this.stopSync=syncStatusFeed.subscribe(()=>this.syncChanged());this.syncChanged();}
     let previous=connectionState();this.stopConnection=subscribeConnection(()=>{const next=connectionState();if(next==="online"&&previous==="offline")void this.tick(true);previous=next;});
-    void this.tick();
+    void this.tick();void this.checkTransfers();
   }
-  stop(){this.alive=false;this.generation++;document.removeEventListener("visibilitychange",this.visibility);this.stopProgress?.();this.stopSync?.();this.stopConnection?.();this.pollController?.abort();this.pollController=null;this.checking=false;window.clearTimeout(this.timer);window.clearTimeout(this.toastTimer);
+  stop(){this.alive=false;this.generation++;document.removeEventListener("visibilitychange",this.visibility);this.stopProgress?.();this.stopSync?.();this.stopConnection?.();this.pollController?.abort();this.pollController=null;this.checking=false;window.clearTimeout(this.timer);window.clearTimeout(this.transferTimer);window.clearTimeout(this.toastTimer);
     window.removeEventListener("dota-notes:matches-updated",this.signal);window.removeEventListener("dota-notes:sync-requested",this.syncRequested);window.removeEventListener("focus",this.signal);}
   async download(matchId:string){
     if(!validReplayId(matchId))throw {code:"invalid_match_id"};if(connectionState()==="offline")throw {code:"offline_mode"};
@@ -67,7 +70,23 @@ export class TaskManager {
     this.nativeRetryAt.delete(matchId);
     await apiRequest(`/api/replays/${matchId}`,{method:"POST",body:JSON.stringify({intent:"download"})});if(!this.alive)return;
     this.state.downloads=this.state.downloads.filter(task=>task.matchId!==matchId).concat({matchId,status:"preparing",bytes:0,totalBytes:null,speed:0,updatedAt:Date.now(),requestedAt:Date.now()}).slice(-30);
-    this.publish();void this.tick(true);
+    this.publish();void this.tick(true);void this.checkTransfers();
+  }
+  recordAnalysis(matchId:string,preparation:{replay:string;progress?:ReplayProgress|null}){
+    if(!preparation.progress)return;const p=preparation.progress;
+    const task:AnalysisTask={matchId,kind:"analysis",status:preparation.replay,requestedAt:p.requestStartedAt||new Date().toISOString(),updatedAt:p.updatedAt||new Date().toISOString(),progress:p,queueAhead:null,estimatedParseSeconds:null};
+    this.state.analysis=this.state.analysis.filter(t=>t.matchId!==matchId).concat(task);this.publish();
+  }
+  dismissAnalysis(task:AnalysisTask){this.dismissedAnalysis.add(`${task.matchId}:${task.requestedAt}`);try{localStorage.setItem(`dota-notes.task-dismissals.${this.owner}`,JSON.stringify([...this.dismissedAnalysis].slice(-100)));}catch{}this.published="";this.publish();}
+  visibleAnalysis(){return this.state.analysis.filter(t=>t.status!=="completed"&&!this.dismissedAnalysis.has(`${t.matchId}:${t.requestedAt}`)&&(t.status!=="failed"||Date.now()-Date.parse(t.updatedAt||t.requestedAt)<60000));}
+  private async checkTransfers(){
+    if(!this.alive||this.transferChecking)return;
+    for(const task of this.state.analysis)if(task.status==="failed"&&Date.now()-Date.parse(task.updatedAt||task.requestedAt)>=60000&&!this.dismissedAnalysis.has(`${task.matchId}:${task.requestedAt}`))this.dismissAnalysis(task);
+    this.transferChecking=true;const controller=new AbortController();
+    try{if(connectionState()!=="offline"&&!this.transferring)await this.transferNext(controller.signal);}finally{
+      this.transferChecking=false;window.clearTimeout(this.transferTimer);
+      if(this.alive)this.transferTimer=window.setTimeout(()=>void this.checkTransfers(),this.state.downloads.some(t=>t.status==="preparing")?2000:10000);
+    }
   }
   dismiss(matchId:string){this.state.downloads=this.state.downloads.filter(task=>task.matchId!==matchId||["preparing","transferring"].includes(task.status));this.publish();}
   private syncChanged(){
@@ -89,34 +108,41 @@ export class TaskManager {
       const rows=Array.isArray(result.tasks)?result.tasks:[];
       for(const task of rows){const key=`${task.matchId}:${task.requestedAt}`,previous=this.previous.get(key);
         if(this.baseline&&task.kind==="analysis"&&task.status==="completed"&&previous&&previous!=="completed")this.notify("analysis",task.matchId);this.previous.set(key,task.status);}
-      this.baseline=true;this.state.analysis=rows.filter(task=>task.kind==="analysis");
+      this.baseline=true;this.state.analysis=rows.filter(task=>task.kind==="analysis").map(task=>{
+        const local=this.state.analysis.find(old=>old.matchId===task.matchId);
+        return local&&Date.parse(local.updatedAt||local.requestedAt)>Date.parse(task.updatedAt||task.requestedAt)?local:task;
+      });
       if(this.previous.size>256){const recent=[...this.previous.entries()].slice(-128);this.previous=new Map(recent);}
       for(const task of this.state.downloads)task.preparation=rows.find(row=>row.matchId===task.matchId)?.progress;
       this.publish();
-      if(!this.transferring)await this.transferNext(controller.signal);
+      // Readiness polling has its own timer; analysis request latency never blocks it.
     }catch{/* Preserve accepted tasks during connectivity failures. */}finally{
       if(generation===this.generation){this.checking=false;this.pollController=null;this.schedule();}
     }
   }
   private async transferNext(signal:AbortSignal){
     const generation=this.generation;
+    const before=this.state.downloads.length;
+    this.state.downloads=this.state.downloads.filter(task=>task.status==="completed"?Date.now()-task.updatedAt<2000:task.status!=="failed"||Date.now()-task.updatedAt<60000);
+    if(before!==this.state.downloads.length)this.publish();
     for(const task of this.state.downloads.filter(task=>["preparing","transferring"].includes(task.status))){
+      if(task.status==="preparing"&&Date.now()-task.requestedAt>30*60_000){task.status="failed";task.errorCode="replay_preparation_expired";task.updatedAt=Date.now();this.publish();continue;}
       if((this.nativeRetryAt.get(task.matchId)||0)>Date.now())continue;
       if(!this.alive||generation!==this.generation||signal.aborted)return;if(task.status==="transferring"&&Date.now()-task.updatedAt<15000)continue;
       try{
         const status=await apiRequest<{downloadReady?:boolean;directDownloadReady?:boolean;downloadErrorCode?:string|null;archived:boolean;status:string;errorCode?:string}>(`/api/replays/${task.matchId}`,{signal});
         if(!this.alive||generation!==this.generation||signal.aborted)return;
-        if(status.downloadErrorCode&&!status.archived){task.status="failed";task.errorCode=status.downloadErrorCode;this.publish();continue;}
-        if(status.status==="failed"&&!status.downloadReady&&!status.archived){task.status="failed";task.errorCode=status.errorCode;this.publish();continue;}
+        if(status.downloadErrorCode&&!status.archived){task.status="failed";task.updatedAt=Date.now();task.errorCode=status.downloadErrorCode;this.publish();continue;}
+        if(status.status==="failed"&&!status.downloadReady&&!status.archived){task.status="failed";task.updatedAt=Date.now();task.errorCode=status.errorCode;this.publish();continue;}
         if(!(status.directDownloadReady??status.archived))continue;const token=getBearer();if(!token)return;
         this.transferring=true;task.status="transferring";task.updatedAt=Date.now();this.publish();
         // Do not await native I/O: other task/status polls continue meanwhile.
         void replayNative.download(task.matchId,token,API_ORIGIN).then(()=>{
-          if(!this.alive||generation!==this.generation)return;const current=this.state.downloads.find(row=>row.matchId===task.matchId&&row.requestedAt===task.requestedAt);if(!current)return;current.status="completed";current.speed=0;if(current.totalBytes)current.bytes=current.totalBytes;
+          if(!this.alive||generation!==this.generation)return;const current=this.state.downloads.find(row=>row.matchId===task.matchId&&row.requestedAt===task.requestedAt);if(!current)return;current.status="completed";current.updatedAt=Date.now();current.speed=0;if(current.totalBytes)current.bytes=current.totalBytes;
           this.notify("download",task.matchId);window.dispatchEvent(new Event("dota-notes:replay-downloaded"));
         }).catch(error=>{if(!this.alive||generation!==this.generation)return;
           const current=this.state.downloads.find(row=>row.matchId===task.matchId&&row.requestedAt===task.requestedAt);if(!current)return;
-          if(error?.code==="replay_busy"||error?.code==="replay_archive_pending"){current.status="preparing";current.updatedAt=Date.now();this.nativeRetryAt.set(task.matchId,Date.now()+5000);}else{current.status="failed";current.errorCode=error?.code||"replay_transfer_failed";}
+          if(error?.code==="replay_busy"||error?.code==="replay_archive_pending"){current.status="preparing";current.updatedAt=Date.now();this.nativeRetryAt.set(task.matchId,Date.now()+5000);}else{current.status="failed";current.updatedAt=Date.now();current.errorCode=error?.code||"replay_transfer_failed";}
         }).finally(()=>{this.transferring=false;if(this.alive&&generation===this.generation){this.publish();void this.tick(true);}});break;
       }catch{/* Status timeout never discards a queued transfer. */}
     }

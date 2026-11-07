@@ -1,3 +1,5 @@
+import {useLiveMatch} from "../useLiveMatch";
+import {useTaskManager} from "./TaskCenter";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Download, Search, Swords, X, Sparkles, ArrowUpRight, Zap, Shield, Gamepad2, CircleHelp, Check, LoaderCircle, ArrowUpLeft, ChevronDown, Send, AlertCircle } from "lucide-react";
 import { heroById, heroImage, heroIcon } from "@/data/heroes";
@@ -41,10 +43,14 @@ export function Score({ value, t }: { value: number | null | undefined; t?: Mess
     return <span className="imp-score" title="Performance score / 100"><bdi className={`imp-value imp-${value < 30 ? "low" : value < 50 ? "orange" : value < 70 ? "blue" : value < 90 ? "green" : "high"}`}>{Math.round(value)}</bdi><span className="imp-track"><i style={{ width: `${Math.min(100, Math.max(0, value))}%` }}/></span></span>;
 }
 type Preparation = { replay: string; progress?: ReplayProgress | null; errorCode?: string | null };
-export function MatchRow({ match, t, onOpen, live = false }: { match: HistoryMatch; t: Messages; onOpen: (m: HistoryMatch) => void; live?: boolean }) {
+export function MatchRow({ match:sourceMatch, t, onOpen, live = false }: { match: HistoryMatch; t: Messages; onOpen: (m: HistoryMatch) => void; live?: boolean }) {
+    const match=useLiveMatch(sourceMatch,live),manager=useTaskManager();
     const hero = heroById(match.heroId), [preparation, setPreparation] = useState<Preparation | null>(match.analysisPreparation || null), [busy, setBusy] = useState(false), [error, setError] = useState<unknown>(null), [ready, setReady] = useState(false), [expanded, setExpanded] = useState(false);
     useEffect(() => {
-        if (match.analyzed) { setPreparation(null); setReady(true); }
+        if (match.analyzed) {
+            setPreparation(previous=>previous?{replay:"ready",progress:previous.progress?{...previous.progress,phase:"completed"}:null}:null);setReady(true);
+            const timer=window.setTimeout(()=>setPreparation(null),4000);return()=>window.clearTimeout(timer);
+        }
         else if (match.analysisPreparation) { setPreparation(match.analysisPreparation); setReady(false); }
         else {
             setReady(false); setPreparation(null);
@@ -74,6 +80,7 @@ export function MatchRow({ match, t, onOpen, live = false }: { match: HistoryMat
             if (result.analysis || result.preparation?.replay === "ready") { setReady(true); setPreparation(null); window.dispatchEvent(new Event("dota-notes:matches-updated")); }
             else {
                 setPreparation(result.preparation || { replay: "pending" });
+                if(result.preparation)manager?.recordAnalysis(match.id,result.preparation);
                 window.dispatchEvent(new Event("dota-notes:matches-updated"));
             }
         } catch (failure) { setError(failure); } finally { setBusy(false); }

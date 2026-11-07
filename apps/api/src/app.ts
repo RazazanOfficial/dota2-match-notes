@@ -1,3 +1,4 @@
+import {fileURLToPath} from "node:url";
 import { logFailure } from "./http/log";
 import express, { type ErrorRequestHandler } from "express";
 import cors from "cors";
@@ -33,6 +34,8 @@ export function createApp(allowedOrigins: readonly string[] = []) {
     try { await verifyDatabaseSchema(); response.json({ ok: true, status: "ready" }); }
     catch { response.status(503).json({ ok: false, status: "database_unavailable_or_unmigrated" }); }
   });
+  // Public immutable assets must not consume authenticated API request quota.
+  if(topology.role!=="compute")app.use("/desktop-assets",express.static(fileURLToPath(new URL("../public/desktop-assets",import.meta.url)),{immutable:true,maxAge:"365d",dotfiles:"deny",index:false}));
   app.use(requestRateLimit(600, 60_000));
   app.use(topologyMiddleware(topology));
   // Preserve the original desktop SDK contract; readiness has separate endpoints.

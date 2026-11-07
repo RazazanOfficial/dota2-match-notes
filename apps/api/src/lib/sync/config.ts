@@ -40,7 +40,7 @@ function getWorkerSecret() {
 export function getSyncWorkerConfig(): SyncWorkerConfig {
   return {
     secret: getWorkerSecret(),
-    enabled: parseToggle("SCHEDULED_SYNC_ENABLED", false),
+    enabled: parseToggle("SCHEDULED_SYNC_ENABLED", true),
     intervalSeconds: parseInteger(
       "SCHEDULED_SYNC_INTERVAL_SECONDS",
       3_600,
@@ -79,15 +79,15 @@ export function getSyncWorkerConfig(): SyncWorkerConfig {
     ),
     lookbackSeconds: parseInteger(
       "SCHEDULED_SYNC_LOOKBACK_SECONDS",
-      21_600,
+      172_800,
       300,
-      86_400,
+      604_800,
     ),
     initialMatches: parseInteger(
       "SCHEDULED_SYNC_INITIAL_MATCHES",
-      1,
+      20,
       0,
-      3,
+      100,
     ),
   };
 }

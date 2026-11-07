@@ -1,4 +1,4 @@
 [[permission]]
 identifier = "replay-library"
 description = "Select the Dota folder, read local demos and download a numeric match ID."
-commands.allow = ["replay_settings", "choose_dota_folder", "list_replays", "download_replay"]
+commands.allow = ["companion_health", "companion_status", "configure_companion", "asset_status", "prepare_assets", "discover_dota", "replay_settings", "choose_dota_folder", "list_replays", "download_replay"]

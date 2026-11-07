@@ -1,3 +1,4 @@
+vi.mock("../src/lib/db",()=>({getDb:()=>({select:()=>({from:()=>({where:()=>({limit:async()=>[]})})}),insert:()=>({values:()=>({onConflictDoUpdate:async()=>{}})}),update:()=>({set:()=>({where:async()=>{}})})})}));
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionUser } from "../src/lib/auth/session";
 import { OpenDotaError } from "../src/lib/opendota/errors";

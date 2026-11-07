@@ -19,3 +19,8 @@ apps/desktop/src-tauri/target/
 /apps/api/release/dist/
 
 apps/desktop/native-tests/target/
+
+apps/api/public/desktop-assets/
+apps/api/release/public/desktop-assets/
+apps/desktop/companion/target/
+apps/desktop/src-tauri/resources/dota-notes-companion.exe

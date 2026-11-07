@@ -42,7 +42,12 @@ export async function claimLane(client,lane) {
     dispatched_at=now(),updated_at=now(),attempts=least(attempts+${parse?0:1},32767)
     WHERE match_id=(SELECT j.match_id FROM local_replay_jobs j WHERE j.status='pending' AND j.run_after<=now() ${parse?"":"AND j.retry_deadline_at>now()"}
       AND ${parse?"j.phase='awaiting_parse'":"j.phase<>'awaiting_parse'"}
-      ORDER BY (SELECT max(p.dispatched_at) FROM local_replay_jobs p WHERE p.requested_by IS NOT DISTINCT FROM j.requested_by) NULLS FIRST,
+      ORDER BY CASE
+        WHEN j.download_requested_at>now()-interval '30 minutes' AND
+          (SELECT count(*) FROM (SELECT download_requested_at FROM local_replay_jobs WHERE dispatched_at IS NOT NULL ORDER BY dispatched_at DESC LIMIT 3) recent WHERE recent.download_requested_at>now()-interval '30 minutes')<3 THEN 0
+        WHEN j.request_started_at<now()-interval '10 minutes' THEN 1
+        WHEN j.download_requested_at>now()-interval '30 minutes' THEN 2 ELSE 3 END,
+      (SELECT max(p.dispatched_at) FROM local_replay_jobs p WHERE p.requested_by IS NOT DISTINCT FROM j.requested_by) NULLS FIRST,
       j.request_started_at,j.match_id LIMIT 1 FOR UPDATE OF j SKIP LOCKED) RETURNING *,locked_at::text AS lease`,[parse?"parsing":"checking_archive"]);
   return result.rows[0];
 }
@@ -51,7 +56,11 @@ export async function claimArchive(client) {
     WHERE match_id=(SELECT a.match_id FROM replay_archive_jobs a JOIN local_replay_jobs j USING(match_id)
       WHERE a.status='pending' AND a.run_after<=now() AND j.spool_complete AND j.spool_name IS NOT NULL
       AND NOT EXISTS(SELECT 1 FROM replay_transport_routes WHERE route_key='archive-storage' AND open_until>now())
-      ORDER BY a.run_after,a.match_id LIMIT 1 FOR UPDATE OF a SKIP LOCKED) RETURNING *,locked_at::text AS lease`);
+      ORDER BY CASE
+        WHEN j.download_requested_at>now()-interval '30 minutes' AND
+          (SELECT count(*) FROM (SELECT x.download_requested_at FROM replay_archive_jobs y JOIN local_replay_jobs x USING(match_id) WHERE y.status IN ('processing','completed') ORDER BY y.updated_at DESC LIMIT 3) recent WHERE recent.download_requested_at>now()-interval '30 minutes')<3 THEN 0
+        WHEN a.run_after<now()-interval '10 minutes' THEN 1
+        WHEN j.download_requested_at>now()-interval '30 minutes' THEN 2 ELSE 3 END,a.run_after,a.match_id LIMIT 1 FOR UPDATE OF a SKIP LOCKED) RETURNING *,locked_at::text AS lease`);
   return result.rows[0];
 }
 export async function archiveCheckpoint(client,task) {

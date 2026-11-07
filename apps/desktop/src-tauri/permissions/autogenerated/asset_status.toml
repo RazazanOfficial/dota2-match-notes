@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-asset-status"
+description = "Enables the asset_status command without any pre-configured scope."
+commands.allow = ["asset_status"]
+
+[[permission]]
+identifier = "deny-asset-status"
+description = "Denies the asset_status command without any pre-configured scope."
+commands.deny = ["asset_status"]

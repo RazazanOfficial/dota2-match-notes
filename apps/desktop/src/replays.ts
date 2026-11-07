@@ -30,6 +30,7 @@ async function nativeCall<T>(command: string, args?: Record<string, unknown>): P
 }
 export const replayNative = {
     available: isTauri,
+    discover: () => nativeCall<ReplaySettings>("discover_dota"),
     settings: () => nativeCall<ReplaySettings>("replay_settings"),
     chooseFolder: () => nativeCall<ReplaySettings | null>("choose_dota_folder"),
     files: () => nativeCall<ReplayFile[]>("list_replays"),

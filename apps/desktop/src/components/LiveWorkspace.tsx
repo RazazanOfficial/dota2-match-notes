@@ -3,7 +3,7 @@ import { ArrowUpRight, Download, Search, LoaderCircle, Check, AlertCircle } from
 import type { Session } from "@/lib/types";
 import { listMatches, matchListPath, requestMatchSync, type MatchListResponse, type SyncJob } from "../api";
 import { durationText, roles, type HistoryMatch, type HistoryQuery, type Scope } from "../history";
-import { modeLabel, type Messages } from "../i18n";
+import { isPersian, modeLabel, type Messages } from "../i18n";
 import { Calendar, requestRange, trackingStart } from "./Calendar";
 import { LoadingView } from "./LoadingView";
 import { ErrorNotice } from "./ErrorNotice";
@@ -31,7 +31,7 @@ function SyncNotice({ job, t }: { job: SyncJob | null; t: Messages }) {
         <div className="sync-symbol">{failed ? <AlertCircle size={19}/> : <Download size={19}/>}</div>
         <div className="sync-content"><div className="sync-title"><strong>{failed ? t.syncFailed : pending ? t.syncPending : t.syncProcessing}</strong>{!failed && <span className="live-pill"><i/>{t.syncLive}</span>}</div>
         {job.request && <small className="sync-range"><span>{t[job.request.scope]}</span><bdi className="latin-digits">{job.request.from} — {job.request.to}</bdi></small>}
-        <div className="sync-counters"><span><LoaderCircle size={13} className={!failed ? "spin" : ""}/><bdi>{job.result?.checked ?? job.attempted?.length ?? 0}</bdi>{t.syncScanned}</span><span><Check size={13}/><bdi>{job.result?.imported?.length ?? 0}</bdi>{t.syncImported}</span></div>
+        <div className="sync-counters"><span><LoaderCircle size={13} className={!failed ? "spin" : ""}/><bdi>{job.result?.checked ?? job.attempted?.length ?? 0}</bdi>{t.syncScanned}</span><span><Check size={13}/><bdi>{job.result?.imported?.length ?? 0}</bdi>{t.syncImported}</span>{job.result?.externalRequests!=null&&<span><bdi>{job.result.externalRequests}</bdi>{isPersian(t)?"درخواست خارجی":"External requests"}</span>}</div>
         {!failed && <div className="sync-activity"><i/></div>}</div>
     </section>;
 }

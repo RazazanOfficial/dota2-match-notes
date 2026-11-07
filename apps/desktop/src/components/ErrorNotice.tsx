@@ -7,6 +7,8 @@ export function errorCode(error: unknown): string | null {
 export function friendlyError(code: string | null | undefined, t: Messages) {
     const fa = isPersian(t);
     const local: Record<string, [string, string]> = {
+        replay_preparation_expired:["آماده سازی دانلود در مهلت این درخواست کامل نشد. می توانی دوباره درخواست بدهی.","The download preparation window ended. You can request it again."],
+        dota_multiple_installations:["چند نصب Dota پیدا شد. پوشه نصب مورد نظر را انتخاب کن.","Multiple Dota installations were found. Choose the installation you use."],
         dota_folder_invalid: ["پوشهٔ نصب دوتا را انتخاب کن؛ همان پوشه‌ای که Steam با Browse local files باز می‌کند.", "Choose the Dota installation folder opened by Steam’s Browse local files."],
         replay_folder_required: ["ابتدا پوشهٔ نصب دوتا را انتخاب کن.", "Choose your Dota installation folder first."],
         replay_folder_write_failed: ["امکان ذخیره در پوشهٔ ریپلی نیست. دسترسی نوشتن و فضای آزاد این درایو را بررسی کن.", "The replay folder is not writable. Check its permissions and free disk space."],

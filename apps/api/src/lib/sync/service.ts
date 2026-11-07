@@ -1,3 +1,4 @@
+import {runObservedMatchTick} from "./companion";
 import { logFailure } from "../../http/log";
 import { OpenDotaError } from "../opendota/errors";
 import { syncScheduledMatchesFromOpenDota } from "../opendota/service";
@@ -34,6 +35,7 @@ function describeWorkerError(error: unknown) {
 export async function runScheduledSyncTick() {
   const config = getSyncWorkerConfig();
   const stale = await recoverStaleScheduledJobs(config);
+  const observed = await runObservedMatchTick();
   const manual = await runManualRangeSyncTick();
   if (!config.enabled) {
     return {
@@ -43,7 +45,7 @@ export async function runScheduledSyncTick() {
       processed: 0,
       stoppedEarly: false,
       jobs: [],
-      manual,
+      manual, observed,
     };
   }
 
@@ -101,6 +103,6 @@ export async function runScheduledSyncTick() {
     processed: jobs.length,
     stoppedEarly,
     jobs,
-    manual,
+    manual, observed,
   };
 }

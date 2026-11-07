@@ -3,7 +3,7 @@ name = "dota-notes-desktop"
 version = "0.1.0"
 description = "Dota Notes desktop client"
 edition = "2021"
-rust-version = "1.77.2"
+rust-version = "1.85"
 
 [lib]
 name = "dota_notes_desktop_lib"

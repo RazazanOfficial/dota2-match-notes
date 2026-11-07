@@ -7,3 +7,5 @@ import "./dashboard.css";
 import "./experience.css";
 
 createRoot(document.getElementById("root")!).render(<React.StrictMode><App /></React.StrictMode>);
+
+import "./library-updates.css";

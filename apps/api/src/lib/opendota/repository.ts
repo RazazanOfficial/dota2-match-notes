@@ -259,8 +259,9 @@ export async function markJournalRangeCompleted(
   const start = new Date(`${from}T00:00:00.000Z`);
   const end = new Date(`${to}T00:00:00.000Z`);
   const days: string[] = [];
-  for (let date = start; date <= end && days.length < 7; date = new Date(date.getTime() + 86_400_000)) {
-    days.push(date.toISOString().slice(0, 10));
+  for (let date = start; date <= end && days.length < 62; date = new Date(date.getTime() + 86_400_000)) {
+    const key=date.toISOString().slice(0,10);
+    if(key<toJournalDateKey(new Date()))days.push(key);
   }
   if (!days.length) return;
 

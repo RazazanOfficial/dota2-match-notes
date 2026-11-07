@@ -78,7 +78,7 @@ describe("match workspace regressions",()=>{
         if (t === messages.fa) expect(details).toContain("ساعت تلاش بعدی:");
         expect(details).not.toMatch(/AM|PM|ق\.ظ|ب\.ظ/);
     });
-    it("restores persisted processing immediately and refreshes its stage from history", () => {
+    it("restores processing and briefly keeps completion transitions visible", async () => {
         const processing = { ...row, analysisStatus: "processing" as const, analysisPreparation: { replay: "processing", progress: { phase: "parsing", bytes: 1024, totalBytes: 1024, bytesPerSecond: 0, attempts: 1, nextTryAt: null, phaseStartedAt: null, heartbeatAt: null, retryDeadlineAt: null, errorCode: null } } };
         const view = render(<MatchTable matches={[processing]} t={messages.fa} onOpen={vi.fn()} live/>);
         expect(screen.getByRole("button", { name: messages.fa.analysisQueued }).getAttribute("aria-expanded")).toBe("false");
@@ -87,7 +87,7 @@ describe("match workspace regressions",()=>{
         expect(mocks.api).not.toHaveBeenCalled();
         view.rerender(<MatchTable matches={[{ ...processing, analyzed: true, analysisPreparation: { ...processing.analysisPreparation, progress: { ...processing.analysisPreparation.progress, phase: "uploading" } } }]} t={messages.fa} onOpen={vi.fn()} live/>);
         expect(screen.getByRole("button", { name: messages.fa.analysisDone })).toBeTruthy();
-        expect(view.container.querySelector('.row-analysis-progress')).toBeNull();
+        await waitFor(()=>expect(view.container.querySelector('.row-analysis-progress')).toBeNull(),{timeout:5000});
     });
     it.each([messages.fa, messages.en])("shows a readable red failure at the parser stage without developer codes", t => {
         const prep = { replay: "failed", errorCode: "replay_parser_failed" };
