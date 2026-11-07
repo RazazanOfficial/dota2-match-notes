@@ -29,6 +29,7 @@ beforeAll(async()=>{
     INSERT INTO local_replay_jobs(match_id,status,archive_status,archive_key,archive_bytes) VALUES(1,'completed','active','replays/2026/09/01/1.dem.bz2',100);`);
   await db.exec(await readFile(new URL("../drizzle/0022_replay_resilience.sql",import.meta.url),"utf8"));
   await db.exec(await readFile(new URL("../drizzle/0030_replay_pipeline.sql",import.meta.url),"utf8"));
+  await db.exec("ALTER TABLE local_replay_jobs ADD COLUMN download_requested_at timestamptz");
 },30000);
 afterAll(async()=>{await db?.close();if(folder)await rm(folder,{recursive:true,force:true});});
 beforeEach(async()=>{
@@ -270,4 +271,17 @@ it("allows an already prepared replay to reach Java after the network retry wind
  // downloaded checkpoint awaiting the independent parser lane.
  await client.query("UPDATE local_replay_jobs SET status='pending',phase='awaiting_parse',request_started_at=now()-interval '2 days',retry_deadline_at=now()-interval '1 day',run_after=now() WHERE match_id=2");
  const pipeline=await import("../scripts/replay-parser/run-pipeline.mjs");await pipeline.recoverLeases(client);expect(await pipeline.claimLane(client,"parse")).toMatchObject({match_id:2,status:"processing",phase:"parsing"});
+});
+
+it.each(["analysis","download"])("prioritizes an explicit %s replay without waiting for five older analyses",async(intent)=>{
+ const pipeline=await import("../scripts/replay-parser/run-pipeline.mjs");
+ for(let id=30;id<36;id++){
+  await client.query("INSERT INTO dota_matches(match_id,started_at) VALUES($1,now())",[id]);
+  await client.query("INSERT INTO local_replay_jobs(match_id,status,phase,intent,spool_complete,spool_name,request_started_at) VALUES($1,'pending','queued','analysis',true,$2,now()-interval '1 minute')",[id,`${id}.dem`]);
+  await client.query("INSERT INTO replay_archive_jobs(match_id) VALUES($1)",[id]);
+ }
+ await client.query("UPDATE local_replay_jobs SET request_started_at=now()-interval '11 minutes' WHERE match_id BETWEEN 30 AND 34");
+ await client.query("UPDATE local_replay_jobs SET download_requested_at=now(),intent=$1 WHERE match_id=35",[intent]);
+ expect((await pipeline.claimLane(client,'prepare')).match_id).toBe(35);
+ expect((await pipeline.claimArchive(client)).match_id).toBe(35);
 });

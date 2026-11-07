@@ -28,6 +28,8 @@ export interface HistoryMatch {
     duration: number;
     startedAt: string;
     analyzed: boolean;
+    analysisRequestedAt?:string|null;
+    analysisUpdatedAt?:string|null;
     analysisStatus?: "basic" | "pending" | "processing" | "failed" | "ready";
     analysisPreparation?: AnalysisPreparation | null;
     itemIds?: Array<number | null>;

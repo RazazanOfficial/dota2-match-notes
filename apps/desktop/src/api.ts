@@ -175,7 +175,7 @@ export interface SyncJob {
     status: string;
     attempted?: string[];
     request?: { scope: "day" | "week" | "month"; from: string; to: string };
-    result?: { imported?: string[]; checked?: number; failed?: unknown[] };
+    result?: { externalRequests?:number; alreadyImported?:number; imported?: string[]; checked?: number; failed?: unknown[] };
 }
 export async function getSyncStatus(signal?: AbortSignal) {
     return apiRequest<{ ok: true; status: { nextAllowedAt: string | null; nextDayAllowedAt: string | null; nextWeekAllowedAt: string | null; nextMonthAllowedAt: string | null; manualJob?: SyncJob | null } }>("/api/sync/me", { signal });

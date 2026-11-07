@@ -12,6 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test --locked --manifest-path apps/desktop/native-tests/Cargo.toml
+      - run: cargo test --locked --manifest-path apps/desktop/companion/Cargo.toml
   checks:
     strategy:
       fail-fast: false

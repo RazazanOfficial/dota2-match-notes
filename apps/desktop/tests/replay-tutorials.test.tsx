@@ -41,14 +41,14 @@ describe("replay metadata and screenshot tutorials",()=>{
   fireEvent.error(within(dialog).getByRole("img"));expect(dialog.querySelector(".tutorial-image-pending")?.textContent).toBe("");
   fireEvent.keyDown(window,{key:"Escape"});expect(screen.queryByRole("dialog")).toBeNull();expect(document.body.style.overflow).toBe("");expect(document.activeElement).toBe(trigger);
  });
- it.each([messages.fa,messages.en])("groups the two tutorials separately from the native folder action",async(t)=>{
+ it.each([messages.fa,messages.en])("keeps playback help separate from the native folder action",async(t)=>{
   const choose=vi.spyOn(replayNative,"chooseFolder").mockResolvedValue(null);render(<Replay t={t} live/>);
   const group=screen.getByRole("group",{name:t===messages.fa ? "آموزش‌های ریپلی" : "Replay tutorials"});
-  expect(within(group).getAllByRole("button")).toHaveLength(2);
+  expect(within(group).getAllByRole("button")).toHaveLength(1);
   await waitFor(()=>expect(screen.getByRole("button",{name:t.dotaFolder}).getAttribute("aria-expanded")).toBe("false"));
   fireEvent.click(screen.getByRole("button",{name:t.dotaFolder}));
   const folder=screen.getByRole("button",{name:t===messages.fa ? "بازکردن پوشه" : "Open folder"});
-  expect(group.contains(folder)).toBe(false);expect(folder.className).toContain("primary-button");
+  expect(group.contains(folder)).toBe(false);expect(folder.className).toContain("secondary-button");
   fireEvent.click(within(group).getAllByRole("button")[0]);expect(choose).not.toHaveBeenCalled();
   fireEvent.click(within(screen.getByRole("dialog")).getByRole("button",{name:t.close}));await act(async()=>{});
   await waitFor(()=>expect(screen.getByRole("button",{name:t===messages.fa ? "بازکردن پوشه" : "Open folder"})).toHaveProperty("disabled",false));fireEvent.click(screen.getByRole("button",{name:t===messages.fa ? "بازکردن پوشه" : "Open folder"}));await waitFor(()=>expect(choose).toHaveBeenCalledOnce());
@@ -65,7 +65,7 @@ describe("replay metadata and screenshot tutorials",()=>{
   fireEvent.click(screen.getByRole("tab",{name:new RegExp(t.localReplays)}));
   const local=await screen.findByRole("table",{name:t.localReplays});
   await waitFor(()=>expect(within(local).getByRole("img",{name:"Juggernaut"})).toBeTruthy());
-  expect(within(local).getAllByRole("columnheader")).toHaveLength(8);expect(local.textContent).toContain("39:05");
+  expect(within(local).getAllByRole("columnheader")).toHaveLength(9);expect(local.textContent).toContain("39:05");
   expect(api.mock.calls.some(([,options])=>options?.body?.includes('"intent"'))).toBe(false);
  });
  it("keeps a local file and its command available when metadata is unavailable",async()=>{

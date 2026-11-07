@@ -1,0 +1,4613 @@
+{
+  "version": "39f45443779b9ee16c7a2ff8077bfa7cc6f3f782af3c040276157bfe28e60c94",
+  "files": [
+    {
+      "path": "buffs/abyssal_underlord_atrophy_aura.png",
+      "bytes": 31983,
+      "sha256": "f8ac1581a4dead11df422870c965886774c0d97f6c31d8e3288f255f43b3a371",
+      "object": "f8ac1581a4dead11df422870c965886774c0d97f6c31d8e3288f255f43b3a371.png"
+    },
+    {
+      "path": "buffs/axe_culling_blade.png",
+      "bytes": 31728,
+      "sha256": "df7dce4f86d83d54b5bd98847c44576553387b73f0adbc2099aa48c85f4ca987",
+      "object": "df7dce4f86d83d54b5bd98847c44576553387b73f0adbc2099aa48c85f4ca987.png"
+    },
+    {
+      "path": "buffs/bounty_hunter_jinada.png",
+      "bytes": 29637,
+      "sha256": "65e9bce6f1ea33fc5cb621448e4c9d3d2c0ee6979b9c81774dab52e9a3c24b0e",
+      "object": "65e9bce6f1ea33fc5cb621448e4c9d3d2c0ee6979b9c81774dab52e9a3c24b0e.png"
+    },
+    {
+      "path": "buffs/bounty_hunter_track.png",
+      "bytes": 32133,
+      "sha256": "54bde491cec92ca4febfb809fc3035d9f97cfe468951d2302456b15faddf5b5e",
+      "object": "54bde491cec92ca4febfb809fc3035d9f97cfe468951d2302456b15faddf5b5e.png"
+    },
+    {
+      "path": "buffs/legion_commander_duel.png",
+      "bytes": 30755,
+      "sha256": "5faef70bf49cce0c04c9458d785afc5e08834089451f3eedfc3fbe72f36f614c",
+      "object": "5faef70bf49cce0c04c9458d785afc5e08834089451f3eedfc3fbe72f36f614c.png"
+    },
+    {
+      "path": "buffs/life_stealer_feast.png",
+      "bytes": 26078,
+      "sha256": "1a3ed23b996b689dabab2aae462c164c7040dddb84feb83f0860a723e6612887",
+      "object": "1a3ed23b996b689dabab2aae462c164c7040dddb84feb83f0860a723e6612887.png"
+    },
+    {
+      "path": "buffs/lion_finger_of_death.png",
+      "bytes": 25427,
+      "sha256": "93d7091c5d9e2f9ed0aa9a59fc887dd4bf55223eb12d614291acf74ea6c35714",
+      "object": "93d7091c5d9e2f9ed0aa9a59fc887dd4bf55223eb12d614291acf74ea6c35714.png"
+    },
+    {
+      "path": "buffs/muerta_pierce_the_veil.png",
+      "bytes": 37508,
+      "sha256": "e0b0bc4191a9bf9e7ec8c33580b624afb4388a0270f1787ef521b3b3ba1495fd",
+      "object": "e0b0bc4191a9bf9e7ec8c33580b624afb4388a0270f1787ef521b3b3ba1495fd.png"
+    },
+    {
+      "path": "buffs/necrolyte_reapers_scythe.png",
+      "bytes": 28256,
+      "sha256": "e3750d1814dda92689e3b5a4353005f519a046e8340b0df81638b99ac5a8951a",
+      "object": "e3750d1814dda92689e3b5a4353005f519a046e8340b0df81638b99ac5a8951a.png"
+    },
+    {
+      "path": "buffs/pudge_flesh_heap.png",
+      "bytes": 30458,
+      "sha256": "9a4d637ffff8433d764494e23cae7aa21fe96be783a74f72e650322b1351eab7",
+      "object": "9a4d637ffff8433d764494e23cae7aa21fe96be783a74f72e650322b1351eab7.png"
+    },
+    {
+      "path": "buffs/silencer_glaives_of_wisdom.png",
+      "bytes": 33882,
+      "sha256": "a7c3cc81e8bae78ae374d41c34014f0c09e5b3e6259f36d9f860e1fa93d500ee",
+      "object": "a7c3cc81e8bae78ae374d41c34014f0c09e5b3e6259f36d9f860e1fa93d500ee.png"
+    },
+    {
+      "path": "buffs/slark_essence_shift.png",
+      "bytes": 34713,
+      "sha256": "0e7310c870b22df8cd4dd79947567b0144d4f07a6c71af8edeb84fbcdf12e985",
+      "object": "0e7310c870b22df8cd4dd79947567b0144d4f07a6c71af8edeb84fbcdf12e985.png"
+    },
+    {
+      "path": "cursors/acid-hydra/busy.png",
+      "bytes": 5765,
+      "sha256": "8f871d2672b651967c0f8a621c07ced540d05b0f2cf69281db58d6c2f07d812d",
+      "object": "8f871d2672b651967c0f8a621c07ced540d05b0f2cf69281db58d6c2f07d812d.png"
+    },
+    {
+      "path": "cursors/acid-hydra/danger.png",
+      "bytes": 6585,
+      "sha256": "16f66d72a9b0430c5da19bcee7c6f3ffb6ed39e226b9ed691390316258e537cd",
+      "object": "16f66d72a9b0430c5da19bcee7c6f3ffb6ed39e226b9ed691390316258e537cd.png"
+    },
+    {
+      "path": "cursors/acid-hydra/default.png",
+      "bytes": 5609,
+      "sha256": "b676498357b9ae22429ec80fbdf5faceca9fe117e4b0ec64a8402ebf337f8e0f",
+      "object": "b676498357b9ae22429ec80fbdf5faceca9fe117e4b0ec64a8402ebf337f8e0f.png"
+    },
+    {
+      "path": "cursors/acid-hydra/not-allowed.png",
+      "bytes": 6138,
+      "sha256": "39d63c8c4b34fb9ab367a4d1f771f73ca2dc88417a6dd037639f17104163f7e0",
+      "object": "39d63c8c4b34fb9ab367a4d1f771f73ca2dc88417a6dd037639f17104163f7e0.png"
+    },
+    {
+      "path": "cursors/acid-hydra/pointer.png",
+      "bytes": 6510,
+      "sha256": "0402b7da7a20d5a459349d04b27914bd2846a9a7a18dba6e0d9acbf778d4d4a5",
+      "object": "0402b7da7a20d5a459349d04b27914bd2846a9a7a18dba6e0d9acbf778d4d4a5.png"
+    },
+    {
+      "path": "cursors/diretide-2020/busy.png",
+      "bytes": 5880,
+      "sha256": "a09beff46f92d1ffd8e7e73a339e8280a861ebbd014b5208d59014c26bce184d",
+      "object": "a09beff46f92d1ffd8e7e73a339e8280a861ebbd014b5208d59014c26bce184d.png"
+    },
+    {
+      "path": "cursors/diretide-2020/danger.png",
+      "bytes": 6040,
+      "sha256": "c370efbb545806f42854effe83d842049562f2d9875cc89007228030f7c2e25f",
+      "object": "c370efbb545806f42854effe83d842049562f2d9875cc89007228030f7c2e25f.png"
+    },
+    {
+      "path": "cursors/diretide-2020/default.png",
+      "bytes": 5694,
+      "sha256": "0d72fb93bbd420a7b8ae6401c18d23b5a1d96b2ddfc5b35084cc8a5721a88a59",
+      "object": "0d72fb93bbd420a7b8ae6401c18d23b5a1d96b2ddfc5b35084cc8a5721a88a59.png"
+    },
+    {
+      "path": "cursors/diretide-2020/not-allowed.png",
+      "bytes": 6742,
+      "sha256": "1459f63bc570969246b239d397d6115b4642f00cd3e462d25b11511a99c2727a",
+      "object": "1459f63bc570969246b239d397d6115b4642f00cd3e462d25b11511a99c2727a.png"
+    },
+    {
+      "path": "cursors/diretide-2020/pointer.png",
+      "bytes": 6044,
+      "sha256": "50103b6449683dd672d961c2a4454e20215dbae7123e9459e41c0cb0e157b0cb",
+      "object": "50103b6449683dd672d961c2a4454e20215dbae7123e9459e41c0cb0e157b0cb.png"
+    },
+    {
+      "path": "cursors/dota-default.svg",
+      "bytes": 268,
+      "sha256": "da40fa3ad75543c80ae29b816377044596251bf21a125e832f4c60f11606f506",
+      "object": "da40fa3ad75543c80ae29b816377044596251bf21a125e832f4c60f11606f506.svg"
+    },
+    {
+      "path": "cursors/dota-pointer.svg",
+      "bytes": 264,
+      "sha256": "5bbb72cb5937c3fbc60dc2152fdfdbc601720dabe393d50d1a6557b06e9d0bce",
+      "object": "5bbb72cb5937c3fbc60dc2152fdfdbc601720dabe393d50d1a6557b06e9d0bce.svg"
+    },
+    {
+      "path": "cursors/ti-2017/busy.png",
+      "bytes": 5508,
+      "sha256": "80c690224e69113a31bb65c9e84141f4c33d5cf13aa68ee2d8d9c7420d384306",
+      "object": "80c690224e69113a31bb65c9e84141f4c33d5cf13aa68ee2d8d9c7420d384306.png"
+    },
+    {
+      "path": "cursors/ti-2017/danger.png",
+      "bytes": 4763,
+      "sha256": "9211c6731824aa1ceef5d25ee3cd84248bd120d24f4b14e40b66ffb399337093",
+      "object": "9211c6731824aa1ceef5d25ee3cd84248bd120d24f4b14e40b66ffb399337093.png"
+    },
+    {
+      "path": "cursors/ti-2017/default.png",
+      "bytes": 5247,
+      "sha256": "17205a88296e14c6f4fa7fa15e713c37ad50710320f8e99bca675effdc1a7908",
+      "object": "17205a88296e14c6f4fa7fa15e713c37ad50710320f8e99bca675effdc1a7908.png"
+    },
+    {
+      "path": "cursors/ti-2017/not-allowed.png",
+      "bytes": 6232,
+      "sha256": "90f0eff6ee3ed3612a53e7b1d67dff5b13029f8fb5ebed352ce4a2ef6dfd9b2b",
+      "object": "90f0eff6ee3ed3612a53e7b1d67dff5b13029f8fb5ebed352ce4a2ef6dfd9b2b.png"
+    },
+    {
+      "path": "cursors/ti-2017/pointer.png",
+      "bytes": 5760,
+      "sha256": "f69af67601d7009dda72dc07b807e60f3803e31997b8d5e6db7fded47ee897c7",
+      "object": "f69af67601d7009dda72dc07b807e60f3803e31997b8d5e6db7fded47ee897c7.png"
+    },
+    {
+      "path": "cursors/ti-2018/busy.png",
+      "bytes": 5899,
+      "sha256": "81a50ffb45acb8107b454a3c945e681933ddaebffa8450ad47af3442bcd6c015",
+      "object": "81a50ffb45acb8107b454a3c945e681933ddaebffa8450ad47af3442bcd6c015.png"
+    },
+    {
+      "path": "cursors/ti-2018/danger.png",
+      "bytes": 6626,
+      "sha256": "31f3ebbeae64f61dac8e96472ad9a322a011c67f8944cc8e696bbcd2a17f5723",
+      "object": "31f3ebbeae64f61dac8e96472ad9a322a011c67f8944cc8e696bbcd2a17f5723.png"
+    },
+    {
+      "path": "cursors/ti-2018/default.png",
+      "bytes": 5883,
+      "sha256": "5618d64ae2eb704f0308ebb7644ee391e00655bb16b997e1562d0947dbf01fd3",
+      "object": "5618d64ae2eb704f0308ebb7644ee391e00655bb16b997e1562d0947dbf01fd3.png"
+    },
+    {
+      "path": "cursors/ti-2018/not-allowed.png",
+      "bytes": 7040,
+      "sha256": "cc3b356e45389197b9c8700aef38c4d30af7468671901dfa62b4568e3b4f9984",
+      "object": "cc3b356e45389197b9c8700aef38c4d30af7468671901dfa62b4568e3b4f9984.png"
+    },
+    {
+      "path": "cursors/ti-2018/pointer.png",
+      "bytes": 6405,
+      "sha256": "9c243b53e769e98242a6bb26b4064a288a129c8b868867a67cab7ebad97c1bb0",
+      "object": "9c243b53e769e98242a6bb26b4064a288a129c8b868867a67cab7ebad97c1bb0.png"
+    },
+    {
+      "path": "cursors/ti-2019/busy.png",
+      "bytes": 6743,
+      "sha256": "6a74f7a82a4026ff79f38fd51fac0c0ae5ce0598b9c615cd3885b0fb5798da11",
+      "object": "6a74f7a82a4026ff79f38fd51fac0c0ae5ce0598b9c615cd3885b0fb5798da11.png"
+    },
+    {
+      "path": "cursors/ti-2019/danger.png",
+      "bytes": 7685,
+      "sha256": "269ccc64e80c52c430141f91fdbdfdd38e145175058c2d40c71801e120ae0174",
+      "object": "269ccc64e80c52c430141f91fdbdfdd38e145175058c2d40c71801e120ae0174.png"
+    },
+    {
+      "path": "cursors/ti-2019/default.png",
+      "bytes": 7686,
+      "sha256": "d9518f333780946a74b4f7077d73cf2a0e1c6e442f3d8e04baead07fcabad4db",
+      "object": "d9518f333780946a74b4f7077d73cf2a0e1c6e442f3d8e04baead07fcabad4db.png"
+    },
+    {
+      "path": "cursors/ti-2019/not-allowed.png",
+      "bytes": 6648,
+      "sha256": "36f43723d8abe6f1da552b8f82ed4951459f39199095795a5ccb0b7c56174854",
+      "object": "36f43723d8abe6f1da552b8f82ed4951459f39199095795a5ccb0b7c56174854.png"
+    },
+    {
+      "path": "cursors/ti-2019/pointer.png",
+      "bytes": 7512,
+      "sha256": "5fc64b2b5bdf6cea7e021df2d82bde4394a45aa39980dd5de4fc18f74453def8",
+      "object": "5fc64b2b5bdf6cea7e021df2d82bde4394a45aa39980dd5de4fc18f74453def8.png"
+    },
+    {
+      "path": "cursors/warcog/busy.png",
+      "bytes": 6465,
+      "sha256": "beb4b3f14ec9242dba7ac351e3ad7c824c33d718450fda36a1e607ec54efd728",
+      "object": "beb4b3f14ec9242dba7ac351e3ad7c824c33d718450fda36a1e607ec54efd728.png"
+    },
+    {
+      "path": "cursors/warcog/danger.png",
+      "bytes": 7138,
+      "sha256": "9d1b4fc01c171447fa58909df8255884780f4f77c6fc6c9e28ee7284955d8427",
+      "object": "9d1b4fc01c171447fa58909df8255884780f4f77c6fc6c9e28ee7284955d8427.png"
+    },
+    {
+      "path": "cursors/warcog/default.png",
+      "bytes": 6973,
+      "sha256": "fb6e8411cab319e5750ce58368631990a1dd9e51d73bb83fb4e32515cee44cca",
+      "object": "fb6e8411cab319e5750ce58368631990a1dd9e51d73bb83fb4e32515cee44cca.png"
+    },
+    {
+      "path": "cursors/warcog/not-allowed.png",
+      "bytes": 6730,
+      "sha256": "bcf8794d2a0642638b3e68e55f2aa1466b158a5e7b9e655a5493db119bd55edc",
+      "object": "bcf8794d2a0642638b3e68e55f2aa1466b158a5e7b9e655a5493db119bd55edc.png"
+    },
+    {
+      "path": "cursors/warcog/pointer.png",
+      "bytes": 7132,
+      "sha256": "c980773a57d391ceec79ca0007ae9fc7d2264844dfcf2d04d0b85b640703e0c1",
+      "object": "c980773a57d391ceec79ca0007ae9fc7d2264844dfcf2d04d0b85b640703e0c1.png"
+    },
+    {
+      "path": "cursors/wrath-of-ka/busy.png",
+      "bytes": 5878,
+      "sha256": "c09d52a77102ad07eb42f36b49c56a3ffa7f006f3f3378d5f6f29bd07facd07b",
+      "object": "c09d52a77102ad07eb42f36b49c56a3ffa7f006f3f3378d5f6f29bd07facd07b.png"
+    },
+    {
+      "path": "cursors/wrath-of-ka/danger.png",
+      "bytes": 6949,
+      "sha256": "bd4403e2bfabd154beafa10d138c50150376a8bd6e4d3be0e1fce5343d9e8556",
+      "object": "bd4403e2bfabd154beafa10d138c50150376a8bd6e4d3be0e1fce5343d9e8556.png"
+    },
+    {
+      "path": "cursors/wrath-of-ka/default.png",
+      "bytes": 6528,
+      "sha256": "a18c42fc31233dee7f291abd0860010de42905789e7e8fe987c9731f048eeaa7",
+      "object": "a18c42fc31233dee7f291abd0860010de42905789e7e8fe987c9731f048eeaa7.png"
+    },
+    {
+      "path": "cursors/wrath-of-ka/not-allowed.png",
+      "bytes": 6406,
+      "sha256": "67333b00b110b3fcd412bb5fd804f430da85da223a0bf125dc4b2e45eca01662",
+      "object": "67333b00b110b3fcd412bb5fd804f430da85da223a0bf125dc4b2e45eca01662.png"
+    },
+    {
+      "path": "cursors/wrath-of-ka/pointer.png",
+      "bytes": 6647,
+      "sha256": "5d43658878c4e19b1b9a96743040c1be4c1dde151291ce8db3f2a429dd2b051c",
+      "object": "5d43658878c4e19b1b9a96743040c1be4c1dde151291ce8db3f2a429dd2b051c.png"
+    },
+    {
+      "path": "flags/ir.svg",
+      "bytes": 263,
+      "sha256": "bb928b35b37e6e80693400fdc62f280a03077a92d503daf1ee9c8415ae4b7539",
+      "object": "bb928b35b37e6e80693400fdc62f280a03077a92d503daf1ee9c8415ae4b7539.svg"
+    },
+    {
+      "path": "flags/us.svg",
+      "bytes": 1138,
+      "sha256": "4de90b49329a760f2efc1b9bbcef61ffe6f55b4751fd54c85ab283102c82eeea",
+      "object": "4de90b49329a760f2efc1b9bbcef61ffe6f55b4751fd54c85ab283102c82eeea.svg"
+    },
+    {
+      "path": "hero_universal.png",
+      "bytes": 2407,
+      "sha256": "ef248e19f0b325d0ca55ee48c0b9ef1576b78064acf9052a214df602dc300990",
+      "object": "ef248e19f0b325d0ca55ee48c0b9ef1576b78064acf9052a214df602dc300990.png"
+    },
+    {
+      "path": "heroes/abaddon.png",
+      "bytes": 53683,
+      "sha256": "4282e105a2b665002d1e22cc97c27b175b5bfc9d387886d09ac8f273a054f20c",
+      "object": "4282e105a2b665002d1e22cc97c27b175b5bfc9d387886d09ac8f273a054f20c.png"
+    },
+    {
+      "path": "heroes/abyssal_underlord.png",
+      "bytes": 80064,
+      "sha256": "167a0372ae5c431bf746b13d9e8e4234e25907f52072ebd58d357a3a77792b15",
+      "object": "167a0372ae5c431bf746b13d9e8e4234e25907f52072ebd58d357a3a77792b15.png"
+    },
+    {
+      "path": "heroes/alchemist.png",
+      "bytes": 82940,
+      "sha256": "b16ba3595c2fb9fa981224f233563a34645a0c83aae8c0dddd72bdeefa3287bc",
+      "object": "b16ba3595c2fb9fa981224f233563a34645a0c83aae8c0dddd72bdeefa3287bc.png"
+    },
+    {
+      "path": "heroes/ancient_apparition.png",
+      "bytes": 67247,
+      "sha256": "0fc47a8be78e738b42381f6b8e0daf1467299bd65075b065d848f2ced18d7f25",
+      "object": "0fc47a8be78e738b42381f6b8e0daf1467299bd65075b065d848f2ced18d7f25.png"
+    },
+    {
+      "path": "heroes/antimage.png",
+      "bytes": 62893,
+      "sha256": "7e47a9f52f7f1cdcb77b38e1f3e26ce967a3ed0eceb4b0d808f5ea14d347ce39",
+      "object": "7e47a9f52f7f1cdcb77b38e1f3e26ce967a3ed0eceb4b0d808f5ea14d347ce39.png"
+    },
+    {
+      "path": "heroes/arc_warden.png",
+      "bytes": 79903,
+      "sha256": "4df3b186bb0bac2f9a4a3eb9ea6ca6769c1d9397afe8cdab09b209fac9c0f228",
+      "object": "4df3b186bb0bac2f9a4a3eb9ea6ca6769c1d9397afe8cdab09b209fac9c0f228.png"
+    },
+    {
+      "path": "heroes/axe.png",
+      "bytes": 66782,
+      "sha256": "9bf3a200b8d4ff797718a1615c3b3f3fa61c3bb4fb7abb0f51ee0597ae3f4138",
+      "object": "9bf3a200b8d4ff797718a1615c3b3f3fa61c3bb4fb7abb0f51ee0597ae3f4138.png"
+    },
+    {
+      "path": "heroes/bane.png",
+      "bytes": 69570,
+      "sha256": "f00d1e4d4354da7f3c5bfd199642e4219de09c30e60adedd393ae1140eacdc6d",
+      "object": "f00d1e4d4354da7f3c5bfd199642e4219de09c30e60adedd393ae1140eacdc6d.png"
+    },
+    {
+      "path": "heroes/batrider.png",
+      "bytes": 68905,
+      "sha256": "159b8b553506dd5181a3d3e03ae9b1b300308031d00d2f6d61f0655ad89b8e62",
+      "object": "159b8b553506dd5181a3d3e03ae9b1b300308031d00d2f6d61f0655ad89b8e62.png"
+    },
+    {
+      "path": "heroes/beastmaster.png",
+      "bytes": 74687,
+      "sha256": "753b50e8897ffb4c9899ed81a49fef18aa57f3196031de8c41ed6c00c1b5b6c8",
+      "object": "753b50e8897ffb4c9899ed81a49fef18aa57f3196031de8c41ed6c00c1b5b6c8.png"
+    },
+    {
+      "path": "heroes/bloodseeker.png",
+      "bytes": 73984,
+      "sha256": "3cc0b22a1f24219c4017703d78418f792a49a60e5d8c414971f1c495a52c4de5",
+      "object": "3cc0b22a1f24219c4017703d78418f792a49a60e5d8c414971f1c495a52c4de5.png"
+    },
+    {
+      "path": "heroes/bounty_hunter.png",
+      "bytes": 77585,
+      "sha256": "7aa3e94c6151618fb2226f43d21adc3828704f886e5d1885a44b375eb7c536bb",
+      "object": "7aa3e94c6151618fb2226f43d21adc3828704f886e5d1885a44b375eb7c536bb.png"
+    },
+    {
+      "path": "heroes/brewmaster.png",
+      "bytes": 66057,
+      "sha256": "649a12973e00edc5b1fba842596ed77ffbbe8cbe2b6ee3c377e66faa8ba73965",
+      "object": "649a12973e00edc5b1fba842596ed77ffbbe8cbe2b6ee3c377e66faa8ba73965.png"
+    },
+    {
+      "path": "heroes/bristleback.png",
+      "bytes": 70311,
+      "sha256": "59ed8e52bc5bb4cde02fb1b82175c0d468e9b042edc808ee0ea02652dce76bbf",
+      "object": "59ed8e52bc5bb4cde02fb1b82175c0d468e9b042edc808ee0ea02652dce76bbf.png"
+    },
+    {
+      "path": "heroes/broodmother.png",
+      "bytes": 81941,
+      "sha256": "7e193beebadf7118ece47d40614623bf5fd01a5b1b10f6da910d3d868678899a",
+      "object": "7e193beebadf7118ece47d40614623bf5fd01a5b1b10f6da910d3d868678899a.png"
+    },
+    {
+      "path": "heroes/centaur.png",
+      "bytes": 65216,
+      "sha256": "f9c3217cf10c0d56fd9666c90e46aada91b11c058d2fa201286c2cc4e96de484",
+      "object": "f9c3217cf10c0d56fd9666c90e46aada91b11c058d2fa201286c2cc4e96de484.png"
+    },
+    {
+      "path": "heroes/chaos_knight.png",
+      "bytes": 62091,
+      "sha256": "0ac22c4ce747c8286e8b1f597a6f1907b4b7284eec1b98b4b4f87b9020665246",
+      "object": "0ac22c4ce747c8286e8b1f597a6f1907b4b7284eec1b98b4b4f87b9020665246.png"
+    },
+    {
+      "path": "heroes/chen.png",
+      "bytes": 69542,
+      "sha256": "3ed9ceaf4062e6702db3c95ec31d3234124b2f17dd2314e0bfc5494360cff06f",
+      "object": "3ed9ceaf4062e6702db3c95ec31d3234124b2f17dd2314e0bfc5494360cff06f.png"
+    },
+    {
+      "path": "heroes/clinkz.png",
+      "bytes": 82955,
+      "sha256": "05877e115c2f9cf96fe8a9d205c3b32a10c9fa500a47109f75de1572e1eb310b",
+      "object": "05877e115c2f9cf96fe8a9d205c3b32a10c9fa500a47109f75de1572e1eb310b.png"
+    },
+    {
+      "path": "heroes/crystal_maiden.png",
+      "bytes": 70190,
+      "sha256": "8ca577cff8dd8567b3c0a6fa185a83f4a2580a8b2c8fceff617720e894f5b5d5",
+      "object": "8ca577cff8dd8567b3c0a6fa185a83f4a2580a8b2c8fceff617720e894f5b5d5.png"
+    },
+    {
+      "path": "heroes/dark_seer.png",
+      "bytes": 80697,
+      "sha256": "ed63a948339e546971970efc73ceda46d5c189d9c30f9689487475cdadfe2a8b",
+      "object": "ed63a948339e546971970efc73ceda46d5c189d9c30f9689487475cdadfe2a8b.png"
+    },
+    {
+      "path": "heroes/dark_willow.png",
+      "bytes": 65168,
+      "sha256": "bd50b13cb5e43054313ee5ecc69d0ceb564f1b9a601f38652e53a9de2cd07a23",
+      "object": "bd50b13cb5e43054313ee5ecc69d0ceb564f1b9a601f38652e53a9de2cd07a23.png"
+    },
+    {
+      "path": "heroes/dawnbreaker.png",
+      "bytes": 69855,
+      "sha256": "d7aefe3ffb966e40d5c1fe560dc8ec1cf272f74f53a3150d80c8e534edb06a02",
+      "object": "d7aefe3ffb966e40d5c1fe560dc8ec1cf272f74f53a3150d80c8e534edb06a02.png"
+    },
+    {
+      "path": "heroes/dazzle.png",
+      "bytes": 76471,
+      "sha256": "8de9659c0db1e1c29f13ee83e658b80b5d98eae4949b122fd083503baa0e2a2c",
+      "object": "8de9659c0db1e1c29f13ee83e658b80b5d98eae4949b122fd083503baa0e2a2c.png"
+    },
+    {
+      "path": "heroes/death_prophet.png",
+      "bytes": 60871,
+      "sha256": "32298900b2c34664a9f79d94628915e1d292a7c2aa7161c388f25a9b8431f40d",
+      "object": "32298900b2c34664a9f79d94628915e1d292a7c2aa7161c388f25a9b8431f40d.png"
+    },
+    {
+      "path": "heroes/disruptor.png",
+      "bytes": 74406,
+      "sha256": "3327e579d60e9ea23c9c8694d9a1f8c2139ed17001c9c0e09cbfffc873cdb5cc",
+      "object": "3327e579d60e9ea23c9c8694d9a1f8c2139ed17001c9c0e09cbfffc873cdb5cc.png"
+    },
+    {
+      "path": "heroes/doom_bringer.png",
+      "bytes": 62832,
+      "sha256": "8ebcd074d6f7704f8374adbc6fefe0a3d517c9524e13997c73e3b8a76f2d0182",
+      "object": "8ebcd074d6f7704f8374adbc6fefe0a3d517c9524e13997c73e3b8a76f2d0182.png"
+    },
+    {
+      "path": "heroes/dragon_knight.png",
+      "bytes": 69702,
+      "sha256": "152b92cbb49c548941baa2643c5e9b27a9ea211a75630edf072cc2c8131f6f28",
+      "object": "152b92cbb49c548941baa2643c5e9b27a9ea211a75630edf072cc2c8131f6f28.png"
+    },
+    {
+      "path": "heroes/drow_ranger.png",
+      "bytes": 25318,
+      "sha256": "a8f905bc5d1e7d4cea6977d705f443e8b99918793c025608a2564532f816ce6f",
+      "object": "a8f905bc5d1e7d4cea6977d705f443e8b99918793c025608a2564532f816ce6f.png"
+    },
+    {
+      "path": "heroes/earth_spirit.png",
+      "bytes": 55356,
+      "sha256": "b94a84217ff937e617b9d8b21a1d5f56bbd8e0e26ae0dbac526eb5f2f66b6a46",
+      "object": "b94a84217ff937e617b9d8b21a1d5f56bbd8e0e26ae0dbac526eb5f2f66b6a46.png"
+    },
+    {
+      "path": "heroes/earthshaker.png",
+      "bytes": 80360,
+      "sha256": "6866d114db50a5e6e7766ef0f6f2bddda0394c9c6f05dbd9576a2160a8b0a213",
+      "object": "6866d114db50a5e6e7766ef0f6f2bddda0394c9c6f05dbd9576a2160a8b0a213.png"
+    },
+    {
+      "path": "heroes/elder_titan.png",
+      "bytes": 79643,
+      "sha256": "0bad343555f0dc362fb2f2fa44d495fd45e5d0eee72b9d1f6862a2156bbe28e8",
+      "object": "0bad343555f0dc362fb2f2fa44d495fd45e5d0eee72b9d1f6862a2156bbe28e8.png"
+    },
+    {
+      "path": "heroes/ember_spirit.png",
+      "bytes": 56176,
+      "sha256": "f0d2a34608655f8a5c610e6a67e38748314d846f41d47e3a1ec34bc3ad6ea09d",
+      "object": "f0d2a34608655f8a5c610e6a67e38748314d846f41d47e3a1ec34bc3ad6ea09d.png"
+    },
+    {
+      "path": "heroes/enchantress.png",
+      "bytes": 69185,
+      "sha256": "6d003bb1cdb9b8d6f03ba7d18ed95325c230420f7d06571c76869a5159c2b2e1",
+      "object": "6d003bb1cdb9b8d6f03ba7d18ed95325c230420f7d06571c76869a5159c2b2e1.png"
+    },
+    {
+      "path": "heroes/enigma.png",
+      "bytes": 70114,
+      "sha256": "247f8afc1af16d47889160428ae6605bc41bce182e86007785f0ccfddc5ba774",
+      "object": "247f8afc1af16d47889160428ae6605bc41bce182e86007785f0ccfddc5ba774.png"
+    },
+    {
+      "path": "heroes/faceless_void.png",
+      "bytes": 61954,
+      "sha256": "9aa7cb89cfc089d35bbefec78ce14afb16566f833b133c381a9b9c68466761ec",
+      "object": "9aa7cb89cfc089d35bbefec78ce14afb16566f833b133c381a9b9c68466761ec.png"
+    },
+    {
+      "path": "heroes/furion.png",
+      "bytes": 70253,
+      "sha256": "3fd8bb517361fa41656da44c35784055ed66856546cd85a67d72a5ce56c117c7",
+      "object": "3fd8bb517361fa41656da44c35784055ed66856546cd85a67d72a5ce56c117c7.png"
+    },
+    {
+      "path": "heroes/grimstroke.png",
+      "bytes": 70549,
+      "sha256": "eddcead554817fb54383bdeffc8387832073e39024992d9dcaa30898c710d10d",
+      "object": "eddcead554817fb54383bdeffc8387832073e39024992d9dcaa30898c710d10d.png"
+    },
+    {
+      "path": "heroes/gyrocopter.png",
+      "bytes": 66475,
+      "sha256": "822c92ce056289df3aef7f25ce03b2576dd7dd8e39b4018290444155f2f21ef1",
+      "object": "822c92ce056289df3aef7f25ce03b2576dd7dd8e39b4018290444155f2f21ef1.png"
+    },
+    {
+      "path": "heroes/hoodwink.png",
+      "bytes": 67237,
+      "sha256": "2ad15c1d2deb8e82ff69ee96166a5afd05885803f871c0da7cdcba99d0f0040f",
+      "object": "2ad15c1d2deb8e82ff69ee96166a5afd05885803f871c0da7cdcba99d0f0040f.png"
+    },
+    {
+      "path": "heroes/huskar.png",
+      "bytes": 68205,
+      "sha256": "63ac198d255bc6cf24d5dbe91eeac9d6cc9305d97e1f7ea7d57b00bd3a328d7a",
+      "object": "63ac198d255bc6cf24d5dbe91eeac9d6cc9305d97e1f7ea7d57b00bd3a328d7a.png"
+    },
+    {
+      "path": "heroes/invoker.png",
+      "bytes": 53692,
+      "sha256": "b302dd999a0bad1c0295d98b02242a7530f27d5d449ee183d516d2cf79a31da6",
+      "object": "b302dd999a0bad1c0295d98b02242a7530f27d5d449ee183d516d2cf79a31da6.png"
+    },
+    {
+      "path": "heroes/jakiro.png",
+      "bytes": 79414,
+      "sha256": "ac5932d6a4f56c1903415c1786ecde06c905e7e24817eefa70d286c885e4d8d3",
+      "object": "ac5932d6a4f56c1903415c1786ecde06c905e7e24817eefa70d286c885e4d8d3.png"
+    },
+    {
+      "path": "heroes/juggernaut.png",
+      "bytes": 61087,
+      "sha256": "d7df25261e20c8ef9f58f296b980e9eab89659d33b245f6b168114f9f52f8763",
+      "object": "d7df25261e20c8ef9f58f296b980e9eab89659d33b245f6b168114f9f52f8763.png"
+    },
+    {
+      "path": "heroes/keeper_of_the_light.png",
+      "bytes": 62919,
+      "sha256": "e590490ea0cca45a6d5b2009c44781d930301434d46f0d58b4011bdbc94f3f22",
+      "object": "e590490ea0cca45a6d5b2009c44781d930301434d46f0d58b4011bdbc94f3f22.png"
+    },
+    {
+      "path": "heroes/kez.png",
+      "bytes": 61706,
+      "sha256": "7c816d8d306e7250fe125511c8e25018130118f39b99509196a1c0dff8dfd231",
+      "object": "7c816d8d306e7250fe125511c8e25018130118f39b99509196a1c0dff8dfd231.png"
+    },
+    {
+      "path": "heroes/kunkka.png",
+      "bytes": 65303,
+      "sha256": "0dbd3b33d2d425bf87f8a4639ebe752d4dbe862148451ef1170975c4f188e8fd",
+      "object": "0dbd3b33d2d425bf87f8a4639ebe752d4dbe862148451ef1170975c4f188e8fd.png"
+    },
+    {
+      "path": "heroes/largo.png",
+      "bytes": 64925,
+      "sha256": "5fa1ff41035b6d84886275c88df4f446a376e742d744509488291181a845fa78",
+      "object": "5fa1ff41035b6d84886275c88df4f446a376e742d744509488291181a845fa78.png"
+    },
+    {
+      "path": "heroes/legion_commander.png",
+      "bytes": 67661,
+      "sha256": "40dcaf69610d5c126fa57efd59a627883f8a7cdf6e57168a83ba0c778550ef1b",
+      "object": "40dcaf69610d5c126fa57efd59a627883f8a7cdf6e57168a83ba0c778550ef1b.png"
+    },
+    {
+      "path": "heroes/leshrac.png",
+      "bytes": 68927,
+      "sha256": "3db4abaebd148d916279f8ad1d5af5340757e7408d79395a90a046de5fee3831",
+      "object": "3db4abaebd148d916279f8ad1d5af5340757e7408d79395a90a046de5fee3831.png"
+    },
+    {
+      "path": "heroes/lich.png",
+      "bytes": 73116,
+      "sha256": "5fafd024c9be71e001345ede119450d92f708e16abfcb6dafcb49ddd7622a688",
+      "object": "5fafd024c9be71e001345ede119450d92f708e16abfcb6dafcb49ddd7622a688.png"
+    },
+    {
+      "path": "heroes/life_stealer.png",
+      "bytes": 71483,
+      "sha256": "473bd4a7e2dfabd69a5bec516769ba78327825bc61caacfb0e9c5a519ff1fdce",
+      "object": "473bd4a7e2dfabd69a5bec516769ba78327825bc61caacfb0e9c5a519ff1fdce.png"
+    },
+    {
+      "path": "heroes/lina.png",
+      "bytes": 65502,
+      "sha256": "0e2576fc4fbe428b73cf802b79a39ce2ba997881a8b0690e60cb78c630b4ec7e",
+      "object": "0e2576fc4fbe428b73cf802b79a39ce2ba997881a8b0690e60cb78c630b4ec7e.png"
+    },
+    {
+      "path": "heroes/lion.png",
+      "bytes": 65825,
+      "sha256": "339fdf43e15257a004e9a15c83a05eabcc9f86c08f2f9e02aecc2c7e5e45114a",
+      "object": "339fdf43e15257a004e9a15c83a05eabcc9f86c08f2f9e02aecc2c7e5e45114a.png"
+    },
+    {
+      "path": "heroes/lone_druid.png",
+      "bytes": 70267,
+      "sha256": "2da2f60e208495db8c671778c5d2025d80589ae63efb8ded7edb3de1baf698e1",
+      "object": "2da2f60e208495db8c671778c5d2025d80589ae63efb8ded7edb3de1baf698e1.png"
+    },
+    {
+      "path": "heroes/luna.png",
+      "bytes": 77108,
+      "sha256": "8dc76ddc710ea0098a2c44b023aa19806ef7a35ec197a06fb6d82f7c9711b50a",
+      "object": "8dc76ddc710ea0098a2c44b023aa19806ef7a35ec197a06fb6d82f7c9711b50a.png"
+    },
+    {
+      "path": "heroes/lycan.png",
+      "bytes": 62015,
+      "sha256": "306ba85032e7254996630c4a9157285cd23cdc2cf746dd9a3059f05a4952e064",
+      "object": "306ba85032e7254996630c4a9157285cd23cdc2cf746dd9a3059f05a4952e064.png"
+    },
+    {
+      "path": "heroes/magnataur.png",
+      "bytes": 68910,
+      "sha256": "5fc60017a6b6f22884fa1ea7bd29e231e41a677c8403056a6185bae26116befd",
+      "object": "5fc60017a6b6f22884fa1ea7bd29e231e41a677c8403056a6185bae26116befd.png"
+    },
+    {
+      "path": "heroes/marci.png",
+      "bytes": 59485,
+      "sha256": "96116ad1b05b55f29f1dd2daa575dcd75edbb2bb6e71cead7cffbbc992392cdc",
+      "object": "96116ad1b05b55f29f1dd2daa575dcd75edbb2bb6e71cead7cffbbc992392cdc.png"
+    },
+    {
+      "path": "heroes/mars.png",
+      "bytes": 58906,
+      "sha256": "35f0eba3f689d3946a4fd34b003b6c434ba19c54b95ffb907354c6d3a70f0ac0",
+      "object": "35f0eba3f689d3946a4fd34b003b6c434ba19c54b95ffb907354c6d3a70f0ac0.png"
+    },
+    {
+      "path": "heroes/medusa.png",
+      "bytes": 79717,
+      "sha256": "e4e6888611b72bf2d5c309dcf1ba09409740ba87972327ea20a5e157dd341bf0",
+      "object": "e4e6888611b72bf2d5c309dcf1ba09409740ba87972327ea20a5e157dd341bf0.png"
+    },
+    {
+      "path": "heroes/meepo.png",
+      "bytes": 72686,
+      "sha256": "d3376b2bd54763ce708cd5e14de941c1d5b93f052e9921aa802b9b9a1015313a",
+      "object": "d3376b2bd54763ce708cd5e14de941c1d5b93f052e9921aa802b9b9a1015313a.png"
+    },
+    {
+      "path": "heroes/mirana.png",
+      "bytes": 63933,
+      "sha256": "a6c8805cfe11bbdfcefd8ef991a757c82bdffc622c902bf06a739e28d4fb1d45",
+      "object": "a6c8805cfe11bbdfcefd8ef991a757c82bdffc622c902bf06a739e28d4fb1d45.png"
+    },
+    {
+      "path": "heroes/monkey_king.png",
+      "bytes": 71820,
+      "sha256": "52befefec39cadb305fda0545ff9f76e85a0a1f33476392e108dafb6f6101527",
+      "object": "52befefec39cadb305fda0545ff9f76e85a0a1f33476392e108dafb6f6101527.png"
+    },
+    {
+      "path": "heroes/morphling.png",
+      "bytes": 71884,
+      "sha256": "6090ada2f9eb0c08a0ced1b1074f28f8c246149cb53575057f317e41ee0353a3",
+      "object": "6090ada2f9eb0c08a0ced1b1074f28f8c246149cb53575057f317e41ee0353a3.png"
+    },
+    {
+      "path": "heroes/muerta.png",
+      "bytes": 69294,
+      "sha256": "b4d66833aec595c586d6a15eb25ba35d7aa441b4b717ab79ae17ae801dbdabea",
+      "object": "b4d66833aec595c586d6a15eb25ba35d7aa441b4b717ab79ae17ae801dbdabea.png"
+    },
+    {
+      "path": "heroes/naga_siren.png",
+      "bytes": 66085,
+      "sha256": "50b612f6c5a27096d3ba463583a636ce7f2a8bcb6e12cf68350c23b47f38beef",
+      "object": "50b612f6c5a27096d3ba463583a636ce7f2a8bcb6e12cf68350c23b47f38beef.png"
+    },
+    {
+      "path": "heroes/necrolyte.png",
+      "bytes": 71569,
+      "sha256": "11852e2d8a155bd728beb3e4675be3e9ff5594cd536b92106eab5247791538be",
+      "object": "11852e2d8a155bd728beb3e4675be3e9ff5594cd536b92106eab5247791538be.png"
+    },
+    {
+      "path": "heroes/nevermore.png",
+      "bytes": 59039,
+      "sha256": "cbdca84af28f2c904c16079f13483fe13c707dfa38e4994b578b5dfa624b6ec3",
+      "object": "cbdca84af28f2c904c16079f13483fe13c707dfa38e4994b578b5dfa624b6ec3.png"
+    },
+    {
+      "path": "heroes/night_stalker.png",
+      "bytes": 65703,
+      "sha256": "09cfe6b46970a42f7c1105cb465ec51b9131642101c501836e21c6f33b49d461",
+      "object": "09cfe6b46970a42f7c1105cb465ec51b9131642101c501836e21c6f33b49d461.png"
+    },
+    {
+      "path": "heroes/nyx_assassin.png",
+      "bytes": 64343,
+      "sha256": "2a2e875062eddcfbe93e9a342a02a23c20bb033d05cf2b36b1bc376b09ad2e76",
+      "object": "2a2e875062eddcfbe93e9a342a02a23c20bb033d05cf2b36b1bc376b09ad2e76.png"
+    },
+    {
+      "path": "heroes/obsidian_destroyer.png",
+      "bytes": 80767,
+      "sha256": "3be45497050944ea086b27705a81b37d9422f4265866519848220ba4334a2e97",
+      "object": "3be45497050944ea086b27705a81b37d9422f4265866519848220ba4334a2e97.png"
+    },
+    {
+      "path": "heroes/ogre_magi.png",
+      "bytes": 64011,
+      "sha256": "b58b7b36fb47afb576a32754fc07ffd3e38e3630dde54f538c30d140bbfc5e5e",
+      "object": "b58b7b36fb47afb576a32754fc07ffd3e38e3630dde54f538c30d140bbfc5e5e.png"
+    },
+    {
+      "path": "heroes/omniknight.png",
+      "bytes": 75856,
+      "sha256": "e86bf600ca3e75c7ad9be9cc1620e9610885e930b91b282886ede65ce1d048e2",
+      "object": "e86bf600ca3e75c7ad9be9cc1620e9610885e930b91b282886ede65ce1d048e2.png"
+    },
+    {
+      "path": "heroes/oracle.png",
+      "bytes": 113535,
+      "sha256": "9ded7e15e29dc6904d3da4820aee46cf4f8a901f6d78abfc95c6301c4adc078e",
+      "object": "9ded7e15e29dc6904d3da4820aee46cf4f8a901f6d78abfc95c6301c4adc078e.png"
+    },
+    {
+      "path": "heroes/pangolier.png",
+      "bytes": 62437,
+      "sha256": "bcfd3da12516742fa225f47b269e9496f33f1563a60713609716d135c491b7b3",
+      "object": "bcfd3da12516742fa225f47b269e9496f33f1563a60713609716d135c491b7b3.png"
+    },
+    {
+      "path": "heroes/phantom_assassin.png",
+      "bytes": 56606,
+      "sha256": "e018eebb0ff95cf17aeae9ea8184f5b6b95c2238bd1de1fe59d83072f0808d49",
+      "object": "e018eebb0ff95cf17aeae9ea8184f5b6b95c2238bd1de1fe59d83072f0808d49.png"
+    },
+    {
+      "path": "heroes/phantom_lancer.png",
+      "bytes": 78214,
+      "sha256": "5448f992f83d91033573caf183cbe7df592d094bf76783f77f7cbcab06c56005",
+      "object": "5448f992f83d91033573caf183cbe7df592d094bf76783f77f7cbcab06c56005.png"
+    },
+    {
+      "path": "heroes/phoenix.png",
+      "bytes": 68649,
+      "sha256": "142aac171b38a581ddf5ad3805d6c04a4b05ada58023f8c1ffbfd380185b481d",
+      "object": "142aac171b38a581ddf5ad3805d6c04a4b05ada58023f8c1ffbfd380185b481d.png"
+    },
+    {
+      "path": "heroes/primal_beast.png",
+      "bytes": 75164,
+      "sha256": "f1b03b440349bbb9b5b7d0c88967d2584846137c2781775c23b6e6e74181c3af",
+      "object": "f1b03b440349bbb9b5b7d0c88967d2584846137c2781775c23b6e6e74181c3af.png"
+    },
+    {
+      "path": "heroes/puck.png",
+      "bytes": 63209,
+      "sha256": "af3a26d62974d37f415d9c4e01913dd8f78f08b55a5d958e382b907dcb406cf8",
+      "object": "af3a26d62974d37f415d9c4e01913dd8f78f08b55a5d958e382b907dcb406cf8.png"
+    },
+    {
+      "path": "heroes/pudge.png",
+      "bytes": 70682,
+      "sha256": "a610c206ddabc1391d99050f8e07079a11bc7c589ad70930f7f371c96782e82b",
+      "object": "a610c206ddabc1391d99050f8e07079a11bc7c589ad70930f7f371c96782e82b.png"
+    },
+    {
+      "path": "heroes/pugna.png",
+      "bytes": 73090,
+      "sha256": "fd785e0d2a64584de7679d057e22002ba6091c06869e07c7f33916640ed2d42e",
+      "object": "fd785e0d2a64584de7679d057e22002ba6091c06869e07c7f33916640ed2d42e.png"
+    },
+    {
+      "path": "heroes/queenofpain.png",
+      "bytes": 61291,
+      "sha256": "b4641bdbe20bd22cefedab127fd4a8a6848383dd406ca9bd6b59529bcb9af6e8",
+      "object": "b4641bdbe20bd22cefedab127fd4a8a6848383dd406ca9bd6b59529bcb9af6e8.png"
+    },
+    {
+      "path": "heroes/rattletrap.png",
+      "bytes": 72679,
+      "sha256": "41531f32f068e739612941655859f51c40ce652fddbed4f3d0a8a2ee5015f125",
+      "object": "41531f32f068e739612941655859f51c40ce652fddbed4f3d0a8a2ee5015f125.png"
+    },
+    {
+      "path": "heroes/razor.png",
+      "bytes": 60603,
+      "sha256": "d63138e3662c29f9482b2f80eccc29626aad74bde5aef1ca7097d43e31bf72f5",
+      "object": "d63138e3662c29f9482b2f80eccc29626aad74bde5aef1ca7097d43e31bf72f5.png"
+    },
+    {
+      "path": "heroes/riki.png",
+      "bytes": 73976,
+      "sha256": "66cc88ac6b77b496e9ad4809d235c8adbd76ecb7a12acd45429b8f9cc7e1951e",
+      "object": "66cc88ac6b77b496e9ad4809d235c8adbd76ecb7a12acd45429b8f9cc7e1951e.png"
+    },
+    {
+      "path": "heroes/ringmaster.png",
+      "bytes": 52008,
+      "sha256": "78dcf87ba363828f133f143836b02568daf0711a117f68b528a55ec3f8310f79",
+      "object": "78dcf87ba363828f133f143836b02568daf0711a117f68b528a55ec3f8310f79.png"
+    },
+    {
+      "path": "heroes/rubick.png",
+      "bytes": 68355,
+      "sha256": "60cd3552d44584b1d2e73c0d10e1e567d918ef94846adfb83d3ab22b0cf37522",
+      "object": "60cd3552d44584b1d2e73c0d10e1e567d918ef94846adfb83d3ab22b0cf37522.png"
+    },
+    {
+      "path": "heroes/sand_king.png",
+      "bytes": 61751,
+      "sha256": "d67efbea63013943f7ba436d2bb61c126429947198f22d8794afc5ae6758341f",
+      "object": "d67efbea63013943f7ba436d2bb61c126429947198f22d8794afc5ae6758341f.png"
+    },
+    {
+      "path": "heroes/shadow_demon.png",
+      "bytes": 58628,
+      "sha256": "322ab51dd6ebf87b90083578d1472020b52fa3991fccaeb4f7aff07b6ec868c4",
+      "object": "322ab51dd6ebf87b90083578d1472020b52fa3991fccaeb4f7aff07b6ec868c4.png"
+    },
+    {
+      "path": "heroes/shadow_shaman.png",
+      "bytes": 70325,
+      "sha256": "a0b56b8d329d9cc7683d3919689b9f00bfc82cf21f1370448fe97fa585037154",
+      "object": "a0b56b8d329d9cc7683d3919689b9f00bfc82cf21f1370448fe97fa585037154.png"
+    },
+    {
+      "path": "heroes/shredder.png",
+      "bytes": 72759,
+      "sha256": "eb575910042e55ade7bbd825a89b71e62a67fe1d8f656371975a617f3ae8b871",
+      "object": "eb575910042e55ade7bbd825a89b71e62a67fe1d8f656371975a617f3ae8b871.png"
+    },
+    {
+      "path": "heroes/silencer.png",
+      "bytes": 70947,
+      "sha256": "f92c54a017103a38ddab75bd11d9ca20afccdf278abf0915e29949330518c5a7",
+      "object": "f92c54a017103a38ddab75bd11d9ca20afccdf278abf0915e29949330518c5a7.png"
+    },
+    {
+      "path": "heroes/skeleton_king.png",
+      "bytes": 83338,
+      "sha256": "c43241daa9d212e0c0d94d3fc1c09ff55fc6fe92bf83d800ca5007426d5ae630",
+      "object": "c43241daa9d212e0c0d94d3fc1c09ff55fc6fe92bf83d800ca5007426d5ae630.png"
+    },
+    {
+      "path": "heroes/skywrath_mage.png",
+      "bytes": 76673,
+      "sha256": "960fe5690d10301dd962c949bf9c0d912a13fa9fe72e0d8d4a38c4ce201cf1dd",
+      "object": "960fe5690d10301dd962c949bf9c0d912a13fa9fe72e0d8d4a38c4ce201cf1dd.png"
+    },
+    {
+      "path": "heroes/slardar.png",
+      "bytes": 63804,
+      "sha256": "13c577aa1344964aa26a6f2dbb6e4fade97247ee9bca0699a8117858cbe4250e",
+      "object": "13c577aa1344964aa26a6f2dbb6e4fade97247ee9bca0699a8117858cbe4250e.png"
+    },
+    {
+      "path": "heroes/slark.png",
+      "bytes": 85147,
+      "sha256": "3bc8eaeef1348281cad6d80ef7c54171548f8d1e37cd6cd6c807102268a4dc37",
+      "object": "3bc8eaeef1348281cad6d80ef7c54171548f8d1e37cd6cd6c807102268a4dc37.png"
+    },
+    {
+      "path": "heroes/snapfire.png",
+      "bytes": 58444,
+      "sha256": "7f09114864aba65189d7e0ee3deef03ce58ae90614e81cbafb5bcc91cec48cd8",
+      "object": "7f09114864aba65189d7e0ee3deef03ce58ae90614e81cbafb5bcc91cec48cd8.png"
+    },
+    {
+      "path": "heroes/sniper.png",
+      "bytes": 63018,
+      "sha256": "d3af282eeb1f3e6e64d233b0829f002a023defb9e9dcc66a2ae066c4a187e329",
+      "object": "d3af282eeb1f3e6e64d233b0829f002a023defb9e9dcc66a2ae066c4a187e329.png"
+    },
+    {
+      "path": "heroes/spectre.png",
+      "bytes": 56815,
+      "sha256": "0cadee22da010ca8ec382b66b006a2860e08547c0c5c81223856118d5c01e444",
+      "object": "0cadee22da010ca8ec382b66b006a2860e08547c0c5c81223856118d5c01e444.png"
+    },
+    {
+      "path": "heroes/spirit_breaker.png",
+      "bytes": 66643,
+      "sha256": "9445bef6712904450335d0dd51c19fcbb5237554338f9f3d1880567bb5f496b0",
+      "object": "9445bef6712904450335d0dd51c19fcbb5237554338f9f3d1880567bb5f496b0.png"
+    },
+    {
+      "path": "heroes/storm_spirit.png",
+      "bytes": 75930,
+      "sha256": "da021d1d76290db5bee62a653dc8eb249017c35a71cf610d8400fb487f4b9630",
+      "object": "da021d1d76290db5bee62a653dc8eb249017c35a71cf610d8400fb487f4b9630.png"
+    },
+    {
+      "path": "heroes/sven.png",
+      "bytes": 62826,
+      "sha256": "2ef4911b24269feaa1d8e49fb2af64ad48e3d3146863b20d692b17a81d207214",
+      "object": "2ef4911b24269feaa1d8e49fb2af64ad48e3d3146863b20d692b17a81d207214.png"
+    },
+    {
+      "path": "heroes/techies.png",
+      "bytes": 75277,
+      "sha256": "6f09a52f38c2681f0a1d6ce29750884726435455d9850c3ba582cf2c96747a42",
+      "object": "6f09a52f38c2681f0a1d6ce29750884726435455d9850c3ba582cf2c96747a42.png"
+    },
+    {
+      "path": "heroes/templar_assassin.png",
+      "bytes": 67666,
+      "sha256": "5a1018d53998d80ec821f8d5d38db95e59fcba666fae882ed476e024d08d0fe3",
+      "object": "5a1018d53998d80ec821f8d5d38db95e59fcba666fae882ed476e024d08d0fe3.png"
+    },
+    {
+      "path": "heroes/terrorblade.png",
+      "bytes": 66458,
+      "sha256": "1dc33fba18eec4c735811400f98f56ca3d55f16160ad912c00d76f8bcb31d251",
+      "object": "1dc33fba18eec4c735811400f98f56ca3d55f16160ad912c00d76f8bcb31d251.png"
+    },
+    {
+      "path": "heroes/tidehunter.png",
+      "bytes": 69013,
+      "sha256": "db353ba7aff9c25191a39eec3d4c32271a2b9b97d95cd47e1725f48ae8bed468",
+      "object": "db353ba7aff9c25191a39eec3d4c32271a2b9b97d95cd47e1725f48ae8bed468.png"
+    },
+    {
+      "path": "heroes/tinker.png",
+      "bytes": 69282,
+      "sha256": "df6b29f39dd3f15dce2d4124b96108827b86a3d8a20601fd1beb1ac6cf8034e8",
+      "object": "df6b29f39dd3f15dce2d4124b96108827b86a3d8a20601fd1beb1ac6cf8034e8.png"
+    },
+    {
+      "path": "heroes/tiny.png",
+      "bytes": 71304,
+      "sha256": "35a3ad5489430bc533603290c08be163ffa159fe270b575544a787d3d1dcf634",
+      "object": "35a3ad5489430bc533603290c08be163ffa159fe270b575544a787d3d1dcf634.png"
+    },
+    {
+      "path": "heroes/treant.png",
+      "bytes": 78683,
+      "sha256": "ff7e4940cd749f34d39d0428ea7b69855630685d879ebf106b6041a7fddc05f1",
+      "object": "ff7e4940cd749f34d39d0428ea7b69855630685d879ebf106b6041a7fddc05f1.png"
+    },
+    {
+      "path": "heroes/troll_warlord.png",
+      "bytes": 72264,
+      "sha256": "aba5a7ce1c0f043d20d726ae87cb5e9b88921a9f4ab14b1267cb2d3802cb58f5",
+      "object": "aba5a7ce1c0f043d20d726ae87cb5e9b88921a9f4ab14b1267cb2d3802cb58f5.png"
+    },
+    {
+      "path": "heroes/tusk.png",
+      "bytes": 69741,
+      "sha256": "e88a2928724d94ea343b6131a4faa2455cc703eac70e7815489009f3aac07845",
+      "object": "e88a2928724d94ea343b6131a4faa2455cc703eac70e7815489009f3aac07845.png"
+    },
+    {
+      "path": "heroes/undying.png",
+      "bytes": 66075,
+      "sha256": "be60e6a9681eb8b1503a69bbef481e02e921f5595903804f5b9416289629eb11",
+      "object": "be60e6a9681eb8b1503a69bbef481e02e921f5595903804f5b9416289629eb11.png"
+    },
+    {
+      "path": "heroes/ursa.png",
+      "bytes": 59997,
+      "sha256": "1c8cf5cd41cb1021c8b71fe46d0dbae3d454c74677900ec4e0170e7b95a30d09",
+      "object": "1c8cf5cd41cb1021c8b71fe46d0dbae3d454c74677900ec4e0170e7b95a30d09.png"
+    },
+    {
+      "path": "heroes/vengefulspirit.png",
+      "bytes": 84089,
+      "sha256": "495e903868656801ecdd115af2ef902bdfda51f8607371f251c3ac9c922d199a",
+      "object": "495e903868656801ecdd115af2ef902bdfda51f8607371f251c3ac9c922d199a.png"
+    },
+    {
+      "path": "heroes/venomancer.png",
+      "bytes": 70297,
+      "sha256": "38784d74379d7a4eaab2dd484a860b6b3b87b9521ae6f7d40cb0adde50ddc60f",
+      "object": "38784d74379d7a4eaab2dd484a860b6b3b87b9521ae6f7d40cb0adde50ddc60f.png"
+    },
+    {
+      "path": "heroes/viper.png",
+      "bytes": 61176,
+      "sha256": "8cd994aaf58120ee367305d06448a370f7f3b2713a80ef1c2e90c3578b33a4f9",
+      "object": "8cd994aaf58120ee367305d06448a370f7f3b2713a80ef1c2e90c3578b33a4f9.png"
+    },
+    {
+      "path": "heroes/visage.png",
+      "bytes": 68935,
+      "sha256": "be5ad4e6e9f91007486ae00c3568111f4c9df6d377e394f1ea5a798a85ef47ef",
+      "object": "be5ad4e6e9f91007486ae00c3568111f4c9df6d377e394f1ea5a798a85ef47ef.png"
+    },
+    {
+      "path": "heroes/void_spirit.png",
+      "bytes": 66944,
+      "sha256": "43cf7b1e5f4aa0d8b2e5bde747e927ef28b3d9b6c2e5df82d730237c6de0bd52",
+      "object": "43cf7b1e5f4aa0d8b2e5bde747e927ef28b3d9b6c2e5df82d730237c6de0bd52.png"
+    },
+    {
+      "path": "heroes/warlock.png",
+      "bytes": 61330,
+      "sha256": "3506327d6355935de965a9ddb52790f46d9b5602fc10e0c05ee59b83687a56c1",
+      "object": "3506327d6355935de965a9ddb52790f46d9b5602fc10e0c05ee59b83687a56c1.png"
+    },
+    {
+      "path": "heroes/weaver.png",
+      "bytes": 63291,
+      "sha256": "0dbe15dcaee8ce9aed3dec9d664a0c0a6b49e7b16bdd66786252ac01d4e50dcd",
+      "object": "0dbe15dcaee8ce9aed3dec9d664a0c0a6b49e7b16bdd66786252ac01d4e50dcd.png"
+    },
+    {
+      "path": "heroes/windrunner.png",
+      "bytes": 69977,
+      "sha256": "930289266abff95335896a3cd9fb61242e039068182b8e16848e9850b7911fa6",
+      "object": "930289266abff95335896a3cd9fb61242e039068182b8e16848e9850b7911fa6.png"
+    },
+    {
+      "path": "heroes/winter_wyvern.png",
+      "bytes": 73617,
+      "sha256": "23ebf845f662ab7784884a74e4f503a07904b01461d7bbc8d4730e0449dc89d2",
+      "object": "23ebf845f662ab7784884a74e4f503a07904b01461d7bbc8d4730e0449dc89d2.png"
+    },
+    {
+      "path": "heroes/wisp.png",
+      "bytes": 54000,
+      "sha256": "2b7a2edc56d448ce03a90d340febe227a6d1371ea00b3536996344d0f844d23c",
+      "object": "2b7a2edc56d448ce03a90d340febe227a6d1371ea00b3536996344d0f844d23c.png"
+    },
+    {
+      "path": "heroes/witch_doctor.png",
+      "bytes": 64617,
+      "sha256": "fc5a6260b7028be27532d7f83cb7119948ad7cc4be83f6d4d9c79bff4b552364",
+      "object": "fc5a6260b7028be27532d7f83cb7119948ad7cc4be83f6d4d9c79bff4b552364.png"
+    },
+    {
+      "path": "heroes/zuus.png",
+      "bytes": 78999,
+      "sha256": "b0979a371efe7c708040dacfda52e14130d7816b09be89ac302d85bfd64cc6e1",
+      "object": "b0979a371efe7c708040dacfda52e14130d7816b09be89ac302d85bfd64cc6e1.png"
+    },
+    {
+      "path": "icons/abaddon.png",
+      "bytes": 6917,
+      "sha256": "0273840ac02d8860e5210056b4229afe20c16a16b4abcc6f9f4b94165adf6989",
+      "object": "0273840ac02d8860e5210056b4229afe20c16a16b4abcc6f9f4b94165adf6989.png"
+    },
+    {
+      "path": "icons/abyssal_underlord.png",
+      "bytes": 5147,
+      "sha256": "16f78ccb723bc856b8a1a267298036dc73ac19375566445ae464658a6c82602e",
+      "object": "16f78ccb723bc856b8a1a267298036dc73ac19375566445ae464658a6c82602e.png"
+    },
+    {
+      "path": "icons/alchemist.png",
+      "bytes": 5013,
+      "sha256": "03bcf5cd2712ebfe565b152bf7fcb90cd8c89c1b55ba2b29ec06bcf75cc5d3b8",
+      "object": "03bcf5cd2712ebfe565b152bf7fcb90cd8c89c1b55ba2b29ec06bcf75cc5d3b8.png"
+    },
+    {
+      "path": "icons/ancient_apparition.png",
+      "bytes": 4798,
+      "sha256": "fa45870954cfa12651bc19ee13d4f976a0eded45ce6309b2ba3320e97610d378",
+      "object": "fa45870954cfa12651bc19ee13d4f976a0eded45ce6309b2ba3320e97610d378.png"
+    },
+    {
+      "path": "icons/antimage.png",
+      "bytes": 4775,
+      "sha256": "efe7590ff6cc7b953f61d47ea6268c28d63b9f5e2194f30e5144d9fb47faaa08",
+      "object": "efe7590ff6cc7b953f61d47ea6268c28d63b9f5e2194f30e5144d9fb47faaa08.png"
+    },
+    {
+      "path": "icons/arc_warden.png",
+      "bytes": 5017,
+      "sha256": "34f33c7f9612362cc4ba0126ce972afd70a0485c4df68eb4a4fc1e630cebcf4d",
+      "object": "34f33c7f9612362cc4ba0126ce972afd70a0485c4df68eb4a4fc1e630cebcf4d.png"
+    },
+    {
+      "path": "icons/axe.png",
+      "bytes": 3937,
+      "sha256": "797f7fee904ce7dbf805700986237232b8752cf0eaa0188658b03fd15f0eedd2",
+      "object": "797f7fee904ce7dbf805700986237232b8752cf0eaa0188658b03fd15f0eedd2.png"
+    },
+    {
+      "path": "icons/bane.png",
+      "bytes": 4552,
+      "sha256": "c71208470620961b953f648d7d8f151ade5d58d1816b77cc5400e39166f17a6b",
+      "object": "c71208470620961b953f648d7d8f151ade5d58d1816b77cc5400e39166f17a6b.png"
+    },
+    {
+      "path": "icons/batrider.png",
+      "bytes": 3994,
+      "sha256": "571ef5110758e0e5c6085fcaf34e761b62a9dde5d5ea1321fb894163a6c0251e",
+      "object": "571ef5110758e0e5c6085fcaf34e761b62a9dde5d5ea1321fb894163a6c0251e.png"
+    },
+    {
+      "path": "icons/beastmaster.png",
+      "bytes": 4718,
+      "sha256": "2c0cd1b3c0802a15cc936b6dfdc440aea373b7db4af5cf64b46d3620daf29f77",
+      "object": "2c0cd1b3c0802a15cc936b6dfdc440aea373b7db4af5cf64b46d3620daf29f77.png"
+    },
+    {
+      "path": "icons/bloodseeker.png",
+      "bytes": 4408,
+      "sha256": "1be1d561af8362abec86cffed279eb94562a42eb39b4732ce09afb1628aac46c",
+      "object": "1be1d561af8362abec86cffed279eb94562a42eb39b4732ce09afb1628aac46c.png"
+    },
+    {
+      "path": "icons/bounty_hunter.png",
+      "bytes": 5052,
+      "sha256": "0d1ea0eb766104f4c6e576a9dcabc6b0d34adc870212879a6c59705ccd1e91c2",
+      "object": "0d1ea0eb766104f4c6e576a9dcabc6b0d34adc870212879a6c59705ccd1e91c2.png"
+    },
+    {
+      "path": "icons/brewmaster.png",
+      "bytes": 5409,
+      "sha256": "6b539641eef3dbedf55c89c9a4e7584a27001e05b280be5f3f257a96038f6ff9",
+      "object": "6b539641eef3dbedf55c89c9a4e7584a27001e05b280be5f3f257a96038f6ff9.png"
+    },
+    {
+      "path": "icons/bristleback.png",
+      "bytes": 5341,
+      "sha256": "ecc9c8356c5c3ca3de3ce4ff7a2827fd03e9719adb311c7d68583065b8d354b0",
+      "object": "ecc9c8356c5c3ca3de3ce4ff7a2827fd03e9719adb311c7d68583065b8d354b0.png"
+    },
+    {
+      "path": "icons/broodmother.png",
+      "bytes": 5061,
+      "sha256": "574f876ad3507bc2259501f21839b3c2731566116a2c30650ac232c432595ea1",
+      "object": "574f876ad3507bc2259501f21839b3c2731566116a2c30650ac232c432595ea1.png"
+    },
+    {
+      "path": "icons/centaur.png",
+      "bytes": 5185,
+      "sha256": "cbe2085ebd1d48c38a5bded20cc95a2be68598c02c83cca2ec5c6ec483c556c9",
+      "object": "cbe2085ebd1d48c38a5bded20cc95a2be68598c02c83cca2ec5c6ec483c556c9.png"
+    },
+    {
+      "path": "icons/chaos_knight.png",
+      "bytes": 4934,
+      "sha256": "868edd9f0809764f454e8500ae4d94d05cbd4330aabef4dccc181e87242742a5",
+      "object": "868edd9f0809764f454e8500ae4d94d05cbd4330aabef4dccc181e87242742a5.png"
+    },
+    {
+      "path": "icons/chen.png",
+      "bytes": 4939,
+      "sha256": "3f4aa3da3b2f57637127cc8af57719667b8e8271da4d2d97d58de367611859f6",
+      "object": "3f4aa3da3b2f57637127cc8af57719667b8e8271da4d2d97d58de367611859f6.png"
+    },
+    {
+      "path": "icons/clinkz.png",
+      "bytes": 4698,
+      "sha256": "79a24e392a0b3b5293a742d9501f9d673b145774b3fcaaa6271b1114e4876fc2",
+      "object": "79a24e392a0b3b5293a742d9501f9d673b145774b3fcaaa6271b1114e4876fc2.png"
+    },
+    {
+      "path": "icons/crystal_maiden.png",
+      "bytes": 5380,
+      "sha256": "94803d5967bb4a90d3fd526d23a7ab6d09a9b86b163a5f7ace5eae7d24ee29f2",
+      "object": "94803d5967bb4a90d3fd526d23a7ab6d09a9b86b163a5f7ace5eae7d24ee29f2.png"
+    },
+    {
+      "path": "icons/dark_seer.png",
+      "bytes": 4786,
+      "sha256": "78d4273a5dfe01014662d6c1a2b5bc84f3c3d2cf3deac2b2a3c05eba8c380efb",
+      "object": "78d4273a5dfe01014662d6c1a2b5bc84f3c3d2cf3deac2b2a3c05eba8c380efb.png"
+    },
+    {
+      "path": "icons/dark_willow.png",
+      "bytes": 3722,
+      "sha256": "47bbbc8be4ce9aa026dfd1c691a8567d5aa429e2152cf5a4edd443c0b3abb833",
+      "object": "47bbbc8be4ce9aa026dfd1c691a8567d5aa429e2152cf5a4edd443c0b3abb833.png"
+    },
+    {
+      "path": "icons/dawnbreaker.png",
+      "bytes": 5370,
+      "sha256": "89440401b89777512925ec724614e4da879c0e341ae644f57f1e5003b6a8b80e",
+      "object": "89440401b89777512925ec724614e4da879c0e341ae644f57f1e5003b6a8b80e.png"
+    },
+    {
+      "path": "icons/dazzle.png",
+      "bytes": 4641,
+      "sha256": "1de4c45a7c2c671585ca907422fdaf7f02d9a4ba93f6cebd4f0ad10531b1f4fe",
+      "object": "1de4c45a7c2c671585ca907422fdaf7f02d9a4ba93f6cebd4f0ad10531b1f4fe.png"
+    },
+    {
+      "path": "icons/death_prophet.png",
+      "bytes": 4881,
+      "sha256": "221a50f25bba10a9df6180a827856777a668074909621fb6ec00cfe29e435443",
+      "object": "221a50f25bba10a9df6180a827856777a668074909621fb6ec00cfe29e435443.png"
+    },
+    {
+      "path": "icons/disruptor.png",
+      "bytes": 4838,
+      "sha256": "6e06cf39a402857edd89baea87b91048842ab636314e1ab96e1caa8699de82e1",
+      "object": "6e06cf39a402857edd89baea87b91048842ab636314e1ab96e1caa8699de82e1.png"
+    },
+    {
+      "path": "icons/doom_bringer.png",
+      "bytes": 5117,
+      "sha256": "c32b3898924b03a8ad5ce8cdc4e408143f63e61bae43588f8ad4c21efc72da83",
+      "object": "c32b3898924b03a8ad5ce8cdc4e408143f63e61bae43588f8ad4c21efc72da83.png"
+    },
+    {
+      "path": "icons/dragon_knight.png",
+      "bytes": 5013,
+      "sha256": "7367772b9dd53bcc9f3586b38da4e7abeca54c42815cadab089636238a67171d",
+      "object": "7367772b9dd53bcc9f3586b38da4e7abeca54c42815cadab089636238a67171d.png"
+    },
+    {
+      "path": "icons/drow_ranger.png",
+      "bytes": 4791,
+      "sha256": "42b554c1cab2ae294cf69244c9c3fc36aef217a9dfd207c1a0f7fe26a883572d",
+      "object": "42b554c1cab2ae294cf69244c9c3fc36aef217a9dfd207c1a0f7fe26a883572d.png"
+    },
+    {
+      "path": "icons/earth_spirit.png",
+      "bytes": 6917,
+      "sha256": "28c21e76753816eb8c371328b81542f42489d3702191c8661fb7f35556df5c27",
+      "object": "28c21e76753816eb8c371328b81542f42489d3702191c8661fb7f35556df5c27.png"
+    },
+    {
+      "path": "icons/earthshaker.png",
+      "bytes": 4629,
+      "sha256": "4764184eed4199469385a359d53bb4d1cdcec474a951213532a42c0baaa7b817",
+      "object": "4764184eed4199469385a359d53bb4d1cdcec474a951213532a42c0baaa7b817.png"
+    },
+    {
+      "path": "icons/elder_titan.png",
+      "bytes": 6917,
+      "sha256": "cac7fda35d54c3a44f3f5c612a5937923e529293ea3ca65e1c9bae96d2c49150",
+      "object": "cac7fda35d54c3a44f3f5c612a5937923e529293ea3ca65e1c9bae96d2c49150.png"
+    },
+    {
+      "path": "icons/ember_spirit.png",
+      "bytes": 6917,
+      "sha256": "ff043b3410d6413a309597dbdc21fbbeb1d620276a1f707dee3f4887636e85af",
+      "object": "ff043b3410d6413a309597dbdc21fbbeb1d620276a1f707dee3f4887636e85af.png"
+    },
+    {
+      "path": "icons/enchantress.png",
+      "bytes": 5070,
+      "sha256": "f3c828d5040cc0e9be782b88c757363d2dd218e233e3a01ee0b096781af01672",
+      "object": "f3c828d5040cc0e9be782b88c757363d2dd218e233e3a01ee0b096781af01672.png"
+    },
+    {
+      "path": "icons/enigma.png",
+      "bytes": 4167,
+      "sha256": "38971e3019d2c6a1e7422cd0adf59633e2548ed0e309fe8b77ed709c05beffeb",
+      "object": "38971e3019d2c6a1e7422cd0adf59633e2548ed0e309fe8b77ed709c05beffeb.png"
+    },
+    {
+      "path": "icons/faceless_void.png",
+      "bytes": 6917,
+      "sha256": "163f44596ccd17ec8bc957d6269bdff2a74b8a2bcd3674ba240ed0ff067aee0e",
+      "object": "163f44596ccd17ec8bc957d6269bdff2a74b8a2bcd3674ba240ed0ff067aee0e.png"
+    },
+    {
+      "path": "icons/furion.png",
+      "bytes": 5237,
+      "sha256": "2a43d15a637568687e4125768d362c6097ad4eb8297bb54417e8cee6c2008379",
+      "object": "2a43d15a637568687e4125768d362c6097ad4eb8297bb54417e8cee6c2008379.png"
+    },
+    {
+      "path": "icons/grimstroke.png",
+      "bytes": 4089,
+      "sha256": "0853c85502906f27f5bdcf449b914d79ca952e85af78b8cd54e1bbbaa7177191",
+      "object": "0853c85502906f27f5bdcf449b914d79ca952e85af78b8cd54e1bbbaa7177191.png"
+    },
+    {
+      "path": "icons/gyrocopter.png",
+      "bytes": 4853,
+      "sha256": "130f5be519ecb8b57dda92267e98dbe6cf3fd3aa4c82cab26d9ffb18818b06c2",
+      "object": "130f5be519ecb8b57dda92267e98dbe6cf3fd3aa4c82cab26d9ffb18818b06c2.png"
+    },
+    {
+      "path": "icons/hoodwink.png",
+      "bytes": 5441,
+      "sha256": "54bf5ea6bb3802901eb963a94e9fb3ea0e103ac1bf5dc282118689de38bd4b77",
+      "object": "54bf5ea6bb3802901eb963a94e9fb3ea0e103ac1bf5dc282118689de38bd4b77.png"
+    },
+    {
+      "path": "icons/huskar.png",
+      "bytes": 4967,
+      "sha256": "e606d891b0c4b1c675d2091c7911c5334dabe8c92a1decb0618d6c45038168fd",
+      "object": "e606d891b0c4b1c675d2091c7911c5334dabe8c92a1decb0618d6c45038168fd.png"
+    },
+    {
+      "path": "icons/invoker.png",
+      "bytes": 5137,
+      "sha256": "93dc4329fee6e461aa4a9fac029e815fb5db5402790f6cf2d81bd37a39024dd4",
+      "object": "93dc4329fee6e461aa4a9fac029e815fb5db5402790f6cf2d81bd37a39024dd4.png"
+    },
+    {
+      "path": "icons/jakiro.png",
+      "bytes": 5043,
+      "sha256": "2d6abe8011b791199a8c1242801ff901df6e52cba6cb353d3a0a68ea47233cd8",
+      "object": "2d6abe8011b791199a8c1242801ff901df6e52cba6cb353d3a0a68ea47233cd8.png"
+    },
+    {
+      "path": "icons/juggernaut.png",
+      "bytes": 4157,
+      "sha256": "02b4b81f3a4d1e150fd06b3a7b417aa1b9480a4789a8ef7c04a94fadb4aa5a76",
+      "object": "02b4b81f3a4d1e150fd06b3a7b417aa1b9480a4789a8ef7c04a94fadb4aa5a76.png"
+    },
+    {
+      "path": "icons/keeper_of_the_light.png",
+      "bytes": 4822,
+      "sha256": "1c1d7e0fc46ae2367d13f5aa93b7549051f2a5cf63be8e440db2d3bb7f970a8f",
+      "object": "1c1d7e0fc46ae2367d13f5aa93b7549051f2a5cf63be8e440db2d3bb7f970a8f.png"
+    },
+    {
+      "path": "icons/kez.png",
+      "bytes": 5641,
+      "sha256": "b63c7814cfaec310faac91e237e0eeb99e46fef481b3ddd29d6a054b80fa201d",
+      "object": "b63c7814cfaec310faac91e237e0eeb99e46fef481b3ddd29d6a054b80fa201d.png"
+    },
+    {
+      "path": "icons/kunkka.png",
+      "bytes": 4735,
+      "sha256": "d8368664a07cefa063bd4686c1e51f5535e01195c98cc2cc920c6a2ab420c985",
+      "object": "d8368664a07cefa063bd4686c1e51f5535e01195c98cc2cc920c6a2ab420c985.png"
+    },
+    {
+      "path": "icons/largo.png",
+      "bytes": 2815,
+      "sha256": "e32ec67f376819a981c3e994fb2e26e1765fa5ba3c99be549f13b6aafa72988b",
+      "object": "e32ec67f376819a981c3e994fb2e26e1765fa5ba3c99be549f13b6aafa72988b.png"
+    },
+    {
+      "path": "icons/legion_commander.png",
+      "bytes": 6917,
+      "sha256": "29c4e6492e48357b94658e17ad3a8e1573bf8d87a7ff60576be3b19b13b82257",
+      "object": "29c4e6492e48357b94658e17ad3a8e1573bf8d87a7ff60576be3b19b13b82257.png"
+    },
+    {
+      "path": "icons/leshrac.png",
+      "bytes": 4747,
+      "sha256": "db20e7374354b46a1b4b1735458e10dd6ebdf20fcdc1d3f3958ea61d1c2e2462",
+      "object": "db20e7374354b46a1b4b1735458e10dd6ebdf20fcdc1d3f3958ea61d1c2e2462.png"
+    },
+    {
+      "path": "icons/lich.png",
+      "bytes": 4779,
+      "sha256": "a2483c7630a45635e426e2d9fc50715037a96ab26a79fce4645bf2d25cccf1e9",
+      "object": "a2483c7630a45635e426e2d9fc50715037a96ab26a79fce4645bf2d25cccf1e9.png"
+    },
+    {
+      "path": "icons/life_stealer.png",
+      "bytes": 4831,
+      "sha256": "be34313085fc58641715b5baacebdc32898c9a48cf7ad0fdf9c575e677eea826",
+      "object": "be34313085fc58641715b5baacebdc32898c9a48cf7ad0fdf9c575e677eea826.png"
+    },
+    {
+      "path": "icons/lina.png",
+      "bytes": 4893,
+      "sha256": "8ee8b8d7f9a369f7051f7cd9f53a8b5f34f22081f1c54cdf57a35a0f249c342c",
+      "object": "8ee8b8d7f9a369f7051f7cd9f53a8b5f34f22081f1c54cdf57a35a0f249c342c.png"
+    },
+    {
+      "path": "icons/lion.png",
+      "bytes": 6917,
+      "sha256": "721edccb3701f35953578376ab5247a9293b7154b3d0ee3d65a4108ac640f10d",
+      "object": "721edccb3701f35953578376ab5247a9293b7154b3d0ee3d65a4108ac640f10d.png"
+    },
+    {
+      "path": "icons/lone_druid.png",
+      "bytes": 5982,
+      "sha256": "3395e4054c6774104a822009c48056878ca2d083f0557f4b7fb33b82345f2038",
+      "object": "3395e4054c6774104a822009c48056878ca2d083f0557f4b7fb33b82345f2038.png"
+    },
+    {
+      "path": "icons/luna.png",
+      "bytes": 5068,
+      "sha256": "2b1bb063713d35d7656e017e21753ef7d0f4244c3bb7defe0967877f37b9e51b",
+      "object": "2b1bb063713d35d7656e017e21753ef7d0f4244c3bb7defe0967877f37b9e51b.png"
+    },
+    {
+      "path": "icons/lycan.png",
+      "bytes": 5127,
+      "sha256": "58299bdd9299cccccda109b3ae40abd87c028bd4a0edde013cd812040c4405cd",
+      "object": "58299bdd9299cccccda109b3ae40abd87c028bd4a0edde013cd812040c4405cd.png"
+    },
+    {
+      "path": "icons/magnataur.png",
+      "bytes": 5395,
+      "sha256": "0d2da0fa3bb9c140c609322c0816fcec89c6e75687672aafd048b723568b2af2",
+      "object": "0d2da0fa3bb9c140c609322c0816fcec89c6e75687672aafd048b723568b2af2.png"
+    },
+    {
+      "path": "icons/marci.png",
+      "bytes": 5102,
+      "sha256": "0b10512dcc099675cca43e4a0e4803beb096c40443e31efe96d058c85244d97c",
+      "object": "0b10512dcc099675cca43e4a0e4803beb096c40443e31efe96d058c85244d97c.png"
+    },
+    {
+      "path": "icons/mars.png",
+      "bytes": 6917,
+      "sha256": "4d83401e2c8ccf19178c252a9ce22c895537b8b1b93fda0351841e5a0fc5b506",
+      "object": "4d83401e2c8ccf19178c252a9ce22c895537b8b1b93fda0351841e5a0fc5b506.png"
+    },
+    {
+      "path": "icons/medusa.png",
+      "bytes": 5532,
+      "sha256": "8f0bee6e3045b2a277887d0457dbab371bbf30b0d3e52fd13499bf3f040e97b5",
+      "object": "8f0bee6e3045b2a277887d0457dbab371bbf30b0d3e52fd13499bf3f040e97b5.png"
+    },
+    {
+      "path": "icons/meepo.png",
+      "bytes": 5029,
+      "sha256": "7588ca64dd8dc837f79c32bb001d69f98ad47137305b01198d1e64e4fee66e9a",
+      "object": "7588ca64dd8dc837f79c32bb001d69f98ad47137305b01198d1e64e4fee66e9a.png"
+    },
+    {
+      "path": "icons/mirana.png",
+      "bytes": 5136,
+      "sha256": "a3db155178eec34328e861dc6b13cb32006e11752f1717585e44afc52091f178",
+      "object": "a3db155178eec34328e861dc6b13cb32006e11752f1717585e44afc52091f178.png"
+    },
+    {
+      "path": "icons/monkey_king.png",
+      "bytes": 5367,
+      "sha256": "5f0d1c7cf3708f0c9ecf63eea23de89f06c2d67e3a2e5c975f2db7f5eb1b6084",
+      "object": "5f0d1c7cf3708f0c9ecf63eea23de89f06c2d67e3a2e5c975f2db7f5eb1b6084.png"
+    },
+    {
+      "path": "icons/morphling.png",
+      "bytes": 4945,
+      "sha256": "e671326b1198b066a5a5a74123695942caab2bc9c7fa6a8bbc834b7335110bf8",
+      "object": "e671326b1198b066a5a5a74123695942caab2bc9c7fa6a8bbc834b7335110bf8.png"
+    },
+    {
+      "path": "icons/muerta.png",
+      "bytes": 4990,
+      "sha256": "a18f13d0c5e25fe2605cd97cb5d7e16260953c5e811a3bca1e3ba8e5c5051d5e",
+      "object": "a18f13d0c5e25fe2605cd97cb5d7e16260953c5e811a3bca1e3ba8e5c5051d5e.png"
+    },
+    {
+      "path": "icons/naga_siren.png",
+      "bytes": 4832,
+      "sha256": "54b36ac2278b1572596b8a061c14dab8a1dd35dcdd79d88f5f30c51b60bd2e35",
+      "object": "54b36ac2278b1572596b8a061c14dab8a1dd35dcdd79d88f5f30c51b60bd2e35.png"
+    },
+    {
+      "path": "icons/necrolyte.png",
+      "bytes": 4662,
+      "sha256": "70f4ce296b4557df9baf6ddcbba7ff624ea566cfca369be47717ccc41fcac7eb",
+      "object": "70f4ce296b4557df9baf6ddcbba7ff624ea566cfca369be47717ccc41fcac7eb.png"
+    },
+    {
+      "path": "icons/nevermore.png",
+      "bytes": 6917,
+      "sha256": "84b65f9f3c08da2bcfe7d7617d256747020db62cd85d572ab5d03fb3fd48bff7",
+      "object": "84b65f9f3c08da2bcfe7d7617d256747020db62cd85d572ab5d03fb3fd48bff7.png"
+    },
+    {
+      "path": "icons/night_stalker.png",
+      "bytes": 4782,
+      "sha256": "a947638a1021e66cb4961a3c10b101491e31d9d2cd1a207fb0dc36928d215289",
+      "object": "a947638a1021e66cb4961a3c10b101491e31d9d2cd1a207fb0dc36928d215289.png"
+    },
+    {
+      "path": "icons/nyx_assassin.png",
+      "bytes": 5234,
+      "sha256": "a1d821e847d635ea3218786e715849100b98deed086fe21696f0bf1b16848235",
+      "object": "a1d821e847d635ea3218786e715849100b98deed086fe21696f0bf1b16848235.png"
+    },
+    {
+      "path": "icons/obsidian_destroyer.png",
+      "bytes": 4884,
+      "sha256": "18081d3886b342dc20d532fefedf1ef9dd03dcdbab586955e8a8c8ae584c22c1",
+      "object": "18081d3886b342dc20d532fefedf1ef9dd03dcdbab586955e8a8c8ae584c22c1.png"
+    },
+    {
+      "path": "icons/ogre_magi.png",
+      "bytes": 4923,
+      "sha256": "866e1a54081572e3e4e38d66f26b6376a777b0d2891e97cc5276382c54918fd1",
+      "object": "866e1a54081572e3e4e38d66f26b6376a777b0d2891e97cc5276382c54918fd1.png"
+    },
+    {
+      "path": "icons/omniknight.png",
+      "bytes": 5216,
+      "sha256": "7ed6957add641f098e2855fb6d39ec4952bc79f427619ded188755f116f97e54",
+      "object": "7ed6957add641f098e2855fb6d39ec4952bc79f427619ded188755f116f97e54.png"
+    },
+    {
+      "path": "icons/oracle.png",
+      "bytes": 6917,
+      "sha256": "b3f2a409ebc6184f0b62edd0172e6143a8391c3f82faf8fa1d737d0d8766009c",
+      "object": "b3f2a409ebc6184f0b62edd0172e6143a8391c3f82faf8fa1d737d0d8766009c.png"
+    },
+    {
+      "path": "icons/pangolier.png",
+      "bytes": 5143,
+      "sha256": "84b05956389dc96ff662751b077e7c0c722eebb5ce13e8a8181ef8cf65ef155c",
+      "object": "84b05956389dc96ff662751b077e7c0c722eebb5ce13e8a8181ef8cf65ef155c.png"
+    },
+    {
+      "path": "icons/phantom_assassin.png",
+      "bytes": 5105,
+      "sha256": "29df096e3a2e2043e58c9dd8b4229d43cb3ed3971a9ae6dfaee07dea7809db7f",
+      "object": "29df096e3a2e2043e58c9dd8b4229d43cb3ed3971a9ae6dfaee07dea7809db7f.png"
+    },
+    {
+      "path": "icons/phantom_lancer.png",
+      "bytes": 5116,
+      "sha256": "940e38b1f1f2d5e703f35f7771c4a8d6e6c87e5d2a40cae086fe81808dce5372",
+      "object": "940e38b1f1f2d5e703f35f7771c4a8d6e6c87e5d2a40cae086fe81808dce5372.png"
+    },
+    {
+      "path": "icons/phoenix.png",
+      "bytes": 6917,
+      "sha256": "8ec5ba8259a3ceac9c8b3caa46723ee681989845795dda1526a7490e0ea72b7a",
+      "object": "8ec5ba8259a3ceac9c8b3caa46723ee681989845795dda1526a7490e0ea72b7a.png"
+    },
+    {
+      "path": "icons/primal_beast.png",
+      "bytes": 7341,
+      "sha256": "74e3cbff72a6f625842ebe82878a458e24f06ef0b3897b501a2381badcbf895e",
+      "object": "74e3cbff72a6f625842ebe82878a458e24f06ef0b3897b501a2381badcbf895e.png"
+    },
+    {
+      "path": "icons/puck.png",
+      "bytes": 6917,
+      "sha256": "f6f470ce1de55053dc0f2af2ddfc27e7e2e1d135eb63174c163390fdc73369b0",
+      "object": "f6f470ce1de55053dc0f2af2ddfc27e7e2e1d135eb63174c163390fdc73369b0.png"
+    },
+    {
+      "path": "icons/pudge.png",
+      "bytes": 5380,
+      "sha256": "3fbe689de4e8d70bc4b0a4bb200801c5c7510310c636a3f5477982b7957f2599",
+      "object": "3fbe689de4e8d70bc4b0a4bb200801c5c7510310c636a3f5477982b7957f2599.png"
+    },
+    {
+      "path": "icons/pugna.png",
+      "bytes": 4572,
+      "sha256": "3a1203c503b4fd42d4d6c778ae4249a7c2596fd88c82446ff9d295edf1e20b02",
+      "object": "3a1203c503b4fd42d4d6c778ae4249a7c2596fd88c82446ff9d295edf1e20b02.png"
+    },
+    {
+      "path": "icons/queenofpain.png",
+      "bytes": 4487,
+      "sha256": "d65652df33a2fa0d1f32eca6a8ec8a5b23912d067e1d8ae774c3327095a65e95",
+      "object": "d65652df33a2fa0d1f32eca6a8ec8a5b23912d067e1d8ae774c3327095a65e95.png"
+    },
+    {
+      "path": "icons/rattletrap.png",
+      "bytes": 5016,
+      "sha256": "97ef73dc4e6038bcc72713f623b69afe5dc25ec6544ba97ebb23ae1a41b18771",
+      "object": "97ef73dc4e6038bcc72713f623b69afe5dc25ec6544ba97ebb23ae1a41b18771.png"
+    },
+    {
+      "path": "icons/razor.png",
+      "bytes": 4838,
+      "sha256": "7a385292560d4091be04115379b2e27797d62719db833f879baa72f24e3c30a0",
+      "object": "7a385292560d4091be04115379b2e27797d62719db833f879baa72f24e3c30a0.png"
+    },
+    {
+      "path": "icons/riki.png",
+      "bytes": 5020,
+      "sha256": "5aab0d0a54216f5e8e341884ab518f0c2d9619959b8c12a1f9fb11a089eb881d",
+      "object": "5aab0d0a54216f5e8e341884ab518f0c2d9619959b8c12a1f9fb11a089eb881d.png"
+    },
+    {
+      "path": "icons/ringmaster.png",
+      "bytes": 7719,
+      "sha256": "d2aecc93314e0bd09ecadb7acbc2e19cfd38d57a4ddafd67f18bf485977dbb23",
+      "object": "d2aecc93314e0bd09ecadb7acbc2e19cfd38d57a4ddafd67f18bf485977dbb23.png"
+    },
+    {
+      "path": "icons/rubick.png",
+      "bytes": 5219,
+      "sha256": "c72cf683ad040ed9490c760ac82ed907d1783ba5c664ae376c73bfed758ea802",
+      "object": "c72cf683ad040ed9490c760ac82ed907d1783ba5c664ae376c73bfed758ea802.png"
+    },
+    {
+      "path": "icons/sand_king.png",
+      "bytes": 4869,
+      "sha256": "cb1f110e6e84c1d4ce5b015ea5022838d071c8d4bce109b7f9127abfdd8c5d0e",
+      "object": "cb1f110e6e84c1d4ce5b015ea5022838d071c8d4bce109b7f9127abfdd8c5d0e.png"
+    },
+    {
+      "path": "icons/shadow_demon.png",
+      "bytes": 4758,
+      "sha256": "2541924ee0f1dfd3e58c41540ff2df2bd17549dd6d871520ba159b75e3c4b167",
+      "object": "2541924ee0f1dfd3e58c41540ff2df2bd17549dd6d871520ba159b75e3c4b167.png"
+    },
+    {
+      "path": "icons/shadow_shaman.png",
+      "bytes": 4749,
+      "sha256": "c51112d700f38bdb08479f9f240d96616f526f29b485e9d1a052bb1e6b372215",
+      "object": "c51112d700f38bdb08479f9f240d96616f526f29b485e9d1a052bb1e6b372215.png"
+    },
+    {
+      "path": "icons/shredder.png",
+      "bytes": 5156,
+      "sha256": "d453bd3198bfaa29e24d2dd731c3678b8c22346d37a9d5076dd9f36ce1883b55",
+      "object": "d453bd3198bfaa29e24d2dd731c3678b8c22346d37a9d5076dd9f36ce1883b55.png"
+    },
+    {
+      "path": "icons/silencer.png",
+      "bytes": 6917,
+      "sha256": "16bae513c75c54e51eaaeed4279d1b164724461a3a267e84d1a36a2f908e2101",
+      "object": "16bae513c75c54e51eaaeed4279d1b164724461a3a267e84d1a36a2f908e2101.png"
+    },
+    {
+      "path": "icons/skeleton_king.png",
+      "bytes": 6917,
+      "sha256": "cf56bcd676be208f27f52384bf128eccdb523fcbab82795612f608813571ec52",
+      "object": "cf56bcd676be208f27f52384bf128eccdb523fcbab82795612f608813571ec52.png"
+    },
+    {
+      "path": "icons/skywrath_mage.png",
+      "bytes": 6917,
+      "sha256": "3c613f26f33fd1c4a48698d31dd8a8e1a3fa12438e5b14eafbbac9b7dfa7a3ea",
+      "object": "3c613f26f33fd1c4a48698d31dd8a8e1a3fa12438e5b14eafbbac9b7dfa7a3ea.png"
+    },
+    {
+      "path": "icons/slardar.png",
+      "bytes": 5063,
+      "sha256": "8e0d9525ba3b83feaa2f97a5ac7b77d49f901886d289c1aa27422d102960c623",
+      "object": "8e0d9525ba3b83feaa2f97a5ac7b77d49f901886d289c1aa27422d102960c623.png"
+    },
+    {
+      "path": "icons/slark.png",
+      "bytes": 5287,
+      "sha256": "e134649bab294d038720a5996d2236135be3b3809edda6fafb9eaafd924b1c02",
+      "object": "e134649bab294d038720a5996d2236135be3b3809edda6fafb9eaafd924b1c02.png"
+    },
+    {
+      "path": "icons/snapfire.png",
+      "bytes": 4894,
+      "sha256": "3a5eb019956610635f8ee732fabdd1687bf01bc70e48d30cfe499833abadd54c",
+      "object": "3a5eb019956610635f8ee732fabdd1687bf01bc70e48d30cfe499833abadd54c.png"
+    },
+    {
+      "path": "icons/sniper.png",
+      "bytes": 5308,
+      "sha256": "a61831204d23139f22b75e274854a94001839cd63cd0b59c8892127a3337f350",
+      "object": "a61831204d23139f22b75e274854a94001839cd63cd0b59c8892127a3337f350.png"
+    },
+    {
+      "path": "icons/spectre.png",
+      "bytes": 4913,
+      "sha256": "e2bf2d20f5e5871d606a3935e5e7b663c11888c7274876c73dcc40200853d42d",
+      "object": "e2bf2d20f5e5871d606a3935e5e7b663c11888c7274876c73dcc40200853d42d.png"
+    },
+    {
+      "path": "icons/spirit_breaker.png",
+      "bytes": 5406,
+      "sha256": "ebc16bd4fee52df7cc62d051989e81ff9f93abd3422c112e6c9689eda0b07784",
+      "object": "ebc16bd4fee52df7cc62d051989e81ff9f93abd3422c112e6c9689eda0b07784.png"
+    },
+    {
+      "path": "icons/storm_spirit.png",
+      "bytes": 6917,
+      "sha256": "a0e93b32de2aeeb441fc290bdc7de04433bfa8c61683d0345d47858c1a422fc3",
+      "object": "a0e93b32de2aeeb441fc290bdc7de04433bfa8c61683d0345d47858c1a422fc3.png"
+    },
+    {
+      "path": "icons/sven.png",
+      "bytes": 2143,
+      "sha256": "b84df7179120352558502da5ec1d81700f3da91ac90d144606ef6fb6104d8f50",
+      "object": "b84df7179120352558502da5ec1d81700f3da91ac90d144606ef6fb6104d8f50.png"
+    },
+    {
+      "path": "icons/techies.png",
+      "bytes": 6917,
+      "sha256": "5564a9e91f80d59e4f374db13e796053e4759e9729552b5f972c00c847593823",
+      "object": "5564a9e91f80d59e4f374db13e796053e4759e9729552b5f972c00c847593823.png"
+    },
+    {
+      "path": "icons/templar_assassin.png",
+      "bytes": 5079,
+      "sha256": "9825f32803e311c9532343b5b60e1fb35ddd7f5768986741f05d4f69e66e2901",
+      "object": "9825f32803e311c9532343b5b60e1fb35ddd7f5768986741f05d4f69e66e2901.png"
+    },
+    {
+      "path": "icons/terrorblade.png",
+      "bytes": 6917,
+      "sha256": "39f6b49cca3ae3670b627faadfe670d3776b43e8661f25db1322ca1ed3cbbdbe",
+      "object": "39f6b49cca3ae3670b627faadfe670d3776b43e8661f25db1322ca1ed3cbbdbe.png"
+    },
+    {
+      "path": "icons/tidehunter.png",
+      "bytes": 4993,
+      "sha256": "0599e8ce73f7293f00508ff252338df0653e1dca240c8ac1e44ed9c7f4d1b356",
+      "object": "0599e8ce73f7293f00508ff252338df0653e1dca240c8ac1e44ed9c7f4d1b356.png"
+    },
+    {
+      "path": "icons/tinker.png",
+      "bytes": 4501,
+      "sha256": "a7fbe1e6280fd210031ee49857bfc8afbff60f646cf9941d55d34f2f52688ef0",
+      "object": "a7fbe1e6280fd210031ee49857bfc8afbff60f646cf9941d55d34f2f52688ef0.png"
+    },
+    {
+      "path": "icons/tiny.png",
+      "bytes": 5308,
+      "sha256": "0bc87e40f1a1a1745ffd3576daad2b79f352de3d61b63d8766e63951966cf604",
+      "object": "0bc87e40f1a1a1745ffd3576daad2b79f352de3d61b63d8766e63951966cf604.png"
+    },
+    {
+      "path": "icons/treant.png",
+      "bytes": 5033,
+      "sha256": "e5c45b1cffc5b632a752ee30e8d0d86c61f32527df57e96b7af1dd750ed73f65",
+      "object": "e5c45b1cffc5b632a752ee30e8d0d86c61f32527df57e96b7af1dd750ed73f65.png"
+    },
+    {
+      "path": "icons/troll_warlord.png",
+      "bytes": 4878,
+      "sha256": "54530db05cdee1fc9509becfb220886d40bc830e8e9ce7856647c0988b020d89",
+      "object": "54530db05cdee1fc9509becfb220886d40bc830e8e9ce7856647c0988b020d89.png"
+    },
+    {
+      "path": "icons/tusk.png",
+      "bytes": 5364,
+      "sha256": "7b705b5020b041a106f8a561a1e37d7695356b4e2220e48705f35b856fa20b17",
+      "object": "7b705b5020b041a106f8a561a1e37d7695356b4e2220e48705f35b856fa20b17.png"
+    },
+    {
+      "path": "icons/undying.png",
+      "bytes": 4933,
+      "sha256": "8fb4c6fcd665037fc1865c6d6c9f43a93bab3fab87dca665d23a8a343c7726dd",
+      "object": "8fb4c6fcd665037fc1865c6d6c9f43a93bab3fab87dca665d23a8a343c7726dd.png"
+    },
+    {
+      "path": "icons/ursa.png",
+      "bytes": 5153,
+      "sha256": "94d31de7ca8d8f0781b1c4c5328435f260f744a26b32d0552e89cdcb715909ec",
+      "object": "94d31de7ca8d8f0781b1c4c5328435f260f744a26b32d0552e89cdcb715909ec.png"
+    },
+    {
+      "path": "icons/vengefulspirit.png",
+      "bytes": 5271,
+      "sha256": "bba1a7607f3c2a236e8833c3ff94799c36b682e3935ee7fa20584ae093bd99b1",
+      "object": "bba1a7607f3c2a236e8833c3ff94799c36b682e3935ee7fa20584ae093bd99b1.png"
+    },
+    {
+      "path": "icons/venomancer.png",
+      "bytes": 6917,
+      "sha256": "daa5408029213ca5e5df11506101a4782c66a887c4adc635bf347991ac10aa8a",
+      "object": "daa5408029213ca5e5df11506101a4782c66a887c4adc635bf347991ac10aa8a.png"
+    },
+    {
+      "path": "icons/viper.png",
+      "bytes": 4435,
+      "sha256": "bbb78db4c25f9bde2852d5eb2a23830c080b2b7c0760d12b89c7a73cf6741d68",
+      "object": "bbb78db4c25f9bde2852d5eb2a23830c080b2b7c0760d12b89c7a73cf6741d68.png"
+    },
+    {
+      "path": "icons/visage.png",
+      "bytes": 5189,
+      "sha256": "d8f720a417f1c48d67702361c316b2c88af2c0e07209335563133c237d095b13",
+      "object": "d8f720a417f1c48d67702361c316b2c88af2c0e07209335563133c237d095b13.png"
+    },
+    {
+      "path": "icons/void_spirit.png",
+      "bytes": 5799,
+      "sha256": "af1ee4421e9578552f00335f068da71c0406369be5dc595260a1688a4da2bf45",
+      "object": "af1ee4421e9578552f00335f068da71c0406369be5dc595260a1688a4da2bf45.png"
+    },
+    {
+      "path": "icons/warlock.png",
+      "bytes": 4920,
+      "sha256": "cf66606d0b75ea52840842cdcc31013348606f636fbbf3f6cafd4599c14ae9eb",
+      "object": "cf66606d0b75ea52840842cdcc31013348606f636fbbf3f6cafd4599c14ae9eb.png"
+    },
+    {
+      "path": "icons/weaver.png",
+      "bytes": 5039,
+      "sha256": "c263bdd3145e7504f2dc9b03d32764d1d9d30997c4886dd9e894066815461979",
+      "object": "c263bdd3145e7504f2dc9b03d32764d1d9d30997c4886dd9e894066815461979.png"
+    },
+    {
+      "path": "icons/windrunner.png",
+      "bytes": 3842,
+      "sha256": "dc08859b6e38230fabb8a941a4ce860e80d6c4e5d0390891cd4dcfad72795bf8",
+      "object": "dc08859b6e38230fabb8a941a4ce860e80d6c4e5d0390891cd4dcfad72795bf8.png"
+    },
+    {
+      "path": "icons/winter_wyvern.png",
+      "bytes": 5306,
+      "sha256": "9ff7babedb53857f54f85f40000c92f11dc2ebccfb76c5f9d5a6e92ba645ffe3",
+      "object": "9ff7babedb53857f54f85f40000c92f11dc2ebccfb76c5f9d5a6e92ba645ffe3.png"
+    },
+    {
+      "path": "icons/wisp.png",
+      "bytes": 5304,
+      "sha256": "06be70690e952c4890f19c31cfb36162bb68268fa81f5f1300b5509423322475",
+      "object": "06be70690e952c4890f19c31cfb36162bb68268fa81f5f1300b5509423322475.png"
+    },
+    {
+      "path": "icons/witch_doctor.png",
+      "bytes": 4844,
+      "sha256": "f28ea520d164fb09cf5b30b8d47e846cd4e2da1b3fe1fb422aa49eae1acd679e",
+      "object": "f28ea520d164fb09cf5b30b8d47e846cd4e2da1b3fe1fb422aa49eae1acd679e.png"
+    },
+    {
+      "path": "icons/zuus.png",
+      "bytes": 4959,
+      "sha256": "6cf5d5bfa3e7089a346a845d166c3bce408d07daa42cb81f35d8d07b605c3ad6",
+      "object": "6cf5d5bfa3e7089a346a845d166c3bce408d07daa42cb81f35d8d07b605c3ad6.png"
+    },
+    {
+      "path": "items/abyssal_blade.png",
+      "bytes": 11975,
+      "sha256": "c56be982369a6251e0dc1c89b76c1bd14fb6324071541d781d458f20ede5a47a",
+      "object": "c56be982369a6251e0dc1c89b76c1bd14fb6324071541d781d458f20ede5a47a.png"
+    },
+    {
+      "path": "items/aegis.png",
+      "bytes": 12269,
+      "sha256": "84f3d4e3614f86af3610ecc31476655b568f35f0341d1b928ddb98ee92610806",
+      "object": "84f3d4e3614f86af3610ecc31476655b568f35f0341d1b928ddb98ee92610806.png"
+    },
+    {
+      "path": "items/aeon_disk.png",
+      "bytes": 15756,
+      "sha256": "986041d01dc774f1f3ad1b07d5e0265b9de20cd95aab7199b32d67d089947742",
+      "object": "986041d01dc774f1f3ad1b07d5e0265b9de20cd95aab7199b32d67d089947742.png"
+    },
+    {
+      "path": "items/aether_lens.png",
+      "bytes": 12981,
+      "sha256": "33808e45df1a532fda1c1fa24cd120cd2652bdc553a2548933c96530554df96b",
+      "object": "33808e45df1a532fda1c1fa24cd120cd2652bdc553a2548933c96530554df96b.png"
+    },
+    {
+      "path": "items/aghanims_shard.png",
+      "bytes": 12132,
+      "sha256": "a8bd7df2c6b3abda2fe6b5cf61d12545b14e2bd62d2442fefa960e4dd08a19e7",
+      "object": "a8bd7df2c6b3abda2fe6b5cf61d12545b14e2bd62d2442fefa960e4dd08a19e7.png"
+    },
+    {
+      "path": "items/aghanims_shard_roshan.png",
+      "bytes": 12132,
+      "sha256": "a8bd7df2c6b3abda2fe6b5cf61d12545b14e2bd62d2442fefa960e4dd08a19e7",
+      "object": "a8bd7df2c6b3abda2fe6b5cf61d12545b14e2bd62d2442fefa960e4dd08a19e7.png"
+    },
+    {
+      "path": "items/ancient_guardian.png",
+      "bytes": 14726,
+      "sha256": "2be40fbbbf11b0fa1b12716931c6343799f1ec3caabfffca98e2cd67fdc7c9ba",
+      "object": "2be40fbbbf11b0fa1b12716931c6343799f1ec3caabfffca98e2cd67fdc7c9ba.png"
+    },
+    {
+      "path": "items/ancient_janggo.png",
+      "bytes": 12534,
+      "sha256": "68d9d3734cc65e3d2c0068f41545ef7e80ed8c94b26f358ed037334e2a6f6ba1",
+      "object": "68d9d3734cc65e3d2c0068f41545ef7e80ed8c94b26f358ed037334e2a6f6ba1.png"
+    },
+    {
+      "path": "items/angels_demise.png",
+      "bytes": 2004154,
+      "sha256": "b27c071b8a6051b1058f979c23abb00525e5c557d1c3760a9f142420c0a089e3",
+      "object": "b27c071b8a6051b1058f979c23abb00525e5c557d1c3760a9f142420c0a089e3.png"
+    },
+    {
+      "path": "items/apex.png",
+      "bytes": 16151,
+      "sha256": "7b173210a4717b6af93b24fae037e59db729c3bb8e7bab47ae18ea5dbd61ae0e",
+      "object": "7b173210a4717b6af93b24fae037e59db729c3bb8e7bab47ae18ea5dbd61ae0e.png"
+    },
+    {
+      "path": "items/arcane_blink.png",
+      "bytes": 15995,
+      "sha256": "d9135827cbf32a0278d709516c3791930dfcea9a448605abb36f2e321de381ab",
+      "object": "d9135827cbf32a0278d709516c3791930dfcea9a448605abb36f2e321de381ab.png"
+    },
+    {
+      "path": "items/arcane_boots.png",
+      "bytes": 10288,
+      "sha256": "d40fdf6281fc31a0086246aa3e31dd3f82a1c6abd54609fb51414ac5d2ae3b6b",
+      "object": "d40fdf6281fc31a0086246aa3e31dd3f82a1c6abd54609fb51414ac5d2ae3b6b.png"
+    },
+    {
+      "path": "items/arcane_ring.png",
+      "bytes": 9348,
+      "sha256": "8ac4df3eed715e719ae769ba5ad317c7ee05faeca1fb9a4887b7804598c0396b",
+      "object": "8ac4df3eed715e719ae769ba5ad317c7ee05faeca1fb9a4887b7804598c0396b.png"
+    },
+    {
+      "path": "items/armlet.png",
+      "bytes": 9817,
+      "sha256": "f79a9de3ce8ad3d6e919e68d64de9364c3568a1d2ce3b062a0093fc8c210cadc",
+      "object": "f79a9de3ce8ad3d6e919e68d64de9364c3568a1d2ce3b062a0093fc8c210cadc.png"
+    },
+    {
+      "path": "items/ascetic_cap.png",
+      "bytes": 17028,
+      "sha256": "53ca1a47e1ff6dff8c179ae2abd3ab97503ef350e447deb3f562ba8cc7f46fad",
+      "object": "53ca1a47e1ff6dff8c179ae2abd3ab97503ef350e447deb3f562ba8cc7f46fad.png"
+    },
+    {
+      "path": "items/ash_legion_shield.png",
+      "bytes": 16805,
+      "sha256": "8f7680d4c293bdbc7915cd1a66ecb228cadb2322182225d308ee5316c30eece5",
+      "object": "8f7680d4c293bdbc7915cd1a66ecb228cadb2322182225d308ee5316c30eece5.png"
+    },
+    {
+      "path": "items/assault.png",
+      "bytes": 14821,
+      "sha256": "1ce6e8e7e95e5d9d1bc9b4257c64fee575f22efbe9fee8322c46e07a059c55a8",
+      "object": "1ce6e8e7e95e5d9d1bc9b4257c64fee575f22efbe9fee8322c46e07a059c55a8.png"
+    },
+    {
+      "path": "items/avianas_feather.png",
+      "bytes": 16818,
+      "sha256": "76a816efd8f6b86144e6ecf431639901d40fc101d3595764c3579bbacea407dc",
+      "object": "76a816efd8f6b86144e6ecf431639901d40fc101d3595764c3579bbacea407dc.png"
+    },
+    {
+      "path": "items/ballista.png",
+      "bytes": 15835,
+      "sha256": "ec213cd11f49ad84d7fd6ce62787a23cfbd7decf004821063b75b945d3afc610",
+      "object": "ec213cd11f49ad84d7fd6ce62787a23cfbd7decf004821063b75b945d3afc610.png"
+    },
+    {
+      "path": "items/basher.png",
+      "bytes": 12399,
+      "sha256": "37157416f8902ffc8b2ac4277d68e7237f0587799dc56e3c44070a21759ff1fb",
+      "object": "37157416f8902ffc8b2ac4277d68e7237f0587799dc56e3c44070a21759ff1fb.png"
+    },
+    {
+      "path": "items/belt_of_strength.png",
+      "bytes": 8979,
+      "sha256": "afaca3e16bf877e86d443d6df84ca059aad1ab24aad266488ba546701415962f",
+      "object": "afaca3e16bf877e86d443d6df84ca059aad1ab24aad266488ba546701415962f.png"
+    },
+    {
+      "path": "items/bfury.png",
+      "bytes": 12027,
+      "sha256": "d495e668565b981156357645bb4c091eead7c9e38221e96adb2a4e10fe7916f2",
+      "object": "d495e668565b981156357645bb4c091eead7c9e38221e96adb2a4e10fe7916f2.png"
+    },
+    {
+      "path": "items/black_grimoire.png",
+      "bytes": 12097,
+      "sha256": "f9f26b1e0eeff2181263469302d9557a897322c495e29f4194914b15433fe165",
+      "object": "f9f26b1e0eeff2181263469302d9557a897322c495e29f4194914b15433fe165.png"
+    },
+    {
+      "path": "items/black_king_bar.png",
+      "bytes": 12480,
+      "sha256": "09c7e6cbdaf3c2dff83fbfa04e038e7fc96e71e875eae8fe114e0c3bfe0ee8a6",
+      "object": "09c7e6cbdaf3c2dff83fbfa04e038e7fc96e71e875eae8fe114e0c3bfe0ee8a6.png"
+    },
+    {
+      "path": "items/black_powder_bag.png",
+      "bytes": 17160,
+      "sha256": "62c3b65e6ae23429c6c11097a83858d9151ac4e05d9864899fbf8685e15a60b0",
+      "object": "62c3b65e6ae23429c6c11097a83858d9151ac4e05d9864899fbf8685e15a60b0.png"
+    },
+    {
+      "path": "items/blade_mail.png",
+      "bytes": 11889,
+      "sha256": "ddd6c814e6d398cb1f87abb2f65012cbeef065cb5930af0474fc7077706821bb",
+      "object": "ddd6c814e6d398cb1f87abb2f65012cbeef065cb5930af0474fc7077706821bb.png"
+    },
+    {
+      "path": "items/blade_of_alacrity.png",
+      "bytes": 8348,
+      "sha256": "b362ea945fea7398c8bbe15f90a1001fc7ea24f337bc9d2108801a37c6af711a",
+      "object": "b362ea945fea7398c8bbe15f90a1001fc7ea24f337bc9d2108801a37c6af711a.png"
+    },
+    {
+      "path": "items/blades_of_attack.png",
+      "bytes": 9823,
+      "sha256": "f42efe8f40d20fb48c9cc2f49519260569198a7eac240f4ce03c96172042899e",
+      "object": "f42efe8f40d20fb48c9cc2f49519260569198a7eac240f4ce03c96172042899e.png"
+    },
+    {
+      "path": "items/blight_stone.png",
+      "bytes": 13783,
+      "sha256": "11a2c55d4a85f75a04efe70d85fdfcd0871f65660de4d91d49abeee9e289e43a",
+      "object": "11a2c55d4a85f75a04efe70d85fdfcd0871f65660de4d91d49abeee9e289e43a.png"
+    },
+    {
+      "path": "items/blink.png",
+      "bytes": 12674,
+      "sha256": "bc6401dfb8b64e07f4e450a351751755e154f5554f0bb9d14b96a3117092b5ac",
+      "object": "bc6401dfb8b64e07f4e450a351751755e154f5554f0bb9d14b96a3117092b5ac.png"
+    },
+    {
+      "path": "items/blitz_knuckles.png",
+      "bytes": 11466,
+      "sha256": "20c2fd888d699e5dca4a6e0687e7383f402426520323b4b3a461ae24d2844c62",
+      "object": "20c2fd888d699e5dca4a6e0687e7383f402426520323b4b3a461ae24d2844c62.png"
+    },
+    {
+      "path": "items/blood_grenade.png",
+      "bytes": 25381,
+      "sha256": "2664de0aa2a506fea2e8a921cdcea1ecc89f75769bf5ff1978efb6412c4ba2ea",
+      "object": "2664de0aa2a506fea2e8a921cdcea1ecc89f75769bf5ff1978efb6412c4ba2ea.png"
+    },
+    {
+      "path": "items/bloodstone.png",
+      "bytes": 9157,
+      "sha256": "2d27d3bae27e961bea0025a9553151d6512c06dd3d0bc1648972e30136066ee3",
+      "object": "2d27d3bae27e961bea0025a9553151d6512c06dd3d0bc1648972e30136066ee3.png"
+    },
+    {
+      "path": "items/bloodthorn.png",
+      "bytes": 14222,
+      "sha256": "c1eb474f97ea3063fd15663cae1513195449f761397d0e1e2394abb04a139102",
+      "object": "c1eb474f97ea3063fd15663cae1513195449f761397d0e1e2394abb04a139102.png"
+    },
+    {
+      "path": "items/book_of_shadows.png",
+      "bytes": 17239,
+      "sha256": "b18735f40d7c8b872416cdf80a9681fed14443209816714ea42915598df3124c",
+      "object": "b18735f40d7c8b872416cdf80a9681fed14443209816714ea42915598df3124c.png"
+    },
+    {
+      "path": "items/boots.png",
+      "bytes": 9504,
+      "sha256": "bc4d051758ce1ef1deccce71932b3dfe0e406690d5ad9ab0e1b8c12c4ca8fd99",
+      "object": "bc4d051758ce1ef1deccce71932b3dfe0e406690d5ad9ab0e1b8c12c4ca8fd99.png"
+    },
+    {
+      "path": "items/boots_of_bearing.png",
+      "bytes": 12550,
+      "sha256": "ab6540ba99dd6299d908497f884fe90b09735ed42ee56e070287dbaced866666",
+      "object": "ab6540ba99dd6299d908497f884fe90b09735ed42ee56e070287dbaced866666.png"
+    },
+    {
+      "path": "items/boots_of_elves.png",
+      "bytes": 9186,
+      "sha256": "f673479c9634e342b9f53f9b0dd7711cb5c04de42256674c28f3a16945bf249e",
+      "object": "f673479c9634e342b9f53f9b0dd7711cb5c04de42256674c28f3a16945bf249e.png"
+    },
+    {
+      "path": "items/bottle.png",
+      "bytes": 9660,
+      "sha256": "bf52d0fcae37481a98a8b774ed14ab5f12abf0caff65d4e009905d5906b828a6",
+      "object": "bf52d0fcae37481a98a8b774ed14ab5f12abf0caff65d4e009905d5906b828a6.png"
+    },
+    {
+      "path": "items/bottomless_chalice.png",
+      "bytes": 12673,
+      "sha256": "fc4894c00e971528c67d4b234e9edd342fe0b6f9a368dc241af251979be6adac",
+      "object": "fc4894c00e971528c67d4b234e9edd342fe0b6f9a368dc241af251979be6adac.png"
+    },
+    {
+      "path": "items/bracer.png",
+      "bytes": 9417,
+      "sha256": "84f6a739c289221a4597dce4a4c55d57db10e5c982fdfce32483fcfaff8b0d74",
+      "object": "84f6a739c289221a4597dce4a4c55d57db10e5c982fdfce32483fcfaff8b0d74.png"
+    },
+    {
+      "path": "items/branches.png",
+      "bytes": 7195,
+      "sha256": "268f77edd9e730b34daf37e3551238bdb6c4d26943ca9cd0034abf37bbf27390",
+      "object": "268f77edd9e730b34daf37e3551238bdb6c4d26943ca9cd0034abf37bbf27390.png"
+    },
+    {
+      "path": "items/broadsword.png",
+      "bytes": 8605,
+      "sha256": "3040f5eee6222753eb43014ab1f430c5845729fd56cd847a58b635a39591b732",
+      "object": "3040f5eee6222753eb43014ab1f430c5845729fd56cd847a58b635a39591b732.png"
+    },
+    {
+      "path": "items/broom_handle.png",
+      "bytes": 15294,
+      "sha256": "c17b55e87a4153aff870749fa35cc3a019a898f7c2988a7747c9909b5bada2d9",
+      "object": "c17b55e87a4153aff870749fa35cc3a019a898f7c2988a7747c9909b5bada2d9.png"
+    },
+    {
+      "path": "items/buckler.png",
+      "bytes": 14085,
+      "sha256": "66606fd38183a9f90b339696ee7f20cdb1905851d673489531f1e9b950239dcc",
+      "object": "66606fd38183a9f90b339696ee7f20cdb1905851d673489531f1e9b950239dcc.png"
+    },
+    {
+      "path": "items/bullwhip.png",
+      "bytes": 12646,
+      "sha256": "93e20ca4984f555a7cbbbc8443a7871e06d936adeb3d72a41c31b99a79a13c76",
+      "object": "93e20ca4984f555a7cbbbc8443a7871e06d936adeb3d72a41c31b99a79a13c76.png"
+    },
+    {
+      "path": "items/butterfly.png",
+      "bytes": 13121,
+      "sha256": "4d5b67589f5ffc41cb168c9af85d034cba96314272e8e0afc98e314374fc3479",
+      "object": "4d5b67589f5ffc41cb168c9af85d034cba96314272e8e0afc98e314374fc3479.png"
+    },
+    {
+      "path": "items/caster_rapier.png",
+      "bytes": 14045,
+      "sha256": "6740075a34689dd4931a596b305cc1a4fc5c1c2381ad47cbf46bdef450650870",
+      "object": "6740075a34689dd4931a596b305cc1a4fc5c1c2381ad47cbf46bdef450650870.png"
+    },
+    {
+      "path": "items/ceremonial_robe.png",
+      "bytes": 16481,
+      "sha256": "6e57e8eead2d59e301006815364d04f1c0f0285bdbcc8f81c432706ba7b268ad",
+      "object": "6e57e8eead2d59e301006815364d04f1c0f0285bdbcc8f81c432706ba7b268ad.png"
+    },
+    {
+      "path": "items/chainmail.png",
+      "bytes": 11290,
+      "sha256": "2b96fa81579224aa79f1e74e5f71e240cb72e32ab9c2c9d67a06aa785cc497b4",
+      "object": "2b96fa81579224aa79f1e74e5f71e240cb72e32ab9c2c9d67a06aa785cc497b4.png"
+    },
+    {
+      "path": "items/chasm_stone.png",
+      "bytes": 14673,
+      "sha256": "1512df69b4a6e1584aaf2ddd2ed156e0a775688b1cd88dcf9b583ef918f6bff0",
+      "object": "1512df69b4a6e1584aaf2ddd2ed156e0a775688b1cd88dcf9b583ef918f6bff0.png"
+    },
+    {
+      "path": "items/cheese.png",
+      "bytes": 9551,
+      "sha256": "3279a98822dc0f27366353cf95e022b1fcec4d0e1c701242a188f9fcd01088c4",
+      "object": "3279a98822dc0f27366353cf95e022b1fcec4d0e1c701242a188f9fcd01088c4.png"
+    },
+    {
+      "path": "items/chipped_vest.png",
+      "bytes": 11550,
+      "sha256": "f5a909831fad6df996a08c8794a83cf192cf00f3b42e11540e5f5d734a5707c7",
+      "object": "f5a909831fad6df996a08c8794a83cf192cf00f3b42e11540e5f5d734a5707c7.png"
+    },
+    {
+      "path": "items/circlet.png",
+      "bytes": 8242,
+      "sha256": "d26cd916e17865c212071e806608d0578fe44cc555271935239956ce1a4e225b",
+      "object": "d26cd916e17865c212071e806608d0578fe44cc555271935239956ce1a4e225b.png"
+    },
+    {
+      "path": "items/clarity.png",
+      "bytes": 8789,
+      "sha256": "bc5a364362502807fd406502522c471354478179bf0e0a36a6c978e03e9c68e7",
+      "object": "bc5a364362502807fd406502522c471354478179bf0e0a36a6c978e03e9c68e7.png"
+    },
+    {
+      "path": "items/claymore.png",
+      "bytes": 8364,
+      "sha256": "6a6b2f95ff2d7a24f2506e1f33b943e306e4228e7585bc2f67d6d733d1448bf7",
+      "object": "6a6b2f95ff2d7a24f2506e1f33b943e306e4228e7585bc2f67d6d733d1448bf7.png"
+    },
+    {
+      "path": "items/cloak.png",
+      "bytes": 8577,
+      "sha256": "7a7b4a6e1922e43284db6d00465e446a0e192eeffbcd219f0c2214d8a01b9321",
+      "object": "7a7b4a6e1922e43284db6d00465e446a0e192eeffbcd219f0c2214d8a01b9321.png"
+    },
+    {
+      "path": "items/cloak_of_flames.png",
+      "bytes": 15117,
+      "sha256": "e58140c88bb9f7f1738aab27ebac7f0e1e581c163f3d381f7cef842293aada63",
+      "object": "e58140c88bb9f7f1738aab27ebac7f0e1e581c163f3d381f7cef842293aada63.png"
+    },
+    {
+      "path": "items/clumsy_net.png",
+      "bytes": 13769,
+      "sha256": "cc96c661807bfa2bbc877d19716c2b0307f2b5a72513b4ca7e494b5fcf4012ad",
+      "object": "cc96c661807bfa2bbc877d19716c2b0307f2b5a72513b4ca7e494b5fcf4012ad.png"
+    },
+    {
+      "path": "items/conjurers_catalyst.png",
+      "bytes": 13731,
+      "sha256": "0b23f54ec838a3c1f32a515f2597a7dfacbb488016c639ae31e393d7b9c8a3bc",
+      "object": "0b23f54ec838a3c1f32a515f2597a7dfacbb488016c639ae31e393d7b9c8a3bc.png"
+    },
+    {
+      "path": "items/consecrated_wraps.png",
+      "bytes": 16920,
+      "sha256": "ec18d42fccb121aa323e582e22bd8c5a05a054fa6197f3a2961f0cdaaa0239b3",
+      "object": "ec18d42fccb121aa323e582e22bd8c5a05a054fa6197f3a2961f0cdaaa0239b3.png"
+    },
+    {
+      "path": "items/cornucopia.png",
+      "bytes": 14044,
+      "sha256": "11cfe15ec9a3e7aaed86129a7ad3beaf2e62ae17144158dba9168c8d4e534055",
+      "object": "11cfe15ec9a3e7aaed86129a7ad3beaf2e62ae17144158dba9168c8d4e534055.png"
+    },
+    {
+      "path": "items/courier.png",
+      "bytes": 12225,
+      "sha256": "0f1508b91baaa9ad7835897919c91cbcf30916715809adc8d86854da1b2d9d11",
+      "object": "0f1508b91baaa9ad7835897919c91cbcf30916715809adc8d86854da1b2d9d11.png"
+    },
+    {
+      "path": "items/craggy_coat.png",
+      "bytes": 16284,
+      "sha256": "c93dd8ae8c9cbac66677ff55ff5f4b9e37ba6219c1915b997f92468b5c18ec28",
+      "object": "c93dd8ae8c9cbac66677ff55ff5f4b9e37ba6219c1915b997f92468b5c18ec28.png"
+    },
+    {
+      "path": "items/crellas_crozier.png",
+      "bytes": 14476,
+      "sha256": "7cdaa90fcfc55b49dd6b4790982a9db0ab45c5c5e135d3c861f404819bc89e5f",
+      "object": "7cdaa90fcfc55b49dd6b4790982a9db0ab45c5c5e135d3c861f404819bc89e5f.png"
+    },
+    {
+      "path": "items/crimson_guard.png",
+      "bytes": 10899,
+      "sha256": "1c793de03869f81c89b41fa6700d5889619171673a3f4fcb4fdeb1e04b79aae0",
+      "object": "1c793de03869f81c89b41fa6700d5889619171673a3f4fcb4fdeb1e04b79aae0.png"
+    },
+    {
+      "path": "items/crippling_crossbow.png",
+      "bytes": 13060,
+      "sha256": "b3bc1eada1fe092663a7177e5baacf1b3fab81deccdd8c22cd224b189d443bda",
+      "object": "b3bc1eada1fe092663a7177e5baacf1b3fab81deccdd8c22cd224b189d443bda.png"
+    },
+    {
+      "path": "items/crown.png",
+      "bytes": 25381,
+      "sha256": "54bc97c1705384894eb840f0a6958b0676dd2e521c22fbfe1fe0316e7d5a3772",
+      "object": "54bc97c1705384894eb840f0a6958b0676dd2e521c22fbfe1fe0316e7d5a3772.png"
+    },
+    {
+      "path": "items/cyclone.png",
+      "bytes": 12289,
+      "sha256": "79d5c8b82b02b678634008e5fd10ae8bc848610bf10601936f666c4844eb3d19",
+      "object": "79d5c8b82b02b678634008e5fd10ae8bc848610bf10601936f666c4844eb3d19.png"
+    },
+    {
+      "path": "items/dagger_of_ristul.png",
+      "bytes": 12907,
+      "sha256": "b6702298f7f309daafeebf8e2bf4b2650b2c4ea6ac896b08a586f73720f37302",
+      "object": "b6702298f7f309daafeebf8e2bf4b2650b2c4ea6ac896b08a586f73720f37302.png"
+    },
+    {
+      "path": "items/dagon.png",
+      "bytes": 9356,
+      "sha256": "bb6ad85d489fe06d6c5a3cfeef10f080b534b38da7bc8226075e2e819a65037b",
+      "object": "bb6ad85d489fe06d6c5a3cfeef10f080b534b38da7bc8226075e2e819a65037b.png"
+    },
+    {
+      "path": "items/dagon_2.png",
+      "bytes": 10764,
+      "sha256": "6c7732d95ce795cf0914bce0af15e106a3ebe81fee910bc27b6a37c48539ca72",
+      "object": "6c7732d95ce795cf0914bce0af15e106a3ebe81fee910bc27b6a37c48539ca72.png"
+    },
+    {
+      "path": "items/dagon_3.png",
+      "bytes": 11701,
+      "sha256": "3ad98e395af91f43d60a7f2049cb1670e30260a08f0038f0f68d26530be349de",
+      "object": "3ad98e395af91f43d60a7f2049cb1670e30260a08f0038f0f68d26530be349de.png"
+    },
+    {
+      "path": "items/dagon_4.png",
+      "bytes": 10874,
+      "sha256": "8e67bcda099686091403c09892a27965bd11bc8d005f2d0265854242e6246d37",
+      "object": "8e67bcda099686091403c09892a27965bd11bc8d005f2d0265854242e6246d37.png"
+    },
+    {
+      "path": "items/dagon_5.png",
+      "bytes": 11175,
+      "sha256": "c2495bccb7d2fa9dfbbbcd389eda7066cf8dc60c3f369319b32c4b1c818e7f07",
+      "object": "c2495bccb7d2fa9dfbbbcd389eda7066cf8dc60c3f369319b32c4b1c818e7f07.png"
+    },
+    {
+      "path": "items/dandelion_amulet.png",
+      "bytes": 15524,
+      "sha256": "cf8aaf08c0ab5e6755a7ce6c2c3db2942ee3b400f4bd56c4c5786848952ee198",
+      "object": "cf8aaf08c0ab5e6755a7ce6c2c3db2942ee3b400f4bd56c4c5786848952ee198.png"
+    },
+    {
+      "path": "items/defiant_shell.png",
+      "bytes": 14206,
+      "sha256": "7da72f078412d2a652e55cbd944eec14b5cc6d692aaa7a6c19c1889d0b513972",
+      "object": "7da72f078412d2a652e55cbd944eec14b5cc6d692aaa7a6c19c1889d0b513972.png"
+    },
+    {
+      "path": "items/demon_edge.png",
+      "bytes": 12595,
+      "sha256": "c0a68b5af77d996abcf883b70e87b6e924f8d2fd9c0c0e73a05bc4e482ded175",
+      "object": "c0a68b5af77d996abcf883b70e87b6e924f8d2fd9c0c0e73a05bc4e482ded175.png"
+    },
+    {
+      "path": "items/demonicon.png",
+      "bytes": 15951,
+      "sha256": "a4f1a05dc7abf4a89d27cffc5cb7dbbc29c33a6e9db9725ee977e8943efa1ab3",
+      "object": "a4f1a05dc7abf4a89d27cffc5cb7dbbc29c33a6e9db9725ee977e8943efa1ab3.png"
+    },
+    {
+      "path": "items/desolator.png",
+      "bytes": 12691,
+      "sha256": "675bc48d69f10632ac4de059bcd6de4f9abed6a940211738b43c806d2222be44",
+      "object": "675bc48d69f10632ac4de059bcd6de4f9abed6a940211738b43c806d2222be44.png"
+    },
+    {
+      "path": "items/desolator_2.png",
+      "bytes": 17434,
+      "sha256": "a0a36f0f68d59136ef620893e049f1153ae4a10ea9539fc60f997b20fef60616",
+      "object": "a0a36f0f68d59136ef620893e049f1153ae4a10ea9539fc60f997b20fef60616.png"
+    },
+    {
+      "path": "items/devastator.png",
+      "bytes": 12778,
+      "sha256": "876a296bde5a4314efe40c6310575f9e1ceac0bec554b865d7e91e7f65a8da7d",
+      "object": "876a296bde5a4314efe40c6310575f9e1ceac0bec554b865d7e91e7f65a8da7d.png"
+    },
+    {
+      "path": "items/dezun_bloodrite.png",
+      "bytes": 12708,
+      "sha256": "45cca7c3067b9cffae3d4fa58a10c13cc8f167417134526ee3fb154e78f044e9",
+      "object": "45cca7c3067b9cffae3d4fa58a10c13cc8f167417134526ee3fb154e78f044e9.png"
+    },
+    {
+      "path": "items/diadem.png",
+      "bytes": 15457,
+      "sha256": "6aefcd1ea6b13ff5daf80b68bc864373fdcd8ffbf53522fa05379bd839893197",
+      "object": "6aefcd1ea6b13ff5daf80b68bc864373fdcd8ffbf53522fa05379bd839893197.png"
+    },
+    {
+      "path": "items/diffusal_blade.png",
+      "bytes": 13459,
+      "sha256": "246293116d5d36a7f2ae8d8200fa697b5525a28f077d22fe9a732dbfe670abe4",
+      "object": "246293116d5d36a7f2ae8d8200fa697b5525a28f077d22fe9a732dbfe670abe4.png"
+    },
+    {
+      "path": "items/diffusal_blade_2.png",
+      "bytes": 13415,
+      "sha256": "2aadf39b6fafcbb3b42c31da5a023e5de723dd082d58954a994e5fce937593ce",
+      "object": "2aadf39b6fafcbb3b42c31da5a023e5de723dd082d58954a994e5fce937593ce.png"
+    },
+    {
+      "path": "items/disperser.png",
+      "bytes": 2006046,
+      "sha256": "5c74c15cfba5666c916013f0f152f272d2196c6d6e3e4e1ef02cba876c6dcb0b",
+      "object": "5c74c15cfba5666c916013f0f152f272d2196c6d6e3e4e1ef02cba876c6dcb0b.png"
+    },
+    {
+      "path": "items/divine_regalia.png",
+      "bytes": 17968,
+      "sha256": "364985fd98db67c462a1ed3ff569928b21b6f3345712e7faf4555529e724bda3",
+      "object": "364985fd98db67c462a1ed3ff569928b21b6f3345712e7faf4555529e724bda3.png"
+    },
+    {
+      "path": "items/divine_regalia_broken.png",
+      "bytes": 17010,
+      "sha256": "e38c113489aaef9b919d13ec37cfa25b2a9dddedc4e0c5e8d6f2e91bcbace9fc",
+      "object": "e38c113489aaef9b919d13ec37cfa25b2a9dddedc4e0c5e8d6f2e91bcbace9fc.png"
+    },
+    {
+      "path": "items/dormant_curio.png",
+      "bytes": 12069,
+      "sha256": "200c77734030c972e7a96b3342a1aaa44e234ff0b1d26becffc92dcdb9f14b15",
+      "object": "200c77734030c972e7a96b3342a1aaa44e234ff0b1d26becffc92dcdb9f14b15.png"
+    },
+    {
+      "path": "items/doubloon.png",
+      "bytes": 16475,
+      "sha256": "e1b91875ed200915f88d29be1e1833ef0fbed21ea897c35e0ebb2121d985da6c",
+      "object": "e1b91875ed200915f88d29be1e1833ef0fbed21ea897c35e0ebb2121d985da6c.png"
+    },
+    {
+      "path": "items/dragon_lance.png",
+      "bytes": 12204,
+      "sha256": "97fbff35dbdefe9b62fe56c5110e814a89691c7e6e6b05fb91c1bc9b82048b47",
+      "object": "97fbff35dbdefe9b62fe56c5110e814a89691c7e6e6b05fb91c1bc9b82048b47.png"
+    },
+    {
+      "path": "items/dragon_scale.png",
+      "bytes": 17738,
+      "sha256": "f7c707c4d2d40da678b91e75cc47a4f55c045806709e35012866c84aac7f4b23",
+      "object": "f7c707c4d2d40da678b91e75cc47a4f55c045806709e35012866c84aac7f4b23.png"
+    },
+    {
+      "path": "items/duelist_gloves.png",
+      "bytes": 14872,
+      "sha256": "290e40b8df7943864581e484ffc6608d94e8f1b5e763c07997e63c97eb689d0c",
+      "object": "290e40b8df7943864581e484ffc6608d94e8f1b5e763c07997e63c97eb689d0c.png"
+    },
+    {
+      "path": "items/dust.png",
+      "bytes": 12749,
+      "sha256": "c9ef14193920c3da8222b7231af9a3c7e026840e5d0b2eee3a88bc2973c0d3ef",
+      "object": "c9ef14193920c3da8222b7231af9a3c7e026840e5d0b2eee3a88bc2973c0d3ef.png"
+    },
+    {
+      "path": "items/eagle.png",
+      "bytes": 12875,
+      "sha256": "f63cb4b00cd3666cedef803f5f073ceb843f9e7f354e82536655b27478832ba6",
+      "object": "f63cb4b00cd3666cedef803f5f073ceb843f9e7f354e82536655b27478832ba6.png"
+    },
+    {
+      "path": "items/echo_sabre.png",
+      "bytes": 12939,
+      "sha256": "8ccf2663504ce04a62d8232bba02d9f42bfafc1198235c2dd2c280a81dcb9f77",
+      "object": "8ccf2663504ce04a62d8232bba02d9f42bfafc1198235c2dd2c280a81dcb9f77.png"
+    },
+    {
+      "path": "items/eldwurms_edda.png",
+      "bytes": 15054,
+      "sha256": "7c0b90930720a87bb13591899215d97b24d6746419431d2784503c03366750aa",
+      "object": "7c0b90930720a87bb13591899215d97b24d6746419431d2784503c03366750aa.png"
+    },
+    {
+      "path": "items/elixer.png",
+      "bytes": 12673,
+      "sha256": "fc4894c00e971528c67d4b234e9edd342fe0b6f9a368dc241af251979be6adac",
+      "object": "fc4894c00e971528c67d4b234e9edd342fe0b6f9a368dc241af251979be6adac.png"
+    },
+    {
+      "path": "items/elven_tunic.png",
+      "bytes": 11787,
+      "sha256": "d4d0ed6d2690b2e9a79ac00b7d56f8d547dffd98b3c11763a5d52c117fe03745",
+      "object": "d4d0ed6d2690b2e9a79ac00b7d56f8d547dffd98b3c11763a5d52c117fe03745.png"
+    },
+    {
+      "path": "items/enchanted_mango.png",
+      "bytes": 11674,
+      "sha256": "e3ad388d257ffb2c68661f4b819d93634c9d4086a47a9c4aee9bc0dda464423d",
+      "object": "e3ad388d257ffb2c68661f4b819d93634c9d4086a47a9c4aee9bc0dda464423d.png"
+    },
+    {
+      "path": "items/enchanted_quiver.png",
+      "bytes": 13254,
+      "sha256": "1a49a48f501859b8a723fa118d0654216870fa391473d3728389dd3fd2c0866e",
+      "object": "1a49a48f501859b8a723fa118d0654216870fa391473d3728389dd3fd2c0866e.png"
+    },
+    {
+      "path": "items/enchanters_bauble.png",
+      "bytes": 17999,
+      "sha256": "e2d4d21c4a4310e6ad5ad1283d738b93ac632ce1fa2323422d18a3e19c8c1352",
+      "object": "e2d4d21c4a4310e6ad5ad1283d738b93ac632ce1fa2323422d18a3e19c8c1352.png"
+    },
+    {
+      "path": "items/energy_booster.png",
+      "bytes": 12227,
+      "sha256": "e2a1a7e8363a1a6a5ea008ece8890db0195d6b4d5187f79dd527eeccfff344ce",
+      "object": "e2a1a7e8363a1a6a5ea008ece8890db0195d6b4d5187f79dd527eeccfff344ce.png"
+    },
+    {
+      "path": "items/enhancement_alert.png",
+      "bytes": 19473,
+      "sha256": "34d73a56494d76d2762426d1664ae3599dfc743a3d118ee8ecafbe7e9486ee49",
+      "object": "34d73a56494d76d2762426d1664ae3599dfc743a3d118ee8ecafbe7e9486ee49.png"
+    },
+    {
+      "path": "items/enhancement_audacious.png",
+      "bytes": 23922,
+      "sha256": "8d41b85c3ab02886d5bbf83b782a481f37b5fab3dd91a2126e50af15f70688bb",
+      "object": "8d41b85c3ab02886d5bbf83b782a481f37b5fab3dd91a2126e50af15f70688bb.png"
+    },
+    {
+      "path": "items/enhancement_boundless.png",
+      "bytes": 19294,
+      "sha256": "ba5f9fe13dcdb0bb6d296f100d1faa8b196ace4abeb38110724fb9b9acb7a534",
+      "object": "ba5f9fe13dcdb0bb6d296f100d1faa8b196ace4abeb38110724fb9b9acb7a534.png"
+    },
+    {
+      "path": "items/enhancement_brawny.png",
+      "bytes": 19237,
+      "sha256": "e1744e52f0cbfe23141ff922ae05715528440edeabbba9eceb6fe08266a1e180",
+      "object": "e1744e52f0cbfe23141ff922ae05715528440edeabbba9eceb6fe08266a1e180.png"
+    },
+    {
+      "path": "items/enhancement_crude.png",
+      "bytes": 15174,
+      "sha256": "f48beac4352c6edd935324fd509c66fd2084311f2ba57aa4db445cc885bc5a4e",
+      "object": "f48beac4352c6edd935324fd509c66fd2084311f2ba57aa4db445cc885bc5a4e.png"
+    },
+    {
+      "path": "items/enhancement_curious.png",
+      "bytes": 10672,
+      "sha256": "601557df7f8a2405cf304c78d63d7d1561b4f2d24e2737852262e6d3c5d570cb",
+      "object": "601557df7f8a2405cf304c78d63d7d1561b4f2d24e2737852262e6d3c5d570cb.png"
+    },
+    {
+      "path": "items/enhancement_dominant.png",
+      "bytes": 14141,
+      "sha256": "bc905251e2b444fdb9e1af049e1ed895c936b01555111ca6c32ca97416d7b8e0",
+      "object": "bc905251e2b444fdb9e1af049e1ed895c936b01555111ca6c32ca97416d7b8e0.png"
+    },
+    {
+      "path": "items/enhancement_evolved.png",
+      "bytes": 6819,
+      "sha256": "4d907cad9ae9bac4653f421fa8788b5b7d6dea1deb06e59fa6040b284bafa446",
+      "object": "4d907cad9ae9bac4653f421fa8788b5b7d6dea1deb06e59fa6040b284bafa446.png"
+    },
+    {
+      "path": "items/enhancement_feverish.png",
+      "bytes": 8041,
+      "sha256": "e14ec008e3bc2e17e81ebb10bd04b825419622fccfda4f9bf906a279831131af",
+      "object": "e14ec008e3bc2e17e81ebb10bd04b825419622fccfda4f9bf906a279831131af.png"
+    },
+    {
+      "path": "items/enhancement_fierce.png",
+      "bytes": 17862,
+      "sha256": "3ed16b7305551be32981a547cd75f08601be077e3b19c01834233f4ef2c8875e",
+      "object": "3ed16b7305551be32981a547cd75f08601be077e3b19c01834233f4ef2c8875e.png"
+    },
+    {
+      "path": "items/enhancement_fleetfooted.png",
+      "bytes": 7657,
+      "sha256": "554216dcd911189675229041e159037227b3b0b45b66f053859447eac35cc4af",
+      "object": "554216dcd911189675229041e159037227b3b0b45b66f053859447eac35cc4af.png"
+    },
+    {
+      "path": "items/enhancement_greedy.png",
+      "bytes": 10845,
+      "sha256": "5106d11a8c2c857dece1b639017e39e1840e18f899ea2b57f4776624aec770d1",
+      "object": "5106d11a8c2c857dece1b639017e39e1840e18f899ea2b57f4776624aec770d1.png"
+    },
+    {
+      "path": "items/enhancement_hulking.png",
+      "bytes": 8734,
+      "sha256": "c008aa8f079c1a98eb04bbb9ebc40531289ad1349675f9f7f6ba0df61641f751",
+      "object": "c008aa8f079c1a98eb04bbb9ebc40531289ad1349675f9f7f6ba0df61641f751.png"
+    },
+    {
+      "path": "items/enhancement_keen_eyed.png",
+      "bytes": 9490,
+      "sha256": "b0d3bec4c15ad29178b8ad01a1624a91fb8643600453ddae5c93c9ba0f1265e6",
+      "object": "b0d3bec4c15ad29178b8ad01a1624a91fb8643600453ddae5c93c9ba0f1265e6.png"
+    },
+    {
+      "path": "items/enhancement_manic.png",
+      "bytes": 9123,
+      "sha256": "1fcbb5fd053bc9bd9b173a0d6959aaa3bbd777140ba9ca7a79bef9b9f01dff74",
+      "object": "1fcbb5fd053bc9bd9b173a0d6959aaa3bbd777140ba9ca7a79bef9b9f01dff74.png"
+    },
+    {
+      "path": "items/enhancement_mystical.png",
+      "bytes": 18858,
+      "sha256": "e1626556d493dfcc972571ea5388b58939c8e57622e791a3efd00919755c93db",
+      "object": "e1626556d493dfcc972571ea5388b58939c8e57622e791a3efd00919755c93db.png"
+    },
+    {
+      "path": "items/enhancement_nimble.png",
+      "bytes": 7600,
+      "sha256": "9cad237744ccc98d387f0d423399780a8c8b6aeb820b7f83f24bef9a3d666355",
+      "object": "9cad237744ccc98d387f0d423399780a8c8b6aeb820b7f83f24bef9a3d666355.png"
+    },
+    {
+      "path": "items/enhancement_quickened.png",
+      "bytes": 20387,
+      "sha256": "3d6bdc4106557eceee16f0cf81388580c9ea7673788b48bf079cae51fc7d8eaa",
+      "object": "3d6bdc4106557eceee16f0cf81388580c9ea7673788b48bf079cae51fc7d8eaa.png"
+    },
+    {
+      "path": "items/enhancement_restorative.png",
+      "bytes": 15092,
+      "sha256": "288142346e9f8348a0056be944dd722aaf3e5d771cf845bef76eab569269a407",
+      "object": "288142346e9f8348a0056be944dd722aaf3e5d771cf845bef76eab569269a407.png"
+    },
+    {
+      "path": "items/enhancement_thick.png",
+      "bytes": 16913,
+      "sha256": "7c60c6486ce2f6dec2317e23d1d45927cab3e1c44ad45ed18e2b4b951b461d46",
+      "object": "7c60c6486ce2f6dec2317e23d1d45927cab3e1c44ad45ed18e2b4b951b461d46.png"
+    },
+    {
+      "path": "items/enhancement_timeless.png",
+      "bytes": 7208,
+      "sha256": "cb2420af3ec8d4168f2e707f361f0027e3f3f6807652a74b93b726171a9f8cd3",
+      "object": "cb2420af3ec8d4168f2e707f361f0027e3f3f6807652a74b93b726171a9f8cd3.png"
+    },
+    {
+      "path": "items/enhancement_titanic.png",
+      "bytes": 11821,
+      "sha256": "1d01fd47cdeec465e0b5027d36cdc1f447381fce37b0da1a28c9c13d0946ddf4",
+      "object": "1d01fd47cdeec465e0b5027d36cdc1f447381fce37b0da1a28c9c13d0946ddf4.png"
+    },
+    {
+      "path": "items/enhancement_tough.png",
+      "bytes": 20512,
+      "sha256": "12d99dd017c0776408ca866b58341176bb96dc68ee4a61bade784cc675bda185",
+      "object": "12d99dd017c0776408ca866b58341176bb96dc68ee4a61bade784cc675bda185.png"
+    },
+    {
+      "path": "items/enhancement_vampiric.png",
+      "bytes": 9062,
+      "sha256": "456b4ebac28831016c8abde9153522515c034cefef75c5139f771ef3a15b15df",
+      "object": "456b4ebac28831016c8abde9153522515c034cefef75c5139f771ef3a15b15df.png"
+    },
+    {
+      "path": "items/enhancement_vast.png",
+      "bytes": 23419,
+      "sha256": "f3b06c237dd3afa26c7403ec9e4098674466b134f724d711d31a8d878f40a965",
+      "object": "f3b06c237dd3afa26c7403ec9e4098674466b134f724d711d31a8d878f40a965.png"
+    },
+    {
+      "path": "items/enhancement_vital.png",
+      "bytes": 8168,
+      "sha256": "ee35eddcb4e63c312fd9b1cec80aec8d10546874f07ac435d83a58b212a4d3d4",
+      "object": "ee35eddcb4e63c312fd9b1cec80aec8d10546874f07ac435d83a58b212a4d3d4.png"
+    },
+    {
+      "path": "items/enhancement_wise.png",
+      "bytes": 25263,
+      "sha256": "70064668851a27110c5dc06bf5f0996c9ce8350529bd16a5925e314febeba778",
+      "object": "70064668851a27110c5dc06bf5f0996c9ce8350529bd16a5925e314febeba778.png"
+    },
+    {
+      "path": "items/essence_distiller.png",
+      "bytes": 12716,
+      "sha256": "7f7f6108f9a2f404fb10008c345896353d7f27105dfa92734e2dc8a2ecca9f46",
+      "object": "7f7f6108f9a2f404fb10008c345896353d7f27105dfa92734e2dc8a2ecca9f46.png"
+    },
+    {
+      "path": "items/essence_ring.png",
+      "bytes": 12105,
+      "sha256": "ac53f39dba216e6768cbe7fefbe150d5793bebfcf63ec5d54bb021b30d27181d",
+      "object": "ac53f39dba216e6768cbe7fefbe150d5793bebfcf63ec5d54bb021b30d27181d.png"
+    },
+    {
+      "path": "items/eternal_shroud.png",
+      "bytes": 14395,
+      "sha256": "1925a38d75cc5c3e659074ad1f5323c6a099e7cd5169851380ff4ca0db4e5823",
+      "object": "1925a38d75cc5c3e659074ad1f5323c6a099e7cd5169851380ff4ca0db4e5823.png"
+    },
+    {
+      "path": "items/ethereal_blade.png",
+      "bytes": 13248,
+      "sha256": "4c58046da1badb823c34c54a0d1b4af0ec60fb5252db2d624381e527f33629e9",
+      "object": "4c58046da1badb823c34c54a0d1b4af0ec60fb5252db2d624381e527f33629e9.png"
+    },
+    {
+      "path": "items/ex_machina.png",
+      "bytes": 13779,
+      "sha256": "b191a8400c5d853be64f7e0dbe4990ccfba5c05e5129459c48717136831b384a",
+      "object": "b191a8400c5d853be64f7e0dbe4990ccfba5c05e5129459c48717136831b384a.png"
+    },
+    {
+      "path": "items/eye_of_the_vizier.png",
+      "bytes": 9490,
+      "sha256": "b0d3bec4c15ad29178b8ad01a1624a91fb8643600453ddae5c93c9ba0f1265e6",
+      "object": "b0d3bec4c15ad29178b8ad01a1624a91fb8643600453ddae5c93c9ba0f1265e6.png"
+    },
+    {
+      "path": "items/faded_broach.png",
+      "bytes": 12549,
+      "sha256": "2b68408f072b963516d658e231ff9eb3be4d9adf408c010e8712b86226305233",
+      "object": "2b68408f072b963516d658e231ff9eb3be4d9adf408c010e8712b86226305233.png"
+    },
+    {
+      "path": "items/faerie_fire.png",
+      "bytes": 9856,
+      "sha256": "0947d9948ac7c2336fa1849038ff7d57d152e38b53d2022687137f74d2927af6",
+      "object": "0947d9948ac7c2336fa1849038ff7d57d152e38b53d2022687137f74d2927af6.png"
+    },
+    {
+      "path": "items/falcon_blade.png",
+      "bytes": 14095,
+      "sha256": "2a7ab593b5a30c2bac3f4b6b115eda9b9334ccce4b9dcc4516ba7d958c0cda22",
+      "object": "2a7ab593b5a30c2bac3f4b6b115eda9b9334ccce4b9dcc4516ba7d958c0cda22.png"
+    },
+    {
+      "path": "items/fallen_sky.png",
+      "bytes": 15123,
+      "sha256": "b922573d4eea6868fc2e5c8ea1307e58dc0e82f2d1288f3abc179e6036e1bca7",
+      "object": "b922573d4eea6868fc2e5c8ea1307e58dc0e82f2d1288f3abc179e6036e1bca7.png"
+    },
+    {
+      "path": "items/famango.png",
+      "bytes": 11535,
+      "sha256": "c747afd00050e3de0bb69c87e4f2a5a9fc0925bb38211ad2acc1fa3f852a2e8d",
+      "object": "c747afd00050e3de0bb69c87e4f2a5a9fc0925bb38211ad2acc1fa3f852a2e8d.png"
+    },
+    {
+      "path": "items/flask.png",
+      "bytes": 7286,
+      "sha256": "94fa916984960fdad4d2721ae2e876dbe210e2b68a9465eca04007c6f6713654",
+      "object": "94fa916984960fdad4d2721ae2e876dbe210e2b68a9465eca04007c6f6713654.png"
+    },
+    {
+      "path": "items/flayers_bota.png",
+      "bytes": 12874,
+      "sha256": "5fa67aee85eb555d65cb9c10b0f02420733cd5667e954ad7f73d723c2813b7f9",
+      "object": "5fa67aee85eb555d65cb9c10b0f02420733cd5667e954ad7f73d723c2813b7f9.png"
+    },
+    {
+      "path": "items/flicker.png",
+      "bytes": 17768,
+      "sha256": "a7f191295401e8930d703e3cc6374e3c5c5cfcff9b7800c636116c99ba577495",
+      "object": "a7f191295401e8930d703e3cc6374e3c5c5cfcff9b7800c636116c99ba577495.png"
+    },
+    {
+      "path": "items/fluffy_hat.png",
+      "bytes": 14785,
+      "sha256": "47d8263152ec166b17d61e20503236c6057e27a3f0884f221eb54d55e1ef5012",
+      "object": "47d8263152ec166b17d61e20503236c6057e27a3f0884f221eb54d55e1ef5012.png"
+    },
+    {
+      "path": "items/flying_courier.png",
+      "bytes": 12397,
+      "sha256": "1eaf84dc23f30c9f36708c24319d672a14bbaf9dd84977909d832c5ad63afccc",
+      "object": "1eaf84dc23f30c9f36708c24319d672a14bbaf9dd84977909d832c5ad63afccc.png"
+    },
+    {
+      "path": "items/foragers_health.png",
+      "bytes": 15022,
+      "sha256": "0947c98ae43e35a82b6188c203615e5b405b02e446ce363f8599c0fbf0b0f5b5",
+      "object": "0947c98ae43e35a82b6188c203615e5b405b02e446ce363f8599c0fbf0b0f5b5.png"
+    },
+    {
+      "path": "items/foragers_kit.png",
+      "bytes": 12284,
+      "sha256": "bebdf1ab334d6aedf37feb2c9d19995603df998a5dc68e86cb1e7e8302f4cee0",
+      "object": "bebdf1ab334d6aedf37feb2c9d19995603df998a5dc68e86cb1e7e8302f4cee0.png"
+    },
+    {
+      "path": "items/foragers_mana.png",
+      "bytes": 14606,
+      "sha256": "35ab560431f654ea4b1d9478200d98419ccafe2a502e069a24221aa4f2185b95",
+      "object": "35ab560431f654ea4b1d9478200d98419ccafe2a502e069a24221aa4f2185b95.png"
+    },
+    {
+      "path": "items/foragers_stats.png",
+      "bytes": 11349,
+      "sha256": "83cf6d4746398bbcfc8ea9dec5e257d37051cc36d3d0ad06fa831afe08e57a3b",
+      "object": "83cf6d4746398bbcfc8ea9dec5e257d37051cc36d3d0ad06fa831afe08e57a3b.png"
+    },
+    {
+      "path": "items/force_boots.png",
+      "bytes": 16050,
+      "sha256": "e16c87e48d4a04f87a1c48cd944e7714baf423985fc7edd6c38506dacf1c882b",
+      "object": "e16c87e48d4a04f87a1c48cd944e7714baf423985fc7edd6c38506dacf1c882b.png"
+    },
+    {
+      "path": "items/force_field.png",
+      "bytes": 16160,
+      "sha256": "7650bae9b1cf8f902bb2eb16ef48a2eebfc224915feb8b372883fd1a1c06b2c2",
+      "object": "7650bae9b1cf8f902bb2eb16ef48a2eebfc224915feb8b372883fd1a1c06b2c2.png"
+    },
+    {
+      "path": "items/force_staff.png",
+      "bytes": 11151,
+      "sha256": "0e0fcb80acae16b970576611f6609f7700e61b29e550814c117fe4117e4c5766",
+      "object": "0e0fcb80acae16b970576611f6609f7700e61b29e550814c117fe4117e4c5766.png"
+    },
+    {
+      "path": "items/furion_gold_bag.png",
+      "bytes": 9649,
+      "sha256": "969baa7b864a54b49b9fb1dc7184f19f9281388addb0906ba3311309ab00f74d",
+      "object": "969baa7b864a54b49b9fb1dc7184f19f9281388addb0906ba3311309ab00f74d.png"
+    },
+    {
+      "path": "items/fusion_rune.png",
+      "bytes": 16475,
+      "sha256": "86328a0b72f6692c8ccefc3d95146f6bf7cee34535d28e9095b1667cf236be25",
+      "object": "86328a0b72f6692c8ccefc3d95146f6bf7cee34535d28e9095b1667cf236be25.png"
+    },
+    {
+      "path": "items/gale_guard.png",
+      "bytes": 13549,
+      "sha256": "9cb372d46b1dcb7272dec34d1ac03bf2033f4c996a67df2596ebf53645ed0511",
+      "object": "9cb372d46b1dcb7272dec34d1ac03bf2033f4c996a67df2596ebf53645ed0511.png"
+    },
+    {
+      "path": "items/gauntlets.png",
+      "bytes": 7416,
+      "sha256": "4e7b459b65570af331e34cadc81f25270541d9b84ca84113c17eda754d08331d",
+      "object": "4e7b459b65570af331e34cadc81f25270541d9b84ca84113c17eda754d08331d.png"
+    },
+    {
+      "path": "items/gem.png",
+      "bytes": 11169,
+      "sha256": "814b5d220c93fc2fbc83392d484c6ebff0eb2acd05063cf65b617f3dc0d8684c",
+      "object": "814b5d220c93fc2fbc83392d484c6ebff0eb2acd05063cf65b617f3dc0d8684c.png"
+    },
+    {
+      "path": "items/ghost.png",
+      "bytes": 13053,
+      "sha256": "4e42fc5424eda5f614bb2cd5835e5acde1d10f7d0a92a7e4dd6fcab6a507560e",
+      "object": "4e42fc5424eda5f614bb2cd5835e5acde1d10f7d0a92a7e4dd6fcab6a507560e.png"
+    },
+    {
+      "path": "items/giant_maul.png",
+      "bytes": 11074,
+      "sha256": "5a6d8a7fc7fe99e298986f04f993303a869102817afbd1b85234d71fb075a409",
+      "object": "5a6d8a7fc7fe99e298986f04f993303a869102817afbd1b85234d71fb075a409.png"
+    },
+    {
+      "path": "items/giants_ring.png",
+      "bytes": 13447,
+      "sha256": "06ea9be3cf2e809392593dfad0dd678fed9236173af7b7e37c63ce7e9288dfcb",
+      "object": "06ea9be3cf2e809392593dfad0dd678fed9236173af7b7e37c63ce7e9288dfcb.png"
+    },
+    {
+      "path": "items/glimmer_cape.png",
+      "bytes": 12961,
+      "sha256": "c46279ba8105e3c25585b0c4a2b72789378ce76ae79f19a3143a58462a2fae7a",
+      "object": "c46279ba8105e3c25585b0c4a2b72789378ce76ae79f19a3143a58462a2fae7a.png"
+    },
+    {
+      "path": "items/gloves.png",
+      "bytes": 9123,
+      "sha256": "094fa17967ef3702dcbe801b691f35200820af39d610861b9f4c3e955ccf3473",
+      "object": "094fa17967ef3702dcbe801b691f35200820af39d610861b9f4c3e955ccf3473.png"
+    },
+    {
+      "path": "items/gossamer_cape.png",
+      "bytes": 13308,
+      "sha256": "17fffd752c349e2e979171de25528410ab46df3a609a4344fc1e77e8e47f4719",
+      "object": "17fffd752c349e2e979171de25528410ab46df3a609a4344fc1e77e8e47f4719.png"
+    },
+    {
+      "path": "items/great_famango.png",
+      "bytes": 13664,
+      "sha256": "2229e72b05afa474abd8e4eb51798f2bed28fb40f8aca148449db11f024ee092",
+      "object": "2229e72b05afa474abd8e4eb51798f2bed28fb40f8aca148449db11f024ee092.png"
+    },
+    {
+      "path": "items/greater_crit.png",
+      "bytes": 11349,
+      "sha256": "b594acd3d2197d8175d0521edc068e0bb9ed190eb117f0f9d48f7684d146424e",
+      "object": "b594acd3d2197d8175d0521edc068e0bb9ed190eb117f0f9d48f7684d146424e.png"
+    },
+    {
+      "path": "items/greater_faerie_fire.png",
+      "bytes": 12587,
+      "sha256": "552b1101a4a367467ec65bcf88866d43f7d7cc5c8a602be566e6010a05146c6e",
+      "object": "552b1101a4a367467ec65bcf88866d43f7d7cc5c8a602be566e6010a05146c6e.png"
+    },
+    {
+      "path": "items/greater_famango.png",
+      "bytes": 13995,
+      "sha256": "e370b5cfac0f74bdff739098acca93bca092e735f72d0e2678e2f3533389051c",
+      "object": "e370b5cfac0f74bdff739098acca93bca092e735f72d0e2678e2f3533389051c.png"
+    },
+    {
+      "path": "items/greater_mango.png",
+      "bytes": 10293,
+      "sha256": "1344adc647fa06f04a5729447a2feea0e8cdc9b54597cdb9b439f05ef82cb412",
+      "object": "1344adc647fa06f04a5729447a2feea0e8cdc9b54597cdb9b439f05ef82cb412.png"
+    },
+    {
+      "path": "items/grisgris.png",
+      "bytes": 2001990,
+      "sha256": "959c020b5d14d24b1d2fa0bb52cbb20fb5012aa594f8335f388a3315b564c26c",
+      "object": "959c020b5d14d24b1d2fa0bb52cbb20fb5012aa594f8335f388a3315b564c26c.png"
+    },
+    {
+      "path": "items/grove_bow.png",
+      "bytes": 12026,
+      "sha256": "9da92b4683ec9697384b2a5825778d5c739e72143b65164ee608e4d96d6549dd",
+      "object": "9da92b4683ec9697384b2a5825778d5c739e72143b65164ee608e4d96d6549dd.png"
+    },
+    {
+      "path": "items/guardian_greaves.png",
+      "bytes": 12748,
+      "sha256": "ee5e10086efdfe50f0b2d905b89de34181103d538ecd61b4d5327e870d3fdbf5",
+      "object": "ee5e10086efdfe50f0b2d905b89de34181103d538ecd61b4d5327e870d3fdbf5.png"
+    },
+    {
+      "path": "items/gungir.png",
+      "bytes": 16570,
+      "sha256": "7e8428f39a391afa951e2aea832522b946652740aafc23853d1542d4a1082b7e",
+      "object": "7e8428f39a391afa951e2aea832522b946652740aafc23853d1542d4a1082b7e.png"
+    },
+    {
+      "path": "items/gunpowder_gauntlets.png",
+      "bytes": 13538,
+      "sha256": "e93e414625c2a7a8e3fca2ba035aa76fda9c6639e2b5add3f7228931530f6d2a",
+      "object": "e93e414625c2a7a8e3fca2ba035aa76fda9c6639e2b5add3f7228931530f6d2a.png"
+    },
+    {
+      "path": "items/hand_of_midas.png",
+      "bytes": 10274,
+      "sha256": "da35d575099733e59000bd3c6cf69f0ea4a527c3b46dc1b256406a491dda9bec",
+      "object": "da35d575099733e59000bd3c6cf69f0ea4a527c3b46dc1b256406a491dda9bec.png"
+    },
+    {
+      "path": "items/harmonizer.png",
+      "bytes": 14766,
+      "sha256": "dc3848ab3baa90518a7def0c49ac0a0681e3faafec15d8078ef35808313708bd",
+      "object": "dc3848ab3baa90518a7def0c49ac0a0681e3faafec15d8078ef35808313708bd.png"
+    },
+    {
+      "path": "items/harpoon.png",
+      "bytes": 13753,
+      "sha256": "55c0a569da9990a9aebecbf9bf998395d68855e3728bf9a69ec0a1c36b007c0e",
+      "object": "55c0a569da9990a9aebecbf9bf998395d68855e3728bf9a69ec0a1c36b007c0e.png"
+    },
+    {
+      "path": "items/havoc_hammer.png",
+      "bytes": 16061,
+      "sha256": "a2cc2e99dfa90616929727e46188d2d146cbd7553e597467fc7f5312e940b373",
+      "object": "a2cc2e99dfa90616929727e46188d2d146cbd7553e597467fc7f5312e940b373.png"
+    },
+    {
+      "path": "items/headdress.png",
+      "bytes": 12211,
+      "sha256": "374931237c8e6627c941699d48f3c6aced0db8d36677b2209429bda6c9c1de00",
+      "object": "374931237c8e6627c941699d48f3c6aced0db8d36677b2209429bda6c9c1de00.png"
+    },
+    {
+      "path": "items/heart.png",
+      "bytes": 11410,
+      "sha256": "1e391cf72f30b83aceba691c0ecfe095e697316cd5c0045bcef0c6c1794210f1",
+      "object": "1e391cf72f30b83aceba691c0ecfe095e697316cd5c0045bcef0c6c1794210f1.png"
+    },
+    {
+      "path": "items/heavens_halberd.png",
+      "bytes": 12092,
+      "sha256": "da7c9b111193bab2df17ab67e560abde736d45410ed55b7efee780dd50657eac",
+      "object": "da7c9b111193bab2df17ab67e560abde736d45410ed55b7efee780dd50657eac.png"
+    },
+    {
+      "path": "items/heavy_blade.png",
+      "bytes": 14425,
+      "sha256": "5d2824d665682656c40ef1ffa4e06811413d55ec4f7519d7afcbb690e91f33c6",
+      "object": "5d2824d665682656c40ef1ffa4e06811413d55ec4f7519d7afcbb690e91f33c6.png"
+    },
+    {
+      "path": "items/helm_of_iron_will.png",
+      "bytes": 9800,
+      "sha256": "b0a1b881c520c5ef5d9a2bcc152eabb861735da11ee2f3d7e0a9a05e9c0ce27e",
+      "object": "b0a1b881c520c5ef5d9a2bcc152eabb861735da11ee2f3d7e0a9a05e9c0ce27e.png"
+    },
+    {
+      "path": "items/helm_of_the_dominator.png",
+      "bytes": 10590,
+      "sha256": "4e9a7c4d9ce2c4eb9b996617d9d12518bf990438415d6e9587079980b4aa3334",
+      "object": "4e9a7c4d9ce2c4eb9b996617d9d12518bf990438415d6e9587079980b4aa3334.png"
+    },
+    {
+      "path": "items/helm_of_the_overlord.png",
+      "bytes": 14782,
+      "sha256": "7ff2b1769066d3321d5439202311679fdc86aad2fba4b74c9de150ccd88d99c4",
+      "object": "7ff2b1769066d3321d5439202311679fdc86aad2fba4b74c9de150ccd88d99c4.png"
+    },
+    {
+      "path": "items/helm_of_the_undying.png",
+      "bytes": 13825,
+      "sha256": "f3eb071ac86b80ebd40fa347c6d489174105339f9f3cb0e419a0f60a39aa39fb",
+      "object": "f3eb071ac86b80ebd40fa347c6d489174105339f9f3cb0e419a0f60a39aa39fb.png"
+    },
+    {
+      "path": "items/holy_locket.png",
+      "bytes": 25381,
+      "sha256": "a99b4b7658168914bcdb61b3227ca309b524b15af25ef410ba1bc071f3362b19",
+      "object": "a99b4b7658168914bcdb61b3227ca309b524b15af25ef410ba1bc071f3362b19.png"
+    },
+    {
+      "path": "items/hood_of_defiance.png",
+      "bytes": 12366,
+      "sha256": "41cddfac2af1f03d69fdbf18209e04c33b5ac3c56149f625498444168a81afcd",
+      "object": "41cddfac2af1f03d69fdbf18209e04c33b5ac3c56149f625498444168a81afcd.png"
+    },
+    {
+      "path": "items/horizon.png",
+      "bytes": 25381,
+      "sha256": "0dc8bd0e61e266600ea5a5d03774597645e18b3a2db3a9f0f072df81dce11e30",
+      "object": "0dc8bd0e61e266600ea5a5d03774597645e18b3a2db3a9f0f072df81dce11e30.png"
+    },
+    {
+      "path": "items/hurricane_pike.png",
+      "bytes": 11835,
+      "sha256": "412de7e32b1ea4f668c4ce2962ea8326dd9a266522dc491bba3340c8558ca723",
+      "object": "412de7e32b1ea4f668c4ce2962ea8326dd9a266522dc491bba3340c8558ca723.png"
+    },
+    {
+      "path": "items/hydras_breath.png",
+      "bytes": 13179,
+      "sha256": "c503230547e5fdd15bdc00b1f16e4905225ae1662f3a743c3bba7982b624fd21",
+      "object": "c503230547e5fdd15bdc00b1f16e4905225ae1662f3a743c3bba7982b624fd21.png"
+    },
+    {
+      "path": "items/hyperstone.png",
+      "bytes": 10867,
+      "sha256": "b55a7264e2e0209ae69adf5f671b8791fec078cfe1e3681b5b18eca69b6fdebe",
+      "object": "b55a7264e2e0209ae69adf5f671b8791fec078cfe1e3681b5b18eca69b6fdebe.png"
+    },
+    {
+      "path": "items/idol_of_screeauk.png",
+      "bytes": 14338,
+      "sha256": "9095541ac7a5bf6692fe2acc7319298dc8b9e287918be5c88748b244fc30e61d",
+      "object": "9095541ac7a5bf6692fe2acc7319298dc8b9e287918be5c88748b244fc30e61d.png"
+    },
+    {
+      "path": "items/illusionsts_cape.png",
+      "bytes": 15733,
+      "sha256": "741da6b96dbd2ac0d619ab6e886bea009a50d6cb7c975ed4d1720becb3f829ce",
+      "object": "741da6b96dbd2ac0d619ab6e886bea009a50d6cb7c975ed4d1720becb3f829ce.png"
+    },
+    {
+      "path": "items/imp_claw.png",
+      "bytes": 14431,
+      "sha256": "fd426e492067949e5f27207cb2f2d384b8028e40ef82c58555a79e1fc5a9a114",
+      "object": "fd426e492067949e5f27207cb2f2d384b8028e40ef82c58555a79e1fc5a9a114.png"
+    },
+    {
+      "path": "items/infused_raindrop.png",
+      "bytes": 9874,
+      "sha256": "2d5bf0a67cdf0bc5ec1da2b73e1e76d84399c97f00b86b3542c3dfa9b95b0c8d",
+      "object": "2d5bf0a67cdf0bc5ec1da2b73e1e76d84399c97f00b86b3542c3dfa9b95b0c8d.png"
+    },
+    {
+      "path": "items/invis_sword.png",
+      "bytes": 11506,
+      "sha256": "fcb53a9f4c7624a4846b672139901666f837d3513659bfe91242ea01fa1d61e8",
+      "object": "fcb53a9f4c7624a4846b672139901666f837d3513659bfe91242ea01fa1d61e8.png"
+    },
+    {
+      "path": "items/iron_talon.png",
+      "bytes": 12506,
+      "sha256": "93d8f1e65e84036be767136f77e94674757b96f8ce666bd7bb027e0e6dc320c6",
+      "object": "93d8f1e65e84036be767136f77e94674757b96f8ce666bd7bb027e0e6dc320c6.png"
+    },
+    {
+      "path": "items/ironwood_tree.png",
+      "bytes": 14373,
+      "sha256": "b007185a5f16ea2a193e92736ab3fbda7034567293d876655c60fab21ea9eacb",
+      "object": "b007185a5f16ea2a193e92736ab3fbda7034567293d876655c60fab21ea9eacb.png"
+    },
+    {
+      "path": "items/javelin.png",
+      "bytes": 9387,
+      "sha256": "b17eef79df92e39c0babdef5630ee3d0fa2010de1c05548f10ae29daa8536c7e",
+      "object": "b17eef79df92e39c0babdef5630ee3d0fa2010de1c05548f10ae29daa8536c7e.png"
+    },
+    {
+      "path": "items/jidi_pollen_bag.png",
+      "bytes": 15963,
+      "sha256": "b6e06207fbf457f68ccd37b4423623fb60f9346e087576df3c642a081e7646c8",
+      "object": "b6e06207fbf457f68ccd37b4423623fb60f9346e087576df3c642a081e7646c8.png"
+    },
+    {
+      "path": "items/kaya.png",
+      "bytes": 14428,
+      "sha256": "7c9000743e0500653708301ff3816c5f13173463519c137f3322f7219c254a7e",
+      "object": "7c9000743e0500653708301ff3816c5f13173463519c137f3322f7219c254a7e.png"
+    },
+    {
+      "path": "items/kaya_and_sange.png",
+      "bytes": 13848,
+      "sha256": "000a507427702e92afb4af6d0561515d7f62e21b4d2c7a6eabd1804fb17a3d84",
+      "object": "000a507427702e92afb4af6d0561515d7f62e21b4d2c7a6eabd1804fb17a3d84.png"
+    },
+    {
+      "path": "items/keen_optic.png",
+      "bytes": 15424,
+      "sha256": "c52910d270615fed762d0429f0f106b390317a335447438d3fa3bdd17b7fe2f1",
+      "object": "c52910d270615fed762d0429f0f106b390317a335447438d3fa3bdd17b7fe2f1.png"
+    },
+    {
+      "path": "items/kobold_cup.png",
+      "bytes": 19215,
+      "sha256": "7fcdd0a2b8a0ba8da41df6aa6ddcb40f935d9cc93c850f33022c352f418acef3",
+      "object": "7fcdd0a2b8a0ba8da41df6aa6ddcb40f935d9cc93c850f33022c352f418acef3.png"
+    },
+    {
+      "path": "items/lance_of_pursuit.png",
+      "bytes": 12181,
+      "sha256": "f72fac7206f8fafaa8cf7ae4844374898ea5b30ac13dc400d6d56db972c9b59e",
+      "object": "f72fac7206f8fafaa8cf7ae4844374898ea5b30ac13dc400d6d56db972c9b59e.png"
+    },
+    {
+      "path": "items/lesser_crit.png",
+      "bytes": 11726,
+      "sha256": "2394948970668085696e22f6d322dc45ba78e2be70dc4e2649af4ea12751bbfd",
+      "object": "2394948970668085696e22f6d322dc45ba78e2be70dc4e2649af4ea12751bbfd.png"
+    },
+    {
+      "path": "items/lifesteal.png",
+      "bytes": 10211,
+      "sha256": "6f1bddceaf10ceec44a0dba9cba50f6780c5b293d74fad360ad8ed0a2116f51f",
+      "object": "6f1bddceaf10ceec44a0dba9cba50f6780c5b293d74fad360ad8ed0a2116f51f.png"
+    },
+    {
+      "path": "items/light_collector.png",
+      "bytes": 17187,
+      "sha256": "e0c6c55a0651652bb92ebe60fb1db996d944c2d17802014beaaa8b9087509450",
+      "object": "e0c6c55a0651652bb92ebe60fb1db996d944c2d17802014beaaa8b9087509450.png"
+    },
+    {
+      "path": "items/lotus_orb.png",
+      "bytes": 12790,
+      "sha256": "bf49dfbf57e78491346186b80a6be92b565bea503345b144d849a1d10a31206e",
+      "object": "bf49dfbf57e78491346186b80a6be92b565bea503345b144d849a1d10a31206e.png"
+    },
+    {
+      "path": "items/madstone_bundle.png",
+      "bytes": 7195,
+      "sha256": "268f77edd9e730b34daf37e3551238bdb6c4d26943ca9cd0034abf37bbf27390",
+      "object": "268f77edd9e730b34daf37e3551238bdb6c4d26943ca9cd0034abf37bbf27390.png"
+    },
+    {
+      "path": "items/maelstrom.png",
+      "bytes": 13081,
+      "sha256": "c49014aec420deeb2ef191dfe22f5e89e7831d393cf64ae18d59d0f0c0f0a2e0",
+      "object": "c49014aec420deeb2ef191dfe22f5e89e7831d393cf64ae18d59d0f0c0f0a2e0.png"
+    },
+    {
+      "path": "items/mage_slayer.png",
+      "bytes": 14555,
+      "sha256": "fe68b2411555af306e365d6c42a351730b238d2cc413b328eab454ebd3a6eaac",
+      "object": "fe68b2411555af306e365d6c42a351730b238d2cc413b328eab454ebd3a6eaac.png"
+    },
+    {
+      "path": "items/magic_stick.png",
+      "bytes": 7902,
+      "sha256": "9d7e02c6acb9206aba707a873886aa6b9c4114813956f917c513505167b515c0",
+      "object": "9d7e02c6acb9206aba707a873886aa6b9c4114813956f917c513505167b515c0.png"
+    },
+    {
+      "path": "items/magic_wand.png",
+      "bytes": 9417,
+      "sha256": "4109e25e9991c11bb4c5ae543330c2000a0c2d7b44982320408b3b9ba1b873aa",
+      "object": "4109e25e9991c11bb4c5ae543330c2000a0c2d7b44982320408b3b9ba1b873aa.png"
+    },
+    {
+      "path": "items/magnifying_monocle.png",
+      "bytes": 19942,
+      "sha256": "df091fb6e63818a81ac76972095786e5c864f0a08f43596101aa34c91fdf073f",
+      "object": "df091fb6e63818a81ac76972095786e5c864f0a08f43596101aa34c91fdf073f.png"
+    },
+    {
+      "path": "items/mana_draught.png",
+      "bytes": 19903,
+      "sha256": "d02082eb131b1aaadf111df9c942ec69f2cb16a16142351603d4469d9687266c",
+      "object": "d02082eb131b1aaadf111df9c942ec69f2cb16a16142351603d4469d9687266c.png"
+    },
+    {
+      "path": "items/mango_tree.png",
+      "bytes": 15866,
+      "sha256": "1c0f9efbb37a299e997535213b73c68b33afbea67bcd1767f679ed54e9587ba6",
+      "object": "1c0f9efbb37a299e997535213b73c68b33afbea67bcd1767f679ed54e9587ba6.png"
+    },
+    {
+      "path": "items/manta.png",
+      "bytes": 12106,
+      "sha256": "5c31692d0825e3dcba13d18bf3d9a832d36eb4779aaeaa05eb6bde00c0458056",
+      "object": "5c31692d0825e3dcba13d18bf3d9a832d36eb4779aaeaa05eb6bde00c0458056.png"
+    },
+    {
+      "path": "items/mantle.png",
+      "bytes": 9561,
+      "sha256": "81e1c0de47d68ceefed6723074760b24cac413945c08d934b3eb9de717b0689e",
+      "object": "81e1c0de47d68ceefed6723074760b24cac413945c08d934b3eb9de717b0689e.png"
+    },
+    {
+      "path": "items/martyrs_plate.png",
+      "bytes": 15122,
+      "sha256": "e87c03e859f34e9a9730b657b7377c8de1cc807e4c9e0f0812a0db9730a645b3",
+      "object": "e87c03e859f34e9a9730b657b7377c8de1cc807e4c9e0f0812a0db9730a645b3.png"
+    },
+    {
+      "path": "items/mask_of_madness.png",
+      "bytes": 11676,
+      "sha256": "186f8cd4a326efa096ffecc6f7c57ef57ec9b26076867ab214b1a07dc7193e14",
+      "object": "186f8cd4a326efa096ffecc6f7c57ef57ec9b26076867ab214b1a07dc7193e14.png"
+    },
+    {
+      "path": "items/mechanical_arm.png",
+      "bytes": 10904,
+      "sha256": "8463203454b0fe176bb29169cad024e5d9d1431953db8d7c41ccc8c127f8d06f",
+      "object": "8463203454b0fe176bb29169cad024e5d9d1431953db8d7c41ccc8c127f8d06f.png"
+    },
+    {
+      "path": "items/medallion_of_courage.png",
+      "bytes": 10166,
+      "sha256": "f101670f70701e7f1cfdfee3b458894d5b4a54895f6a1c16793333ac49022d55",
+      "object": "f101670f70701e7f1cfdfee3b458894d5b4a54895f6a1c16793333ac49022d55.png"
+    },
+    {
+      "path": "items/mekansm.png",
+      "bytes": 11980,
+      "sha256": "7e13e06c5fd09fa01e0f1f493934d19ee77cb791186674e905b714e18cec157d",
+      "object": "7e13e06c5fd09fa01e0f1f493934d19ee77cb791186674e905b714e18cec157d.png"
+    },
+    {
+      "path": "items/metamorphic_mandible.png",
+      "bytes": 9979,
+      "sha256": "2e7a7ac336b4d34008abea11f761da7048c59d10b971c6e971e3394eff892557",
+      "object": "2e7a7ac336b4d34008abea11f761da7048c59d10b971c6e971e3394eff892557.png"
+    },
+    {
+      "path": "items/meteor_hammer.png",
+      "bytes": 13811,
+      "sha256": "a975258dd8ca3e6b57db1cd33f95462e3fbb49416b3089d43a1b4f1f25331f20",
+      "object": "a975258dd8ca3e6b57db1cd33f95462e3fbb49416b3089d43a1b4f1f25331f20.png"
+    },
+    {
+      "path": "items/mind_breaker.png",
+      "bytes": 14821,
+      "sha256": "8e204ac2a09be96a41566de714bace05e7241eb4d72e4d88f5d616a7e4f8db57",
+      "object": "8e204ac2a09be96a41566de714bace05e7241eb4d72e4d88f5d616a7e4f8db57.png"
+    },
+    {
+      "path": "items/miniboss_minion_summoner.png",
+      "bytes": 25381,
+      "sha256": "b8b34b958a339fc21c1363272f4419c3635e20ffdc1026b2bf780ffe0edfe211",
+      "object": "b8b34b958a339fc21c1363272f4419c3635e20ffdc1026b2bf780ffe0edfe211.png"
+    },
+    {
+      "path": "items/minotaur_horn.png",
+      "bytes": 12064,
+      "sha256": "183f80e84547e5dc88fb3c7c98b01abd5e0313d205c1c8768d02015806f6381d",
+      "object": "183f80e84547e5dc88fb3c7c98b01abd5e0313d205c1c8768d02015806f6381d.png"
+    },
+    {
+      "path": "items/mirror_shield.png",
+      "bytes": 16939,
+      "sha256": "d8f5cc5dbcc2d07668b8032e18790fdc4ef78f2296f5c09d313d5a3b5d08dee1",
+      "object": "d8f5cc5dbcc2d07668b8032e18790fdc4ef78f2296f5c09d313d5a3b5d08dee1.png"
+    },
+    {
+      "path": "items/misericorde.png",
+      "bytes": 11489,
+      "sha256": "fb62c6e4d63bd5c0d0d89a92d26cfd3ee826d79f2fcb51a59d604072e1743afc",
+      "object": "fb62c6e4d63bd5c0d0d89a92d26cfd3ee826d79f2fcb51a59d604072e1743afc.png"
+    },
+    {
+      "path": "items/mithril_hammer.png",
+      "bytes": 11514,
+      "sha256": "478c8a312f77aac46c6d6f43663d2aa714ccb86aa786ca473fc52539c5027f67",
+      "object": "478c8a312f77aac46c6d6f43663d2aa714ccb86aa786ca473fc52539c5027f67.png"
+    },
+    {
+      "path": "items/mjollnir.png",
+      "bytes": 12604,
+      "sha256": "9436d5938984120cb1a81e7ba5b58df8926a8faf907b907f0285239f58ebdeef",
+      "object": "9436d5938984120cb1a81e7ba5b58df8926a8faf907b907f0285239f58ebdeef.png"
+    },
+    {
+      "path": "items/monkey_king_bar.png",
+      "bytes": 7007,
+      "sha256": "efb03b97f0a357e403b504c0e1297d32768e2e658b5f6bbd74e686e442e81b03",
+      "object": "efb03b97f0a357e403b504c0e1297d32768e2e658b5f6bbd74e686e442e81b03.png"
+    },
+    {
+      "path": "items/moon_shard.png",
+      "bytes": 13950,
+      "sha256": "4189b6550ee39611f59a91f1a479c24a9f45c5fbb3012ddc057d349c9b847340",
+      "object": "4189b6550ee39611f59a91f1a479c24a9f45c5fbb3012ddc057d349c9b847340.png"
+    },
+    {
+      "path": "items/muertas_gun.png",
+      "bytes": 12731,
+      "sha256": "4be9fca81fd6fc94d31077bdd6b00ae1b11226037d9a51da30479f55442a95f8",
+      "object": "4be9fca81fd6fc94d31077bdd6b00ae1b11226037d9a51da30479f55442a95f8.png"
+    },
+    {
+      "path": "items/mutation_tombstone.png",
+      "bytes": 10347,
+      "sha256": "004e4404a2aec3235a00ca83004599e370cff5d68a720077b9a8d48c2682c038",
+      "object": "004e4404a2aec3235a00ca83004599e370cff5d68a720077b9a8d48c2682c038.png"
+    },
+    {
+      "path": "items/mysterious_hat.png",
+      "bytes": 15882,
+      "sha256": "1b596e56d6be7247a6fff1ba7cf7bd0049962e5aa6e51f7429eb4c338a8ed773",
+      "object": "1b596e56d6be7247a6fff1ba7cf7bd0049962e5aa6e51f7429eb4c338a8ed773.png"
+    },
+    {
+      "path": "items/mystic_staff.png",
+      "bytes": 12349,
+      "sha256": "e063c019dfa625d027b50b225c06631b2de7e3e4b32326ea3e598b21598e9cd2",
+      "object": "e063c019dfa625d027b50b225c06631b2de7e3e4b32326ea3e598b21598e9cd2.png"
+    },
+    {
+      "path": "items/necronomicon.png",
+      "bytes": 11472,
+      "sha256": "5fa42bba7ecebc63fd5bc3f2f899773e6ca0890781707451e269b27ad228fb82",
+      "object": "5fa42bba7ecebc63fd5bc3f2f899773e6ca0890781707451e269b27ad228fb82.png"
+    },
+    {
+      "path": "items/necronomicon_2.png",
+      "bytes": 11033,
+      "sha256": "b46369b941fc3fe3d7bc0854ad16f9aba0322289f45f7846557a2a6c260c1b84",
+      "object": "b46369b941fc3fe3d7bc0854ad16f9aba0322289f45f7846557a2a6c260c1b84.png"
+    },
+    {
+      "path": "items/necronomicon_3.png",
+      "bytes": 12572,
+      "sha256": "d60866718b84fe0c27b61fac5ba94d224fe12ceee78ae71911a6e24f2943f868",
+      "object": "d60866718b84fe0c27b61fac5ba94d224fe12ceee78ae71911a6e24f2943f868.png"
+    },
+    {
+      "path": "items/nemesis_curse.png",
+      "bytes": 16173,
+      "sha256": "61658be7b38de9b213b676191fbcdd16ff9e1c02e67fb8079de16a9a72e9fbc3",
+      "object": "61658be7b38de9b213b676191fbcdd16ff9e1c02e67fb8079de16a9a72e9fbc3.png"
+    },
+    {
+      "path": "items/nether_shawl.png",
+      "bytes": 10879,
+      "sha256": "1943459d79b8a2a397d09698f5a48cb6162d79806bbf6411e060fe5aa3fb0446",
+      "object": "1943459d79b8a2a397d09698f5a48cb6162d79806bbf6411e060fe5aa3fb0446.png"
+    },
+    {
+      "path": "items/ninja_gear.png",
+      "bytes": 16819,
+      "sha256": "481d6dcc4e42239ea18b83243387f4943512e24c276bf3518aba3a09d28e0d80",
+      "object": "481d6dcc4e42239ea18b83243387f4943512e24c276bf3518aba3a09d28e0d80.png"
+    },
+    {
+      "path": "items/null_talisman.png",
+      "bytes": 10884,
+      "sha256": "43f6607b4089e8e44918f0fed57114859817f636541f62ab7c03922e951aaceb",
+      "object": "43f6607b4089e8e44918f0fed57114859817f636541f62ab7c03922e951aaceb.png"
+    },
+    {
+      "path": "items/nullifier.png",
+      "bytes": 14784,
+      "sha256": "d6f7fbcb1729af45555310a5a4b81483d31b02d848f1251131a05e901e3c0619",
+      "object": "d6f7fbcb1729af45555310a5a4b81483d31b02d848f1251131a05e901e3c0619.png"
+    },
+    {
+      "path": "items/oblivion_staff.png",
+      "bytes": 10884,
+      "sha256": "acdc162cb9efc19e8b6de82060bbf3c4159ce254fae0a4966b7ac0fad48b0e4d",
+      "object": "acdc162cb9efc19e8b6de82060bbf3c4159ce254fae0a4966b7ac0fad48b0e4d.png"
+    },
+    {
+      "path": "items/occult_bracelet.png",
+      "bytes": 14918,
+      "sha256": "3974b9ee99071ba9b1c1340d628c8f635734af030ba36179ac33e2e3cc5a42c1",
+      "object": "3974b9ee99071ba9b1c1340d628c8f635734af030ba36179ac33e2e3cc5a42c1.png"
+    },
+    {
+      "path": "items/ocean_heart.png",
+      "bytes": 11734,
+      "sha256": "60d7eed366c911c53fa84232e2aaf9686b7e47f0d98f08c07884c18f07f363a0",
+      "object": "60d7eed366c911c53fa84232e2aaf9686b7e47f0d98f08c07884c18f07f363a0.png"
+    },
+    {
+      "path": "items/octarine_core.png",
+      "bytes": 14135,
+      "sha256": "c5c5773fe519c748fc8e1e6b56da4d07a276c4e0503368c01d03e5c28c71b1eb",
+      "object": "c5c5773fe519c748fc8e1e6b56da4d07a276c4e0503368c01d03e5c28c71b1eb.png"
+    },
+    {
+      "path": "items/ofrenda.png",
+      "bytes": 11049,
+      "sha256": "07844675c74956096a0cb88f7c89f778edc88fa95ce49af7f38bbeb66802de30",
+      "object": "07844675c74956096a0cb88f7c89f778edc88fa95ce49af7f38bbeb66802de30.png"
+    },
+    {
+      "path": "items/ofrenda_pledge.png",
+      "bytes": 9112,
+      "sha256": "19bac806db3acd8ec75c928d6cad6a1ef3c9fad3a06f98a9613efd10a4613304",
+      "object": "19bac806db3acd8ec75c928d6cad6a1ef3c9fad3a06f98a9613efd10a4613304.png"
+    },
+    {
+      "path": "items/ofrenda_shovel.png",
+      "bytes": 14830,
+      "sha256": "1f940acaa5c42c74db473ce93f8e43d07a2d1fe88f5c08a5623adee7f6fdf5ea",
+      "object": "1f940acaa5c42c74db473ce93f8e43d07a2d1fe88f5c08a5623adee7f6fdf5ea.png"
+    },
+    {
+      "path": "items/ogre_axe.png",
+      "bytes": 10967,
+      "sha256": "1b6771cce4b62fb98adc618ca0610925125fb5277c95f056adc37aca220d869a",
+      "object": "1b6771cce4b62fb98adc618ca0610925125fb5277c95f056adc37aca220d869a.png"
+    },
+    {
+      "path": "items/ogre_seal_totem.png",
+      "bytes": 25381,
+      "sha256": "1256a4269a229b5d1cce7cc3e36d6db39d1522c3b0b24229c28572bffaed0045",
+      "object": "1256a4269a229b5d1cce7cc3e36d6db39d1522c3b0b24229c28572bffaed0045.png"
+    },
+    {
+      "path": "items/orb_of_corrosion.png",
+      "bytes": 15946,
+      "sha256": "80a7ed07e3dadbda81aba57731faa6698ea6e0496153ffd2999966ae543e5871",
+      "object": "80a7ed07e3dadbda81aba57731faa6698ea6e0496153ffd2999966ae543e5871.png"
+    },
+    {
+      "path": "items/orb_of_destruction.png",
+      "bytes": 13167,
+      "sha256": "350f9b56789a72512acffff0a779e30cef8e90350d8d073f8ed692483fc74278",
+      "object": "350f9b56789a72512acffff0a779e30cef8e90350d8d073f8ed692483fc74278.png"
+    },
+    {
+      "path": "items/orb_of_frost.png",
+      "bytes": 9943,
+      "sha256": "0aad87976193ed6143514469c6fc91adfe20dbc1d3d5be2fb2a56fdc7647482e",
+      "object": "0aad87976193ed6143514469c6fc91adfe20dbc1d3d5be2fb2a56fdc7647482e.png"
+    },
+    {
+      "path": "items/orb_of_venom.png",
+      "bytes": 11135,
+      "sha256": "ac5da00b2d7ad0e1ceb00c8fd15696f156856e1b37b5271247afaabff485f771",
+      "object": "ac5da00b2d7ad0e1ceb00c8fd15696f156856e1b37b5271247afaabff485f771.png"
+    },
+    {
+      "path": "items/orchid.png",
+      "bytes": 12304,
+      "sha256": "0207dcc8990d46ff7e7dc3a70936dc6766751916f3364c56ebc69c2151f24a99",
+      "object": "0207dcc8990d46ff7e7dc3a70936dc6766751916f3364c56ebc69c2151f24a99.png"
+    },
+    {
+      "path": "items/outworld_staff.png",
+      "bytes": 14122,
+      "sha256": "1382a59b5e1f91fa6cd6d34f12a80a2a9569385c78a617926746ef1f0dbc081a",
+      "object": "1382a59b5e1f91fa6cd6d34f12a80a2a9569385c78a617926746ef1f0dbc081a.png"
+    },
+    {
+      "path": "items/overwhelming_blink.png",
+      "bytes": 16422,
+      "sha256": "6dea5b9e7e890702f68db11dfe7609cbde343b73dca1e6139daa92bc61237845",
+      "object": "6dea5b9e7e890702f68db11dfe7609cbde343b73dca1e6139daa92bc61237845.png"
+    },
+    {
+      "path": "items/paintball.png",
+      "bytes": 16865,
+      "sha256": "19ca66ad4c9b22853f06727bb5c76d89e3d1b5853849dd7aaf089a823f568ba4",
+      "object": "19ca66ad4c9b22853f06727bb5c76d89e3d1b5853849dd7aaf089a823f568ba4.png"
+    },
+    {
+      "path": "items/paladin_sword.png",
+      "bytes": 14292,
+      "sha256": "4471815e622563fe328dfb3a886065c04693ea72d7b97aeebe708fb34496d6a6",
+      "object": "4471815e622563fe328dfb3a886065c04693ea72d7b97aeebe708fb34496d6a6.png"
+    },
+    {
+      "path": "items/panic_button.png",
+      "bytes": 14957,
+      "sha256": "5bc12cc335440c4ee27dbf6e55fe120abfbd42f2f4d0a2ae9eccd00e10375515",
+      "object": "5bc12cc335440c4ee27dbf6e55fe120abfbd42f2f4d0a2ae9eccd00e10375515.png"
+    },
+    {
+      "path": "items/partisans_brand.png",
+      "bytes": 13090,
+      "sha256": "1708dae87a45719cb164c56b4af3c9618588911e8ac878ec66104737542f1fb8",
+      "object": "1708dae87a45719cb164c56b4af3c9618588911e8ac878ec66104737542f1fb8.png"
+    },
+    {
+      "path": "items/pavise.png",
+      "bytes": 13827,
+      "sha256": "d5bdc76ea12d146b7a2cbcb8210b056ff5c8db3f6715b9de56d873bbe4441f94",
+      "object": "d5bdc76ea12d146b7a2cbcb8210b056ff5c8db3f6715b9de56d873bbe4441f94.png"
+    },
+    {
+      "path": "items/penta_edged_sword.png",
+      "bytes": 14682,
+      "sha256": "87fca76c009a27f31355bcc4d3d7a670f62ddafe592a1b7064ab6ecfb2077038",
+      "object": "87fca76c009a27f31355bcc4d3d7a670f62ddafe592a1b7064ab6ecfb2077038.png"
+    },
+    {
+      "path": "items/pers.png",
+      "bytes": 10974,
+      "sha256": "2454a8574455581b22abfac27fb11b51c789e16947963c20b30af4b93fde8136",
+      "object": "2454a8574455581b22abfac27fb11b51c789e16947963c20b30af4b93fde8136.png"
+    },
+    {
+      "path": "items/phase_boots.png",
+      "bytes": 11585,
+      "sha256": "f194592b0300a80abadcc15e0793ba6c9c85c391b9360d36b39570ca900d55d7",
+      "object": "f194592b0300a80abadcc15e0793ba6c9c85c391b9360d36b39570ca900d55d7.png"
+    },
+    {
+      "path": "items/philosophers_stone.png",
+      "bytes": 15377,
+      "sha256": "377a704565904559c81ad42f630c2f15d562f1289c6ad4e8cb01df01864ec69a",
+      "object": "377a704565904559c81ad42f630c2f15d562f1289c6ad4e8cb01df01864ec69a.png"
+    },
+    {
+      "path": "items/phoenix_ash.png",
+      "bytes": 14554,
+      "sha256": "f9393ad4637494e947a1ceb5d7968b64540656b64e9f822e3621e39f3e003151",
+      "object": "f9393ad4637494e947a1ceb5d7968b64540656b64e9f822e3621e39f3e003151.png"
+    },
+    {
+      "path": "items/phylactery.png",
+      "bytes": 2002526,
+      "sha256": "1cd09d99a035d7bc41c8081dfbec44e3ab118c7a6bee0111dad5382b578e38c3",
+      "object": "1cd09d99a035d7bc41c8081dfbec44e3ab118c7a6bee0111dad5382b578e38c3.png"
+    },
+    {
+      "path": "items/pipe.png",
+      "bytes": 12131,
+      "sha256": "20d176a0a3d4d33f8dd66bc01ccecbd0ea567fb6afe779e97e84c339ff647a71",
+      "object": "20d176a0a3d4d33f8dd66bc01ccecbd0ea567fb6afe779e97e84c339ff647a71.png"
+    },
+    {
+      "path": "items/pirate_hat.png",
+      "bytes": 14913,
+      "sha256": "c135a28f25da6e4ff5e939648ef535050b1e89090158fcdb28d12a2734654d63",
+      "object": "c135a28f25da6e4ff5e939648ef535050b1e89090158fcdb28d12a2734654d63.png"
+    },
+    {
+      "path": "items/platemail.png",
+      "bytes": 12433,
+      "sha256": "2b2be346bde57942f70dc243e9714147150a1087579aa28728cf5fd566cdde8a",
+      "object": "2b2be346bde57942f70dc243e9714147150a1087579aa28728cf5fd566cdde8a.png"
+    },
+    {
+      "path": "items/pocket_roshan.png",
+      "bytes": 13117,
+      "sha256": "850986065b517ef0194423e226b49ff1ae04bf19fc68044ac88158eb21707a20",
+      "object": "850986065b517ef0194423e226b49ff1ae04bf19fc68044ac88158eb21707a20.png"
+    },
+    {
+      "path": "items/pocket_tower.png",
+      "bytes": 7173,
+      "sha256": "7b5d5b34a79239b716449adb81a425859237ff0d788a9583f167ef580251b248",
+      "object": "7b5d5b34a79239b716449adb81a425859237ff0d788a9583f167ef580251b248.png"
+    },
+    {
+      "path": "items/pogo_stick.png",
+      "bytes": 15495,
+      "sha256": "5da8634613eb059097f331c913c6a8a65ab0fe5e48ab05491ebd7f06e868e3ce",
+      "object": "5da8634613eb059097f331c913c6a8a65ab0fe5e48ab05491ebd7f06e868e3ce.png"
+    },
+    {
+      "path": "items/point_booster.png",
+      "bytes": 12751,
+      "sha256": "f9502e7f4e05139d93e2622502424128631b72725bb3af48321a6e19573cbddf",
+      "object": "f9502e7f4e05139d93e2622502424128631b72725bb3af48321a6e19573cbddf.png"
+    },
+    {
+      "path": "items/polliwog_charm.png",
+      "bytes": 17704,
+      "sha256": "58df331fc72dd81c567539a289b25c3b64435b478898310a9badc51b32f1019f",
+      "object": "58df331fc72dd81c567539a289b25c3b64435b478898310a9badc51b32f1019f.png"
+    },
+    {
+      "path": "items/poor_mans_shield.png",
+      "bytes": 11509,
+      "sha256": "58f2129ce2e93b0fe34a643306e5ecde81c60e942f3d8e17ee617e6a8ae998cc",
+      "object": "58f2129ce2e93b0fe34a643306e5ecde81c60e942f3d8e17ee617e6a8ae998cc.png"
+    },
+    {
+      "path": "items/possessed_mask.png",
+      "bytes": 12180,
+      "sha256": "485e8da1b8c46ffcb02d361708859b64c37448b66f87f5551ed22320862741b3",
+      "object": "485e8da1b8c46ffcb02d361708859b64c37448b66f87f5551ed22320862741b3.png"
+    },
+    {
+      "path": "items/power_treads.png",
+      "bytes": 11637,
+      "sha256": "ff73d7df1b889a463b9e771c4fbbfa6f875123e3c7480bf4869ff86f99d9ea7f",
+      "object": "ff73d7df1b889a463b9e771c4fbbfa6f875123e3c7480bf4869ff86f99d9ea7f.png"
+    },
+    {
+      "path": "items/princes_knife.png",
+      "bytes": 14138,
+      "sha256": "e033294b49089cceb8b38a6a2350e32dfc1c00f1f1f24d74eb37a952f48354c5",
+      "object": "e033294b49089cceb8b38a6a2350e32dfc1c00f1f1f24d74eb37a952f48354c5.png"
+    },
+    {
+      "path": "items/prophets_pendulum.png",
+      "bytes": 16083,
+      "sha256": "fcfcc0a21ef71f02acab1d7c5f524df72c923b28b9d7cf02cb19fd095e2084ac",
+      "object": "fcfcc0a21ef71f02acab1d7c5f524df72c923b28b9d7cf02cb19fd095e2084ac.png"
+    },
+    {
+      "path": "items/psychic_headband.png",
+      "bytes": 16018,
+      "sha256": "31bf96e184f76675c8bf3dc6df71a735e5febb78e86edbfcefb3735fdc5e33a4",
+      "object": "31bf96e184f76675c8bf3dc6df71a735e5febb78e86edbfcefb3735fdc5e33a4.png"
+    },
+    {
+      "path": "items/pupils_gift.png",
+      "bytes": 13992,
+      "sha256": "c61e9c4f0f0cdc088f75ab9e534541defce6d9dc7776a372719b4790b6f1b6b5",
+      "object": "c61e9c4f0f0cdc088f75ab9e534541defce6d9dc7776a372719b4790b6f1b6b5.png"
+    },
+    {
+      "path": "items/pyrrhic_cloak.png",
+      "bytes": 18442,
+      "sha256": "462f8a51a9ff7bacf825aae8b1eda6fd367b0bdcf61a7b7530a5e506da7ac902",
+      "object": "462f8a51a9ff7bacf825aae8b1eda6fd367b0bdcf61a7b7530a5e506da7ac902.png"
+    },
+    {
+      "path": "items/quarterstaff.png",
+      "bytes": 8310,
+      "sha256": "0ddc85f942c559acb6026d2770f4bb75eefdb10383e95bbd6a0b3ddab32ab49f",
+      "object": "0ddc85f942c559acb6026d2770f4bb75eefdb10383e95bbd6a0b3ddab32ab49f.png"
+    },
+    {
+      "path": "items/quelling_blade.png",
+      "bytes": 9499,
+      "sha256": "4131500947263d91ebc630f0e9ea044b5bab1eb72faa83504d1365818ac3fc91",
+      "object": "4131500947263d91ebc630f0e9ea044b5bab1eb72faa83504d1365818ac3fc91.png"
+    },
+    {
+      "path": "items/quickening_charm.png",
+      "bytes": 11110,
+      "sha256": "8bc312cd11ed064830876ed7045754ccb62e7efd478b4abfdef60bc2775962de",
+      "object": "8bc312cd11ed064830876ed7045754ccb62e7efd478b4abfdef60bc2775962de.png"
+    },
+    {
+      "path": "items/quicksilver_amulet.png",
+      "bytes": 12054,
+      "sha256": "0de76aff5fc0bf78b492547e1f4b0d11ca2c404575aacbfe7c3d68f1e5bbfc8d",
+      "object": "0de76aff5fc0bf78b492547e1f4b0d11ca2c404575aacbfe7c3d68f1e5bbfc8d.png"
+    },
+    {
+      "path": "items/radiance.png",
+      "bytes": 12299,
+      "sha256": "fbccc4e93ef0973a5759ef994513bba7cb8c96e55840723068a173573e6dc4c4",
+      "object": "fbccc4e93ef0973a5759ef994513bba7cb8c96e55840723068a173573e6dc4c4.png"
+    },
+    {
+      "path": "items/rapier.png",
+      "bytes": 12595,
+      "sha256": "1cd79e31891f7b9ab273c915cfac56d9b86f49a5f78ebd32936ec8701f1d43dc",
+      "object": "1cd79e31891f7b9ab273c915cfac56d9b86f49a5f78ebd32936ec8701f1d43dc.png"
+    },
+    {
+      "path": "items/rattlecage.png",
+      "bytes": 15441,
+      "sha256": "4a3cd94ffb7280b27ed56b87f99286ee24d15e3e2deabffa68f393f490ccdee7",
+      "object": "4a3cd94ffb7280b27ed56b87f99286ee24d15e3e2deabffa68f393f490ccdee7.png"
+    },
+    {
+      "path": "items/reaver.png",
+      "bytes": 13538,
+      "sha256": "692a7f552aca40066c0a5e52f8d6c3808381149c477db524cfef80ea53b3af2e",
+      "object": "692a7f552aca40066c0a5e52f8d6c3808381149c477db524cfef80ea53b3af2e.png"
+    },
+    {
+      "path": "items/recipe.png",
+      "bytes": 12321,
+      "sha256": "ce022163ddccb8df8890b408f641d27ca05a92a974f43297bb31eb067ccac9d6",
+      "object": "ce022163ddccb8df8890b408f641d27ca05a92a974f43297bb31eb067ccac9d6.png"
+    },
+    {
+      "path": "items/refresher.png",
+      "bytes": 11147,
+      "sha256": "a16da11b821f6fd2a9f89b364ef6caa47f10e6ac1b3bdd302c9ca2bfcdb7eab9",
+      "object": "a16da11b821f6fd2a9f89b364ef6caa47f10e6ac1b3bdd302c9ca2bfcdb7eab9.png"
+    },
+    {
+      "path": "items/refresher_shard.png",
+      "bytes": 9352,
+      "sha256": "33af29f710d6dc9bff3c96d4053dcf6470d93b274590d43ca8563a7e0b7df8b5",
+      "object": "33af29f710d6dc9bff3c96d4053dcf6470d93b274590d43ca8563a7e0b7df8b5.png"
+    },
+    {
+      "path": "items/relic.png",
+      "bytes": 10915,
+      "sha256": "bd10ce1870a75cbea788b63272747adafc62fd005f1cebb616551387a8723eaf",
+      "object": "bd10ce1870a75cbea788b63272747adafc62fd005f1cebb616551387a8723eaf.png"
+    },
+    {
+      "path": "items/repair_kit.png",
+      "bytes": 13440,
+      "sha256": "99cb311c7a0abe718df58047a8917d931b91e21a2e021a3bd380b07e25b3b06d",
+      "object": "99cb311c7a0abe718df58047a8917d931b91e21a2e021a3bd380b07e25b3b06d.png"
+    },
+    {
+      "path": "items/revenants_brooch.png",
+      "bytes": 17206,
+      "sha256": "d9a0c3b8886000ee850fb1e6a05b12c671fd022e33480bf9637bbfdac9c74aa7",
+      "object": "d9a0c3b8886000ee850fb1e6a05b12c671fd022e33480bf9637bbfdac9c74aa7.png"
+    },
+    {
+      "path": "items/riftshadow_prism.png",
+      "bytes": 16216,
+      "sha256": "d54d6106472261fb687e190e0d44206c035e7f5063ef5cb3f658920d21dc95c0",
+      "object": "d54d6106472261fb687e190e0d44206c035e7f5063ef5cb3f658920d21dc95c0.png"
+    },
+    {
+      "path": "items/ring_of_aquila.png",
+      "bytes": 11675,
+      "sha256": "a722b3feddc0b29456f2837add83946976bc50ad04b34c188e22014f573d4ed8",
+      "object": "a722b3feddc0b29456f2837add83946976bc50ad04b34c188e22014f573d4ed8.png"
+    },
+    {
+      "path": "items/ring_of_basilius.png",
+      "bytes": 12164,
+      "sha256": "fcc16bf2ef5283500c3a30b94b854af87cd9bb8fc7c9a8a3bfe2a881b0059144",
+      "object": "fcc16bf2ef5283500c3a30b94b854af87cd9bb8fc7c9a8a3bfe2a881b0059144.png"
+    },
+    {
+      "path": "items/ring_of_health.png",
+      "bytes": 9005,
+      "sha256": "2b2bf846856a7e5445c9cdea702030a82435232b7edd808d597dd1bd1d6a1844",
+      "object": "2b2bf846856a7e5445c9cdea702030a82435232b7edd808d597dd1bd1d6a1844.png"
+    },
+    {
+      "path": "items/ring_of_protection.png",
+      "bytes": 8824,
+      "sha256": "d07af51813cdad25cd77e49de41cf3cc7d8de8d42a8ef6fe2f583c8a94691606",
+      "object": "d07af51813cdad25cd77e49de41cf3cc7d8de8d42a8ef6fe2f583c8a94691606.png"
+    },
+    {
+      "path": "items/ring_of_regen.png",
+      "bytes": 8486,
+      "sha256": "69bc4ead49f1f8be3a8914fc7703189a8d4b0cbd28fb7b70b8181d997553074a",
+      "object": "69bc4ead49f1f8be3a8914fc7703189a8d4b0cbd28fb7b70b8181d997553074a.png"
+    },
+    {
+      "path": "items/ring_of_tarrasque.png",
+      "bytes": 19749,
+      "sha256": "9d2ce61fe9992be5e1685066a0a896459acd98d873676a28f1d1e1a35e9619e5",
+      "object": "9d2ce61fe9992be5e1685066a0a896459acd98d873676a28f1d1e1a35e9619e5.png"
+    },
+    {
+      "path": "items/rippers_lash.png",
+      "bytes": 13736,
+      "sha256": "234d02ea89bb763b025e69c42d7cd3f89808dbe08cab28e7dd93be3400653d41",
+      "object": "234d02ea89bb763b025e69c42d7cd3f89808dbe08cab28e7dd93be3400653d41.png"
+    },
+    {
+      "path": "items/river_painter.png",
+      "bytes": 9806,
+      "sha256": "bebe2d30eb8f7f44cb62f3518c6c841025c5b2a8e1f15505e26e3bfb328384af",
+      "object": "bebe2d30eb8f7f44cb62f3518c6c841025c5b2a8e1f15505e26e3bfb328384af.png"
+    },
+    {
+      "path": "items/river_painter2.png",
+      "bytes": 7961,
+      "sha256": "25dec6d6f2ea11efa18ea28fb8977e143abf3d14f4219ee1fdcdb375b14de80c",
+      "object": "25dec6d6f2ea11efa18ea28fb8977e143abf3d14f4219ee1fdcdb375b14de80c.png"
+    },
+    {
+      "path": "items/river_painter3.png",
+      "bytes": 9104,
+      "sha256": "1801c8f792e8f03d2795b7095251384c406e8459393039a47d98c8cae5e720cf",
+      "object": "1801c8f792e8f03d2795b7095251384c406e8459393039a47d98c8cae5e720cf.png"
+    },
+    {
+      "path": "items/river_painter4.png",
+      "bytes": 10137,
+      "sha256": "9ba72a9c6d3bf78e3d367999ba7c5a8c0eeb532f16dfdd2fd27f261e40f4b560",
+      "object": "9ba72a9c6d3bf78e3d367999ba7c5a8c0eeb532f16dfdd2fd27f261e40f4b560.png"
+    },
+    {
+      "path": "items/river_painter5.png",
+      "bytes": 9947,
+      "sha256": "5ad911c51f6611480c9589b89636cab92b190990ec34f994259eeec433e961c5",
+      "object": "5ad911c51f6611480c9589b89636cab92b190990ec34f994259eeec433e961c5.png"
+    },
+    {
+      "path": "items/river_painter6.png",
+      "bytes": 9723,
+      "sha256": "7a9def5b0784c88bd719e9be26cf1e87da4f77ff8c3898ddccdf9c6b7785cf91",
+      "object": "7a9def5b0784c88bd719e9be26cf1e87da4f77ff8c3898ddccdf9c6b7785cf91.png"
+    },
+    {
+      "path": "items/river_painter7.png",
+      "bytes": 9227,
+      "sha256": "564f2f1bd231782b079f330356332dfba9760dfc214acb59f0ca6ba3bc2dd078",
+      "object": "564f2f1bd231782b079f330356332dfba9760dfc214acb59f0ca6ba3bc2dd078.png"
+    },
+    {
+      "path": "items/robe.png",
+      "bytes": 12005,
+      "sha256": "6dc239974f47cfefe42e0c2c5cd833747d5eb143ce06553b97fa05c814e830de",
+      "object": "6dc239974f47cfefe42e0c2c5cd833747d5eb143ce06553b97fa05c814e830de.png"
+    },
+    {
+      "path": "items/rod_of_atos.png",
+      "bytes": 11419,
+      "sha256": "64372d548fae6d2c2f01eac505b056178f80f34d0b524c283a3ca6a0d1d4e049",
+      "object": "64372d548fae6d2c2f01eac505b056178f80f34d0b524c283a3ca6a0d1d4e049.png"
+    },
+    {
+      "path": "items/roshans_banner.png",
+      "bytes": 13188,
+      "sha256": "d4d7a3b78a5bb818dc9a2ccaabd86660dcea606daeddfef9bea6f547957bedc6",
+      "object": "d4d7a3b78a5bb818dc9a2ccaabd86660dcea606daeddfef9bea6f547957bedc6.png"
+    },
+    {
+      "path": "items/royal_jelly.png",
+      "bytes": 12022,
+      "sha256": "3e05f38778261bbb5c7b3ef33d7d328ea17164b8c0dc292159a5ccb8053f5c75",
+      "object": "3e05f38778261bbb5c7b3ef33d7d328ea17164b8c0dc292159a5ccb8053f5c75.png"
+    },
+    {
+      "path": "items/royale_with_cheese.png",
+      "bytes": 14804,
+      "sha256": "8734beea7c205e615fd7aa0d0a39c8a5d5ba9516f9a09571fdf9a92254606580",
+      "object": "8734beea7c205e615fd7aa0d0a39c8a5d5ba9516f9a09571fdf9a92254606580.png"
+    },
+    {
+      "path": "items/safety_bubble.png",
+      "bytes": 14513,
+      "sha256": "68c0d7828c20ddd668debbc330684a726811392afaeaf387edf77fd5d08a6260",
+      "object": "68c0d7828c20ddd668debbc330684a726811392afaeaf387edf77fd5d08a6260.png"
+    },
+    {
+      "path": "items/sange.png",
+      "bytes": 10295,
+      "sha256": "13b90bd33d8ba95d1f9a56c72d8c204795ad8026fdb85cbbf7f897fa15bd94ba",
+      "object": "13b90bd33d8ba95d1f9a56c72d8c204795ad8026fdb85cbbf7f897fa15bd94ba.png"
+    },
+    {
+      "path": "items/sange_and_yasha.png",
+      "bytes": 15479,
+      "sha256": "743620026bc90cfbcb2878fe67dea5fe57eb1acbaa44a8f2e9ff02e4d2df7d5c",
+      "object": "743620026bc90cfbcb2878fe67dea5fe57eb1acbaa44a8f2e9ff02e4d2df7d5c.png"
+    },
+    {
+      "path": "items/satanic.png",
+      "bytes": 12148,
+      "sha256": "e3d1a98d1bdf739fffb2c0e338d28d7e30476beefa914c5f7735ddc16450711f",
+      "object": "e3d1a98d1bdf739fffb2c0e338d28d7e30476beefa914c5f7735ddc16450711f.png"
+    },
+    {
+      "path": "items/searing_signet.png",
+      "bytes": 12660,
+      "sha256": "73c636d19d785c83873a5fbf881a0e091a670064f50003195d84a4bb9b5dce3e",
+      "object": "73c636d19d785c83873a5fbf881a0e091a670064f50003195d84a4bb9b5dce3e.png"
+    },
+    {
+      "path": "items/seeds_of_serenity.png",
+      "bytes": 12060,
+      "sha256": "0a36cb3657180c3f4ad7630b809751f6db1ad16a275a1d9ec291635a41436d47",
+      "object": "0a36cb3657180c3f4ad7630b809751f6db1ad16a275a1d9ec291635a41436d47.png"
+    },
+    {
+      "path": "items/seer_stone.png",
+      "bytes": 15213,
+      "sha256": "2c80551b4f2c29b1da85c3b595f6a5678152981a7b5c77c96bafcb7276ef1bfd",
+      "object": "2c80551b4f2c29b1da85c3b595f6a5678152981a7b5c77c96bafcb7276ef1bfd.png"
+    },
+    {
+      "path": "items/serrated_shiv.png",
+      "bytes": 11693,
+      "sha256": "dc97826a2cf83763dbb2ae7212a949564b11aabcaa0e2dfe3c1803224978ed6c",
+      "object": "dc97826a2cf83763dbb2ae7212a949564b11aabcaa0e2dfe3c1803224978ed6c.png"
+    },
+    {
+      "path": "items/shadow_amulet.png",
+      "bytes": 12180,
+      "sha256": "c632c649382b988c57a4c365a5d85c373dac02c8dc41b01be673cd33b6106c06",
+      "object": "c632c649382b988c57a4c365a5d85c373dac02c8dc41b01be673cd33b6106c06.png"
+    },
+    {
+      "path": "items/shawl.png",
+      "bytes": 11546,
+      "sha256": "023757533478c67f44c46e22c1325f5999f247d6ab15c3d627a223ab2896e247",
+      "object": "023757533478c67f44c46e22c1325f5999f247d6ab15c3d627a223ab2896e247.png"
+    },
+    {
+      "path": "items/sheepstick.png",
+      "bytes": 12219,
+      "sha256": "2c432399fddbb9d47478b2f83f8b93f53a8ac1c29996ec47dfce5e503fcaec0a",
+      "object": "2c432399fddbb9d47478b2f83f8b93f53a8ac1c29996ec47dfce5e503fcaec0a.png"
+    },
+    {
+      "path": "items/shivas_guard.png",
+      "bytes": 14131,
+      "sha256": "efe5cb009d650da58a041c5f35dbe6a4bd2be035876f254c82a115b5010631a6",
+      "object": "efe5cb009d650da58a041c5f35dbe6a4bd2be035876f254c82a115b5010631a6.png"
+    },
+    {
+      "path": "items/silver_edge.png",
+      "bytes": 12299,
+      "sha256": "537ff3ea373d9d5487c9db738bd32c158249ba27ef3256606a0677f4fb0314bd",
+      "object": "537ff3ea373d9d5487c9db738bd32c158249ba27ef3256606a0677f4fb0314bd.png"
+    },
+    {
+      "path": "items/sisters_shroud.png",
+      "bytes": 15274,
+      "sha256": "2fb04a2e3ab22182bad6a18cd90e6bbc90ce8dfcbafa6f07181b2ba6d9fde307",
+      "object": "2fb04a2e3ab22182bad6a18cd90e6bbc90ce8dfcbafa6f07181b2ba6d9fde307.png"
+    },
+    {
+      "path": "items/skadi.png",
+      "bytes": 13232,
+      "sha256": "6d57dc0c7d13362216bade9dad71d833d32fdefae8b57e3faea8c6d282120637",
+      "object": "6d57dc0c7d13362216bade9dad71d833d32fdefae8b57e3faea8c6d282120637.png"
+    },
+    {
+      "path": "items/slippers.png",
+      "bytes": 8812,
+      "sha256": "5964dd02b068e1cccf4929834e81065219a7757c12e4d396cb3b8faa4c90634a",
+      "object": "5964dd02b068e1cccf4929834e81065219a7757c12e4d396cb3b8faa4c90634a.png"
+    },
+    {
+      "path": "items/smoke_of_deceit.png",
+      "bytes": 12147,
+      "sha256": "b1e8049d422627c0ced883668b11b4d14563cc2ebb24ba1961997d5ba7c8db0d",
+      "object": "b1e8049d422627c0ced883668b11b4d14563cc2ebb24ba1961997d5ba7c8db0d.png"
+    },
+    {
+      "path": "items/sobi_mask.png",
+      "bytes": 10275,
+      "sha256": "f0187d1885422e203fcd62db229025578cd1412eb326d1c252d295e7db2b3c44",
+      "object": "f0187d1885422e203fcd62db229025578cd1412eb326d1c252d295e7db2b3c44.png"
+    },
+    {
+      "path": "items/solar_crest.png",
+      "bytes": 13606,
+      "sha256": "0124b65fa6e0957506a058b5dc78837fc98f3abe013e077c63a7874c8258e5fa",
+      "object": "0124b65fa6e0957506a058b5dc78837fc98f3abe013e077c63a7874c8258e5fa.png"
+    },
+    {
+      "path": "items/soul_booster.png",
+      "bytes": 12089,
+      "sha256": "73ea4d91a3a40ef3567c4bfd3cbfe87001e866e023bcc840464d48ffa8c5240f",
+      "object": "73ea4d91a3a40ef3567c4bfd3cbfe87001e866e023bcc840464d48ffa8c5240f.png"
+    },
+    {
+      "path": "items/soul_ring.png",
+      "bytes": 10553,
+      "sha256": "e6dfb8c896da50697675d9ee74f503a3984a2beb5dbf985153c35472c6723d3c",
+      "object": "e6dfb8c896da50697675d9ee74f503a3984a2beb5dbf985153c35472c6723d3c.png"
+    },
+    {
+      "path": "items/spark_of_courage.png",
+      "bytes": 11427,
+      "sha256": "5db2072a423296483d305616bc2a0b8bc2494a778801ed6861d6eed6911f9a6d",
+      "object": "5db2072a423296483d305616bc2a0b8bc2494a778801ed6861d6eed6911f9a6d.png"
+    },
+    {
+      "path": "items/specialists_array.png",
+      "bytes": 13120,
+      "sha256": "7d6d47ba76262b12e7e781db9e718ab237875b6a9d956c6ba8d0d779063dcf24",
+      "object": "7d6d47ba76262b12e7e781db9e718ab237875b6a9d956c6ba8d0d779063dcf24.png"
+    },
+    {
+      "path": "items/spell_prism.png",
+      "bytes": 13681,
+      "sha256": "6e5ead805ec43337d861ab0851f62b8d5656ef079716dc9c15b0f53d1ea1c94a",
+      "object": "6e5ead805ec43337d861ab0851f62b8d5656ef079716dc9c15b0f53d1ea1c94a.png"
+    },
+    {
+      "path": "items/spellslinger.png",
+      "bytes": 13020,
+      "sha256": "b9fd5c5c7fe133ad354ec88af2bcfb776fb68753116be0b29b29c40be4aa5fbc",
+      "object": "b9fd5c5c7fe133ad354ec88af2bcfb776fb68753116be0b29b29c40be4aa5fbc.png"
+    },
+    {
+      "path": "items/sphere.png",
+      "bytes": 12562,
+      "sha256": "8bee94dc5cf6f9aa53fe5a0173ac6cd49cb044c03e5a9ac85abfbc1373045ebf",
+      "object": "8bee94dc5cf6f9aa53fe5a0173ac6cd49cb044c03e5a9ac85abfbc1373045ebf.png"
+    },
+    {
+      "path": "items/spider_legs.png",
+      "bytes": 17037,
+      "sha256": "2e6c04d6b1de136dedd06c58e2370573b7b16dc5db2fdaf7faba0563818cd2c3",
+      "object": "2e6c04d6b1de136dedd06c58e2370573b7b16dc5db2fdaf7faba0563818cd2c3.png"
+    },
+    {
+      "path": "items/spirit_vessel.png",
+      "bytes": 15007,
+      "sha256": "176ffe33102dd816d8626e9f15e5907d283f50231d28f7a61bf40d3a1ad8173c",
+      "object": "176ffe33102dd816d8626e9f15e5907d283f50231d28f7a61bf40d3a1ad8173c.png"
+    },
+    {
+      "path": "items/splintmail.png",
+      "bytes": 13183,
+      "sha256": "291b389c5a9817003c2ecb7f3bacd2eef601edf347f8a96a96f7b11643badc37",
+      "object": "291b389c5a9817003c2ecb7f3bacd2eef601edf347f8a96a96f7b11643badc37.png"
+    },
+    {
+      "path": "items/spy_gadget.png",
+      "bytes": 15106,
+      "sha256": "73bbe60d5099f5481e9df8a178d8fe693489ed5f09b32cabcc7e1c753c6ad6e3",
+      "object": "73bbe60d5099f5481e9df8a178d8fe693489ed5f09b32cabcc7e1c753c6ad6e3.png"
+    },
+    {
+      "path": "items/staff_of_wizardry.png",
+      "bytes": 11183,
+      "sha256": "46919315fb7edf2384ad05011d55427716100b15cc1f16cb177cd079425ed262",
+      "object": "46919315fb7edf2384ad05011d55427716100b15cc1f16cb177cd079425ed262.png"
+    },
+    {
+      "path": "items/stonefeather_satchel.png",
+      "bytes": 15272,
+      "sha256": "5de3e597aec90dc5255dfe237061c30c3513bb32121cc822e1360870c525f64e",
+      "object": "5de3e597aec90dc5255dfe237061c30c3513bb32121cc822e1360870c525f64e.png"
+    },
+    {
+      "path": "items/stormcrafter.png",
+      "bytes": 15499,
+      "sha256": "7e6608042ec93135626002d8190f35c20ccb658949d29079c43859a9babe0506",
+      "object": "7e6608042ec93135626002d8190f35c20ccb658949d29079c43859a9babe0506.png"
+    },
+    {
+      "path": "items/stout_shield.png",
+      "bytes": 10314,
+      "sha256": "001d4589a73ff11423a216a2b4c9de72f9b8222408d2c888812657d815cbb9a3",
+      "object": "001d4589a73ff11423a216a2b4c9de72f9b8222408d2c888812657d815cbb9a3.png"
+    },
+    {
+      "path": "items/super_blink.png",
+      "bytes": 12481,
+      "sha256": "b1f716cff9c28e16929d63c209343f6bd3adf067feaf3bbe1c37da50414fe602",
+      "object": "b1f716cff9c28e16929d63c209343f6bd3adf067feaf3bbe1c37da50414fe602.png"
+    },
+    {
+      "path": "items/swift_blink.png",
+      "bytes": 14816,
+      "sha256": "e46087006d607c06a049edd24ed7aceb08aa2c9cf52e40407c72a427154d4384",
+      "object": "e46087006d607c06a049edd24ed7aceb08aa2c9cf52e40407c72a427154d4384.png"
+    },
+    {
+      "path": "items/talisman_of_evasion.png",
+      "bytes": 11768,
+      "sha256": "3b35f973243072835152b26c4ccf594df206d95746a9b3e7850361e17e811880",
+      "object": "3b35f973243072835152b26c4ccf594df206d95746a9b3e7850361e17e811880.png"
+    },
+    {
+      "path": "items/tango.png",
+      "bytes": 10525,
+      "sha256": "57f1ba153c57ff84dc3a359ff7a5e3e59a776c3de417ff2062f6b5ae3c8c1614",
+      "object": "57f1ba153c57ff84dc3a359ff7a5e3e59a776c3de417ff2062f6b5ae3c8c1614.png"
+    },
+    {
+      "path": "items/tango_single.png",
+      "bytes": 6251,
+      "sha256": "d4cb46cc76c36a511cbf5d0c3356240b7810687f7be62c206569cf84370c82ba",
+      "object": "d4cb46cc76c36a511cbf5d0c3356240b7810687f7be62c206569cf84370c82ba.png"
+    },
+    {
+      "path": "items/the_leveller.png",
+      "bytes": 13643,
+      "sha256": "50929c74b6ec8f661de65fdf4f98c9268e8269a08503d8f8a7dce345ef1854bb",
+      "object": "50929c74b6ec8f661de65fdf4f98c9268e8269a08503d8f8a7dce345ef1854bb.png"
+    },
+    {
+      "path": "items/third_eye.png",
+      "bytes": 13518,
+      "sha256": "2b2441f631f0904d77f3b676c61b58e7fb29de123319a0e1e30552ccb74c80f2",
+      "object": "2b2441f631f0904d77f3b676c61b58e7fb29de123319a0e1e30552ccb74c80f2.png"
+    },
+    {
+      "path": "items/tiara_of_selemene.png",
+      "bytes": 11360,
+      "sha256": "e1cb76b09b21c25e3b142f4853197e3d79068a2ea4e707f5d09c22f901cfcee2",
+      "object": "e1cb76b09b21c25e3b142f4853197e3d79068a2ea4e707f5d09c22f901cfcee2.png"
+    },
+    {
+      "path": "items/tidehunter_fish.png",
+      "bytes": 12341,
+      "sha256": "b3abf3edf7b367a59c53cab2b01b4bff855aafaf5c1e8aee013e420a61b712ef",
+      "object": "b3abf3edf7b367a59c53cab2b01b4bff855aafaf5c1e8aee013e420a61b712ef.png"
+    },
+    {
+      "path": "items/tier1_token.png",
+      "bytes": 11411,
+      "sha256": "ae70b9d9048ea47f33fb991c5274b1efdd989ec2ffc57bb5bc02eba3f1a00567",
+      "object": "ae70b9d9048ea47f33fb991c5274b1efdd989ec2ffc57bb5bc02eba3f1a00567.png"
+    },
+    {
+      "path": "items/tier2_token.png",
+      "bytes": 12244,
+      "sha256": "29c15cbbb3a3535616666ae95f27f33b0de22ae8e52a267d7746e672c89f9d10",
+      "object": "29c15cbbb3a3535616666ae95f27f33b0de22ae8e52a267d7746e672c89f9d10.png"
+    },
+    {
+      "path": "items/tier3_token.png",
+      "bytes": 12933,
+      "sha256": "57dd5661781649bdcd346de7c592ecbfd89179eaf9085e00593b306a7aa05ed2",
+      "object": "57dd5661781649bdcd346de7c592ecbfd89179eaf9085e00593b306a7aa05ed2.png"
+    },
+    {
+      "path": "items/tier4_token.png",
+      "bytes": 13375,
+      "sha256": "dc6ae960b021fe8b28bfcb38cff1ccd0ed507dacb7c182a8e94c2bdcfc533dc2",
+      "object": "dc6ae960b021fe8b28bfcb38cff1ccd0ed507dacb7c182a8e94c2bdcfc533dc2.png"
+    },
+    {
+      "path": "items/tier5_token.png",
+      "bytes": 13562,
+      "sha256": "bf160dd58943298aecdf366713f69afecf62119f189209c9c2b19ae7abb16105",
+      "object": "bf160dd58943298aecdf366713f69afecf62119f189209c9c2b19ae7abb16105.png"
+    },
+    {
+      "path": "items/timeless_relic.png",
+      "bytes": 16498,
+      "sha256": "4e44ca7e0f9adfbe363c8ec4b40cec3ba678ee0449d362f5f7ea60b89ee69f42",
+      "object": "4e44ca7e0f9adfbe363c8ec4b40cec3ba678ee0449d362f5f7ea60b89ee69f42.png"
+    },
+    {
+      "path": "items/titan_sliver.png",
+      "bytes": 13744,
+      "sha256": "7aaadde2c25562b4e068ccf6885cdab4dd19231a85fb9eb0c55ee4d066add7f2",
+      "object": "7aaadde2c25562b4e068ccf6885cdab4dd19231a85fb9eb0c55ee4d066add7f2.png"
+    },
+    {
+      "path": "items/tome_of_aghanim.png",
+      "bytes": 16292,
+      "sha256": "47384621b3ca692d9fb4122f1f7c4f81f4a3d80c0c09536925023cf27b10de66",
+      "object": "47384621b3ca692d9fb4122f1f7c4f81f4a3d80c0c09536925023cf27b10de66.png"
+    },
+    {
+      "path": "items/tome_of_knowledge.png",
+      "bytes": 14977,
+      "sha256": "18f24b28e13f723576147fba3065162c7b22e6e6dde2eef453df05610efc8fdb",
+      "object": "18f24b28e13f723576147fba3065162c7b22e6e6dde2eef453df05610efc8fdb.png"
+    },
+    {
+      "path": "items/tpscroll.png",
+      "bytes": 10987,
+      "sha256": "8b011d53dec15541e88188f2d3d0ea4d75a779645a6dc7fb94382b27337ed4d8",
+      "object": "8b011d53dec15541e88188f2d3d0ea4d75a779645a6dc7fb94382b27337ed4d8.png"
+    },
+    {
+      "path": "items/tranquil_boots.png",
+      "bytes": 12208,
+      "sha256": "b03aa59f5f5337db648ad0c3bf89769a014bb80519a754d733cb6751f8041088",
+      "object": "b03aa59f5f5337db648ad0c3bf89769a014bb80519a754d733cb6751f8041088.png"
+    },
+    {
+      "path": "items/travel_boots.png",
+      "bytes": 11712,
+      "sha256": "051716f4d23494aa0f259cc77ee1e0b19c0511c00923889844d711dc53930e03",
+      "object": "051716f4d23494aa0f259cc77ee1e0b19c0511c00923889844d711dc53930e03.png"
+    },
+    {
+      "path": "items/travel_boots_2.png",
+      "bytes": 11985,
+      "sha256": "85aa8dfce11ea8c668fa4fd717ecd4ebd8f03759e7225a247a02e0f5b748cb1c",
+      "object": "85aa8dfce11ea8c668fa4fd717ecd4ebd8f03759e7225a247a02e0f5b748cb1c.png"
+    },
+    {
+      "path": "items/trickster_cloak.png",
+      "bytes": 14682,
+      "sha256": "7d846460f0809129bac943afe420c0463f3f771bc366675d13f0ed95e2c9fd06",
+      "object": "7d846460f0809129bac943afe420c0463f3f771bc366675d13f0ed95e2c9fd06.png"
+    },
+    {
+      "path": "items/trident.png",
+      "bytes": 15137,
+      "sha256": "b51c2be5eb2bbaf4b32ed3799639b5bfd56e327d75d89191dd48c8404de08c55",
+      "object": "b51c2be5eb2bbaf4b32ed3799639b5bfd56e327d75d89191dd48c8404de08c55.png"
+    },
+    {
+      "path": "items/trusty_shovel.png",
+      "bytes": 14830,
+      "sha256": "1f940acaa5c42c74db473ce93f8e43d07a2d1fe88f5c08a5623adee7f6fdf5ea",
+      "object": "1f940acaa5c42c74db473ce93f8e43d07a2d1fe88f5c08a5623adee7f6fdf5ea.png"
+    },
+    {
+      "path": "items/ultimate_orb.png",
+      "bytes": 13192,
+      "sha256": "99d29c6a1ac960e46077423fc0d13e3a0fa39366e7a7aacb4d724c869e792ae6",
+      "object": "99d29c6a1ac960e46077423fc0d13e3a0fa39366e7a7aacb4d724c869e792ae6.png"
+    },
+    {
+      "path": "items/ultimate_scepter.png",
+      "bytes": 11813,
+      "sha256": "a2e37040d90d987932686105567dd963f18caedd498f03ae26f0f10f9e20634f",
+      "object": "a2e37040d90d987932686105567dd963f18caedd498f03ae26f0f10f9e20634f.png"
+    },
+    {
+      "path": "items/ultimate_scepter_2.png",
+      "bytes": 13377,
+      "sha256": "2bd3cbdb7c8d0ea3795f300721b4850719ec04b785a1471f0da66233c739bddd",
+      "object": "2bd3cbdb7c8d0ea3795f300721b4850719ec04b785a1471f0da66233c739bddd.png"
+    },
+    {
+      "path": "items/ultimate_scepter_roshan.png",
+      "bytes": 13377,
+      "sha256": "2bd3cbdb7c8d0ea3795f300721b4850719ec04b785a1471f0da66233c739bddd",
+      "object": "2bd3cbdb7c8d0ea3795f300721b4850719ec04b785a1471f0da66233c739bddd.png"
+    },
+    {
+      "path": "items/unrelenting_eye.png",
+      "bytes": 13995,
+      "sha256": "3a6fa95a0b05d4d9e51a7bcda848713b962d1c7bbfb658eba90496c8df4463bf",
+      "object": "3a6fa95a0b05d4d9e51a7bcda848713b962d1c7bbfb658eba90496c8df4463bf.png"
+    },
+    {
+      "path": "items/unstable_wand.png",
+      "bytes": 12950,
+      "sha256": "23f92ae089749a3ddbecc162c16ab0b6aa4cd3a91c832d95680efe99e1871bca",
+      "object": "23f92ae089749a3ddbecc162c16ab0b6aa4cd3a91c832d95680efe99e1871bca.png"
+    },
+    {
+      "path": "items/unwavering_condition.png",
+      "bytes": 16102,
+      "sha256": "92f62a644d6f6ace4c488897d869134f8bc6c8e61ee50d0c560122889da5de57",
+      "object": "92f62a644d6f6ace4c488897d869134f8bc6c8e61ee50d0c560122889da5de57.png"
+    },
+    {
+      "path": "items/urn_of_shadows.png",
+      "bytes": 12238,
+      "sha256": "bbbfdc362c062081aaa67f5b60595ee1f146e6b8e55baf70d246f0e18e7dd72f",
+      "object": "bbbfdc362c062081aaa67f5b60595ee1f146e6b8e55baf70d246f0e18e7dd72f.png"
+    },
+    {
+      "path": "items/vambrace.png",
+      "bytes": 12164,
+      "sha256": "1bab3b1fc5db8d64ec5604e43281f971bc25b287cffdcdc4de9c14f4c388f17d",
+      "object": "1bab3b1fc5db8d64ec5604e43281f971bc25b287cffdcdc4de9c14f4c388f17d.png"
+    },
+    {
+      "path": "items/vampire_fangs.png",
+      "bytes": 14699,
+      "sha256": "3b5811a5e092b2998db88e0e1f6ae15e650fce82461bb24d7460fcc6cb996c55",
+      "object": "3b5811a5e092b2998db88e0e1f6ae15e650fce82461bb24d7460fcc6cb996c55.png"
+    },
+    {
+      "path": "items/vanguard.png",
+      "bytes": 12908,
+      "sha256": "8ee1666cfe96e721b363c12254f0322034059b9db8a067d98dc527d3594ae711",
+      "object": "8ee1666cfe96e721b363c12254f0322034059b9db8a067d98dc527d3594ae711.png"
+    },
+    {
+      "path": "items/veil_of_discord.png",
+      "bytes": 10311,
+      "sha256": "e4accf91cdd05a3aff33e922bfb6fa5edfe17e508499be53c0f94f9865f51c36",
+      "object": "e4accf91cdd05a3aff33e922bfb6fa5edfe17e508499be53c0f94f9865f51c36.png"
+    },
+    {
+      "path": "items/vindicators_axe.png",
+      "bytes": 11934,
+      "sha256": "034ec512c359ef177705ec86cee17059ce4b67a0d7932eee3d4524f8f5df0a63",
+      "object": "034ec512c359ef177705ec86cee17059ce4b67a0d7932eee3d4524f8f5df0a63.png"
+    },
+    {
+      "path": "items/vitality_booster.png",
+      "bytes": 12239,
+      "sha256": "f01d91682f45c46a0399d4e9d7920da78ffbbd55040e05cbb92dd6296614cf89",
+      "object": "f01d91682f45c46a0399d4e9d7920da78ffbbd55040e05cbb92dd6296614cf89.png"
+    },
+    {
+      "path": "items/vladmir.png",
+      "bytes": 11815,
+      "sha256": "749ec25bc12f5cd3ea12f59b530203611ff8d66acc0a89c3e4cc057ad7b2e239",
+      "object": "749ec25bc12f5cd3ea12f59b530203611ff8d66acc0a89c3e4cc057ad7b2e239.png"
+    },
+    {
+      "path": "items/void_stone.png",
+      "bytes": 10316,
+      "sha256": "031eecb221cc6450f510dc30c9fd97ae12bdc8cec55444faf1d06de43b702548",
+      "object": "031eecb221cc6450f510dc30c9fd97ae12bdc8cec55444faf1d06de43b702548.png"
+    },
+    {
+      "path": "items/voodoo_mask.png",
+      "bytes": 14204,
+      "sha256": "1997f5d0c696b7862c5cdde14ae0773da73af40a266ce2a708f23def62d436b5",
+      "object": "1997f5d0c696b7862c5cdde14ae0773da73af40a266ce2a708f23def62d436b5.png"
+    },
+    {
+      "path": "items/ward_dispenser.png",
+      "bytes": 14252,
+      "sha256": "8e8e13eacce45b167c1956d2ea790fc0f52e9cb06b0e22d0fa76766c887df9bf",
+      "object": "8e8e13eacce45b167c1956d2ea790fc0f52e9cb06b0e22d0fa76766c887df9bf.png"
+    },
+    {
+      "path": "items/ward_observer.png",
+      "bytes": 10821,
+      "sha256": "5b04e7330e08582ac72b888b73074be65d5de1299e66ca314792f1545c5280b1",
+      "object": "5b04e7330e08582ac72b888b73074be65d5de1299e66ca314792f1545c5280b1.png"
+    },
+    {
+      "path": "items/ward_sentry.png",
+      "bytes": 12244,
+      "sha256": "a55748f811210b42f7521b3a237ebb37131dec5fb96220061157b545e819d59c",
+      "object": "a55748f811210b42f7521b3a237ebb37131dec5fb96220061157b545e819d59c.png"
+    },
+    {
+      "path": "items/weighted_dice.png",
+      "bytes": 11321,
+      "sha256": "c41bc357a798092aae72a84e6087d8ed7ad7e2ac14b665a33b64dcffcd07b2db",
+      "object": "c41bc357a798092aae72a84e6087d8ed7ad7e2ac14b665a33b64dcffcd07b2db.png"
+    },
+    {
+      "path": "items/whisper_of_the_dread.png",
+      "bytes": 14610,
+      "sha256": "83ce1dce414efc630c63bdc1da459209ae32d9b6bfcf0eca61e8de14e35c5494",
+      "object": "83ce1dce414efc630c63bdc1da459209ae32d9b6bfcf0eca61e8de14e35c5494.png"
+    },
+    {
+      "path": "items/wind_lace.png",
+      "bytes": 13692,
+      "sha256": "8af89ebd290e56ab53d5dd0681b47f1b69aa7fce2e399226c8075d52abad3913",
+      "object": "8af89ebd290e56ab53d5dd0681b47f1b69aa7fce2e399226c8075d52abad3913.png"
+    },
+    {
+      "path": "items/wind_waker.png",
+      "bytes": 14983,
+      "sha256": "b2077e07d959a74ca66fe92b7832469f21e749cb82a2ac8129979df6f3c0b85f",
+      "object": "b2077e07d959a74ca66fe92b7832469f21e749cb82a2ac8129979df6f3c0b85f.png"
+    },
+    {
+      "path": "items/witch_blade.png",
+      "bytes": 16223,
+      "sha256": "03dc8ea9e09549aa3754273898e68dab10d06f83aaca1bee989480f2d8896038",
+      "object": "03dc8ea9e09549aa3754273898e68dab10d06f83aaca1bee989480f2d8896038.png"
+    },
+    {
+      "path": "items/witless_shako.png",
+      "bytes": 14020,
+      "sha256": "047201074d1ca9fc43c5343d8d4dbdf3084be8ec0574c1c7156b7e5a8000c5be",
+      "object": "047201074d1ca9fc43c5343d8d4dbdf3084be8ec0574c1c7156b7e5a8000c5be.png"
+    },
+    {
+      "path": "items/wizard_hat.png",
+      "bytes": 13949,
+      "sha256": "af0e7179886d8b194ec8153ad12265c7629cd9f8bc61da19729f1b0ceb1f3bd6",
+      "object": "af0e7179886d8b194ec8153ad12265c7629cd9f8bc61da19729f1b0ceb1f3bd6.png"
+    },
+    {
+      "path": "items/woodland_striders.png",
+      "bytes": 12903,
+      "sha256": "a8cfc2dfc51ca1e3f883309f2dde8814ac5af3cd4d002696c1a425bb22d7fc6b",
+      "object": "a8cfc2dfc51ca1e3f883309f2dde8814ac5af3cd4d002696c1a425bb22d7fc6b.png"
+    },
+    {
+      "path": "items/wraith_band.png",
+      "bytes": 10711,
+      "sha256": "b2c9de07f522d9e8505c6e7a5ae2905770eade29d786ae2257b9769cfa0fa0af",
+      "object": "b2c9de07f522d9e8505c6e7a5ae2905770eade29d786ae2257b9769cfa0fa0af.png"
+    },
+    {
+      "path": "items/wraith_pact.png",
+      "bytes": 12828,
+      "sha256": "c9c418f024e2f7935ea53177b86fbe62c5532bb65772a87a58f60488b18a58d7",
+      "object": "c9c418f024e2f7935ea53177b86fbe62c5532bb65772a87a58f60488b18a58d7.png"
+    },
+    {
+      "path": "items/yasha.png",
+      "bytes": 11050,
+      "sha256": "24a0abd28f5be915205dbb40f385c2d151cb958a0896f4f1c895af94143e7285",
+      "object": "24a0abd28f5be915205dbb40f385c2d151cb958a0896f4f1c895af94143e7285.png"
+    },
+    {
+      "path": "items/yasha_and_kaya.png",
+      "bytes": 14801,
+      "sha256": "4c98ab778dc830affafed8228c1ff651dc48c18beedddb99502eb5c662b881a1",
+      "object": "4c98ab778dc830affafed8228c1ff651dc48c18beedddb99502eb5c662b881a1.png"
+    },
+    {
+      "path": "logos/logo_128x128.png",
+      "bytes": 18517,
+      "sha256": "1d39f1d88b51e1828750f68681ba3c88775eb2db72577099c3782f3c6bf7e0f5",
+      "object": "1d39f1d88b51e1828750f68681ba3c88775eb2db72577099c3782f3c6bf7e0f5.png"
+    },
+    {
+      "path": "logos/logo_256x256.png",
+      "bytes": 54795,
+      "sha256": "b6ca1072e46555e27d1075f1f9dff628615d558db8f1e893e59a90bbef046193",
+      "object": "b6ca1072e46555e27d1075f1f9dff628615d558db8f1e893e59a90bbef046193.png"
+    },
+    {
+      "path": "logos/logo_512x512.png",
+      "bytes": 173988,
+      "sha256": "7c86593c3b5d604f230198f4895a41d03c551ec4e8a9cb51f365790257cf63d1",
+      "object": "7c86593c3b5d604f230198f4895a41d03c551ec4e8a9cb51f365790257cf63d1.png"
+    },
+    {
+      "path": "logos/logo_64x64.png",
+      "bytes": 6632,
+      "sha256": "94bbe1b5e30e7999f1581e172d72960497c35ae2ca1ee1f4a5304ca1997aafba",
+      "object": "94bbe1b5e30e7999f1581e172d72960497c35ae2ca1ee1f4a5304ca1997aafba.png"
+    },
+    {
+      "path": "logos/logo_orginal.png",
+      "bytes": 780082,
+      "sha256": "12f95a728b44fd98c8b8401f3433465e629262896186f3b3146020c5173fc398",
+      "object": "12f95a728b44fd98c8b8401f3433465e629262896186f3b3146020c5173fc398.png"
+    },
+    {
+      "path": "map-analysis/bounty-runes.png",
+      "bytes": 3685,
+      "sha256": "936e009e7c0ca48e11433c1c73c716eee86c30841097e7bd44a3a72e526e3cdc",
+      "object": "936e009e7c0ca48e11433c1c73c716eee86c30841097e7bd44a3a72e526e3cdc.png"
+    },
+    {
+      "path": "map-analysis/camp.png",
+      "bytes": 973,
+      "sha256": "4b5840c557ff3771ab2f9f95cc7e99f71a97ed33f0cf5da30f4ad64f6b701c1f",
+      "object": "4b5840c557ff3771ab2f9f95cc7e99f71a97ed33f0cf5da30f4ad64f6b701c1f.png"
+    },
+    {
+      "path": "map-analysis/lotus.png",
+      "bytes": 2836,
+      "sha256": "9366ccd9996d36ee705c976341962a58ba5ba1e4d16292e62844378a4e6f7450",
+      "object": "9366ccd9996d36ee705c976341962a58ba5ba1e4d16292e62844378a4e6f7450.png"
+    },
+    {
+      "path": "map-analysis/outposts.png",
+      "bytes": 3148,
+      "sha256": "9f90e8697cd430f4769e76e68b60cc7c52b819b1da0a9799e87136b8c47f5398",
+      "object": "9f90e8697cd430f4769e76e68b60cc7c52b819b1da0a9799e87136b8c47f5398.png"
+    },
+    {
+      "path": "map-analysis/power-runes.png",
+      "bytes": 3208,
+      "sha256": "fde28a0247741e1ed4c9e8cacfbbaf5ff2323d2802c574a58923ebfa18b670c0",
+      "object": "fde28a0247741e1ed4c9e8cacfbbaf5ff2323d2802c574a58923ebfa18b670c0.png"
+    },
+    {
+      "path": "map-analysis/roshan.png",
+      "bytes": 2077,
+      "sha256": "56499ba6021bf69e4e69d5330dfdbec5e7b4002095f39277db74fed84831832d",
+      "object": "56499ba6021bf69e4e69d5330dfdbec5e7b4002095f39277db74fed84831832d.png"
+    },
+    {
+      "path": "map-analysis/tormentors.png",
+      "bytes": 1662,
+      "sha256": "d18ff96a2325f799ef5ce5d5e9fd0ee2050f96034938a8d3cd722465be29a01c",
+      "object": "d18ff96a2325f799ef5ce5d5e9fd0ee2050f96034938a8d3cd722465be29a01c.png"
+    },
+    {
+      "path": "map-analysis/towers.png",
+      "bytes": 1517,
+      "sha256": "4ed42aef5196ce23dc5bea488b46a4378b51cea4fc8fb459d51c5939b9043efb",
+      "object": "4ed42aef5196ce23dc5bea488b46a4378b51cea4fc8fb459d51c5939b9043efb.png"
+    },
+    {
+      "path": "map-analysis/twin-gates.png",
+      "bytes": 3809,
+      "sha256": "6e934c863b2986f7b83e1a25697b605018adfdbb0450c719e2c0a57d9544e8d2",
+      "object": "6e934c863b2986f7b83e1a25697b605018adfdbb0450c719e2c0a57d9544e8d2.png"
+    },
+    {
+      "path": "map-analysis/watchers.png",
+      "bytes": 2943,
+      "sha256": "9f4af62b72a9ee60cda282274c8f9f9f134c30523094f388e91ccb1cc0634141",
+      "object": "9f4af62b72a9ee60cda282274c8f9f9f134c30523094f388e91ccb1cc0634141.png"
+    },
+    {
+      "path": "map-analysis/wisdom-runes.png",
+      "bytes": 4189,
+      "sha256": "0ea432b2721a20385c7d05949fa2ef9fcedde1445a815001707ad38e85b29bf1",
+      "object": "0ea432b2721a20385c7d05949fa2ef9fcedde1445a815001707ad38e85b29bf1.png"
+    },
+    {
+      "path": "maps/dota-7.41.webp",
+      "bytes": 4679506,
+      "sha256": "9f4d57bc948c7dd7732d8e78e4c242549300899de31dc8c881334389d13bb2b4",
+      "object": "9f4d57bc948c7dd7732d8e78e4c242549300899de31dc8c881334389d13bb2b4.webp"
+    },
+    {
+      "path": "match-details/dire.webp",
+      "bytes": 5684,
+      "sha256": "c76bf4fa340e7b93552c34d51bad6ba25151532623991b1400449ce0709e117b",
+      "object": "c76bf4fa340e7b93552c34d51bad6ba25151532623991b1400449ce0709e117b.webp"
+    },
+    {
+      "path": "match-details/gold.png",
+      "bytes": 808587,
+      "sha256": "01ceff3eae063d3aee6b69da3e3639b36a479c65705c03fa37a12b99575e4f44",
+      "object": "01ceff3eae063d3aee6b69da3e3639b36a479c65705c03fa37a12b99575e4f44.png"
+    },
+    {
+      "path": "match-details/inventory-none.png",
+      "bytes": 807303,
+      "sha256": "6bf6953f40b227083fbdeb8ed6874799fba66df62c46c18be5967c6db188c2cc",
+      "object": "6bf6953f40b227083fbdeb8ed6874799fba66df62c46c18be5967c6db188c2cc.png"
+    },
+    {
+      "path": "match-details/inventory-scepter-shard.png",
+      "bytes": 812332,
+      "sha256": "bd65f1075916dac5e3426488797e0ffe2d1abeb160560cb691cdbc4e1c45ac52",
+      "object": "bd65f1075916dac5e3426488797e0ffe2d1abeb160560cb691cdbc4e1c45ac52.png"
+    },
+    {
+      "path": "match-details/inventory-scepter.png",
+      "bytes": 807694,
+      "sha256": "ef55f87ac843a92dde4e595466e39b672f859f69a4e41d67ee3f73cef665d895",
+      "object": "ef55f87ac843a92dde4e595466e39b672f859f69a4e41d67ee3f73cef665d895.png"
+    },
+    {
+      "path": "match-details/inventory-shard.png",
+      "bytes": 785325,
+      "sha256": "83c9f971df174f196828cbdb4ad84a0df4f73bc0ec2731a01bebf7ba7eda6cf8",
+      "object": "83c9f971df174f196828cbdb4ad84a0df4f73bc0ec2731a01bebf7ba7eda6cf8.png"
+    },
+    {
+      "path": "match-details/radiant.webp",
+      "bytes": 6312,
+      "sha256": "140aad662c52a1e0dd1b6ef55639ab3b100d83dd92efa4c904c4d5a7a1854bb5",
+      "object": "140aad662c52a1e0dd1b6ef55639ab3b100d83dd92efa4c904c4d5a7a1854bb5.webp"
+    },
+    {
+      "path": "positions/pos_1.svg",
+      "bytes": 1378,
+      "sha256": "24340a1497cb1e946d240af6f3ec7b8adad74fde21c7efb6a1a45a0a926585e7",
+      "object": "24340a1497cb1e946d240af6f3ec7b8adad74fde21c7efb6a1a45a0a926585e7.svg"
+    },
+    {
+      "path": "positions/pos_2.webp",
+      "bytes": 678,
+      "sha256": "e93057a1af92be872fdd27c97247b304b36165d2d1914dfea33a4adf079e2c0e",
+      "object": "e93057a1af92be872fdd27c97247b304b36165d2d1914dfea33a4adf079e2c0e.webp"
+    },
+    {
+      "path": "positions/pos_3.webp",
+      "bytes": 598,
+      "sha256": "bdc9d46573c73052d9b5a2686f015fc8191fa642243d93fbfeceb86c9472107d",
+      "object": "bdc9d46573c73052d9b5a2686f015fc8191fa642243d93fbfeceb86c9472107d.webp"
+    },
+    {
+      "path": "positions/pos_4.webp",
+      "bytes": 594,
+      "sha256": "cace8b2605718d9698868ccb06a10319bcbf983a364ee646aac93d03ae662783",
+      "object": "cace8b2605718d9698868ccb06a10319bcbf983a364ee646aac93d03ae662783.webp"
+    },
+    {
+      "path": "positions/pos_5.webp",
+      "bytes": 614,
+      "sha256": "9e309ecaba8eb811fea0b5bf900cd586b3ee9659af2586415b5d534015769a02",
+      "object": "9e309ecaba8eb811fea0b5bf900cd586b3ee9659af2586415b5d534015769a02.webp"
+    },
+    {
+      "path": "tutorials/replay-folder/en/step-01.png",
+      "bytes": 1472146,
+      "sha256": "cf7fc93ab0070fe6c877ee596351ba588a6e769685daba02bbfb305ae4428b76",
+      "object": "cf7fc93ab0070fe6c877ee596351ba588a6e769685daba02bbfb305ae4428b76.png"
+    },
+    {
+      "path": "tutorials/replay-folder/fa/step-01.png",
+      "bytes": 1530551,
+      "sha256": "5507e572e20ba986c4d9325c4d09ed657a6a5bb0c585ea304c2a8a4f3a7b71bb",
+      "object": "5507e572e20ba986c4d9325c4d09ed657a6a5bb0c585ea304c2a8a4f3a7b71bb.png"
+    },
+    {
+      "path": "tutorials/replay-playback/en/step-01.png",
+      "bytes": 1472146,
+      "sha256": "cf7fc93ab0070fe6c877ee596351ba588a6e769685daba02bbfb305ae4428b76",
+      "object": "cf7fc93ab0070fe6c877ee596351ba588a6e769685daba02bbfb305ae4428b76.png"
+    },
+    {
+      "path": "tutorials/replay-playback/en/step-02.png",
+      "bytes": 1534452,
+      "sha256": "94913b2fca87c334cf7374d2ea8ae8590060da8f877a107a2ed6f612bd739bc5",
+      "object": "94913b2fca87c334cf7374d2ea8ae8590060da8f877a107a2ed6f612bd739bc5.png"
+    },
+    {
+      "path": "tutorials/replay-playback/en/step-03.png",
+      "bytes": 1535717,
+      "sha256": "1bc9e02e491b7227c28b1998984910f5ef047a3bcc6524e5f28a0117cd6a82a2",
+      "object": "1bc9e02e491b7227c28b1998984910f5ef047a3bcc6524e5f28a0117cd6a82a2.png"
+    },
+    {
+      "path": "tutorials/replay-playback/en/step-04.png",
+      "bytes": 1491332,
+      "sha256": "21e245ccd035c4e905826dfe1f09a3825505fa8a0ec43c858f0a0f0f29df9873",
+      "object": "21e245ccd035c4e905826dfe1f09a3825505fa8a0ec43c858f0a0f0f29df9873.png"
+    },
+    {
+      "path": "tutorials/replay-playback/en/step-05.png",
+      "bytes": 194617,
+      "sha256": "a087f422986bfc40702e0ca51046592fe909e6d4964808a1bd057ccaf5502029",
+      "object": "a087f422986bfc40702e0ca51046592fe909e6d4964808a1bd057ccaf5502029.png"
+    },
+    {
+      "path": "tutorials/replay-playback/en/step-06.png",
+      "bytes": 1499150,
+      "sha256": "a8efda4975c0dc59deaf4bd577d15e69eb1428028628bc42ca5f9a0dac37c8aa",
+      "object": "a8efda4975c0dc59deaf4bd577d15e69eb1428028628bc42ca5f9a0dac37c8aa.png"
+    },
+    {
+      "path": "tutorials/replay-playback/en/step-07.png",
+      "bytes": 1986861,
+      "sha256": "74e0e5e1853217f9da62a08bb51b6432482ed5622e2d671c1e9a983d3d7a92cd",
+      "object": "74e0e5e1853217f9da62a08bb51b6432482ed5622e2d671c1e9a983d3d7a92cd.png"
+    },
+    {
+      "path": "tutorials/replay-playback/fa/step-01.png",
+      "bytes": 1530551,
+      "sha256": "5507e572e20ba986c4d9325c4d09ed657a6a5bb0c585ea304c2a8a4f3a7b71bb",
+      "object": "5507e572e20ba986c4d9325c4d09ed657a6a5bb0c585ea304c2a8a4f3a7b71bb.png"
+    },
+    {
+      "path": "tutorials/replay-playback/fa/step-02.png",
+      "bytes": 1525138,
+      "sha256": "6276bb508c76d73c3b527b866561506b240de1ef05fb73e8a22b385531412052",
+      "object": "6276bb508c76d73c3b527b866561506b240de1ef05fb73e8a22b385531412052.png"
+    },
+    {
+      "path": "tutorials/replay-playback/fa/step-03.png",
+      "bytes": 1545925,
+      "sha256": "8de1459b2170ff06de646e653d1a2f28a07d3aa318712dd1655122f1e1ce848e",
+      "object": "8de1459b2170ff06de646e653d1a2f28a07d3aa318712dd1655122f1e1ce848e.png"
+    },
+    {
+      "path": "tutorials/replay-playback/fa/step-04.png",
+      "bytes": 1538845,
+      "sha256": "48ef6d054cad7f0192825b756ee44d8db2e66cab29380700bee420b213b3aa7d",
+      "object": "48ef6d054cad7f0192825b756ee44d8db2e66cab29380700bee420b213b3aa7d.png"
+    },
+    {
+      "path": "tutorials/replay-playback/fa/step-05.png",
+      "bytes": 206931,
+      "sha256": "e7957391019dd81c6ccfd393f4ac752b5a597bb0a66569e6bb092d02e2fc17f9",
+      "object": "e7957391019dd81c6ccfd393f4ac752b5a597bb0a66569e6bb092d02e2fc17f9.png"
+    },
+    {
+      "path": "tutorials/replay-playback/fa/step-06.png",
+      "bytes": 1480903,
+      "sha256": "3ea10782484e36020c232f1708015b473bd615a35961dfbd3376b3bbc6dbae0d",
+      "object": "3ea10782484e36020c232f1708015b473bd615a35961dfbd3376b3bbc6dbae0d.png"
+    },
+    {
+      "path": "tutorials/replay-playback/fa/step-07.png",
+      "bytes": 1975613,
+      "sha256": "e8f25c6fe8f79719a7623e78c3fe0f3183edcb540113afdfdcaf0a8e4463917e",
+      "object": "e8f25c6fe8f79719a7623e78c3fe0f3183edcb540113afdfdcaf0a8e4463917e.png"
+    }
+  ]
+}

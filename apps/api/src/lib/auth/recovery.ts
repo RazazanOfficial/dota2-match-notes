@@ -4,7 +4,7 @@ import { compare, hash } from "bcryptjs";
 import nodemailer from "nodemailer";
 import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import { getDb } from "../db";
-import { accountEmailChallenges, accountRecoveryCodes, sessions, users } from "../db/schema";
+import { accountEmailChallenges, accountRecoveryCodes, sessions, users, companionDevices } from "../db/schema";
 import { PasswordAuthError, hashPassword } from "./password";
 import { logFailure } from "../../http/log";
 
@@ -152,6 +152,7 @@ export async function resetAccountPassword(userId: string, method: "email" | "re
     }
     await tx.update(users).set({ passwordHash: nextHash, passwordUpdatedAt: new Date(), updatedAt: new Date() }).where(eq(users.id, userId));
     await tx.delete(sessions).where(eq(sessions.userId, userId));
+    await tx.update(companionDevices).set({revokedAt:new Date()}).where(eq(companionDevices.userId,userId));
     await tx.delete(accountEmailChallenges).where(and(eq(accountEmailChallenges.userId, userId), eq(accountEmailChallenges.purpose, "reset")));
     return true;
   });

@@ -14,7 +14,7 @@
   },
   "build": {
     "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build",
+    "beforeBuildCommand": "node scripts/prepare-native.mjs",
     "devUrl": "http://127.0.0.1:1420",
     "frontendDist": "../dist"
   },
@@ -34,11 +34,11 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost https://avatars.steamstatic.com https://avatars.akamai.steamstatic.com https://steamcdn-a.akamaihd.net; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:4100 https://api.dota2notes.ir; object-src 'none'; base-uri 'self'; frame-src 'none'",
+      "csp": "default-src 'self'; img-src 'self' dota-assets: http://dota-assets.localhost asset: http://asset.localhost https://avatars.steamstatic.com https://avatars.akamai.steamstatic.com https://steamcdn-a.akamaihd.net; style-src 'self' 'unsafe-inline'; font-src 'self' dota-assets: http://dota-assets.localhost; media-src 'self' dota-assets: http://dota-assets.localhost; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:4100 https://api.dota2notes.ir; object-src 'none'; base-uri 'self'; frame-src 'none'",
       "capabilities": [
         "replays"
       ],
-      "devCsp": "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost https://avatars.steamstatic.com https://avatars.akamai.steamstatic.com https://steamcdn-a.akamaihd.net; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:4100 https://api.dota2notes.ir http://127.0.0.1:1420 ws://127.0.0.1:1420; object-src 'none'; base-uri 'self'; frame-src 'none'"
+      "devCsp": "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' dota-assets: http://dota-assets.localhost asset: http://asset.localhost https://avatars.steamstatic.com https://avatars.akamai.steamstatic.com https://steamcdn-a.akamaihd.net; style-src 'self' 'unsafe-inline'; font-src 'self' dota-assets: http://dota-assets.localhost; media-src 'self' dota-assets: http://dota-assets.localhost; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:4100 https://api.dota2notes.ir http://127.0.0.1:1420 ws://127.0.0.1:1420; object-src 'none'; base-uri 'self'; frame-src 'none'"
     }
   },
   "bundle": {
@@ -51,6 +51,14 @@
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.ico"
-    ]
+    ],
+    "resources": [
+      "resources/dota-notes-companion.exe"
+    ],
+    "windows": {
+      "nsis": {
+        "installerHooks": "windows/hooks.nsh"
+      }
+    }
   }
 }

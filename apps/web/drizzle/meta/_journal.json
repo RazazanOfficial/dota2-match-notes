@@ -169,6 +169,13 @@
       "when": 1790850482547,
       "tag": "0023_replay_refresh_manual_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1794052800000,
+      "tag": "0031_automatic_library",
+      "breakpoints": true
     }
   ]
 }

@@ -214,6 +214,7 @@ export const localReplayJobs = pgTable(
     status: varchar("status", { length: 16 }).default("pending").notNull(),
     intent: varchar("intent", { length: 16 }).default("analysis").notNull(),
     requestedBy: uuid("requested_by"),
+    downloadRequestedAt: timestamp("download_requested_at", {withTimezone:true}),
     dispatchedAt: timestamp("dispatched_at", { withTimezone: true }),
     reservedBytes: bigint("reserved_bytes", { mode: "number" }).default(0).notNull(),
     phase: varchar("phase", { length: 24 }).default("queued").notNull(),
@@ -847,6 +848,7 @@ export const syncJobs = pgTable(
     finishedAt: timestamp("finished_at", { withTimezone: true }),
     errorMessage: text("error_message"),
     manualRequest: jsonb("manual_request").$type<Record<string, unknown>>(),
+    manualSnapshot: jsonb("manual_snapshot").$type<import("../opendota/validation").OpenDotaRecentMatch[]>(),
     manualAttempted: jsonb("manual_attempted").$type<number[]>().default([]).notNull(),
     manualResult: jsonb("manual_result").$type<Record<string, unknown>>(),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -1106,3 +1108,33 @@ export const stratzEnrichmentJobsRelations = relations(
     }),
   }),
 );
+
+// Provider enumeration is cached independently of user journal completion flags.
+export const syncHistoryCache = pgTable("sync_history_cache", {
+  userId: uuid("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  fromDay: varchar("from_day", { length: 10 }).notNull(),
+  history: jsonb("history").$type<import("../opendota/validation").OpenDotaRecentMatch[]>().notNull(),
+  checkedAt: timestamp("checked_at", { withTimezone: true }).notNull(),
+  reconciledAt: timestamp("reconciled_at", { withTimezone: true }).notNull(),
+});
+export const companionDevices = pgTable("companion_devices", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: varchar("token_hash", { length: 64 }).notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
+});
+export const matchObservations = pgTable("match_observations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  matchId: bigint("match_id", { mode: "number" }).notNull(),
+  endedAt: timestamp("ended_at", { withTimezone: true }).notNull(),
+  runAfter: timestamp("run_after", { withTimezone: true }).notNull(),
+  deadlineAt: timestamp("deadline_at", { withTimezone: true }).notNull(),
+  status: varchar("status", { length: 16 }).default("pending").notNull(),
+  attempts: integer("attempts").default(0).notNull(),
+  lockedAt: timestamp("locked_at", { withTimezone: true }),
+  errorCode: varchar("error_code", { length: 64 }),
+}, t => [uniqueIndex("match_observations_user_match_uidx").on(t.userId, t.matchId),
+  index("match_observations_due_idx").on(t.status,t.runAfter)]);

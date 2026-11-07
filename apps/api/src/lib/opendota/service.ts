@@ -1,3 +1,7 @@
+import { eq } from "drizzle-orm";
+import { getDb } from "../db";
+import { dotaMatches, syncHistoryCache } from "../db/schema";
+import { parseOpenDotaMatch, type OpenDotaRecentMatch } from "./validation";
 import { logFailure } from "../../http/log";
 import type { SessionUser } from "../auth/session";
 import {
@@ -70,12 +74,14 @@ interface RecentSyncOptions {
   range?: { from: string; to: string };
   gameModes?: ManualMatchSyncInput["gameModes"];
   skipMatchIds?: ReadonlySet<number>;
+  history?: OpenDotaRecentMatch[];
+  maxRunMs?:number;
 }
 
 const HISTORY_PAGE_SIZE = 100;
 const MAX_HISTORY_PAGES = 30;
 
-async function fetchSelectedHistory(user: RecentSyncUser, range: { from: string; to: string }, onClaim?: () => void) {
+async function enumerateHistory(user: RecentSyncUser, range: { from: string; to: string }, onClaim?: () => void) {
   // OpenDota offers a lower age bound and offset, but no end-date parameter.
   // Read bounded pages until the selected dates are covered; never mark an
   // incomplete scan as completed when the safety cap is reached.
@@ -101,7 +107,9 @@ async function discoverRecentMatches(
   // The compact recent feed is best for the scheduled cursor. An explicit
   // day/week request uses player history so the user can retrieve an older week.
   let fetchedMatches: Awaited<ReturnType<typeof fetchOpenDotaRecentMatches>>;
-  if (options.range) {
+  if (options.history) {
+    fetchedMatches = options.history;
+  } else if (options.range) {
     fetchedMatches = await fetchSelectedHistory(user, options.range, options.onExternalRequestClaimed);
   } else {
     await claimOpenDotaRequestQuota(quotaConfig(config));
@@ -141,12 +149,12 @@ async function discoverRecentMatches(
   const failed: ReturnType<typeof failedMatch>[] = [];
   let attempted = 0;
 
+  const started=Date.now();
   for (const candidate of selection.candidates) {
+    if(attempted && options.maxRunMs && Date.now()-started>=options.maxRunMs)break;
     attempted += 1;
     try {
-      await claimOpenDotaRequestQuota(quotaConfig(config));
-      options.onExternalRequestClaimed?.();
-      const match = await fetchOpenDotaMatch(candidate.match_id);
+      const match = await cachedOrFetchMatch(candidate.match_id, options.onExternalRequestClaimed,user.steamAccountId);
       if (options.range && !matchesSyncGameMode(options.gameModes, match.game_mode, match.lobby_type)) continue;
       const player =
         match.players.find(
@@ -336,11 +344,14 @@ export async function syncManualRangeBatch(
   user: Pick<SessionUser, "id" | "steamAccountId" | "createdAt">,
   request: ManualMatchSyncInput,
   attempted: readonly number[],
-  batchSize = 5,
+  batchSize = 20,
+  history?: OpenDotaRecentMatch[],
+  onClaim?:()=>void,
 ) {
   const config = getOpenDotaConfig();
   return discoverRecentMatches(user, {
     maxNewMatches: batchSize,
+    history,maxRunMs:20_000,onExternalRequestClaimed:onClaim,
     range: { from: request.from, to: request.to },
     gameModes: request.gameModes,
     skipMatchIds: new Set(attempted),
@@ -363,4 +374,37 @@ export async function syncScheduledMatchesFromOpenDota(
     initialMatches: options.initialMatches,
     throwOnRetryableError: true,
   });
+}
+
+export async function cachedOrFetchMatch(matchId: number, onClaim?: () => void,accountId?:number) {
+  const [cached] = await getDb().select({ raw: dotaMatches.rawData }).from(dotaMatches).where(eq(dotaMatches.matchId, matchId)).limit(1);
+  if (cached) {
+    try { const match=parseOpenDotaMatch(cached.raw, matchId);if(accountId===undefined||match.players.some(p=>p.account_id===accountId))return match; } catch { /* Incomplete imported metadata is not a full match cache. */ }
+  }
+  await claimOpenDotaRequestQuota(quotaConfig(getOpenDotaConfig()));
+  onClaim?.();
+  return fetchOpenDotaMatch(matchId);
+}
+
+export function mergeHistory(older: OpenDotaRecentMatch[], recent: OpenDotaRecentMatch[]) {
+  return [...new Map([...older, ...recent].map(row => [row.match_id, row])).values()]
+    .sort((a,b) => b.start_time-a.start_time || b.match_id-a.match_id);
+}
+export async function fetchSelectedHistory(user: RecentSyncUser, range: {from:string;to:string}, onClaim?:()=>void) {
+  const db=getDb(), now=new Date();
+  const [cached]=await db.select().from(syncHistoryCache).where(eq(syncHistoryCache.userId,user.id)).limit(1);
+  // Cache contains every game mode. Journal timezone filtering happens after enumeration.
+  if(cached && cached.fromDay<=range.from && now.getTime()-cached.checkedAt.getTime()<86_400_000) {
+    if(now.getTime()-cached.reconciledAt.getTime()<60_000)return cached.history;
+    const recentFrom=toJournalDateKey(new Date(now.getTime()-48*3_600_000));
+    const recent=await enumerateHistory(user,{from:recentFrom,to:toJournalDateKey(now)},onClaim);
+    const history=mergeHistory(cached.history,recent);
+    await db.update(syncHistoryCache).set({history,reconciledAt:now}).where(eq(syncHistoryCache.userId,user.id));
+    return history;
+  }
+  const from=cached && cached.fromDay<range.from?cached.fromDay:range.from;
+  const history=await enumerateHistory(user,{from,to:range.to},onClaim);
+  await db.insert(syncHistoryCache).values({userId:user.id,fromDay:from,history,checkedAt:now,reconciledAt:now})
+    .onConflictDoUpdate({target:syncHistoryCache.userId,set:{fromDay:from,history,checkedAt:now,reconciledAt:now}});
+  return history;
 }

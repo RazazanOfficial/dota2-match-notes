@@ -8,6 +8,7 @@ import { replayObjectHead } from "./archive-storage";
 import { overlayReplayData } from "./overlay";
 import { progressFromRow } from "./progress";
 const progressFields = {
+  requestStartedAt:localReplayJobs.requestStartedAt,updatedAt:localReplayJobs.updatedAt,
   phase: localReplayJobs.phase, downloadedBytes: localReplayJobs.downloadedBytes, totalBytes: localReplayJobs.totalBytes,
   downloadBps: localReplayJobs.downloadBps, attempts: localReplayJobs.attempts, runAfter: localReplayJobs.runAfter,
   phaseStartedAt: localReplayJobs.phaseStartedAt, heartbeatAt: localReplayJobs.heartbeatAt, retryDeadlineAt: localReplayJobs.retryDeadlineAt,
@@ -81,6 +82,7 @@ export async function requestReplayByDotaId(matchId: number, intent: ReplayInten
   const parsed = overlayReplayData(match.rawData, match.localReplayData).source === "local";
   // Analysis is usable as soon as the validated parser output is committed.
   // A slow or unavailable backup must not gate the analysis behind an S3 HEAD.
+  if(intent === "download")await db.update(localReplayJobs).set({downloadRequestedAt:new Date()}).where(eq(localReplayJobs.matchId,matchId));
   if (intent === "analysis" && parsed) return "ready" as const;
   const hasLocal=Boolean(await localReplayFile(matchId));
   // The compute host validates this checkpoint; Iran must not stat its own disk.
@@ -97,7 +99,7 @@ export async function requestReplayByDotaId(matchId: number, intent: ReplayInten
       !hasArchive && !hasLocal && !hasComputeCheckpoint) return "expired" as const;
   const now = new Date();
   const [queued] = await db.insert(localReplayJobs).values({
-    matchId, intent, requestedBy:userId || null, runAfter: now, retryDeadlineAt: new Date(now.getTime() + 1 * 86_400_000), updatedAt: now,
+    matchId, intent, downloadRequestedAt:intent === "download"?new Date():null, requestedBy:userId || null, runAfter: now, retryDeadlineAt: new Date(now.getTime() + 1 * 86_400_000), updatedAt: now,
   }).onConflictDoUpdate({
     target: localReplayJobs.matchId,
     set: {
@@ -130,6 +132,6 @@ export async function replayStatusForMatch(matchId: number) {
   // A completed analysis job may still have a downloadable archive.
   const archived = row.archiveStatus === "active";
   const downloadReady=Boolean(await localReplayFile(matchId)) || archived;
-  const downloadErrorCode = !archived && row.archiveJobStatus === "failed" && !["pending","processing"].includes(row.status) ? row.archiveErrorCode || "replay_archive_attempts_exhausted" : null;
+  const downloadErrorCode = !archived && row.archiveJobStatus === "failed" ? row.archiveErrorCode || "replay_archive_attempts_exhausted" : null;
   return { status: row.status === "completed" && row.intent === "download" ? "basic" : row.status, archived, downloadReady, directDownloadReady:archived, downloadErrorCode, errorCode: row.errorCode, progress: progressFromRow(row) };
 }

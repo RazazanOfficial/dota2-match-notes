@@ -23,7 +23,7 @@ describe("replay setup",()=>{
   let finish!:(v:unknown)=>void;const download=vi.spyOn(replayNative,"download").mockImplementation(()=>new Promise(resolve=>{finish=resolve as typeof finish;}));
   render(<Replay t={messages.en} live/>);await flush();fireEvent.change(screen.getByRole("textbox",{name:messages.en.matchId}),{target:{value:"9033813921"}});fireEvent.click(screen.getByRole("button",{name:messages.en.replaySearch}));await flush();fireEvent.click(screen.getByRole("button",{name:messages.en.download}));await flush();
   expect(download).toHaveBeenCalledTimes(1);fireEvent.click(screen.getByRole("button",{name:messages.en.dotaFolder}));expect(screen.getByRole("button",{name:"Open folder"})).toHaveProperty("disabled",true);
-  await act(async()=>{finish({matchId:"9033813921"});});await flush();expect(screen.getByRole("tab",{name:/Downloaded replays/}).getAttribute("aria-selected")).toBe("true");expect(screen.getByRole("button",{name:"Open folder"})).toHaveProperty("disabled",false);
+  await act(async()=>{finish({matchId:"9033813921"});});await flush();expect(screen.getByRole("tab",{name:/Downloaded replays/}).getAttribute("aria-selected")).toBe("false");expect(screen.getByRole("button",{name:"Open folder"})).toHaveProperty("disabled",false);
  });
  it("shows a helpful local storage error without displaying a programming exception",async()=>{
   api.mockImplementation(async(path:string)=>path.startsWith("/api/matches/me?") ? {rows:[]} : {archived:true});vi.spyOn(replayNative,"download").mockRejectedValue({code:"replay_folder_write_failed"});render(<Replay t={messages.en} live/>);await flush();

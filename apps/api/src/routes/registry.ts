@@ -1,3 +1,5 @@
+import * as companion from "./sync/companion/route";
+import * as observations from "./sync/observations/route";
 import * as tasks from "./tasks/route";
 import * as replayDownload from "./replays/[matchId]/download/route";
 import * as playerPage from "./players/[identifier]/route";
@@ -56,6 +58,9 @@ import * as signupCodesReissue from "./auth/signup/codes/reissue/route";
 import * as signupCodesSaved from "./auth/signup/codes/saved/route";
 
 export const routes = [
+  { path: "/sync/companion", method: "POST", handler: companion.POST },
+  { path: "/sync/companion", method: "DELETE", handler: companion.DELETE },
+  { path: "/sync/observations", method: "POST", handler: observations.POST },
   { path: "/players/:identifier", method: "GET", handler: playerPage.GET },
   { path: "/journal/matches/:matchId/page", method: "GET", handler: matchPage.GET },
   { path: "/admin/monthly-references", method: "GET", handler: r0.GET },

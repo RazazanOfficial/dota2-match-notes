@@ -40,15 +40,15 @@ describe("scheduled sync worker configuration", () => {
   it("uses conservative queue and retry defaults", () => {
     expect(getSyncWorkerConfig()).toEqual({
       secret: SECRET,
-      enabled: false,
+      enabled: true,
       intervalSeconds: 3_600,
       enqueueBatchSize: 25,
       processBatchSize: 1,
       staleLockSeconds: 900,
       maxAttempts: 3,
       retryBaseSeconds: 60,
-      lookbackSeconds: 21_600,
-      initialMatches: 1,
+      lookbackSeconds: 172_800,
+      initialMatches: 20,
     });
   });
 

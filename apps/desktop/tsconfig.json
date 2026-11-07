@@ -15,10 +15,13 @@
       "@/*": [
         "../web/*"
       ]
-    }
+    },
+    "allowJs": true
   },
   "include": [
     "src",
-    "vite.config.ts"
+    "vite.config.ts",
+    "scripts/asset-plugin.ts",
+    "scripts/asset-pack.mjs"
   ]
 }

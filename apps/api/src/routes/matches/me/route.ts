@@ -70,6 +70,7 @@ export async function GET(request: HttpRequest) {
     duration: journalMatches.durationSeconds,
     gameMode: dotaMatches.gameMode, lobbyType: dotaMatches.lobbyType,
     parsed: replayParsedSql, projectionCurrent: summaryCurrentSql, projectionReady: sql<boolean>`${summaryCurrentSql} and coalesce((${journalMatches.analysisSummary}->>'ready')::boolean, false)`,
+    requestStartedAt:localReplayJobs.requestStartedAt,updatedAt:localReplayJobs.updatedAt,
     jobStatus: localReplayJobs.status, jobIntent: localReplayJobs.intent,
     phase: localReplayJobs.phase, downloadedBytes: localReplayJobs.downloadedBytes,
     totalBytes: localReplayJobs.totalBytes, downloadBps: localReplayJobs.downloadBps,
@@ -106,6 +107,7 @@ export async function GET(request: HttpRequest) {
       mode: row.gameMode === 23 ? "Turbo" : [5, 6, 7].includes(row.lobbyType || 0) ? "Ranked" : [1,22].includes(row.gameMode || 0) ? "All Pick" : Object.entries(modes).find(([, ids]) => ids.includes(row.gameMode || 0))?.[0] || "Other",
       duration: row.duration, startedAt: row.startedAt?.toISOString() || `${row.day}T12:00:00.000Z`,
       analyzed: row.parsed && row.projectionCurrent && row.projectionReady,
+      analysisRequestedAt:row.requestStartedAt?.toISOString()||null,analysisUpdatedAt:row.updatedAt?.toISOString()||null,
       analysisStatus: row.parsed && row.projectionCurrent && row.projectionReady ? "ready" : row.jobIntent === "analysis" && ["pending", "processing"].includes(row.jobStatus || "") ? row.jobStatus : row.parsed ? (!row.projectionCurrent ? "processing" : row.projectionReady ? "ready" : "failed") : row.jobIntent === "analysis" && row.jobStatus === "failed" ? "failed" : "basic",
       analysisPreparation: !(row.parsed && row.projectionCurrent && row.projectionReady) && row.jobIntent === "analysis" && ["pending", "processing", "failed"].includes(row.jobStatus || "")
         ? { replay: row.jobStatus, errorCode: row.errorCode, progress: progressFromRow(row) } : null,

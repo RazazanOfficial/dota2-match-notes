@@ -345,6 +345,12 @@
       "description": "Permission identifier",
       "oneOf": [
         {
+          "description": "Enables the asset_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-asset-status",
+          "markdownDescription": "Enables the asset_status command without any pre-configured scope."
+        },
+        {
           "description": "Enables the choose_dota_folder command without any pre-configured scope.",
           "type": "string",
           "const": "allow-choose-dota-folder",
@@ -355,6 +361,30 @@
           "type": "string",
           "const": "allow-clear-session-token",
           "markdownDescription": "Enables the clear_session_token command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the companion_health command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-companion-health",
+          "markdownDescription": "Enables the companion_health command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the companion_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-companion-status",
+          "markdownDescription": "Enables the companion_status command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the configure_companion command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-configure-companion",
+          "markdownDescription": "Enables the configure_companion command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the discover_dota command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-discover-dota",
+          "markdownDescription": "Enables the discover_dota command without any pre-configured scope."
         },
         {
           "description": "Enables the download_replay command without any pre-configured scope.",
@@ -393,6 +423,12 @@
           "markdownDescription": "Enables the open_steam_login command without any pre-configured scope."
         },
         {
+          "description": "Enables the prepare_assets command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-prepare-assets",
+          "markdownDescription": "Enables the prepare_assets command without any pre-configured scope."
+        },
+        {
           "description": "Enables the replay_settings command without any pre-configured scope.",
           "type": "string",
           "const": "allow-replay-settings",
@@ -411,6 +447,12 @@
           "markdownDescription": "Enables the set_window_aspect_ratio command without any pre-configured scope."
         },
         {
+          "description": "Denies the asset_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-asset-status",
+          "markdownDescription": "Denies the asset_status command without any pre-configured scope."
+        },
+        {
           "description": "Denies the choose_dota_folder command without any pre-configured scope.",
           "type": "string",
           "const": "deny-choose-dota-folder",
@@ -421,6 +463,30 @@
           "type": "string",
           "const": "deny-clear-session-token",
           "markdownDescription": "Denies the clear_session_token command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the companion_health command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-companion-health",
+          "markdownDescription": "Denies the companion_health command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the companion_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-companion-status",
+          "markdownDescription": "Denies the companion_status command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the configure_companion command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-configure-companion",
+          "markdownDescription": "Denies the configure_companion command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the discover_dota command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-discover-dota",
+          "markdownDescription": "Denies the discover_dota command without any pre-configured scope."
         },
         {
           "description": "Denies the download_replay command without any pre-configured scope.",
@@ -457,6 +523,12 @@
           "type": "string",
           "const": "deny-open-steam-login",
           "markdownDescription": "Denies the open_steam_login command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the prepare_assets command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-prepare-assets",
+          "markdownDescription": "Denies the prepare_assets command without any pre-configured scope."
         },
         {
           "description": "Denies the replay_settings command without any pre-configured scope.",

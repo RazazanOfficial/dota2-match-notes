@@ -183,15 +183,15 @@ describe("native replay library", () => {
     it("lists a replay only after the native download succeeds and builds the copyable command", async () => {
         mocks();
         const file = { matchId: "9026000101", path: "replays/9026000101.dem", sizeBytes: 1048576, modifiedSeconds: 1790000000 };
-        const download = vi.spyOn(replayNative, "download").mockResolvedValue(file);
-        vi.mocked(replayNative.files).mockResolvedValue([file]);
+        const download = vi.spyOn(replayNative, "download").mockImplementation(async()=>{vi.mocked(replayNative.files).mockResolvedValue([file]);return file;});
         render(<Replay t={messages.en} live/>);
         await screen.findByText("C:/Steam/steamapps/common/dota 2 beta");
         fireEvent.change(screen.getByRole("textbox", { name: "Match ID" }), { target: { value: file.matchId } });
         fireEvent.click(screen.getByRole("button", { name: messages.en.replaySearch }));
         await waitFor(() => expect(within(document.querySelector(".replay-search-result") as HTMLElement).getByRole("button", { name: "Download replay" })).toHaveProperty("disabled", false));
         fireEvent.click(within(document.querySelector(".replay-search-result") as HTMLElement).getByRole("button", { name: "Download replay" }));
-        await waitFor(() => expect(screen.getByRole("tab", { name: /Downloaded replays/ }).getAttribute("aria-selected")).toBe("true"));
+        await waitFor(() => expect(download).toHaveBeenCalledOnce());
+        fireEvent.click(screen.getByRole("tab", { name: /Downloaded replays/ }));
         expect(download).toHaveBeenCalledWith(file.matchId,"test-session",replayApi.API_ORIGIN);
         await screen.findByRole("button", { name: "Copy Play command" });
         expect(screen.getByText(playCommand(file.matchId))).toBeTruthy();

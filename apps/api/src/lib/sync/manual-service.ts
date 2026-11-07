@@ -4,12 +4,12 @@ import { syncJobs, users } from "../db/schema";
 import { getOpenDotaConfig } from "../opendota/config";
 import { OpenDotaError } from "../opendota/errors";
 import { claimManualOpenDotaSync, markJournalRangeCompleted } from "../opendota/repository";
-import { syncManualRangeBatch } from "../opendota/service";
+import { fetchSelectedHistory, syncManualRangeBatch } from "../opendota/service";
 import { MATCH_SYNC_GAME_MODES, manualMatchSyncInputSchema, saturdayWeekStart, type ManualMatchSyncInput } from "../opendota/sync-request";
 import { toJournalDateKey } from "../journal/timezone";
 import type { ManualSyncResult } from "../types";
 
-type ManualResult = Pick<ManualSyncResult, "checked" | "alreadyImported" | "dismissedByUser" | "imported" | "failed" | "deferred" | "ignoredOlder">;
+type ManualResult = Pick<ManualSyncResult, "checked" | "alreadyImported" | "dismissedByUser" | "imported" | "failed" | "deferred" | "ignoredOlder"> & {externalRequests?:number};
 
 function emptyResult(): ManualResult {
   return { checked: 0, alreadyImported: 0, dismissedByUser: 0, imported: [], failed: [], deferred: 0, ignoredOlder: 0 };
@@ -77,7 +77,7 @@ export async function runManualRangeSyncTick() {
   const claimed = await db.transaction(async (tx) => {
     const [candidate] = await tx.select({
       id: syncJobs.id, userId: syncJobs.userId, request: syncJobs.manualRequest,
-      attempted: syncJobs.manualAttempted, result: syncJobs.manualResult, attempts: syncJobs.attempts,
+      attempted: syncJobs.manualAttempted, snapshot: syncJobs.manualSnapshot, result: syncJobs.manualResult, attempts: syncJobs.attempts,
       steamAccountId: users.steamAccountId, createdAt: users.createdAt,
     }).from(syncJobs).innerJoin(users, eq(syncJobs.userId, users.id))
       .where(and(eq(syncJobs.kind, "manual"), eq(syncJobs.status, "pending"), lte(syncJobs.runAfter, now)))
@@ -91,12 +91,19 @@ export async function runManualRangeSyncTick() {
   if (!claimed) return { processed: 0 };
   const request = claimed.request as ManualMatchSyncInput;
   const previous = (claimed.result || emptyResult()) as ManualResult;
+  let externalRequests=0;const onClaim=()=>{externalRequests+=1;};
   try {
-    const batch = await syncManualRangeBatch({ id: claimed.userId, steamAccountId: claimed.steamAccountId,
-      createdAt: claimed.createdAt }, request, claimed.attempted, 5);
+    const user={id:claimed.userId,steamAccountId:claimed.steamAccountId,createdAt:claimed.createdAt};
+    const snapshot=claimed.snapshot || await fetchSelectedHistory(user,request,onClaim);
+    if(!claimed.snapshot) {
+      const [saved]=await db.update(syncJobs).set({manualSnapshot:snapshot}).where(and(eq(syncJobs.id,claimed.id),eq(syncJobs.lockedAt,claimed.lockedAt))).returning({id:syncJobs.id});
+      if(!saved)throw new Error("Manual sync lease expired");
+    }
+    const batch = await syncManualRangeBatch(user, request, claimed.attempted, 20, snapshot,onClaim);
     const attempted = [...claimed.attempted, ...batch.attemptedIds];
     const result: ManualResult = {
-      checked: batch.checked, alreadyImported: batch.alreadyImported,
+      checked: batch.checked, alreadyImported: Math.max(0,batch.alreadyImported-previous.imported.length),
+      externalRequests:(previous.externalRequests||0)+externalRequests,
       dismissedByUser: batch.dismissedByUser, ignoredOlder: batch.ignoredOlder,
       imported: [...previous.imported, ...batch.imported], failed: [...previous.failed, ...batch.failed], deferred: batch.deferred,
     };
@@ -117,7 +124,7 @@ export async function runManualRangeSyncTick() {
     const transient = error instanceof OpenDotaError && (error.status === 429 || error.status >= 500);
     const retries = claimed.attempts + 1;
     const canRetry = transient && retries < 30;
-    await db.update(syncJobs).set({ status: canRetry ? "pending" : "failed", lockedAt: null,
+    await db.update(syncJobs).set({manualResult:{...previous,externalRequests:(previous.externalRequests||0)+externalRequests}, status: canRetry ? "pending" : "failed", lockedAt: null,
       runAfter: new Date(Date.now() + Math.max(90, error instanceof OpenDotaError ? error.retryAfterSeconds || 0 : 0) * 1_000),
       finishedAt: canRetry ? null : new Date(), errorMessage: error instanceof OpenDotaError ? error.code : "manual_sync_failed" })
       .where(and(eq(syncJobs.id, claimed.id), eq(syncJobs.status, "processing"), eq(syncJobs.lockedAt, claimed.lockedAt)));

@@ -1,4 +1,5 @@
 export type ReplayProgress = {
+  requestStartedAt?:string|null; updatedAt?:string|null;
   phase: string; bytes: number; totalBytes: number | null; bytesPerSecond: number;
   attempts: number; nextTryAt: string | null; phaseStartedAt: string | null;
   heartbeatAt: string | null; retryDeadlineAt: string | null; errorCode: string | null;
@@ -21,11 +22,12 @@ export function replayErrorMessage(code: string | null | undefined) {
   return "دریافت Replay موقتاً مشکل دارد؛ وضعیت تلاش بعدی در همین بخش نمایش داده می‌شود.";
 }
 export function progressFromRow(row: {
+  requestStartedAt?:Date|null;updatedAt?:Date|null;
   phase?: string | null; downloadedBytes?: number | null; totalBytes?: number | null;
   downloadBps?: number | null; attempts?: number | null; runAfter?: Date | null;
   phaseStartedAt?: Date | null; heartbeatAt?: Date | null; retryDeadlineAt?: Date | null; errorCode?: string | null;
 }): ReplayProgress {
-  return { phase: row.phase || "queued", bytes: row.downloadedBytes || 0, totalBytes: row.totalBytes ?? null,
+  return {requestStartedAt:row.requestStartedAt?.toISOString()||null,updatedAt:row.updatedAt?.toISOString()||null, phase: row.phase || "queued", bytes: row.downloadedBytes || 0, totalBytes: row.totalBytes ?? null,
     bytesPerSecond: row.downloadBps || 0, attempts: row.attempts || 0, nextTryAt: row.runAfter?.toISOString() || null,
     phaseStartedAt: row.phaseStartedAt?.toISOString() || null, heartbeatAt: row.heartbeatAt?.toISOString() || null,
     retryDeadlineAt: row.retryDeadlineAt?.toISOString() || null, errorCode: row.errorCode || null };

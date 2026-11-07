@@ -1,3 +1,8 @@
+mod companion_core;
+mod companion;
+mod steam_paths;
+mod asset_cache;
+mod assets;
 mod replay;
 mod replay_download;
 mod replay_codec;
@@ -31,11 +36,15 @@ fn load_session_token() -> Result<Option<String>, String> {
 }
 
 #[tauri::command]
-fn clear_session_token() -> Result<(), String> {
+async fn clear_session_token() -> Result<(), String> {
+ tauri::async_runtime::spawn_blocking(||{
+    let _=companion_core::disconnect();
     match session_entry()?.delete_credential() {
         Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
         Err(error) => Err(error.to_string()),
     }
+
+ }).await.map_err(|_| "session_clear_failed")?
 }
 
 #[tauri::command]
@@ -55,7 +64,7 @@ fn open_steam_login(app: AppHandle, url: String) -> Result<(), String> {
 fn launch_dota(app: AppHandle, window: tauri::WebviewWindow) -> Result<(), String> {
     if window.label() != "main" { return Err("steam_launch_failed".into()); }
     // The registered Steam protocol handles client startup and game location.
-    app.opener().open_url("steam://rungameid/570", None::<&str>).map_err(|_| "steam_launch_failed".into())
+    app.opener().open_url("steam://run/570//-gamestateintegration/", None::<&str>).map_err(|_| "steam_launch_failed".into())
 }
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -65,6 +74,7 @@ pub fn run() {
         if let Some(window) = app.get_webview_window("main") { let _ = window.set_focus(); }
     })); }
     builder
+        .register_uri_scheme_protocol("dota-assets", |_context, request| assets::respond(request))
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
@@ -74,7 +84,7 @@ pub fn run() {
             Ok(())
         })
         .manage(replay::ReplayState::default())
-        .invoke_handler(tauri::generate_handler![launch_dota, open_steam_login, save_session_token, load_session_token, clear_session_token, replay::replay_settings, replay::choose_dota_folder, replay::list_replays, replay::download_replay, recovery::export_recovery_codes, window_aspect::set_window_aspect_ratio])
+        .invoke_handler(tauri::generate_handler![companion::companion_health, companion::companion_status, companion::configure_companion, assets::asset_status, assets::prepare_assets, launch_dota, open_steam_login, save_session_token, load_session_token, clear_session_token, replay::discover_dota, replay::replay_settings, replay::choose_dota_folder, replay::list_replays, replay::download_replay, recovery::export_recovery_codes, window_aspect::set_window_aspect_ratio])
         .run(tauri::generate_context!())
         .expect("error while running Dota Notes");
 }

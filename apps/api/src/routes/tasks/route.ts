@@ -7,7 +7,7 @@ import {progressFromRow} from "../../lib/replay/progress";
 export async function GET(request:HttpRequest) {
   const user=await getRequestUser(request);if(!user)return Response.json({ok:false,error:{code:"unauthorized"}},{status:401});
   const db=getDb();
-  const rows=await db.selectDistinct({matchId:localReplayJobs.matchId,status:localReplayJobs.status,intent:localReplayJobs.intent,
+  const rows=await db.selectDistinct({updatedAt:localReplayJobs.updatedAt,requestStartedAt:localReplayJobs.requestStartedAt,matchId:localReplayJobs.matchId,status:localReplayJobs.status,intent:localReplayJobs.intent,
     phase:localReplayJobs.phase,downloadedBytes:localReplayJobs.downloadedBytes,totalBytes:localReplayJobs.totalBytes,downloadBps:localReplayJobs.downloadBps,
     attempts:localReplayJobs.attempts,runAfter:localReplayJobs.runAfter,phaseStartedAt:localReplayJobs.phaseStartedAt,heartbeatAt:localReplayJobs.heartbeatAt,
     retryDeadlineAt:localReplayJobs.retryDeadlineAt,errorCode:localReplayJobs.errorCode,requestedAt:localReplayJobs.requestStartedAt})
@@ -25,7 +25,7 @@ export async function GET(request:HttpRequest) {
     .from(replayJobEvents).innerJoin(sql`replay_job_events done`,sql`done.match_id=${replayJobEvents.matchId} AND done.code='parse_complete'
       AND done.created_at>${replayJobEvents.createdAt} AND done.created_at<${replayJobEvents.createdAt}+interval '10 minutes'`)
     .where(and(eq(replayJobEvents.code,"parse_started"),sql`${replayJobEvents.createdAt}>now()-interval '7 days'`));
-  return Response.json({ok:true,tasks:rows.map(row=>({matchId:String(row.matchId),kind:row.intent,status:row.status,requestedAt:row.requestedAt.toISOString(),
+  return Response.json({ok:true,tasks:rows.map(row=>({matchId:String(row.matchId),kind:row.intent,status:row.status,requestedAt:row.requestedAt.toISOString(),updatedAt:row.updatedAt.toISOString(),
     progress:progressFromRow(row),queueAhead:row.status==='pending'&&row.phase!=='retry_wait'?positions.get(String(row.matchId))??null:null,
     estimatedParseSeconds:sample?.count>=3&&sample.seconds!=null?Math.round(sample.seconds):null}))},{headers:{"Cache-Control":"private, no-store"}});
 }

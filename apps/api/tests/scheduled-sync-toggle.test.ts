@@ -1,3 +1,4 @@
+vi.mock("../src/lib/sync/companion",()=>({runObservedMatchTick:async()=>({processed:0})}));
 import { describe, expect, it, vi } from "vitest";
 
 const repository = vi.hoisted(() => ({
@@ -47,7 +48,7 @@ describe("scheduled sync toggle", () => {
       processed: 0,
       stoppedEarly: false,
       jobs: [],
-      manual: { processed: 0 },
+      manual: { processed: 0 }, observed:{processed:0},
     });
 
     expect(repository.recoverStaleScheduledJobs).toHaveBeenCalledTimes(1);
