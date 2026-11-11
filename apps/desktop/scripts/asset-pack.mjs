@@ -50,10 +50,14 @@ export async function generateAssetManifest(publish = false) {
     .update(JSON.stringify(files))
     .digest("hex");
   const manifest = { version, files };
-  await writeFile(
-    join(root, "asset-manifest.json"),
-    JSON.stringify(manifest, null, 2) + "\n",
-  );
+  const manifestPath = join(root, "asset-manifest.json"), encoded = JSON.stringify(manifest, null, 2) + "\n";
+  const existing = await readFile(manifestPath, "utf8").catch(error => {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  });
+  // Vite imports this manifest from its config. Rewriting identical bytes on
+  // every buildStart triggers a config restart and another buildStart forever.
+  if (existing !== encoded) await writeFile(manifestPath, encoded);
   if (publish)
     await writeFile(
       join(output, "../manifest.json"),

@@ -39,6 +39,14 @@ export async function acceptObservation(
 ) {
   const db = getDb();
   return db.transaction(async (tx) => {
+    // Serialize all devices for this user. Password reset and account deletion
+    // also lock the user before devices; preserve that order and recheck access.
+    const owner = (
+      await tx.execute(sql`SELECT d.user_id FROM companion_devices d JOIN users u ON u.id=d.user_id
+      WHERE d.token_hash=${companionHash(token)} AND d.revoked_at IS NULL AND d.expires_at>now() FOR UPDATE OF u`)
+    ).rows[0];
+    if (!owner)
+      throw new OpenDotaError(401, "companion_unauthorized", "Background access expired");
     const device = (
       await tx.execute(sql`SELECT d.id,d.user_id FROM companion_devices d
       WHERE d.token_hash=${companionHash(token)} AND d.revoked_at IS NULL AND d.expires_at>now() FOR UPDATE`)
@@ -57,7 +65,9 @@ export async function acceptObservation(
     if (existing) return { accepted: true, status: String(existing.status) };
     const count = (
       await tx.execute(
-        sql`SELECT count(*)::int AS n FROM match_observations WHERE user_id=${device.user_id}::uuid AND ended_at>now()-interval '1 day'`,
+        // deadline_at is server-assigned to receipt time + one day. Client
+        // timestamps may be up to 30 days old and cannot enforce this quota.
+        sql`SELECT count(*)::int AS n FROM match_observations WHERE user_id=${device.user_id}::uuid AND deadline_at>now()`,
       )
     ).rows[0];
     if (Number(count.n) >= 100)

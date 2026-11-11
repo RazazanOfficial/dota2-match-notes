@@ -1,4 +1,4 @@
-> مرجع تکمیلی یا تاریخی: برای نقش سرورها و دستور استقرار، [راهنمای جاری](deployment-ubuntu.md) و [handoff](HANDOFF.md) مرجع هستند. دستورهای تک سروری این سند بدون تطبیق اجرا نشوند.
+> سابقه تغییرات و قرارداد همان مرحله است. رفتار و دستور عملیاتی امروز در [معماری](two-vps-architecture.fa.md)، [استقرار](deployment-ubuntu.md)، [دریافت خودکار](automatic-match-discovery.fa.md) و [دانلود مستقیم](direct-replay-download.fa.md) آمده است. عدد تست و وضعیت VPS این متن تاریخی است.
 
 # Desktop refinement
 

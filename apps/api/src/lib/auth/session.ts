@@ -41,6 +41,20 @@ export async function createSession(userId: string) {
   return { token, expiresAt };
 }
 
+// bcrypt runs outside the transaction. Recheck its snapshot under the same user
+// lock used by password reset before a session can outlive credential revocation.
+export async function createPasswordSession(userId: string, passwordHash: string) {
+  return getDb().transaction(async tx => {
+    const [user] = await tx.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.id, userId)).for("update");
+    if (!user || user.passwordHash !== passwordHash) return null;
+    const token = randomBytes(32).toString("base64url");
+    const expiresAt = new Date(Date.now() + SESSION_DURATION_SECONDS * 1_000);
+    await tx.update(users).set({ lastLoginAt: new Date(), updatedAt: new Date() }).where(eq(users.id, userId));
+    await tx.insert(sessions).values({ userId, tokenHash: hashSessionToken(token), expiresAt });
+    return { token, expiresAt };
+  });
+}
+
 export async function getSessionUser(token: string | undefined) {
   if (!token) return null;
 

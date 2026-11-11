@@ -44,7 +44,12 @@ export async function POST(request: HttpRequest, context: RouteContext) {
     const state = await requestReplayJob(parsedId.data, user.id, "analysis");
     if (state === "not_found") return Response.json({ ok: false, error: { code: "match_not_found", message: "مچ در دفتر شما پیدا نشد" } }, { status: 404 });
     if (state === "expired") return Response.json({ ok: false, error: { code: "replay_too_old", message: "از این مچ بیش از ۲۰ روز گذشته و درخواست جدید Replay برای آن ارسال نمی‌شود" } }, { status: 409 });
-    return Response.json({ ok: true, preparation: { replay: state === "already_queued" ? "pending" : state, tokenCost: state === "queued" ? ANALYSIS_TOKEN_COST : 0 } }, { status: state === "ready" ? 200 : 202, headers: { "Cache-Control": "private, no-store" } });
+    const job = state === "ready" ? null : await getReplayJobState(parsedId.data);
+    return Response.json({ ok: true, preparation: {
+      replay: state === "ready" ? "ready" : job?.status || (state === "already_queued" ? "pending" : state),
+      progress: job?.progress || null, errorCode: job?.errorCode || null,
+      tokenCost: state === "queued" ? ANALYSIS_TOKEN_COST : 0,
+    } }, { status: state === "ready" ? 200 : 202, headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     logFailure("Unable to request match analysis", { matchId: parsedId.data, error });
     return Response.json({ ok: false, error: { code: "analysis_request_failed", message: "درخواست تحلیل این مچ ثبت نشد" } }, { status: 500 });

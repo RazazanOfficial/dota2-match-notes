@@ -53,6 +53,23 @@ beforeEach(async()=>{
 const row=async()=> (await client.query("SELECT * FROM local_replay_jobs WHERE match_id=2")).rows[0];
 const start=async(intent="download")=>{await worker.enqueueOne(client,2,intent);return (await worker.claim(client)).job;};
 describe("replay queue SQL and persisted lifecycle",()=>{
+  it('cleans completed archived checkpoints, preserves both active consumers, and frees staging capacity',async()=>{
+    const {cleanCompletedPipelineSpool}=await import('../scripts/replay-parser/replay-spool.mjs');
+    const job=await start('analysis');await worker.handle(client,job,worker.hooksFor(client,job),{pipeline:true});
+    const pipeline=await import('../scripts/replay-parser/run-pipeline.mjs');
+    const archive=await pipeline.claimArchive(client);await pipeline.archiveCheckpoint(client,archive);
+    const completed=await row(),path=join(folder,completed.spool_name);
+    await client.query("UPDATE local_replay_jobs SET status='pending',phase='awaiting_parse' WHERE match_id=2");
+    expect(await cleanCompletedPipelineSpool(client,folder)).toBe(0);expect(await readFile(path)).toEqual(payload);
+    await client.query("UPDATE local_replay_jobs SET status='completed',phase='completed' WHERE match_id=2");
+    await client.query("UPDATE replay_archive_jobs SET status='processing',locked_at=now() WHERE match_id=2");
+    expect(await cleanCompletedPipelineSpool(client,folder)).toBe(0);expect(await readFile(path)).toEqual(payload);
+    await client.query("UPDATE replay_archive_jobs SET status='completed',locked_at=NULL WHERE match_id=2");
+    expect(await cleanCompletedPipelineSpool(client,folder)).toBe(1);
+    await expect(lstat(path)).rejects.toMatchObject({code:'ENOENT'});
+    expect(await row()).toMatchObject({spool_name:null,spool_complete:false,archive_status:'active',status:'completed'});
+    expect(await cleanCompletedPipelineSpool(client,folder)).toBe(0);
+  });
   it("does not contact the relay in direct mode when metadata is not ready", async()=>{
     process.env.LOCAL_REPLAY_DOWNLOAD_MODE="direct";
     await client.query("UPDATE dota_matches SET raw_data=$1 WHERE match_id=2",[JSON.stringify({match_id:2,players:[]})]);

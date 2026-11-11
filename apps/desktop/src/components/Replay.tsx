@@ -44,10 +44,12 @@ export function Replay({t,live=false,session=previewProfile}:{t:Messages;live?:b
  const queued=useSyncExternalStore(manager?.subscribe||noopSubscribe,queuedSnapshot,()=>"");
  const [tab,setTab]=useState<"find"|"local">("find"),[period,setPeriod]=useHistoryPeriod(session),[anchor,setAnchor]=useState(live?dateNow():SAMPLE_DATE);
  const [mode,setMode]=useState("all"),[position,setPosition]=useState("all"),[query,setQuery]=useState(""),[id,setId]=useState(""),[searched,setSearched]=useState("");
- const [page,setPage]=useState(1),[total,setTotal]=useState(0);
+ const [page,setPage]=useState(1);
  const historyPath=matchListPath({period,anchor,mode,position,query,page,pageSize:30});
  useEffect(()=>{setPage(1);setHistoryLimit(10);},[period,anchor,mode,position,query]);
- const [recent,setRecent]=useState<HistoryMatch[]>([]),[historyLoading,setHistoryLoading]=useState(live),[historyLimit,setHistoryLimit]=useState(10);
+ const [snapshot,setSnapshot]=useState<{path:string;rows:HistoryMatch[];total:number}|null>(null),[historyLoading,setHistoryLoading]=useState(live),[historyLimit,setHistoryLimit]=useState(10);
+ const recent=useMemo(()=>snapshot?.path===historyPath?snapshot.rows:[],[snapshot,historyPath]);
+ const total=snapshot?.path===historyPath?snapshot.total:0;
  const [settings,setSettings]=useState<ReplaySettings>({dotaPath:null,replayPath:null}),[files,setFiles]=useState<ReplayFile[]>([]),[localLimit,setLocalLimit]=useState(10);
  const [busy,setBusy]=useState(""),[error,setError]=useState<unknown>(null),[notice,setNotice]=useState(""),[configOpen,setConfigOpen]=useState(false),[nativeLoading,setNativeLoading]=useState(native),[searching,setSearching]=useState(false),[revision,setRevision]=useState(0);
  const mounted=useRef(true),searchRequest=useRef<AbortController|null>(null);
@@ -59,9 +61,9 @@ export function Replay({t,live=false,session=previewProfile}:{t:Messages;live?:b
  useEffect(()=>{
    if(!live)return;const controller=new AbortController();setHistoryLoading(true);
    const cancel=deferWork(()=>{
-     const cached=cachedRead<{rows:HistoryMatch[];total?:number}>(historyPath);if(cached?.rows){setRecent(cached.rows);setTotal(cached.total??cached.rows.length);}
+     const cached=cachedRead<{rows:HistoryMatch[];total?:number}>(historyPath);if(cached?.rows)setSnapshot({path:historyPath,rows:cached.rows,total:cached.total??cached.rows.length});
      if(connectionState()==="offline"){setHistoryLoading(false);return;}
-     void apiRequest<{rows:HistoryMatch[];total?:number}>(historyPath,{signal:controller.signal}).then(result=>{if(!controller.signal.aborted){setRecent(result.rows.filter(row=>validReplayId(row.id)));setTotal(result.total??result.rows.length);cachedWrite(historyPath,result);}}).catch(failure=>{if(!controller.signal.aborted&&errorCode(failure)!=="offline_mode")setError(failure);}).finally(()=>{if(!controller.signal.aborted)setHistoryLoading(false);});
+     void apiRequest<{rows:HistoryMatch[];total?:number}>(historyPath,{signal:controller.signal}).then(result=>{if(!controller.signal.aborted){setSnapshot({path:historyPath,rows:result.rows.filter(row=>validReplayId(row.id)),total:result.total??result.rows.length});cachedWrite(historyPath,result);}}).catch(failure=>{if(!controller.signal.aborted&&errorCode(failure)!=="offline_mode")setError(failure);}).finally(()=>{if(!controller.signal.aborted)setHistoryLoading(false);});
    });return()=>{cancel();controller.abort();};
  },[live,historyPath,revision,connection]);
  useEffect(()=>{
@@ -91,7 +93,7 @@ export function Replay({t,live=false,session=previewProfile}:{t:Messages;live?:b
    catch(failure){if(mounted.current)setError(failure);}finally{if(mounted.current)setBusy("");}
  },[busy,native,live,settings.replayPath,manager,t]);
  const historyIds=useMemo(()=>history.slice(0,historyLimit).map(row=>row.id),[history,historyLimit]);
- const fileIds=useMemo(()=>localFiles.filter(file=>mode==="all"||metadata[file.matchId]?.mode===mode).filter(file=>position==="all"||metadata[file.matchId]?.position===Number(position)).map(file=>file.matchId),[localFiles,mode,position,metadata]);
+ const fileIds=useMemo(()=>localFiles.filter(file=>mode==="all"||metadata[file.matchId]?.mode===mode).filter(file=>position==="all"||(metadata[file.matchId]?.position??0)===Number(position)).map(file=>file.matchId),[localFiles,mode,position,metadata]);
  return <div className="screen-stack replay-workspace"><header className="workspace-header replay-header"><div className="workspace-heading"><div className="workspace-title-icon"><Film size={25}/></div><div><p className="eyebrow">{fa?"کتابخانهٔ شخصی":"YOUR REPLAY LIBRARY"}</p><h1>{t.replay}</h1></div><button className="secondary-button replay-location-toggle" aria-expanded={configOpen} onClick={()=>setConfigOpen(value=>!value)}><Settings2 size={16}/>{t.dotaFolder}<ChevronDown size={14}/></button></div><div className="history-command-bar"><PeriodControls {...{period,setPeriod,anchor,setAnchor,t}} registration={profileRegistrationDate(session)} maxDate={live?dateNow():SAMPLE_DATE}/><span className="command-divider"/><HistoryFilters {...{t,mode,setMode,position,setPosition,query,setQuery}}/></div></header>
  {!!error&&<ErrorNotice error={error} t={t}/>}{notice&&<p role="status" className="replay-notice">{notice}</p>}
  <section className={`replay-setup-card ${configOpen?"expanded":""}`}><div className="replay-setup-summary"><FolderOpen size={18}/><span>{settings.dotaPath?<bdi>{settings.dotaPath}</bdi>:t.folderHint}</span>{settings.replayPath&&<Check size={16} className="good"/>}<div className="replay-tutorial-buttons" role="group" aria-label={fa?"آموزش‌های ریپلی":"Replay tutorials"}><ReplaySetupGuide t={t} kind="playback"/></div></div>{configOpen&&<AnimatedContent className="replay-setup-detail"><p className="muted">{fa?"مسیر نصب بازی از کتابخانه های Steam پیدا می شود.":"Find the game using your Steam libraries."}</p><button className="primary-button" disabled={!native||!!busy||globalBusy} onClick={()=>{setBusy("discover");void replayNative.discover().then(value=>{setSettings(value);setRevision(n=>n+1);if(!value.replayPath)setNotice(t.chooseFolder);}).catch(setError).finally(()=>setBusy(""));}}><Search size={16}/>{fa?"تشخیص خودکار مسیر":"Detect installation"}</button><button className="secondary-button replay-folder-button" disabled={!native||!!busy||globalBusy||nativeLoading} onClick={()=>void chooseFolder()}><FolderOpen size={16}/>{fa?"بازکردن پوشه":"Open folder"}</button>{settings.replayPath&&<p className="replay-path"><small>{t.replayFolder}</small><bdi>{settings.replayPath}</bdi></p>}{!native&&<small className="muted">{t.nativeRequired}</small>}</AnimatedContent>}</section>

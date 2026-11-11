@@ -22,6 +22,7 @@ import { createSession } from "../src/lib/auth/session";
 import { createDesktopAuthCode } from "../src/lib/auth/desktop";
 import { createHash } from "node:crypto";
 import { hashPassword } from "../src/lib/auth/password";
+import * as passwordAuth from "../src/lib/auth/password";
 import { claimManualOpenDotaSync, releaseManualOpenDotaSyncClaim } from "../src/lib/opendota/repository";
 import { verifyDatabaseSchema } from "../src/lib/db/compatibility";
 import { manualMatchSyncInputSchema } from "../src/lib/opendota/sync-request";
@@ -65,6 +66,22 @@ beforeAll(async () => {
 afterAll(async () => { await client.close(); if(oldFolder) await rm(oldFolder,{recursive:true,force:true}); vi.unstubAllEnvs(); });
 
 describe("PostgreSQL schema migration and real Express services", () => {
+  it('returns persisted request versions after accepting an analysis retry',async()=>{
+    const matchId=9100099901,startedAt=new Date();
+    const [day]=await db.select().from(journalDays).where(eq(journalDays.userId,userId)).limit(1);
+    await db.insert(dotaMatches).values({matchId,startedAt,rawData:{match_id:matchId,start_time:startedAt.getTime()/1000,duration:1800,players:[]}});
+    const [entry]=await db.insert(journalMatches).values({userId,dayId:day.id,number:1000,dotaMatchId:matchId,heroId:1,heroName:'Anti-Mage',result:'win',startedAt}).returning();
+    const old=new Date(Date.now()-60000);
+    await db.insert(localReplayJobs).values({matchId,status:'failed',phase:'failed',requestStartedAt:old,updatedAt:old,errorCode:'replay_parser_failed'});
+    try {
+      const result=await request(createApp()).post(`/api/matches/${entry.id}/analysis`).set('Cookie',cookie).set('Origin','https://dota.example').send({});
+      expect(result.status).toBe(202);expect(result.body.preparation.replay).toBe('pending');
+      const progress=result.body.preparation.progress;
+      expect(Date.parse(progress.requestStartedAt)).toBeGreaterThan(old.getTime());expect(Date.parse(progress.updatedAt)).toBeGreaterThan(old.getTime());
+      const current=await request(createApp()).get(`/api/matches/${entry.id}/analysis`).set('Cookie',cookie);
+      expect(current.body.preparation.progress.requestStartedAt).toBe(progress.requestStartedAt);
+    } finally {await db.delete(journalMatches).where(eq(journalMatches.id,entry.id));await db.delete(dotaMatches).where(eq(dotaMatches.matchId,matchId));}
+  });
   async function removeReference(id: string) {
     await db.delete(monthlyReferenceEvents).where(eq(monthlyReferenceEvents.versionId,id));
     await db.delete(monthlyHeroPositionMeta).where(eq(monthlyHeroPositionMeta.versionId,id));
@@ -323,6 +340,21 @@ describe("PostgreSQL schema migration and real Express services", () => {
     const result=await request(createApp()).post("/api/auth/password/login").set("Origin","https://dota.example").send({steamIdentifier:"1",password});
     expect(result.status).toBe(200);expect(result.headers["set-cookie"][0]).toContain("HttpOnly");
     expect(result.headers["set-cookie"][0]).toContain("Secure");
+  });
+  it('rejects an old-password login when credentials change during bcrypt verification',async()=>{
+    const oldHash=await hashPassword(password),nextHash=await hashPassword('replacement-test-password');
+    const [owner]=await db.insert(users).values({steamId:'76561197960275000',steamAccountId:9272,handle:'login_reset_race',displayName:'Race test',passwordHash:oldHash}).returning();
+    const verify=passwordAuth.verifyPassword;
+    const spy=vi.spyOn(passwordAuth,'verifyPassword').mockImplementationOnce(async(value,hash)=>{
+      const valid=await verify(value,hash);
+      await db.update(users).set({passwordHash:nextHash}).where(eq(users.id,owner.id));
+      return valid;
+    });
+    try {
+      const result=await request(createApp()).post('/api/auth/password/login?session=bearer').send({steamIdentifier:owner.steamId,password});
+      expect(result.status).toBe(401);expect(result.body.token).toBeUndefined();
+      expect(await db.select().from(sessions).where(eq(sessions.userId,owner.id))).toHaveLength(0);
+    } finally {spy.mockRestore();await db.delete(users).where(eq(users.id,owner.id));}
   });
   it("issues and revokes an opaque bearer session for a native client", async () => {
     const app=createApp();

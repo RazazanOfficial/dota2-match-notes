@@ -1,13 +1,17 @@
-# Local replay tutorials
+# Replay playback media
 
-All screenshots are shipped inside the desktop installer. No VPS image request is needed.
+Tutorial images are source assets. Nonessential media are downloaded through the
+versioned desktop asset pack, not all bundled inside the installer. See the
+[asset and installation guide](../../../../docs/desktop-assets-and-install.fa.md).
 
-- Folder setup: `replay-folder/fa/step-01.png` through `step-06.png`, and matching `en` files.
-- Playback: `replay-playback/fa/step-02.png` through `step-07.png`, and matching `en` files.
-- Playback step 1 reuses `replay-folder/{language}/step-01.png`. Do not duplicate it.
-- Use exact dimensions **1672 × 941** for both languages. Preserve readable UI labels.
-- Playback images may be added locally at the paths above. No extra instructional captions are rendered below images. A missing image shows only a neutral icon, with no coming-soon text.
-- Add the final images at the paths above **before rebuilding the installer**. Copying them beside an already installed executable does not update its bundled assets.
-- Step 3 offers a small floating `-console` copy control over the image.
-- Step 6 reads `replay-playback/{language}/step-06.png` directly; no special placeholder or hardcoded caption is shown.
-- The guide renders only its current image. Icon-only previous/next arrows sit at the vertical center of its two sides, reversed for Persian.
+- Folder discovery is automatic; the old manual folder-selection walkthrough is
+  retired from the client. Its old screenshots are retained as source history.
+- `replay-folder/{language}/step-01.png` remains because playback step 1 reuses it.
+- Playback images use `replay-playback/{language}/step-02.png` through `step-07.png`.
+- Preserve the existing 1672 by 941 dimensions and readable fa/en UI labels.
+- After changing media, regenerate and review `apps/desktop/asset-manifest.json`,
+  publish the matching objects on Iran, then build the matching installer.
+- Copying images beside an installed executable does not update its embedded
+  manifest or the verified media cache.
+- Previous/next arrows follow the UI language. Missing images must not expose a
+  broken filesystem path or invent instructions.

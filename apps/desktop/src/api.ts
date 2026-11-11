@@ -141,7 +141,9 @@ async function performRequest(path: string, method: string, init: RequestInit, h
 }
 
 export async function currentSession() {
+    const token = bearer, revision = accountRevision;
     const result = await apiRequest<{ authenticated: boolean; user?: { handle: string; steamId: string; steamAccountId: number; displayName: string; avatarUrl: string | null; createdAt: string; registeredDate: string; isSuperAdmin: boolean; hasPassword: boolean; hasVerifiedEmail: boolean; onboardingCompletedAt: string | null; recoveryCodesSavedAt: string | null } }>("/api/auth/session");
+    if (revision !== accountRevision) throw cancellation();
     if (!result.authenticated || !result.user) {
         clearOfflineAccount(); window.dispatchEvent(new Event("dota-notes:auth-invalid"));
         throw new ApiError("Session expired", 401);
@@ -151,7 +153,8 @@ export async function currentSession() {
         displayName: user.displayName, avatarUrl: user.avatarUrl, createdAt: user.createdAt,
         registeredDate: user.registeredDate, isSuperAdmin: user.isSuperAdmin, hasPassword: user.hasPassword,
         hasVerifiedEmail: user.hasVerifiedEmail, onboardingCompletedAt: user.onboardingCompletedAt, recoveryCodesSavedAt: user.recoveryCodesSavedAt } satisfies Session;
-    if (bearer) await saveOfflineSession(bearer, session);
+    if (token) await saveOfflineSession(token, session);
+    if (revision !== accountRevision) throw cancellation();
     return session;
 }
 
@@ -182,6 +185,7 @@ export async function getSyncStatus(signal?: AbortSignal) {
 }
 
 export async function logout() {
+    const token = bearer;
     try { await apiRequest("/api/auth/logout", { method: "POST" }); }
-    finally { setBearer(null); }
+    finally { if (bearer === token) setBearer(null); }
 }

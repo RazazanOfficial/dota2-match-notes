@@ -1,65 +1,46 @@
-# نسخه‌گذاری و انتشار
+# نسخه گذاری و انتشار
 
-ترجیح تأییدشدهٔ کاربر: هر انتشار قطعی tag داشته باشد. ساخت tag و push آن پس از بررسی نسخه انجام می‌شود؛
-پچ ZIP یا موفقیت کامپایل به‌تنهایی مجوز اعلام release آمادهٔ production نیست.
+commit، merge، Git tag، GitHub Release، installer و استقرار VPS مراحل جدا هستند.
+موفقیت بیلد یا وجود ZIP به تنهایی release عمومی محسوب نمی شود.
+مرجع فرمان های Git و VPS [استقرار عادی](deployment-ubuntu.md) است؛ دستور شاخه های تاریخی دوباره اجرا نشود.
 
-## قرارداد نسخه‌ها
+## قرارداد نسخه
 
-- tag کل مخزن با قالب `vMAJOR.MINOR.PATCH`؛ پیشنهاد این مرحله `v3.2.0` است، مطابق version ریشه.
-- tag روی commit ادغام‌شدهٔ `main` قرار می‌گیرد و annotated است؛ tag قبلی بازنویسی یا force-push نمی‌شود.
-- نسخهٔ اپ دسکتاپ فعلاً `0.1.0` است؛ هنگام انتشار installer، نسخهٔ `apps/desktop/package.json`،
-  `src-tauri/Cargo.toml` و `src-tauri/tauri.conf.json` هماهنگ شوند. versionهای اپ‌ها می‌توانند از release کل مخزن مستقل باشند.
-- نسخهٔ موبایل در `apps/mobile/app.json` و package آن هماهنگ شود. build numberهای Android/iOS نیز
-  هنگام انتشار واقعی تنظیم می‌شوند؛ Git tag به‌تنهایی نسخهٔ installer یا store را عوض نمی‌کند.
-- برای انتشار آزمایشی می‌توان نامی مانند `v3.2.0-rc.1` انتخاب کرد. نام قطعی پیش از tag با کاربر نهایی شود.
-- GitHub Release، فایل installer، Git tag و استقرار VPS مراحل جدا هستند؛ ساخت tag خودبه‌خود آن‌ها را انجام نمی‌دهد.
+- نسخه release مخزن با tag annotated مانند `vMAJOR.MINOR.PATCH` روی commit مشخص main ثبت می شود.
+- نام نسخه باید برای همان انتشار انتخاب شود؛ شماره قدیمی `v3.2.0` دستور ساخت tag تکراری نیست.
+- نسخه دسکتاپ در `apps/desktop/package.json`، `apps/desktop/src-tauri/Cargo.toml` و `apps/desktop/src-tauri/tauri.conf.json` هماهنگ شود. lockfile مربوط هم باید با ابزار پروژه به روز باشد.
+- Companion crate نسخه مستقل دارد؛ مستقل بودن آن به معنی نیاز نداشتن به ساخت executable همراه نصاب نیست.
+- نسخه موبایل در `apps/mobile/package.json` و `apps/mobile/app.json` و build numberهای انتشار واقعی هماهنگ شود.
+- تغییر doc به تنهایی نیاز به تغییر نسخه اجرایی یا نصاب ندارد.
 
-## مراحل پس از آماده‌شدن نسخه
+## پیش از انتشار
 
-از checkout تمیز، بعد از موفقیت بررسی‌ها و تأیید رفتار Windows و وب. این فرمان‌ها برای آینده‌اند:
+main تمیز و همان SHA هدف باشد؛ بررسی های مرتبط و تست نصب واقعی اجرا شده باشند.
+برای assets، manifest همان نصاب باید به objectهای منتشرشده در ایران اشاره کند.
+API و worker سازگار قبل از توزیع نصاب جدید مستقر شوند. وضعیت هر VPS جدا ثبت شود.
+برای تغییر schema، rollback و سازگاری نسخه قبل پیش از انتشار مشخص باشند.
 
-```powershell
-Set-Location "D:\Projects\dota2-match-notes"
-git add -A
-git diff --cached --stat
-git commit -m "Create app workspaces and desktop foundation"
-git push -u origin chore/monorepo-desktop-foundation
-git switch main
-git pull --ff-only origin main
-git merge --no-ff chore/monorepo-desktop-foundation -m "Merge branch 'chore/monorepo-desktop-foundation'"
-git push origin main
-```
-
-بعد از موفقیت CI و نهایی‌شدن انتشار، برای نسخهٔ پیشنهادی:
+پس از تعیین نسخه، در PowerShell ریشه ریپو:
 
 ```powershell
 git status --short
+git switch main
+git pull --ff-only origin main
 git fetch origin --tags
-git tag --list v3.2.0
-git tag -a v3.2.0 -m "Dota Notes 3.2.0 - monorepo and desktop foundation" HEAD
-git push origin v3.2.0
-git show --no-patch v3.2.0
+$DotaRelease = Read-Host "Release tag (for example vX.Y.Z)"
+if ($DotaRelease -notmatch '^v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') { throw "Invalid release tag" }
+if (git tag --list $DotaRelease) { throw "Tag already exists; choose a new version" }
+git log -1 --format="%H%n%s"
+git tag -a $DotaRelease -m "Dota Notes $DotaRelease"
+git push origin $DotaRelease
+git show --no-patch $DotaRelease
 ```
 
-هنگام tag باید روی `main` و HEAD همان release باشد. اگر tag از قبل وجود دارد، آن را حذف یا جابه‌جا نکنید؛
-نسخهٔ جدید انتخاب کنید. اگر main بعد از commit هدف جلو رفته است، به‌جای HEAD، SHA دقیق همان merge commit را بدهید.
-tag و SHA نسخهٔ مستقرشده در یادداشت انتشار ثبت شوند. مراحل VPS مطابق [راهنمای monorepo](monorepo-desktop-foundation.md)
-است؛ بعد از استقرار SHA با `git rev-parse HEAD` تطبیق داده شود.
+این دستورها فقط در زمان تصمیم واقعی انتشار اجرا شوند. tag قبلی جابه جا، حذف یا force-push نشود.
+اگر main از نسخه تست شده جلو رفته، به جای HEAD باید SHA تایید شده همان انتشار انتخاب شود.
 
-## اصلاح نصب بستهٔ اولیه
+## یادداشت انتشار
 
-در لاگ کاربر، اعمال v2 موفق بود اما `npm ci` پیش از نصب با کمبود metadata بعضی optional dependencyهای
-esbuild متوقف شد. خطا با npm 11.6.2 و انتخاب بسته‌های Windows بازتولید شد، درحالی‌که بررسی قبلی با npm 11.9
-موفق بود. lockfile در workspace بدون node_modules با resolver 11.6.2 بازسازی شد؛ versionهای وابستگی‌های موجود
-و package.json برنامه‌ها حفظ شدند. CI نیز Windows و Linux را پوشش می‌دهد.
-
-اصلاحیهٔ کوچک را روی همان branch و ساختار اعمال‌شدهٔ v2 کپی کنید؛ اسکریپت اولیهٔ انتقال مجدداً اجرا نمی‌شود.
-فایل واقعی env و سورس باقی می‌مانند. پس از جایگزینی lockfile:
-
-```powershell
-npm --version
-npm ci
-```
-
-اگر نصب خطا داشت، پیش از تست و typecheck همان خطا بررسی شود. خطاهای نبودن Expo، Express و packageهای
-مشترک در لاگ اولیه پس از نصب ناموفق رخ داده‌اند و باید بعد از نصب صحیح دوباره ارزیابی شوند.
+نسخه و SHA، تغییر قابلیت، migration/env/unit لازم، نسخه manifest، نام و SHA256 نصاب، نتیجه بررسی Windows و وضعیت هر دو VPS ثبت شوند.
+تعداد pass و skipped و دلیل skipped جدا نوشته شود؛ تعداد گزارش قدیمی به عنوان تضمین نسخه جدید تکرار نشود.
+تست Linux و jsdom جای تست Task Scheduler، GSI و WebView2 واقعی نیستند.

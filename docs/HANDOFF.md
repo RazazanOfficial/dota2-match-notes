@@ -1,76 +1,65 @@
-# تحویل جاری: ایران و آلمان
+# تحویل جاری پروژه
 
-مبنای سورس `072e48b27bfdf9bcb6ae9a925fac5136ed4cc3cd` است. شاخه کار
-`feat/two-vps-processing` است. این بسته هنوز روی VPS اجرا نشده است.
+مبنای این بازبینی `0ab8d82beef0f790aea40b7fd42fddf44272518d` از `main` است.
+این SHA مبنای خواندن سورس است؛ موفق بودن استقرار هر میزبان باید جدا با خروجی همان میزبان ثبت شود.
+برای شروع از [فهرست مستندات](README.md) و [معماری](two-vps-architecture.fa.md) استفاده کن.
 
-## مرجع جاری
+## قرارداد کار و تحویل
 
-- [معماری](two-vps-architecture.fa.md)
-- [استقرار و rollback](deployment-ubuntu.md)
-- [دانلود مستقیم](direct-replay-download.fa.md)
-- [اندازه گیری مسیر فایل](network-baseline-2026-11.fa.md)
-- گزارش اعتبارسنجی در بسته تحویل؛ وضعیت واقعی VPS فقط از خروجی همان VPS مشخص است.
+- ویندوز: checkout موجود، `pull` روی main، شاخه با الگوی `fix/<topic>` یا `feat/<topic>`، Copy/Replace و بررسی؛ سپس commit، push و merge با `--no-ff` را خود MeriJ انجام می دهد، نه عامل.
+- VPS: همان checkout و کاربر `dota2notes`؛ Git همیشه با همین کاربر و `--no-pager` اجرا شود.
+- اجرای پس زمینه با `nohup` راه بازیابی موردی یک نشست قطع شده بود؛ جزو استقرار عادی نیست.
+- نصب مجدد OS، clone دوباره، `reset --hard`، `git clean` یا حذف دیتابیس بخشی از آپدیت نیست.
+- رمز، env، dump، کلید خصوصی، device config و URL امضاشده وارد Git، ZIP یا گزارش عمومی نشوند.
+- تغییر سرویس های دیگر مانند TeamSpeak جزو این پروژه و این راهنمای استقرار نیست.
+- تغییر مستندات به تنهایی به بیلد، migration، restart یا نصاب جدید نیاز ندارد.
 
-## قرارداد همکاری
+## نصب موجود
 
-آخرین main و شاخه جدا؛ تغییر محلی کاربر بازنویسی نشود. تحویل ZIP با مسیر نسبی
-فایل هاست. کاربر در checkout موجود Windows ابتدا pull و branch و سپس Copy/Replace
-انجام می دهد. commit/push/merge خودکار انجام نشود. merge کاربر `--no-ff` است.
-روی VPS موجود clone مجدد یا reset/clean انجام نشود. secrets، dump، کلید خصوصی و
-URL موقت واقعی وارد Git، ZIP و لاگ نشوند. TeamSpeak یا دیتابیس قبلی خودکار پاک نشوند.
+| مورد | ایران | آلمان |
+| --- | --- | --- |
+| IP | `87.107.165.50` | `143.20.60.45` |
+| نقش | `app` | `compute` |
+| SSH در نصب فعلی | `9011` | `9011` |
+| سورس | `/var/www/dota2notes` | همان مسیر |
+| env خصوصی | `/var/www/dota2notes/.env.production` | همان مسیر، با مقادیر نقش compute |
+| دیتابیس | `dota_notes`؛ مالک `dota_notes_app` | اتصال به همان DB با `dota_notes_compute` |
+| API | `127.0.0.1:4100` | `127.0.0.1:4100`، خصوصی |
+| وب | Next روی `127.0.0.1:3000` | لازم نیست |
 
-## نقش ها
+این جدول اطلاعات نصب شناخته شده است، نه مقدار مناسب برای هر محیط تازه.
+نام `dota_notes_primary` در طرح مهاجرت اولیه پیشنهاد شده بود؛ DB فعلی را برای هماهنگ شدن با آن نساز یا تغییر نام نده.
 
-- `standalone`: رفتار یک سرور برای توسعه و سازگاری نصب قدیمی.
-- `app`: API عمومی، سایت، session، DB اصلی و ثبت صف در ایران.
-- `compute`: دریافت خارجی، parser، sync، مرجع STRATZ و تصویر روی آلمان.
-- همه workerها روی آلمان به همان دیتابیس ایران از SSH متصل می شوند؛ DB دوم نداریم.
-- پورت 15432 آلمان به 5432 ایران و پورت 14100 ایران به API:4100 آلمان متصل اند؛
-  همگی loopback. PG اینترنتی نمی شود. کلید host تایید و حساب SSH محدود است.
-- `DOTA_COMPUTE_TOKEN` با session کاربر متفاوت است؛ هر دو در هدایت خصوصی رعایت می شوند.
-- نسخه عمومی سایت و API به IP ایران اشاره می کند. failover جهانی اضافه نشده است.
+## قابلیت های فعلی و مرز آنها
 
-## مسیرهای مهم
+- Companion مستقل با Task Scheduler، GSI محلی و outbox؛ بستن UI آن را متوقف نمی کند.
+- ثبت پایان بازی در ایران و دریافت اطلاعات توسط آلمان؛ شروع معمول پنج دقیقه بعد از رویداد و retry محدود.
+- دریافت دوره ای سرور و Fetch دستی برای بازی روی سیستم دیگر یا رویداد جا افتاده باقی هستند.
+- تاریخچه دستی snapshot دارد؛ مچ موجود دوباره وارد نمی شود و کش معتبر جزئیات قابل استفاده است. کشف شناسه های تازه همچنان ممکن است درخواست خارجی لازم داشته باشد.
+- assets پیش از ورود بررسی و دریافت می شوند؛ لوگو، فونت و فایل های ضروری داخل نصب می مانند.
+- تشخیص مسیر Steam/Dota خودکار است؛ مسیر پیش از دانلود اعتبارسنجی و انتخاب دستی به عنوان fallback حفظ می شود.
+- parse و archive مستقل اند؛ درخواست دانلود اولویت آماده سازی/آرشیو می گیرد و منتظر همه تحلیل ها نمی ماند.
+- وضعیت مشترک تسک، نسخه درخواست و انیمیشن کوتاه مرحله ها؛ درصد یا سرعت ساختگی نداریم.
+- GC client اختصاصی، بات Telegram، resume بایتی و failover جهانی پیاده نشده اند.
 
-| بخش | مسیر |
+## نگاشت کد
+
+| موضوع | مرجع سورس |
 | --- | --- |
-| نقش، allowlist و کنترل مقصد | `apps/api/src/runtime/topology.ts` |
-| guard مشترک worker | `apps/api/scripts/node-role.mjs` |
-| پل HTTP خصوصی | `apps/api/src/http/compute-proxy.ts` |
-| صف و پردازش | `apps/api/scripts/replay-parser/run-pipeline.mjs` و `run-queue.mjs` |
-| وضعیت ریپلی و آرشیو | `apps/api/src/lib/replay/job-repository.ts` |
-| امضای دانلود | `apps/api/src/lib/replay/download-ticket.ts` |
-| اعتبارسنجی لینک و هش | `apps/desktop/src-tauri/src/replay_download.rs` |
-| دریافت و باز کردن ریپلی | `apps/desktop/src-tauri/src/replay.rs` و `replay_codec.rs` |
-| دانلود پس زمینه | `apps/desktop/src/taskManager.ts` |
-| نمونه های نقش | `deploy/env.app.example` و `deploy/env.compute.example` |
+| نقش، مسیرهای compute و اعتبارسنجی topology | `apps/api/src/runtime/topology.ts` |
+| پل خصوصی و timeout | `apps/api/src/http/compute-proxy.ts` |
+| tick و daemon | `apps/api/scripts/worker.ts` |
+| دریافت دستی و کش تاریخچه | `apps/api/src/lib/sync/manual-service.ts` و `apps/api/src/lib/opendota/service.ts` |
+| دستگاه و رویداد مچ | `apps/api/src/lib/sync/companion.ts` و مسیرهای `routes/sync/` |
+| صف های آماده سازی، parse و archive | `apps/api/scripts/replay-parser/run-pipeline.mjs` |
+| وضعیت و download ticket | `apps/api/src/lib/replay/job-repository.ts` و `download-ticket.ts` |
+| رسانه و manifest | `apps/desktop/scripts/asset-pack.mjs` و `src-tauri/src/asset_cache.rs` |
+| تشخیص بازی و Companion | `apps/desktop/src-tauri/src/steam_paths.rs` و `companion_core.rs` |
+| وضعیت مشترک UI | `apps/desktop/src/taskManager.ts` و `useLiveMatch.ts` |
 
-## قواعد داده و بازیابی
+## وضعیت و بررسی های باقی مانده
 
-منشای داده parser، خلاصه خارجی و override کاربر متفاوت است؛ فرمول نمره و مرجع
-فعال تغییر داده نشده اند. queue، lease و heartbeat در DB باقی می مانند. قطع
-اتصال، وضعیت ذخیره شده ایران را حذف نمی کند. HTTP نوشتنی خودکار retry نمی شود.
-
-spool متعلق به آلمان است؛ ایران آن را روی دیسک خود بررسی نمی کند. مچ قدیمی با
-checkpoint ثبت شده می تواند برای بررسی فایل روی آلمان دوباره صف شود. دانلود
-کلاینت جدید منتظر آرشیو می ماند. پایان بودجه آرشیو به کاربر گزارش می شود؛ درخواست
-تازه کاربر تلاش آرشیو را از نو شروع می کند. سقف شبکه ۶، metadata ۱۲ در ۲۴ ساعت و
-آرشیو ۸ حفظ شده است.
-
-ورود تازه، ایمیل و lookup خارجی هنگام قطع پل می توانند 503 بدهند. session موجود،
-تاریخچه، health و enqueue محلی ادامه دارند. پس از قطع عمدی unit پل، سرویس های
-وابسته باید صریح restart شوند. وقفه عادی شبکه با reconnect و بازیابی lease مدیریت می شود.
-
-## محدودیت ها
-
-- SQL worker از لینک بین الملل عبور می کند؛ latency و حجم نتیجه باید روی VPS سنجیده شود.
-- دانلود مستقیم resume بایتی ندارد. URL پانزده دقیقه اعتبار دارد؛ اتصال native
-  بیست ثانیه و کل انتقال پانزده دقیقه timeout دارند. خطا فایل نهایی معتبر ایجاد نمی کند.
-- native فقط میزبان تست شده `c677095.parspack.net` را می پذیرد. تغییر storage به
-  بررسی allowlist و نصاب تازه نیاز دارد. bearer برنامه به storage ارسال نمی شود.
-- API جدید قبل از نصاب جدید منتشر شود. `/file` برای سازگاری نصاب قدیمی باقی است.
-- GC، Telegram، auto-fetch و تغییر الگوریتم history در این تسک ساخته نشده اند.
-- `/internal/stratz/tick` بازنشسته و 410 است؛ timer آن فعال نشود. worker مرجع جداست.
-- موفقیت تست محلی به معنی نصب VPS، رفع همه مشکلات ISP یا ساخت installer Windows نیست.
-
-[handoff قدیمی](history/handoff-single-vps.md) فقط سابقه باگ ها و تصمیم های قبلی است.
+timer مرجع آماری در نصب گزارش شده عمدا خاموش بوده است؛ انتشار عادی نباید خودکار آن را فعال کند.
+موفقیت بیلد، فعال بودن daemon یا پاسخ health، موفقیت Steam/GSI، STRATZ، ایمیل و دانلود واقعی را ثابت نمی کند.
+گزارش های validation تاریخ دار هستند؛ تعداد تست آنها معیار ثابت انتشارهای بعدی نیست.
+[گزارش بازبینی](documentation-review-2026-11.fa.md) یافته های سورس و محدوده بررسی این نوبت را ثبت می کند.

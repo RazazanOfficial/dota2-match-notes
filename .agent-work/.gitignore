@@ -1,0 +1,3 @@
+# Keep this policy tracked; ignore all disposable task contents.
+*
+!.gitignore

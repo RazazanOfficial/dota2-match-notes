@@ -58,7 +58,8 @@ describe("production systemd units", () => {
   it("keeps hourly sync disabled in the current deployment guide", () => {
     const guide = fixture("docs/deployment-ubuntu.md");
     expect(guide).not.toContain("enable --now dota2notes-sync.timer");
-    expect(guide).toContain("enable --now dota2notes-images.timer");
+    expect(guide).toMatch(/systemctl start dota2notes-images\.timer(?:\s|$)/);
+    expect(guide).toContain("systemctl start dota2notes-replay.service dota2notes-sync-daemon.service");
   });
 });
 

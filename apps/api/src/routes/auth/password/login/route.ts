@@ -1,13 +1,12 @@
 import type { HttpRequest } from "../../../../http/protocol";
 import { HttpResponse } from "../../../../http/protocol";
 import { hasValidRequestOrigin } from "../../../../lib/auth/request";
-import { createSession } from "../../../../lib/auth/session";
+import { createPasswordSession } from "../../../../lib/auth/session";
 import { setSessionCookie } from "../../../../lib/auth/session-cookie";
 import {
   assertPasswordLoginAllowed,
   clearPasswordLoginFailures,
   findPasswordUser,
-  markPasswordLoginSuccess,
   passwordLoginKey,
   PasswordAuthError,
   prunePasswordLoginAttempts,
@@ -48,10 +47,13 @@ export async function POST(request: HttpRequest) {
       await recordPasswordLoginFailure(keyHash);
       throw new PasswordAuthError(401, "invalid_credentials", "اطلاعات ورود معتبر نیست");
     }
+    const session = await createPasswordSession(user.id, user.passwordHash);
+    if (!session) {
+      await recordPasswordLoginFailure(keyHash);
+      throw new PasswordAuthError(401, "invalid_credentials", "اطلاعات ورود معتبر نیست");
+    }
     await clearPasswordLoginFailures(keyHash);
-    await markPasswordLoginSuccess(user.id);
     void prunePasswordLoginAttempts().catch(() => undefined);
-    const session = await createSession(user.id);
     const bearer = request.parsedUrl.searchParams.get("session") === "bearer";
     const response = HttpResponse.json(bearer
       ? { ok: true, token: session.token, expiresAt: session.expiresAt.toISOString() }

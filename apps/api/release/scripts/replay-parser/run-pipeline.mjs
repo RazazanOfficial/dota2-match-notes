@@ -5,7 +5,7 @@ import pg from "pg";
 import {lstat} from "node:fs/promises";
 import {fileURLToPath} from "node:url";
 import {handle,hooksFor,updateJob,failJob,parsePrepared,incoming,abort} from "./run-queue.mjs";
-import {inspectSpool,verifyCheckpoint} from "./replay-spool.mjs";
+import {inspectSpool,verifyCheckpoint,cleanCompletedPipelineSpool} from "./replay-spool.mjs";
 import {replayDescriptor} from "./replay-queue-utils.mjs";
 import {replayArchiveKey,uploadReplay,archivedReplayExists} from "./replay-archive.mjs";
 import {MAX_ARCHIVE_ATTEMPTS,MAX_METADATA_ATTEMPTS,MAX_NETWORK_ATTEMPTS} from "./replay-job-policy.mjs";
@@ -134,12 +134,12 @@ export async function main() {
   try{
     locked=(await owner.query("SELECT pg_try_advisory_lock(73341017) AS locked")).rows[0].locked;
     if(!locked)throw new Error("Another replay worker is active");
-    owner.on("error",()=>abort.abort());await recoverLeases(owner);log({enabled:true,prepare:lanes.filter(x=>x==="prepare").length,parse:lanes.filter(x=>x==="parse").length,archive:lanes.filter(x=>x==="archive").length,cleanup:false});
+    owner.on("error",()=>abort.abort());await recoverLeases(owner);await cleanCompletedPipelineSpool(owner,incoming);log({enabled:true,prepare:lanes.filter(x=>x==="prepare").length,parse:lanes.filter(x=>x==="parse").length,archive:lanes.filter(x=>x==="archive").length,cleanup:true});
     let lastRecovery=Date.now();
     async function loop(lane){
       const raw=await pool.connect(),client=serializedClient(raw),disconnected=()=>abort.abort();raw.on("error",disconnected);
       try{while(!abort.signal.aborted){
-        if(lane==="prepare"&&Date.now()-lastRecovery>60000){lastRecovery=Date.now();await recoverLeases(client);}
+        if(lane==="prepare"&&Date.now()-lastRecovery>60000){lastRecovery=Date.now();await recoverLeases(client);await cleanCompletedPipelineSpool(client,incoming);}
         const task=lane==="archive"?await claimArchive(client):null;
         const worked=lane==="archive"?task&&(await archiveCheckpoint(client,task),true):await foreground(client,lane);
         if(!worked)await delay(1500);

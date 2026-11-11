@@ -1,4 +1,4 @@
-> مرجع تکمیلی یا تاریخی: برای نقش سرورها و دستور استقرار، [راهنمای جاری](deployment-ubuntu.md) و [handoff](HANDOFF.md) مرجع هستند. دستورهای تک سروری این سند بدون تطبیق اجرا نشوند.
+> سابقه تغییرات و قرارداد همان مرحله است. رفتار و دستور عملیاتی امروز در [معماری](two-vps-architecture.fa.md)، [استقرار](deployment-ubuntu.md)، [دریافت خودکار](automatic-match-discovery.fa.md) و [دانلود مستقیم](direct-replay-download.fa.md) آمده است. عدد تست و وضعیت VPS این متن تاریخی است.
 
 # Desktop match history and calendar update
 
@@ -16,31 +16,6 @@ Base: GitHub main `6bf978b063b4bd8c8e7d561727a1eb8a05fdbfbc`.
 - Release generation preserves standalone maintenance scripts, including the existing own-account reset script.
 
 No files require manual deletion. No new environment variables or dependency changes are required.
-
-## Local checks and Windows installer
-
-Run from the project root:
-
-```powershell
-npm test
-npm run typecheck
-npm run desktop:installer
-```
-
-The installer is generated under `apps/desktop/src-tauri/target/release/bundle/nsis/`.
-
-This ZIP includes freshly built Express runtime files under `apps/api/release/dist/`, plus the migration and updated parser import script. These runtime files can be copied as supplied; they do not need another local API build. Generated dist files are ignored by Git, so Git-based deployment must build them on the VPS.
-
-To regenerate the runtime from source locally:
-
-```powershell
-npm run api:build
-npm run release:prepare -w @dota-notes/api
-```
-
-## VPS deployment from GitHub
-
-This update was deployed on October 7 in the existing `/var/www/dota2notes` Git checkout. The previous separate-source-directory instructions are obsolete. Use [the current deployment routine](deployment-ubuntu.md#۱۲-روال-هر-انتشار-بعدی) and [the replay task commands](replay-validation-progress.fa.md). The live API runtime is `apps/api/release`; the existing Next website remains in `apps/web`.
 
 ## Real-data acceptance checks
 
