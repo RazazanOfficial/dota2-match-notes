@@ -1,21 +1,23 @@
+> سند تاریخی نصب تک VPS است؛ برای نصب فعلی اجرا نشود. مرجع جاری [استقرار دو VPS](../deployment-ubuntu.md) و [تحویل پروژه](../HANDOFF.md) است. نام دیتابیس، timer و نقش سرور در متن زیر قرارداد نصب امروز نیست.
+
 > سند تاریخی؛ دستورهای استقرار این سند برای معماری جاری نیستند. [راهنمای جاری](../deployment-ubuntu.md).
 
 # استقرار Dota2 Notes روی Ubuntu 24.04 بدون Docker
 
 برای وضعیت جاری، ترتیب راهنماها و کارهای باز، ابتدا [handoff](../HANDOFF.md) را بخوانید.
 این راهنما شامل نصب اولیه و روال انتشار است؛ unitهای قدیمی ممکن است روی سرور وجود
-داشته باشند، پس فعال‌بودن timer را با `systemctl` بررسی کنید.
+داشته باشند، پس فعال بودن timer را با `systemctl` بررسی کنید.
 
 این راهنما برای سرور با دامنه `dota2notes.ir` و مسیر ثابت
-`/var/www/dota2notes` نوشته شده است. دستورها را به‌ترتیب اجرا کنید. رمزها و کلیدهای واقعی
+`/var/www/dota2notes` نوشته شده است. دستورها را به ترتیب اجرا کنید. رمزها و کلیدهای واقعی
 نباید داخل Git ثبت شوند.
 
-**از مرحلهٔ monorepo:** فرمان‌های npm در ریشه اجرا می‌شوند؛ برنامهٔ Next و parser در `apps/web` هستند. env و `deploy` در ریشه باقی می‌مانند. برای اولین انتقال، [راهنمای اختصاصی](../monorepo-desktop-foundation.md) مرجع ترتیب نصب unitهاست.
+**از مرحله monorepo:** فرمان های npm در ریشه اجرا می شوند؛ برنامه Next و parser در `apps/web` هستند. env و `deploy` در ریشه باقی می مانند. برای اولین انتقال، [راهنمای اختصاصی](../monorepo-desktop-foundation.md) مرجع ترتیب نصب unitهاست.
 
-## ۱. آماده‌کردن DNS
+## ۱. آماده کردن DNS
 
 در پنل دامنه یک رکورد `A` برای `dota2notes.ir` بسازید و آن را به IPv4 سرور متصل کنید.
-رکورد `www` اختیاری است؛ اگر می‌خواهید `www.dota2notes.ir` هم کار کند، برای آن نیز رکورد
+رکورد `www` اختیاری است؛ اگر می خواهید `www.dota2notes.ir` هم کار کند، برای آن نیز رکورد
 `A` یا `CNAME` بسازید. انتشار DNS ممکن است کمی زمان ببرد.
 
 روی سیستم خودتان بررسی کنید:
@@ -24,9 +26,9 @@
 Resolve-DnsName dota2notes.ir
 ```
 
-IP نمایش‌داده‌شده باید IP عمومی VPS باشد.
+IP نمایش داده شده باید IP عمومی VPS باشد.
 
-## ۲. اتصال و به‌روزرسانی Ubuntu
+## ۲. اتصال و به روزرسانی Ubuntu
 
 با MobaXterm وارد VPS شوید و اجرا کنید:
 
@@ -36,7 +38,7 @@ sudo apt upgrade -y
 sudo apt install -y nginx postgresql postgresql-contrib git curl ca-certificates
 ```
 
-Node.js باید به‌صورت system-wide نصب شود تا systemd آن را در `/usr/bin/node` پیدا کند.
+Node.js باید به صورت system-wide نصب شود تا systemd آن را در `/usr/bin/node` پیدا کند.
 برای این پروژه Node.js 24 مناسب است:
 
 ```bash
@@ -51,7 +53,7 @@ which node
 
 ## ۳. ساخت کاربر محدود برنامه
 
-برنامه با کاربر `root` اجرا نمی‌شود:
+برنامه با کاربر `root` اجرا نمی شود:
 
 ```bash
 sudo adduser --system --group --home /var/lib/dota2notes --shell /usr/sbin/nologin dota2notes
@@ -62,7 +64,7 @@ sudo install -d -o dota2notes -g dota2notes /var/www/dota2notes
 
 ## ۴. ساخت PostgreSQL روی VPS
 
-دیتابیس ویندوز به VPS منتقل نمی‌شود؛ روی VPS یک دیتابیس مستقل بسازید. ابتدا یک رمز تصادفی
+دیتابیس ویندوز به VPS منتقل نمی شود؛ روی VPS یک دیتابیس مستقل بسازید. ابتدا یک رمز تصادفی
 فقط شامل حروف و عدد تولید کنید تا در URL نیاز به encode نداشته باشد:
 
 ```bash
@@ -75,7 +77,7 @@ openssl rand -hex 24
 sudo -u postgres psql
 ```
 
-به‌جای `YOUR_DATABASE_PASSWORD` رمز تولیدشده را قرار دهید:
+به جای `YOUR_DATABASE_PASSWORD` رمز تولیدشده را قرار دهید:
 
 ```sql
 CREATE ROLE dota_notes_app WITH LOGIN PASSWORD 'YOUR_DATABASE_PASSWORD';
@@ -86,7 +88,7 @@ SELECT current_database(), current_user;
 ```
 
 طبیعی است که `current_user` در این بررسی `postgres` باشد، چون اتصال جاری را با postgres
-باز کرده‌اید؛ مالک دیتابیس همچنان `dota_notes_app` است.
+باز کرده اید؛ مالک دیتابیس همچنان `dota_notes_app` است.
 
 ## ۵. دریافت کد پروژه
 
@@ -97,9 +99,9 @@ sudo -u dota2notes -H git clone https://github.com/RazazanOfficial/dota2-match-n
 cd /var/www/dota2notes
 ```
 
-برای به‌روزرسانی‌های بعدی clone مجدد انجام ندهید؛ از `git pull --ff-only` استفاده می‌کنیم.
+برای به روزرسانی های بعدی clone مجدد انجام ندهید؛ از `git pull --ff-only` استفاده می کنیم.
 روی Windows برای ترکیب branchهای پچ با `main`، طبق [قرارداد Git](../HANDOFF.md)
-از merge با commit استفاده می‌شود؛ این فرمان pull فقط برای به‌روزکردن checkout است.
+از merge با commit استفاده می شود؛ این فرمان pull فقط برای به روزکردن checkout است.
 
 ## ۶. ساخت تنظیمات production
 
@@ -132,7 +134,7 @@ sudo chown dota2notes:dota2notes .env.production
 sudo chmod 600 .env.production
 ```
 
-فایل واقعی `.env.production` توسط `.gitignore` نادیده گرفته می‌شود.
+فایل واقعی `.env.production` توسط `.gitignore` نادیده گرفته می شود.
 
 ## ۷. نصب، Migration و Build اولیه
 
@@ -145,8 +147,8 @@ sudo -u dota2notes -H npm run typecheck
 sudo -u dota2notes -H npm run build
 ```
 
-Migration فقط schema را به‌روز می‌کند و در اجرای مجدد migrationهای انجام‌شده را تکرار
-نمی‌کند.
+Migration فقط schema را به روز می کند و در اجرای مجدد migrationهای انجام شده را تکرار
+نمی کند.
 
 ## ۸. نصب سرویس و Workerها
 
@@ -182,9 +184,9 @@ systemctl list-timers 'dota2notes-*'
 ```
 
 از پچ مرجع ماهانه، Timer آمار هر دقیقه فقط یک بخش کوچک از Meta و Performance را
-پیش می‌برد. اولین بار نسخهٔ ماه قبل ساخته می‌شود؛ شروع دستی و دریافت ماه‌های
-قدیمی‌تر از پنل Super Admin، بخش «مرجع آماری ماهانه»، انجام می‌شود. وضعیت
-`active` به معنی تکمیل همهٔ بخش‌هاست؛ برای جزئیات جدول‌ها و شرط‌های منبع،
+پیش می برد. اولین بار نسخه ماه قبل ساخته می شود؛ شروع دستی و دریافت ماه های
+قدیمی تر از پنل Super Admin، بخش «مرجع آماری ماهانه»، انجام می شود. وضعیت
+`active` به معنی تکمیل همه بخش هاست؛ برای جزئیات جدول ها و شرط های منبع،
 `docs/monthly-reference-services.md` را ببینید. بعد از کپی Unit تازه و
 `daemon-reload`، اگر Timer از قبل فعال بود آن را یک بار restart کنید:
 
@@ -192,16 +194,16 @@ systemctl list-timers 'dota2notes-*'
 sudo systemctl restart dota2notes-performance-reference.timer
 ```
 
-Sync کاربران فقط با دکمه داخل سایت درخواست می‌شود؛ `dota2notes-sync-manual.timer`
-هر ۳۰ ثانیه صف درخواست‌های روز و هفته را در دسته‌های کوچک پیش می‌برد. زمان‌بند
+Sync کاربران فقط با دکمه داخل سایت درخواست می شود؛ `dota2notes-sync-manual.timer`
+هر ۳۰ ثانیه صف درخواست های روز و هفته را در دسته های کوچک پیش می برد. زمان بند
 ساعتی `dota2notes-sync.timer` با `SCHEDULED_SYNC_ENABLED=off` لازم نیست.
-Workerهای تصاویر و OpenDota parse صف‌های مستقل را پردازش می‌کنند. Worker قدیمی STRATZ برای مچ‌ها بازنشسته شده است:
+Workerهای تصاویر و OpenDota parse صف های مستقل را پردازش می کنند. Worker قدیمی STRATZ برای مچ ها بازنشسته شده است:
 
 ```bash
 sudo systemctl disable --now dota2notes-stratz.timer 2>/dev/null || true
 ```
 
-فایل‌های Scheduler ساعتی برای توسعه آینده در مخزن باقی مانده‌اند، اما در این نسخه
+فایل های Scheduler ساعتی برای توسعه آینده در مخزن باقی مانده اند، اما در این نسخه
 `dota2notes-sync.timer` را نصب یا فعال نکنید؛ فقط timer دستی بالا لازم است.
 
 برای اجرای دستی روی VPS:
@@ -223,7 +225,7 @@ sudo journalctl -u dota2notes-opendota-parse.service -n 100 --no-pager
 sudo journalctl -u dota2notes-sync.service -n 100 --no-pager
 ```
 
-## ۹. فعال‌کردن Nginx
+## ۹. فعال کردن Nginx
 
 ```bash
 sudo cp deploy/nginx/dota2notes.ir.conf /etc/nginx/sites-available/dota2notes.ir
@@ -239,7 +241,7 @@ sudo systemctl reload nginx
 curl --fail --show-error http://dota2notes.ir/api/health
 ```
 
-چهار endpoint داخلی عمداً از طریق دامنه مسدود شده‌اند و باید `404` بدهند:
+چهار endpoint داخلی عمداً از طریق دامنه مسدود شده اند و باید `404` بدهند:
 
 ```bash
 curl -i -X POST http://dota2notes.ir/api/internal/sync/tick
@@ -248,10 +250,10 @@ curl -i -X POST http://dota2notes.ir/api/internal/stratz/tick
 curl -i -X POST http://dota2notes.ir/api/internal/performance-reference/tick
 ```
 
-## ۱۰. Firewall بدون قطع‌شدن SSH
+## ۱۰. Firewall بدون قطع شدن SSH
 
-قبل از فعال‌کردن UFW، پورت SSH خود را بررسی کنید. اگر MobaXterm با پورتی غیر از `22` وصل
-می‌شود، ابتدا همان پورت را مجاز کنید. برای پورت استاندارد:
+قبل از فعال کردن UFW، پورت SSH خود را بررسی کنید. اگر MobaXterm با پورتی غیر از `22` وصل
+می شود، ابتدا همان پورت را مجاز کنید. برای پورت استاندارد:
 
 ```bash
 sudo ufw allow OpenSSH
@@ -266,7 +268,7 @@ sudo ufw enable
 sudo ufw status verbose
 ```
 
-پورت‌های `3000` و `5432` نباید عمومی شوند.
+پورت های `3000` و `5432` نباید عمومی شوند.
 
 ## ۱۱. HTTPS با Let's Encrypt
 
@@ -277,7 +279,7 @@ sudo apt install -y certbot python3-certbot-nginx
 sudo certbot --nginx -d dota2notes.ir
 ```
 
-اگر رکورد `www` را نیز ساخته‌اید، می‌توانید به‌جای دستور بالا اجرا کنید:
+اگر رکورد `www` را نیز ساخته اید، می توانید به جای دستور بالا اجرا کنید:
 
 ```bash
 sudo certbot --nginx -d dota2notes.ir -d www.dota2notes.ir
@@ -295,23 +297,23 @@ sudo certbot renew --dry-run
 
 ## ۱۲. روال هر انتشار بعدی
 
-**وضعیت تأییدشدهٔ ۷ اکتبر ۲۰۲۶:** Git main در خود `/var/www/dota2notes`؛ Express runtime در `apps/api/release` و وب Next در `apps/web`. دامنهٔ API `api.dota2notes.ir` است. مراحل نصب اولیهٔ قدیمی این سند برای تغییر معماری دوباره اجرا نشوند. فولدر source جدا نداریم.
+**وضعیت تأییدشده ۷ اکتبر ۲۰۲۶:** Git main در خود `/var/www/dota2notes`؛ Express runtime در `apps/api/release` و وب Next در `apps/web`. دامنه API `api.dota2notes.ir` است. مراحل نصب اولیه قدیمی این سند برای تغییر معماری دوباره اجرا نشوند. فولدر source جدا نداریم.
 
-ابتدا تغییرات هر تسک در branch جدا تست، commit و push و با merge commit (`--no-ff`) وارد main شوند؛ سپس VPS `git pull --ff-only origin main` می‌گیرد. تغییرات محلی VPS را reset/clean نکنید؛ اول بررسی و نگهداری کنید.
+ابتدا تغییرات هر تسک در branch جدا تست، commit و push و با merge commit (`--no-ff`) وارد main شوند؛ سپس VPS `git pull --ff-only origin main` می گیرد. تغییرات محلی VPS را reset/clean نکنید؛ اول بررسی و نگهداری کنید.
 
-فرمان‌های کامل انتشار API و ریپلی، توقف/راه‌اندازی شش timer فعال و تست سلامت در [راهنمای جاری](../replay-validation-progress.fa.md#استقرار-روی-vps-موجود-پس-از-push-به-main) هستند. خلاصهٔ ترتیب:
+فرمان های کامل انتشار API و ریپلی، توقف/راه اندازی شش timer فعال و تست سلامت در [راهنمای جاری](../replay-validation-progress.fa.md#استقرار-روی-vps-موجود-پس-از-push-به-main) هستند. خلاصه ترتیب:
 
 1. وضعیت Git؛ توقف timerها، workerهای مربوط، API و هنگام npm ci ریشه، وب.
 2. Pull main؛ npm ci؛ build API؛ `release:prepare`؛ نصب production dependencies در release.
 3. فقط اگر migration جدید دارد، migration را با ENV production اجرا کنید. سپس preflight `--check-db` و preflight نقش replay.
-4. اگر وب/dependencyهای آن تغییر کرده‌اند، build Next قبل از start لازم است. برای پچ API-only نیازی به بازنویسی `.next` نیست.
+4. اگر وب/dependencyهای آن تغییر کرده اند، build Next قبل از start لازم است. برای پچ API-only نیازی به بازنویسی `.next` نیست.
 5. Start API و وب؛ readiness محلی و liveness عمومی؛ سپس timerهای قبلاً فعال.
 
 برای docs-only توقف/build لازم نیست. unitها تنها در صورت تغییر خودشان نصب و daemon-reload شوند. فایل Worker Cloudflare انتشار مستقل Wrangler دارد. backup cutover در `/var/backups/dota2notes-20261007-135840` و ENV فعلی حفظ شوند؛ قبل از migration بزرگ از دیتابیس backup تازه بگیرید.
 
 اگر فرمانی شکست خورد قبل از بخش بعد همان خطا را بررسی کنید. `health/ready` عمومی در nginx فعلی عمداً 404 است؛ محلی `http://127.0.0.1:4100/health/ready` و عمومی `https://api.dota2notes.ir/health/live` را بررسی کنید.
 
-## عیب‌یابی سریع
+## عیب یابی سریع
 
 ```bash
 sudo systemctl status dota2notes.service --no-pager
@@ -328,7 +330,7 @@ systemctl list-timers 'dota2notes-*'
 
 ### مسیر مستقیم STRATZ
 
-اگر مسیر DNS سرور بعضی دامنه‌ها را از یک واسط با IP چرخشی عبور می‌دهد، یک IP فعلی
+اگر مسیر DNS سرور بعضی دامنه ها را از یک واسط با IP چرخشی عبور می دهد، یک IP فعلی
 مقصد STRATZ را خارج از VPS دریافت و در `.env.production` ثبت کنید:
 
 ```dotenv
@@ -338,8 +340,8 @@ STRATZ_MAX_ATTEMPTS=2
 STRATZ_RETRY_DELAY_MS=2000
 ```
 
-این گزینه در زمان درخواست از DNS استفاده نمی‌کند و DNS سراسری سیستم یا ارتباط سرویس‌های
-دیگر را تغییر نمی‌دهد. پیش از استفاده از توکن، مسیر مستقیم را بدون ارسال توکن بررسی کنید:
+این گزینه در زمان درخواست از DNS استفاده نمی کند و DNS سراسری سیستم یا ارتباط سرویس های
+دیگر را تغییر نمی دهد. پیش از استفاده از توکن، مسیر مستقیم را بدون ارسال توکن بررسی کنید:
 
 ```bash
 sudo -u dota2notes -H npm run stratz:route-check -- IP_1

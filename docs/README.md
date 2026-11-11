@@ -1,22 +1,53 @@
-# راهنمای مستندات جاری
+# فهرست مستندات
+
+مبنای تطبیق این مجموعه سورس `main` در `0ab8d82` است. وضعیت زنده سرورها جدا از مستندات ثبت می شود.
+برای کار عملیاتی فقط راهنماهای جاری جدول اول استفاده شوند.
+
+## راهنماهای جاری
 
 | موضوع | مرجع |
 | --- | --- |
-| شروع و قرارداد همکاری | [HANDOFF](HANDOFF.md) |
-| نقش سرورها و ارتباط خصوصی | [معماری](two-vps-architecture.fa.md) |
-| Windows، Git، مهاجرت داده، SSH، استقرار و rollback | [استقرار](deployment-ubuntu.md) |
-| ticket و دانلود مستقیم native | [دانلود ریپلی](direct-replay-download.fa.md) |
-| اندازه گیری های واقعی شبکه | [نتایج شبکه](network-baseline-2026-11.fa.md) |
-| نسخه و tag انتشار | [انتشار](releasing.md) |
-| parser و منشای داده | [قرارداد parser](replay-parser-stage1.md) و [Lane](lane-efficiency-next-step.md) |
-| مرجع آماری و مانیتور | [مرجع](monthly-reference-services.md) و [مانیتور](service-monitoring.md) |
-| محصول و رابط | [طراحی UI](ui-ux-redesign.md) و [تجربه دسکتاپ](desktop-experience-overhaul.fa.md) |
-| فیچرهای آینده | [Learn & Practice](learn-and-practice-feature-todo.fa.md) |
+| شروع کار، قرارداد همکاری و مسیرهای کد | [HANDOFF](HANDOFF.md) |
+| نقش ایران، آلمان، دیتابیس و tunnel | [معماری دو VPS](two-vps-architecture.fa.md) |
+| نصب اولیه یا بازسازی زیرساخت، فقط در صورت نیاز | [آماده سازی](two-vps-bootstrap.fa.md) |
+| Windows: pull، branch، Copy/Replace و سپس استقرار عادی | [استقرار](deployment-ubuntu.md) |
+| env نقش ها، DB واقعی و unitهای فعال/بازنشسته | [تنظیمات و سرویس ها](environment-and-services.fa.md) |
+| دریافت خودکار، GSI، Companion و Fetch دستی | [کشف مچ](automatic-match-discovery.fa.md) |
+| assets، manifest، ساخت نصاب و پاکسازی کامل تست | [رسانه و نصب](desktop-assets-and-install.fa.md) |
+| ریپلی، parse/archive مستقل، اولویت و ticket | [دانلود مستقیم](direct-replay-download.fa.md) |
+| نصب اول، مچ خودکار، دو گروه پنج مچی و هماهنگی UI | [پذیرش](acceptance-tests.fa.md) |
+| قطع SSH، build، schema، GSI و دانلود | [عیب یابی](troubleshooting.fa.md) |
+| snapshot مانیتور و تفسیر وضعیت compute | [مانیتور](service-monitoring.md) |
+| tag، نسخه ها و یادداشت انتشار | [انتشار](releasing.md) |
+| ساختار workspaceها | [چندسکویی](multiplatform-architecture.md) |
+| بازبینی سورس، مستندات و فهرست تمام فایل ها | [گزارش بازبینی](documentation-review-2026-11.fa.md) |
 
-سندهای مرحله ای برای قراردادهای داده و سابقه تست حفظ شده اند، ولی دستورهای قدیمی
-نصب، deadline و محل سرویس آنها مرجع جاری نیستند. نسخه قبلی راهنماهای عملیاتی در
-[handoff تاریخی](history/handoff-single-vps.md) و
-[استقرار تک VPS](history/deployment-single-vps.md) نگهداری شده است. JSONهای migration
-و validation، گزارش همان مرحله اند و فهرست زنده همه endpointهای امروز نیستند.
+## قراردادهای تخصصی و برنامه توسعه
 
-[گزارش نهایی اعتبارسنجی](validation-two-vps.fa.md) شامل نتایج و محدودیت های واقعی این بسته است.
+| موضوع | مرجع |
+| --- | --- |
+| محاسبات مرجع آماری | [ماهانه](monthly-reference-services.md) و [weekly Meta](weekly-meta-reference.fa.md) |
+| تشخیص STRATZ در compute | [ابزار تشخیص](stratz-connectivity-diagnostics.fa.md) |
+| امتیازدهی و Lane | [Performance V3](match-performance-analysis-v3-spec.md)، [Phase 2](performance-scoring-phase2.md)، [Lane](lane-efficiency-next-step.md) |
+| UI و نشانگر | [طراحی](ui-ux-redesign.md) و [cursor](cursor-themes.md) |
+| برنامه آینده | [Learn & Practice](learn-and-practice-feature-todo.fa.md) |
+| نمونه های اندازه گیری شبکه، با تاریخ و محدودیت | [اندازه گیری ۵ نوامبر](network-baseline-2026-11.fa.md) |
+| مجوز third party | [React Bits](third-party/react-bits-LICENSE.md) |
+
+## سابقه و سندهای مرحله ای
+
+یادداشت های مرحله ای ریشه docs با برچسب «سابقه» نگهداری شده اند؛ قرارداد و نتیجه تست همان تغییر را ثبت می کنند.
+دستورهای اجرایی منسوخ آنها حذف و به استقرار جاری ارجاع داده شده اند. ترتیب و تعداد تست، timer یا محل سرویس متن تاریخی مرجع نصب امروز نیست.
+نام و طبقه بندی هر Markdown در [فهرست کامل بازبینی](documentation-review-2026-11.fa.md) آمده است.
+
+- [استقرار تک VPS](history/deployment-single-vps.md) و [handoff تک VPS](history/handoff-single-vps.md) فقط تاریخچه اند.
+- [validation دو VPS](validation-two-vps.fa.md) و [validation کتابخانه خودکار](validation-automatic-library.fa.md) نتایج بسته زمان خودشان اند.
+- [راهنمای کتابخانه خودکار](deploy-automatic-library.fa.md) اکنون ورودی کوتاه به راهنماهای جاری است، نه دستور نصب دوباره patch قدیمی.
+- `apps/web/docs` فقط لینک سازگاری به همین مجموعه دارد؛ نسخه دوم عملیاتی نگهداری نمی شود.
+
+## قواعد نگهداری
+
+راهنمای عملیاتی در یک محل نوشته شود؛ سند قابلیت برای دستور انتشار به آن لینک بدهد.
+تغییر route، env، migration، unit، manifest یا قابلیت نصب باید همراه سند مرتبط بازبینی شود.
+نتیجه تست با SHA، محیط، pass/skipped و محدودیت ثبت شود؛ نتیجه قدیمی به زمان حال تبدیل نشود.
+فایل ها UTF-8 و LF مطابق `.gitattributes` باشند؛ Markdown و مجوزها نباید secret یا اطلاعات خصوصی محیط داشته باشند.

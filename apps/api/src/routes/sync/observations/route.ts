@@ -22,7 +22,7 @@ export async function POST(request: HttpRequest) {
     );
   const endedAt = new Date(input.data.endedAt),
     age = Date.now() - endedAt.getTime();
-  if (age < -60_000 || age > 30 * 86_400_000)
+  if (!Number.isFinite(age) || age < -60_000 || age > 30 * 86_400_000)
     return Response.json(
       { error: { code: "invalid_observation_time" } },
       { status: 400 },

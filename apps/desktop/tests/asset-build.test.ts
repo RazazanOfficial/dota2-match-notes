@@ -1,10 +1,16 @@
 import {describe,expect,it} from 'vitest';
 import {createHash} from 'node:crypto';
-import {readFile} from 'node:fs/promises';
+import {readFile,stat} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {desktopAssets} from '../scripts/asset-plugin';
 import manifest from '../asset-manifest.json';
 describe('desktop asset distribution',()=>{
+ it('keeps an unchanged manifest untouched so Vite does not restart recursively',async()=>{
+  const {generateAssetManifest}=await import('../scripts/asset-pack.mjs');
+  const path=fileURLToPath(new URL('../asset-manifest.json',import.meta.url));
+  await generateAssetManifest(false);const before=await stat(path,{bigint:true});
+  await generateAssetManifest(false);expect((await stat(path,{bigint:true})).mtimeNs).toBe(before.mtimeNs);
+ });
  it('rewrites shared static and dynamic media references without changing API URLs',()=>{
   const plugin=desktopAssets(),render=plugin.renderChunk as (code:string)=>{code:string}|null;
   const output=render('const a="/heroes/axe.png";const b=`/positions/${name}.png`;const c="/hero_universal.png";const api="/api/matches/me";');

@@ -1,0 +1,33 @@
+// @vitest-environment jsdom
+import {afterEach,beforeEach,expect,it,vi} from 'vitest';
+import {act,cleanup,renderHook} from '@testing-library/react';
+const api=vi.hoisted(()=>vi.fn());
+vi.mock('../src/api',async()=>({...await vi.importActual('../src/api'),apiRequest:api}));
+import {useMatchDetails} from '../src/useMatchDetails';
+import {detailFor,sampleHistory} from '../src/history';
+import {previewProfile} from '../src/components/Shared';
+import {setConnection} from '../src/connection';
+const row=sampleHistory[0],match={...detailFor(row),analysis:undefined};
+const progress=(requestStartedAt:string,updatedAt=requestStartedAt)=>({requestStartedAt,updatedAt,phase:'queued',bytes:0,totalBytes:null,bytesPerSecond:0,attempts:0,nextTryAt:null,phaseStartedAt:null,heartbeatAt:null,retryDeadlineAt:null,errorCode:null});
+beforeEach(()=>{vi.useFakeTimers();vi.clearAllMocks();localStorage.clear();setConnection('online');});
+afterEach(()=>{cleanup();vi.useRealTimers();});
+it('preserves a newly accepted request across stale cached failures and keeps polling',async()=>{
+ const failed={replay:'failed',progress:progress('2026-11-10T00:00:00Z')};
+ api.mockImplementation(async(path:string)=>path.includes('/page?')?{page:{match}}:{analysis:null,preparation:failed});
+ const {result}=renderHook(()=>useMatchDetails(row,true,previewProfile));await act(async()=>{});
+ expect(result.current.preparation?.replay).toBe('failed');
+ const pending={replay:'pending',progress:progress('2026-11-11T00:00:00Z')};
+ act(()=>{result.current.setPreparation(pending);window.dispatchEvent(new Event('dota-notes:matches-updated'));});await act(async()=>{});
+ expect(result.current.preparation).toEqual(pending);
+ const calls=api.mock.calls.length;await act(async()=>{await vi.advanceTimersByTimeAsync(3000);});expect(api.mock.calls.length).toBeGreaterThan(calls);
+ expect(result.current.preparation).toEqual(pending);
+ const newer={replay:'processing',progress:progress('2026-11-11T00:00:00Z','2026-11-11T00:00:01Z')};
+ api.mockImplementation(async(path:string)=>path.includes('/page?')?{page:{match}}:{analysis:null,preparation:newer});
+ await act(async()=>{await vi.advanceTimersByTimeAsync(3000);});expect(result.current.preparation).toEqual(newer);
+ act(()=>{result.current.setPreparation({replay:'ready',progress:null});});
+ api.mockImplementation(async(path:string)=>path.includes('/page?')?{page:{match}}:{analysis:null,preparation:failed});
+ await act(async()=>{await vi.advanceTimersByTimeAsync(3000);});expect(result.current.preparation?.replay).toBe('ready');
+ const analysis={dotaMatchId:match.dotaMatchId||match.id,players:[]};
+ api.mockImplementation(async(path:string)=>path.includes('/page?')?{page:{match}}:{analysis});
+ await act(async()=>{await vi.advanceTimersByTimeAsync(30000);});expect(result.current.match?.analysis).toEqual(analysis);expect(result.current.preparation).toBeNull();
+});

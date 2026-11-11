@@ -1,6 +1,7 @@
 import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { join, dirname } from "node:path";
+import { sameRuntimePackage } from "./release-lock.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const release = join(root, "release");
@@ -13,7 +14,7 @@ if (JSON.stringify(sourcePackage.dependencies) !== JSON.stringify(prodPackage.de
 }
 for (const [name, details] of Object.entries(prod.packages)) {
   if (name === "") continue;
-  if (JSON.stringify(source.packages[name]) !== JSON.stringify(details)) {
+  if (!sameRuntimePackage(source.packages[name], details)) {
     throw new Error(`Production lock is out of date for ${name}`);
   }
 }

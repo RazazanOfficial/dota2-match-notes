@@ -1,104 +1,35 @@
-> مرجع تکمیلی یا تاریخی: برای نقش سرورها و دستور استقرار، [راهنمای جاری](deployment-ubuntu.md) و [handoff](HANDOFF.md) مرجع هستند. دستورهای تک سروری این سند بدون تطبیق اجرا نشوند.
+# ساختار چندسکویی و مرز workspaceها
 
-# تصمیم معماری چندسکویی Dota Notes
+این سند ساختار فعلی را شرح می دهد. [معماری دو VPS](two-vps-architecture.fa.md) مرجع topology production است.
+طرح مرحله ای اولیه و شرط «بعدا Express بسازیم» با وجود API فعلی جایگزین شده است.
 
-**وضعیت فعلی:** مرحلهٔ اول monorepo اجرا شده است؛ [راهنمای این مرحله](monorepo-desktop-foundation.md)
-مرجع ساختار واقعی و اولین استقرار است. وب فعلی به `apps/web` منتقل شده؛ Express فقط health v1 دارد،
-Tauri فضای کار نمونه دارد و React Native/Expo یک scaffold مشترک Android/iOS هستند.
-بخش‌های بعدی این سند نقشهٔ هدف‌اند، نه ادعای انتقال کامل backend.
+| workspace | نقش فعلی |
+| --- | --- |
+| `apps/api` | Express مستقل، احراز هویت، PostgreSQL، صف ها و providerها |
+| `apps/api/release` | runtime آماده استقرار، ساخته شده از همان API |
+| `apps/web` | Next.js سایت و ماژول های قدیمی/مشترک مورد نیاز رابط |
+| `apps/desktop` | React/Vite و Tauri ویندوز |
+| `apps/desktop/companion` | crate اجرایی مستقل برای GSI و ارسال رویداد با UI بسته |
+| `apps/mobile` | workspace موبایل؛ وجود سورس به معنی انتشار store یا تست دستگاه واقعی نیست |
+| `packages/api-client` | قرارداد ارتباط کلاینت با API |
+| `packages/contracts` | قراردادها و نوع های مشترک |
+| `packages/design-tokens` | توکن های طراحی مشترک |
 
-## نتیجه
+## مرز داده و اجرا
 
-معماری هدف شامل Web با Next.js، Android/iOS با React Native و Expo، Windows با Tauri و یک API مستقل
-Node.js/Express است. این جهت درست است، اما انتقال فوری تمام API Routeهای موجود به Express
-در این مرحله توصیه نمی‌شود. ابتدا مرزهای مشترک ساخته می‌شوند و مهاجرت Backend هم‌زمان با شروع
-اولین کلاینت Native انجام می‌شود.
+business logic production در API و worker است. کلاینت مستقیم به PostgreSQL متصل نمی شود.
+دانلود ریپلی native با ticket API و بدون bearer برنامه به storage انجام می شود.
+Companion session کامل حساب را ندارد؛ credential گزارش دستگاه مجزا و محدود است.
+مهاجرت schema در ایران انجام می شود و هر دو نقش از همان DB استفاده می کنند.
+وجود فایل legacy route یا script داخل web به معنی اجرای production آن نیست؛ unitهای مستقر مرجع entry point هستند.
 
-دلیل اصلی این ترتیب:
+## مرز اشتراک کد
 
-- Route Handlerهای فعلی Next.js همین حالا یک API عمومی HTTP هستند و برای توسعه Web کافی‌اند.
-- Tauri محتوای Static را داخل WebView اجرا می‌کند و Server-side Next.js را داخل برنامه اجرا
-  نمی‌کند؛ نسخه Windows باید به API راه‌دور متصل شود.
-- React Native می‌تواند منطق TypeScript و قرارداد داده را به اشتراک بگذارد، اما UI آن Native
-  است و نباید کامپوننت‌های DOM/CSS وب به آن تحمیل شوند.
-- انتقال زودهنگام Backend، هم‌زمان با بازطراحی محصول، سطح خطا و زمان نگهداری را بدون منفعت فوری
-  افزایش می‌دهد.
+کد قابل اشتراک نباید dependency پلتفرم مانند Node fs یا Tauri را ناخواسته به کلاینت دیگر وارد کند.
+نمایش native، Credential Manager، Steam discovery و دانلود فایل دسکتاپ با preview مرورگر برابر نیستند.
+تست jsdom قرارداد رابط را بررسی می کند؛ نصب Windows، Task Scheduler و GSI به پذیرش واقعی نیاز دارند.
 
-منابع رسمی:
+## توسعه و انتشار
 
-- [Next.js Backend for Frontend](https://nextjs.org/docs/app/guides/backend-for-frontend)
-- [Tauri + Next.js](https://v2.tauri.app/start/frontend/nextjs/)
-- [Tauri frontend configuration](https://v2.tauri.app/start/frontend/)
-- [React Native platform-specific code](https://reactnative.dev/docs/platform-specific-code)
-- [Express production security](https://expressjs.com/en/advanced/best-practice-security/)
-
-## ساختار هدف Monorepo
-
-```text
-apps/
-  web/              Next.js
-  api/              Node.js + Express 5
-  mobile/           React Native + Expo (Android/iOS)
-  desktop/          Tauri 2 + React/Vite shell
-packages/
-  contracts/        Zod schemas, DTOs, error codes, API version
-  domain/           Pure TypeScript business rules
-  api-client/       Typed HTTP client used by every frontend
-  design-tokens/    Colors, spacing, semantic icon names
-  test-fixtures/    Shared safe test data
-```
-
-کد وابسته به PostgreSQL، Steam، OpenDota، Object Storage و Secretها فقط در `apps/api` قرار
-می‌گیرد. کلاینت‌ها هیچ‌گاه مستقیم به دیتابیس یا سرویس‌های دارای Secret متصل نمی‌شوند.
-
-## مراحل اجرا
-
-### مرحله ۱ — اکنون
-
-- تثبیت UI/UX وب و Design Tokenهای معنایی.
-- حفظ Backend فعلی برای جلوگیری از دو تغییر بزرگ هم‌زمان.
-- تعریف DTOها و Error Codeهای پایدار برای API.
-- خارج‌کردن تدریجی منطق Pure از Route Handlerها به ماژول‌های مستقل.
-
-### مرحله ۲ — پیش از React Native
-
-- تبدیل Repository به Monorepo با npm workspaces.
-- ساخت `packages/contracts` و `packages/api-client`.
-- مستندسازی API با OpenAPI یا تولید Spec از Schemaهای Zod.
-- طراحی احراز هویت کلاینت Native؛ Cookie مرورگر نباید بدون طراحی به Mobile/Desktop تعمیم داده
-  شود.
-
-### مرحله ۳ — API مستقل
-
-- ساخت Express 5 در `apps/api` و انتقال Routeها به‌صورت عمودی، Feature-by-feature.
-- نگه‌داشتن URL و شکل Responseها در زمان مهاجرت.
-- قرار دادن Nginx جلوی Web و API، مانند `/api/v1/...` یا زیردامنه مشخص.
-- افزودن Helmet، CORS allowlist، Rate limit، Validation، Structured logging، Health check و
-  Graceful shutdown.
-- در پایان، Next.js فقط Web frontend/BFF بسیار نازک خواهد بود.
-
-### مرحله ۴ — کلاینت‌ها
-
-- Android: React Native با UI سازگار با Touch، Back navigation و وضعیت شبکه ضعیف.
-- Windows: Tauri با React/Vite و API راه‌دور؛ فقط قابلیت‌های واقعاً Desktop در Rust/Pluginها.
-- اشتراک کد روی قرارداد، API client، Domain و Design tokenهاست؛ انتظار اشتراک صددرصد UI وجود
-  ندارد.
-
-## تصمیم‌های امنیتی
-
-- فایل `.env.production` از VPS به سیستم‌های توسعه کپی نمی‌شود.
-- برای توسعه، Secret و دیتابیس جدا با حداقل دسترسی ساخته می‌شود.
-- Steam/OpenDota/Object Storage Key فقط در Backend باقی می‌ماند.
-- Authentication برای Mobile/Desktop پیش از پیاده‌سازی Tokenها Threat-model می‌شود.
-- API از ابتدا Version می‌شود تا انتشار یک کلاینت قدیمی Desktop یا Android شکسته نشود.
-
-## معیار شروع مهاجرت Express
-
-مهاجرت زمانی شروع شود که حداقل یکی از موارد زیر برقرار باشد:
-
-1. اولین Sprint واقعی React Native آغاز شده باشد؛
-2. Routeهای API قرارداد تست‌شده و نسبتاً پایدار داشته باشند؛
-3. منطق Domain از HTTP handlerها جدا شده باشد؛
-4. زمان کافی برای تست هم‌زمان Web، Mobile و Production وجود داشته باشد.
-
-تا قبل از آن، جداسازی مرزها مهم‌تر از جداسازی Processهاست.
+نصب از ریشه با npm workspaces و lockfile انجام می شود. API runtime با `release:prepare` ساخته می شود؛ پوشه release دستی توسعه داده نمی شود.
+نسخه نصاب، manifest و API باید هماهنگ منتشر شوند. نسخه موبایل، desktop و tag مخزن می توانند مستقل باشند؛ [انتشار](releasing.md) مرجع است.

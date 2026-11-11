@@ -66,6 +66,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   OPENDOTA_ENV.forEach((name) => {
     const value = originalEnv[name];
@@ -156,6 +157,22 @@ describe("OpenDota input and response validation", () => {
 });
 
 describe("OpenDota HTTP client", () => {
+  it('keeps the timeout active after headers while reading a stalled body',async()=>{
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch',vi.fn(async(_url:URL,init:RequestInit)=>new Response(new ReadableStream({
+      start(controller){init.signal!.addEventListener('abort',()=>controller.error(new DOMException('Aborted','AbortError')),{once:true});}
+    }))));
+    const result=expect(fetchOpenDotaMatch(matchPayload.match_id)).rejects.toMatchObject({code:'opendota_timeout'});
+    await vi.advanceTimersByTimeAsync(10000);await result;
+  });
+  it('cancels chunked responses as soon as the byte limit is exceeded',async()=>{
+    process.env.OPENDOTA_MAX_RESPONSE_BYTES='65536';const cancel=vi.fn();let reads=0;
+    vi.stubGlobal('fetch',vi.fn(async()=>new Response(new ReadableStream({
+      pull(controller){reads++;controller.enqueue(new Uint8Array(32768));},cancel
+    }))));
+    await expect(fetchOpenDotaMatch(matchPayload.match_id)).rejects.toMatchObject({code:'opendota_response_too_large'});
+    expect(cancel).toHaveBeenCalledOnce();expect(reads).toBeLessThanOrEqual(4);
+  });
   it("fetches one match and keeps the API key server-side", async () => {
     const fetchMock = vi.fn().mockResolvedValue(Response.json(matchPayload));
     vi.stubGlobal("fetch", fetchMock);

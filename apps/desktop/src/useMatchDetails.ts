@@ -7,6 +7,17 @@ import { cachedRead, cachedWrite } from "./offlineCache";
 import { detailFor, type HistoryMatch } from "./history";
 
 export type AnalysisPreparation = { replay: string; progress?: ReplayProgress | null; errorCode?: string | null };
+
+function preparationTime(value: string | null | undefined) { return Date.parse(value || "") || 0; }
+function newerPreparation(current: AnalysisPreparation | null, incoming: AnalysisPreparation | null) {
+    if (current?.replay === "ready") return current;
+    if (incoming?.replay === "ready") return incoming;
+    if (!current?.progress?.requestStartedAt) return incoming;
+    const request = preparationTime(current.progress.requestStartedAt), next = preparationTime(incoming?.progress?.requestStartedAt);
+    if (next < request) return current;
+    if (next === request && preparationTime(incoming?.progress?.updatedAt) < preparationTime(current.progress.updatedAt)) return current;
+    return incoming;
+}
 type PageResponse = { page: { match: Match } };
 type AnalysisResponse = { analysis: MatchAnalysis | null; preparation?: AnalysisPreparation };
 
@@ -36,7 +47,12 @@ export function useMatchDetails(row: HistoryMatch, live: boolean, session?: Sess
     }, [pagePath, live]);
     const [match, setMatch] = useState<Match | null>(initial);
     const latest = useRef(match);
-    const [preparation, setPreparation] = useState<AnalysisPreparation | null>(null);
+    const [preparation, updatePreparation] = useState<AnalysisPreparation | null>(null);
+    const latestPreparation = useRef(preparation);
+    function setPreparation(incoming: AnalysisPreparation | null) {
+        latestPreparation.current = newerPreparation(latestPreparation.current, incoming);
+        updatePreparation(latestPreparation.current);
+    }
     const [error, setError] = useState<unknown>(null), [checking, setChecking] = useState(false);
     function updateMatch(update: SetStateAction<Match | null>) {
         const next = typeof update === "function" ? update(latest.current) : update;
@@ -69,17 +85,17 @@ export function useMatchDetails(row: HistoryMatch, live: boolean, session?: Sess
                     const result = await apiRequest<AnalysisResponse>(`/api/matches/${encodeURIComponent(current.id)}/analysis`, { signal: controller.signal });
                     if (controller.signal.aborted) return;
                     if (result.analysis) {
-                        save(mergeMatchAnalysis(current, result.analysis)); setPreparation(null);
+                        save(mergeMatchAnalysis(current, result.analysis)); latestPreparation.current = null; updatePreparation(null);
                         // Also refresh inventory and all final values from the replay page.
                         const response = await apiRequest<PageResponse>(pagePath, { signal: controller.signal });
                         if (controller.signal.aborted) return;
                         save(mergeMatchAnalysis(response.page.match, result.analysis));
                     } else {
                         setPreparation(result.preparation || null);
-                        delay = ["pending", "queued", "processing"].includes(result.preparation?.replay || "") ? 3_000 : 30_000;
+                        delay = ["pending", "queued", "processing"].includes(latestPreparation.current?.replay || "") ? 3_000 : 30_000;
                     }
                 }
-                if (latest.current?.analysis) setPreparation(null);
+                if (latest.current?.analysis) { latestPreparation.current = null; updatePreparation(null); }
                 if (!wasReady && latest.current?.analysis) {
                     notifying = true; window.dispatchEvent(new Event("dota-notes:matches-updated")); notifying = false;
                 }

@@ -28,6 +28,8 @@ jobs:
       # Verify the older npm resolver that ships with supported Node 24 installs.
       - run: npx --yes --package=npm@11.6.2 npm ci
       - run: npm test
+      # The root suite excludes API .mjs pipeline/queue tests.
+      - run: npm run test -w @dota-notes/api
       - run: npm run typecheck
       - run: npm run api:build
       - run: npm run desktop:build

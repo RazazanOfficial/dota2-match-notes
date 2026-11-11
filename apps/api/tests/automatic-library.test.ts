@@ -38,9 +38,17 @@ describe('independent match discovery and durable provider snapshots',()=>{
   const grant=await registerCompanion(userId),app=createApp(),event={matchId:id,endedAt:Date.now()};
   expect((await request(app).post('/api/sync/observations').set('Authorization',`Bearer ${appToken}`).send(event)).status).toBe(401);
   expect((await request(app).post('/api/sync/observations').set('Authorization',`Bearer ${grant.token}`).send({...event,endedAt:Date.now()+600000})).status).toBe(400);
+  expect((await request(app).post('/api/sync/observations').set('Authorization',`Bearer ${grant.token}`).send({...event,endedAt:8640000000000001})).status).toBe(400);
   expect((await request(app).post('/api/sync/observations').set('Authorization',`Bearer ${grant.token}`).send(event)).status).toBe(202);
   expect((await request(app).delete('/api/sync/companion').set('Authorization',`Bearer ${grant.token}`)).status).toBe(204);
   await expect(acceptObservation(grant.token!,id+1,new Date())).rejects.toMatchObject({status:401});
+ });
+ it('counts old observations by server receipt time across devices and keeps duplicate reporting idempotent',async()=>{
+  const first=await registerCompanion(userId),second=await registerCompanion(userId),endedAt=new Date(Date.now()-2*86400000);
+  for(let n=0;n<100;n++)await acceptObservation((n%2?first:second).token!,id+n,endedAt);
+  await expect(acceptObservation(second.token!,id,endedAt)).resolves.toMatchObject({accepted:true});
+  await expect(acceptObservation(first.token!,id+100,endedAt)).rejects.toMatchObject({status:429,code:'companion_daily_limit'});
+  expect(await db.select().from(matchObservations)).toHaveLength(100);
  });
  it('imports after the delay, verifies player identity and reuses a globally cached full match',async()=>{
   const matchId=id+1,grant=await registerCompanion(userId);await db.insert(dotaMatches).values({matchId,startedAt:new Date(),rawData:full(matchId)}).onConflictDoNothing();

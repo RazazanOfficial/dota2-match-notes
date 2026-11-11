@@ -23,7 +23,7 @@ export async function fetchOpenDotaJson(
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
-  let response: Response;
+  let response: Response | undefined;
   try {
     response = await fetch(url, {
       method,
@@ -31,76 +31,89 @@ export async function fetchOpenDotaJson(
       cache: "no-store",
       signal: controller.signal,
     });
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
+    if (response.status === 404) {
       throw new OpenDotaError(
-        504,
-        "opendota_timeout",
-        "دریافت اطلاعات مچ‌ها بیش از حد طول کشید؛ دوباره تلاش کنید",
+        404,
+        notFound.code,
+        notFound.message,
       );
     }
-    throw new OpenDotaError(
-      502,
-      "opendota_unavailable",
-      "اطلاعات مچ‌ها دریافت نشد؛ دوباره تلاش کنید",
-    );
+    if (response.status === 429) {
+      throw new OpenDotaError(
+        429,
+        "opendota_rate_limited",
+        "درخواست‌های زیادی در حال بررسی است؛ کمی بعد دوباره تلاش کنید",
+        parseRetryAfter(response.headers.get("retry-after")),
+      );
+    }
+    if (!response.ok) {
+      throw new OpenDotaError(
+        502,
+        "opendota_bad_status",
+        "اطلاعات مچ‌ها فعلاً در دسترس نیست",
+      );
+    }
+
+    const contentLength = Number(response.headers.get("content-length") || 0);
+    if (contentLength > config.maxResponseBytes) {
+      throw new OpenDotaError(
+        502,
+        "opendota_response_too_large",
+        "اطلاعات دریافتی این مچ بیش از حد مجاز است",
+      );
+    }
+
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    const reader = response.body?.getReader();
+    if (reader) {
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          size += value.byteLength;
+          if (size > config.maxResponseBytes) {
+            void reader.cancel().catch(() => {});
+            throw new OpenDotaError(502, "opendota_response_too_large", "اطلاعات دریافتی این مچ بیش از حد مجاز است");
+          }
+          chunks.push(value);
+        }
+      } finally { reader.releaseLock(); }
+    }
+    if (size <= 0) {
+      throw new OpenDotaError(
+        502,
+        "opendota_response_too_large",
+        "اطلاعات دریافتی این مچ معتبر نیست",
+      );
+    }
+    const bytes = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+
+    let raw: unknown;
+    try {
+      raw = JSON.parse(new TextDecoder().decode(bytes));
+    } catch {
+      throw new OpenDotaError(
+        502,
+        "invalid_opendota_json",
+        "اطلاعات دریافتی مچ معتبر نیست",
+      );
+    }
+
+    return raw;
+  } catch (error) {
+    if (error instanceof OpenDotaError) throw error;
+    if (controller.signal.aborted || (error instanceof Error && error.name === "AbortError")) {
+      throw new OpenDotaError(504, "opendota_timeout", "دریافت اطلاعات مچ‌ها بیش از حد طول کشید؛ دوباره تلاش کنید");
+    }
+    throw new OpenDotaError(502, "opendota_unavailable", "اطلاعات مچ‌ها دریافت نشد؛ دوباره تلاش کنید");
   } finally {
     clearTimeout(timeout);
+    controller.abort();
+    if (response?.body && !response.body.locked && !response.bodyUsed) void response.body.cancel().catch(() => {});
   }
-
-  if (response.status === 404) {
-    throw new OpenDotaError(
-      404,
-      notFound.code,
-      notFound.message,
-    );
-  }
-  if (response.status === 429) {
-    throw new OpenDotaError(
-      429,
-      "opendota_rate_limited",
-      "درخواست‌های زیادی در حال بررسی است؛ کمی بعد دوباره تلاش کنید",
-      parseRetryAfter(response.headers.get("retry-after")),
-    );
-  }
-  if (!response.ok) {
-    throw new OpenDotaError(
-      502,
-      "opendota_bad_status",
-      "اطلاعات مچ‌ها فعلاً در دسترس نیست",
-    );
-  }
-
-  const contentLength = Number(response.headers.get("content-length") || 0);
-  if (contentLength > config.maxResponseBytes) {
-    throw new OpenDotaError(
-      502,
-      "opendota_response_too_large",
-      "اطلاعات دریافتی این مچ بیش از حد مجاز است",
-    );
-  }
-
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  if (bytes.byteLength <= 0 || bytes.byteLength > config.maxResponseBytes) {
-    throw new OpenDotaError(
-      502,
-      "opendota_response_too_large",
-      "اطلاعات دریافتی این مچ معتبر نیست",
-    );
-  }
-
-  let raw: unknown;
-  try {
-    raw = JSON.parse(new TextDecoder().decode(bytes));
-  } catch {
-    throw new OpenDotaError(
-      502,
-      "invalid_opendota_json",
-      "اطلاعات دریافتی مچ معتبر نیست",
-    );
-  }
-
-  return raw;
 }
 
 export async function fetchOpenDotaMatch(dotaMatchId: number) {

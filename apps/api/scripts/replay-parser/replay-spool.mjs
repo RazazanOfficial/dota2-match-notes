@@ -38,6 +38,27 @@ export async function verifyCheckpoint(file, expectedHash, expectedBytes) {
   for await (const chunk of createReadStream(file.path)) hash.update(chunk);
   return hash.digest("hex") === expectedHash;
 }
+// Pipeline lanes share checkpoints. Only retire files after both consumers are
+// done, while locking the foreground row against a concurrent retry/intent change.
+export async function cleanCompletedPipelineSpool(client, directory) {
+  await client.query("BEGIN");
+  try {
+    await client.query("SELECT pg_advisory_xact_lock(73341018)");
+    const { rows } = await client.query(`SELECT j.match_id,j.spool_name FROM local_replay_jobs j
+      WHERE j.status='completed' AND j.archive_status='active' AND j.archive_key IS NOT NULL
+        AND j.spool_name IS NOT NULL
+        AND NOT EXISTS(SELECT 1 FROM replay_archive_jobs a WHERE a.match_id=j.match_id AND a.status<>'completed')
+      ORDER BY j.match_id LIMIT 100 FOR UPDATE OF j SKIP LOCKED`);
+    for (const row of rows) {
+      await rm(spoolPath(directory, row.spool_name), { force: true });
+      await client.query(`UPDATE local_replay_jobs SET spool_name=NULL,spool_complete=false,spool_etag=NULL,
+        spool_sha256=NULL,downloaded_bytes=0,total_bytes=NULL,spool_created_at=NULL,reserved_bytes=0
+        WHERE match_id=$1 AND spool_name=$2`, [row.match_id, row.spool_name]);
+    }
+    await client.query("COMMIT");
+    return rows.length;
+  } catch (error) { await client.query("ROLLBACK"); throw error; }
+}
 // Called only while holding the global worker lock. Legacy .dem files are never touched.
 export async function cleanSpool(client, directory) {
   const { rows } = await client.query("SELECT match_id, spool_name, spool_created_at, status FROM local_replay_jobs WHERE spool_name IS NOT NULL");
