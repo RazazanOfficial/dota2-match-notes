@@ -10,6 +10,13 @@ import {replayDescriptor} from "./replay-queue-utils.mjs";
 import {replayArchiveKey,uploadReplay,archivedReplayExists} from "./replay-archive.mjs";
 import {MAX_ARCHIVE_ATTEMPTS,MAX_METADATA_ATTEMPTS,MAX_NETWORK_ATTEMPTS} from "./replay-job-policy.mjs";
 const log=value=>console.log(JSON.stringify(value));
+let pipelineFailure;
+function stopWithFailure(error) {
+  // Keep the initiating fault even if job cancellation is handled as a retry.
+  // A signal has already started a graceful shutdown when there is no fault.
+  if(abort.signal.aborted)return;
+  pipelineFailure=error;abort.abort(error);
+}
 const delay=ms=>new Promise(resolve=>{
   if(abort.signal.aborted)return resolve();
   const done=()=>{clearTimeout(timer);abort.signal.removeEventListener("abort",done);resolve();};
@@ -69,7 +76,7 @@ export async function archiveCheckpoint(client,task) {
     if(result.rowCount!==1)throw new Error("archive_lease_lost");
   };
   let busy=false,finished=false;
-  const timer=setInterval(async()=>{if(busy)return;busy=true;try{await update("heartbeat_at=now()");}catch{if(!finished)abort.abort();}finally{busy=false;}},10000);
+  const timer=setInterval(async()=>{if(busy)return;busy=true;try{await update("heartbeat_at=now()");}catch(error){if(!finished)stopWithFailure(error);}finally{busy=false;}},10000);
   try {
     const row=(await client.query("SELECT j.*,m.raw_data,m.started_at FROM local_replay_jobs j JOIN dota_matches m USING(match_id) WHERE j.match_id=$1",[task.match_id])).rows[0];
     const file=row?.spool_name?await inspectSpool(incoming,row.spool_name):null;
@@ -105,7 +112,7 @@ export async function archiveCheckpoint(client,task) {
 async function foreground(client,lane) {
   const job=await claimLane(client,lane);if(!job)return false;
   const hooks=hooksFor(client,job);let busy=false,finished=false;
-  const timer=setInterval(async()=>{if(busy)return;busy=true;try{await updateJob(client,job,"download_bps=download_bps");}catch{if(!finished)abort.abort();}finally{busy=false;}},10000);
+  const timer=setInterval(async()=>{if(busy)return;busy=true;try{await updateJob(client,job,"download_bps=download_bps");}catch(error){if(!finished)stopWithFailure(error);}finally{busy=false;}},10000);
   try{if(lane==="parse")await parsePrepared(client,job,hooks);else await handle(client,job,hooks,{pipeline:true});finished=true;}
   catch(error){finished=true;await failJob(client,job,hooks,error);}finally{clearInterval(timer);}
   return true;
@@ -134,10 +141,10 @@ export async function main() {
   try{
     locked=(await owner.query("SELECT pg_try_advisory_lock(73341017) AS locked")).rows[0].locked;
     if(!locked)throw new Error("Another replay worker is active");
-    owner.on("error",()=>abort.abort());await recoverLeases(owner);await cleanCompletedPipelineSpool(owner,incoming);log({enabled:true,prepare:lanes.filter(x=>x==="prepare").length,parse:lanes.filter(x=>x==="parse").length,archive:lanes.filter(x=>x==="archive").length,cleanup:true});
+    owner.on("error",stopWithFailure);await recoverLeases(owner);await cleanCompletedPipelineSpool(owner,incoming);log({enabled:true,prepare:lanes.filter(x=>x==="prepare").length,parse:lanes.filter(x=>x==="parse").length,archive:lanes.filter(x=>x==="archive").length,cleanup:true});
     let lastRecovery=Date.now();
     async function loop(lane){
-      const raw=await pool.connect(),client=serializedClient(raw),disconnected=()=>abort.abort();raw.on("error",disconnected);
+      const raw=await pool.connect(),client=serializedClient(raw),disconnected=stopWithFailure;raw.on("error",disconnected);
       try{while(!abort.signal.aborted){
         if(lane==="prepare"&&Date.now()-lastRecovery>60000){lastRecovery=Date.now();await recoverLeases(client);await cleanCompletedPipelineSpool(client,incoming);}
         const task=lane==="archive"?await claimArchive(client):null;
@@ -145,9 +152,8 @@ export async function main() {
         if(!worked)await delay(1500);
       }}finally{await client.drain();raw.removeListener("error",disconnected);raw.release();}
     }
-    let failure;
-    await Promise.all(lanes.map(lane=>loop(lane).catch(error=>{failure ||= error;abort.abort();})));
-    if(failure)throw failure;
+    await Promise.all(lanes.map(lane=>loop(lane).catch(error=>{pipelineFailure ||= error;abort.abort(error);})));
+    if(pipelineFailure)throw pipelineFailure;
   }finally{abort.abort();if(locked)await owner.query("SELECT pg_advisory_unlock(73341017)").catch(()=>{});owner.release();await pool.end();}
 }
-if(process.argv[1]&&fileURLToPath(import.meta.url)===process.argv[1])main().catch(error=>{log({code:"replay_pipeline_failed",name:error.name});process.exitCode=1;});
+if(process.argv[1]&&fileURLToPath(import.meta.url)===process.argv[1])main().catch(error=>{log({code:"replay_pipeline_failed",name:error.name,transportCode:/^[A-Za-z0-9_.-]{1,80}$/.test(error.code || "")?error.code:undefined});process.exitCode=1;});
