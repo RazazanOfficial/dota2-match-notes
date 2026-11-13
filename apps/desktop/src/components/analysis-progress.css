@@ -1,0 +1,47 @@
+.analysis-progress-liquid{--analysis-orb:44px;display:grid;gap:19px;padding:20px;border:1px solid var(--border);border-radius:16px;background:color-mix(in srgb,var(--panel2) 76%,transparent);min-width:0}
+.analysis-progress-liquid .analysis-progress-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.analysis-progress-liquid .analysis-status{display:flex;align-items:center;gap:9px;font-size:12px;min-width:0}
+.analysis-progress-liquid .analysis-status strong{font-weight:500;line-height:1.7}
+.analysis-progress-liquid.is-ready .analysis-status{color:var(--good)}
+.analysis-progress-liquid.is-retrying .analysis-status{color:var(--accent)}
+.analysis-progress-liquid .analysis-steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;padding:3px 0;margin:0;list-style:none;direction:inherit}
+.analysis-progress-liquid .analysis-steps li{position:relative;display:grid;justify-items:center;align-content:start;gap:11px;text-align:center;min-width:0;color:var(--muted)}
+.analysis-progress-liquid .analysis-steps li::before{display:none}
+.analysis-progress-liquid .analysis-steps li b{font-size:11px;line-height:1.7;font-weight:500;overflow-wrap:anywhere;padding-inline:2px}
+.analysis-progress-liquid .analysis-steps li.active b,.analysis-progress-liquid .analysis-steps li.done b{color:var(--text)}
+.analysis-progress-liquid .analysis-connector{position:absolute;inset-inline-start:50%;top:calc(var(--analysis-orb)/2 - 1px);height:2px;width:100%;background:var(--line);pointer-events:none}
+.analysis-progress-liquid .analysis-connector>i{display:block;width:100%;height:100%;background:var(--good);transform:scaleX(0);transform-origin:left;transition:transform .28s ease-out}
+.analysis-progress-liquid[dir=rtl] .analysis-connector>i{transform-origin:right}
+.analysis-progress-liquid .done .analysis-connector>i{transform:scaleX(1)}
+.analysis-progress-liquid .analysis-stage-orb{position:relative;z-index:1;isolation:isolate;display:grid;place-items:center;width:var(--analysis-orb);height:var(--analysis-orb);border-radius:50%;overflow:hidden;background:var(--panel2);color:var(--muted);box-shadow:0 0 0 5px var(--panel);transition:background .22s ease,color .22s ease,box-shadow .22s ease}
+.analysis-progress-liquid .active .analysis-stage-orb{color:var(--text);box-shadow:0 0 0 4px var(--panel),0 0 0 5px color-mix(in srgb,var(--accent) 45%,transparent)}
+.analysis-progress-liquid .done .analysis-stage-orb{color:var(--good);background:color-mix(in srgb,var(--good) 17%,var(--panel2))}
+.analysis-progress-liquid .analysis-step-symbol,.analysis-progress-liquid .analysis-step-check{position:relative;z-index:2;grid-area:1/1;display:grid;place-items:center;font-size:11px;font-variant-numeric:tabular-nums;transition:opacity .14s ease,transform .2s ease}
+.analysis-progress-liquid .analysis-step-check{opacity:0;transform:scale(.72)}
+.analysis-progress-liquid .done .analysis-step-check{opacity:1;transform:scale(1);transition-delay:.08s}
+.analysis-progress-liquid .done .analysis-step-symbol{opacity:0;transform:scale(.85)}
+.analysis-progress-liquid .analysis-liquid{position:absolute;inset-inline:0;bottom:0;height:var(--liquid-level);background:color-mix(in srgb,var(--accent) 27%,var(--panel2));transition:height .25s ease-out;pointer-events:none}
+.analysis-progress-liquid .analysis-wave{position:absolute;bottom:calc(100% - 5px);left:-50%;width:250%;height:12px;fill:color-mix(in srgb,var(--accent) 27%,var(--panel2));animation:analysis-water-front 4.7s ease-in-out infinite alternate}
+.analysis-progress-liquid .analysis-wave-back{opacity:.5;bottom:calc(100% - 3px);height:11px;animation:analysis-water-back 6.1s ease-in-out infinite alternate}
+.analysis-progress-liquid .analysis-transfer{display:grid;gap:9px;padding:13px 14px;border-radius:11px;background:var(--panel);min-width:0}
+.analysis-progress-liquid .analysis-transfer-heading,.analysis-progress-liquid .analysis-transfer-metrics{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px 12px;font-size:11px}
+.analysis-progress-liquid .analysis-transfer-metrics{color:var(--muted);font-variant-numeric:tabular-nums}
+.analysis-progress-liquid .analysis-transfer progress{display:block;appearance:none;width:100%;height:5px;overflow:hidden;border:0;border-radius:5px;background:var(--line);accent-color:var(--accent)}
+.analysis-progress-liquid .analysis-transfer progress::-webkit-progress-bar{background:var(--line);border-radius:5px}
+.analysis-progress-liquid .analysis-transfer progress::-webkit-progress-value{background:var(--accent);border-radius:5px;transition:width .25s ease-out}
+.analysis-progress-liquid .analysis-transfer progress::-moz-progress-bar{background:var(--accent);border-radius:5px}
+.analysis-progress-liquid .analysis-transfer progress:indeterminate{opacity:.65}
+.analysis-progress-liquid .analysis-retry-details,.analysis-progress-liquid .retry-explanation,.analysis-progress-liquid .analysis-archive-note{font-size:11px;line-height:1.8;color:var(--muted);margin:0;overflow-wrap:anywhere}
+.analysis-progress-liquid .failed .analysis-stage-orb{color:var(--bad);background:color-mix(in srgb,var(--bad) 13%,var(--panel2))}
+.analysis-progress-liquid.is-failed{border-color:color-mix(in srgb,var(--bad) 45%,var(--border))}
+.analysis-progress-liquid .failed b,.analysis-progress-liquid.is-failed .analysis-status{color:var(--bad)}
+.analysis-progress-liquid .retrying .analysis-stage-orb{color:var(--accent)}
+.analysis-progress-liquid.is-compact,.task-expanded-detail .analysis-progress-liquid{--analysis-orb:32px;padding:14px;gap:15px}
+.task-expanded-detail .analysis-progress-liquid .analysis-steps b{font-size:11px}
+.task-expanded-detail .analysis-progress-liquid .analysis-retry-details,.task-expanded-detail .analysis-progress-liquid .retry-explanation{font-size:11px}
+@keyframes analysis-water-front{0%{transform:translate3d(-8%,0,0) rotate(-1deg)}50%{transform:translate3d(2%,-1px,0) rotate(.7deg)}100%{transform:translate3d(9%,0,0) rotate(-.4deg)}}
+@keyframes analysis-water-back{0%{transform:translate3d(9%,1px,0) rotate(.8deg)}55%{transform:translate3d(-1%,0,0) rotate(-.6deg)}100%{transform:translate3d(-9%,1px,0) rotate(.4deg)}}
+html[data-window-hidden=true] .analysis-progress-liquid .analysis-wave{animation-play-state:paused}
+html[data-motion=reduced] .analysis-progress-liquid *,html[data-motion=reduced] .analysis-progress-liquid *::before{animation:none!important;transition:none!important}
+@media(prefers-reduced-motion:reduce){.analysis-progress-liquid *,.analysis-progress-liquid *::before{animation:none!important;transition:none!important}}
+@media(max-width:420px){.analysis-progress-liquid{--analysis-orb:32px;padding:12px;gap:15px}.analysis-progress-liquid .analysis-steps li{gap:9px}.analysis-progress-liquid .analysis-transfer{padding:11px}.analysis-progress-liquid .analysis-status{font-size:11px}}
