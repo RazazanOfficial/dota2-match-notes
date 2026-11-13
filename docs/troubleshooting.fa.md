@@ -86,6 +86,29 @@ archive ready با completed تحلیل متفاوت است. اگر archive حا
 کندی انتقال مستقیم پارس پک را خودکار به VPS آلمان نسبت نده؛ Host واقعی درخواست و زمان readiness را جدا ثبت کن.
 `NoSuchKey` یعنی object در همان URL موجود نیست؛ به تنهایی علت یا مقصر بودن OpenDota را اثبات نمی کند.
 
+### صف ثابت و replay service با خروج موفق خاموش است
+
+روی آلمان، وضعیت خروج را پیش از شروع دوباره ثبت کن:
+
+```bash
+sudo systemctl show dota2notes-replay.service \
+  -p ActiveState -p SubState -p Result -p ExecMainStatus \
+  -p ExecMainExitTimestamp -p NRestarts --no-pager
+```
+
+`inactive/dead` با `Result=success` و `ExecMainStatus=0` سلامت پردازش را ثابت نمی کند؛ با `Restart=on-failure` خروج موفق خودکار برنمی گردد.
+در نسخه های پیش از اصلاح lifecycle، خطای اتصال DB یا heartbeat می توانست abort مشترک را فعال کند، retry تسک ذخیره شود و فرایند با خروج موفق خاموش بماند.
+نسخه اصلاح شده خطای اصلی را نگه می دارد و با `replay_pipeline_failed` و خروج ناموفق پایان می یابد تا systemd دوباره اجرا کند؛ توقف عمدی با SIGTERM/SIGINT همچنان مسیر لغو عادی دارد.
+برای تشخیص، زمان خروج را با آخرین `heartbeat_at`/`updated_at` تسک و journal همان بازه تطبیق بده؛ خروج موفق به تنهایی علت آغاز توقف را مشخص نمی کند.
+
+`transportCode=55P03` در لاگ یعنی PostgreSQL قفل لازم را نگرفته است؛ برچسب مرحله مانند `replay_archive_check_failed` به تنهایی خطای storage را ثابت نمی کند.
+شناسه خطا بدون URL، credential یا متن کامل query ثبت می شود. نبود blocker در بررسی فعلی نیز مالک قفل تاریخی را مشخص نمی کند.
+
+برای اصلاح worker، سورس canonical در `apps/api/scripts/replay-parser/run-pipeline.mjs` تغییر می کند و runtime سرویس با `npm run api:build` و `npm run release:prepare -w @dota-notes/api` طبق [استقرار](deployment-ubuntu.md) تولید می شود؛ فایل generated را دستی patch نکن.
+شروع مجدد سرویس روی production باید با مجوز همان عملیات انجام شود. پس از شروع، worker درخواست های آماده سازی pending با بودجه منقضی را failed می کند؛ checkpoint منتظر parse در مرحله `awaiting_parse` حفظ می شود. این رفتار با گیر کردن صف متفاوت است.
+برای آن مچ ها از مسیر معمول برنامه درخواست تازه ثبت کن؛ deadline، attempts یا وضعیت تمام صف را با SQL گسترده بازنشانی نکن.
+پذیرش بازیابی، علاوه بر `active/running`، تغییر واقعی وضعیت یک درخواست معتبر و ثبت نتیجه parse در DB است؛ سلامت provider و archive جدا بررسی می شوند.
+
 ## هشدارهای شناخته شده ساخت
 
 - Rust `dead_code`: ماژول مشترک در دو executable بخش های استفاده نشده دارد؛ به تنهایی به معنی خراب بودن Companion نیست.
