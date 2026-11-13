@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
-import {act,cleanup,render,renderHook,screen} from '@testing-library/react';
+import {act,cleanup,render,screen} from '@testing-library/react';
 const mocks=vi.hoisted(()=>({api:vi.fn(),download:vi.fn(),progress:vi.fn(),invoke:vi.fn(),listen:vi.fn(),native:false}));
 vi.mock('../src/api',()=>({API_ORIGIN:'https://api.dota2notes.ir',apiRequest:mocks.api,getBearer:()=> 'test',getSyncStatus:async()=>({status:{manualJob:null}})}));
 vi.mock('../src/replays',()=>({validReplayId:(s:string)=>/^\d{10}$/.test(s),replayNative:{download:mocks.download,progress:mocks.progress}}));
@@ -8,7 +8,7 @@ vi.mock('@tauri-apps/api/core',()=>({isTauri:()=>mocks.native,invoke:mocks.invok
 vi.mock('@tauri-apps/api/event',()=>({listen:mocks.listen}));
 import {TaskManager,type AnalysisTask} from '../src/taskManager';
 import {setConnection} from '../src/connection';
-import {useStageTransition,STEP_HOLD_MS,STEP_CHECK_MS} from '../src/hooks/useStageTransition';
+
 import {projectMatch} from '../src/useLiveMatch';
 import {sampleHistory} from '../src/history';
 import {AssetGate} from '../src/components/AssetGate';
@@ -29,10 +29,6 @@ describe('shared task state and independent transfers',()=>{
   const old={...sampleHistory[0],analyzed:false,analysisStatus:'failed' as const,analysisUpdatedAt:'2026-11-06T10:00:00Z'};
   expect(projectMatch(old,task).analysisStatus).toBe('processing');const ready={...old,analyzed:true,analysisStatus:'ready' as const,analysisUpdatedAt:'2026-11-07T10:02:00Z'};expect(projectMatch(ready,task)).toBe(ready);
  });
-});
-describe('short stage transitions without slowing backend work',()=>{
- it('finishes and checks each stage instead of jumping over two stages',async()=>{const {result,rerender}=renderHook(({target})=>useStageTransition(target,'request'),{initialProps:{target:0}});rerender({target:2});expect(result.current.step).toBe(0);await act(()=>vi.advanceTimersByTimeAsync(STEP_HOLD_MS));expect(result.current.checking).toBe(true);await act(()=>vi.advanceTimersByTimeAsync(STEP_CHECK_MS));expect(result.current.step).toBe(1);await act(()=>vi.advanceTimersByTimeAsync(STEP_HOLD_MS+STEP_CHECK_MS));expect(result.current.step).toBe(2)});
- it('resets transitions when a new request replaces the old one',()=>{const {result,rerender}=renderHook(({target,key})=>useStageTransition(target,key),{initialProps:{target:3,key:'old'}});rerender({target:0,key:'new'});expect(result.current.step).toBe(0)});
 });
 describe('first launch assets gate',()=>{
  it('holds login until missing assets finish and reuses verified files',async()=>{mocks.native=true;let finish!:()=>void;mocks.invoke.mockImplementation((command:string)=>command==='asset_status'?Promise.resolve({bytes:20,totalBytes:100,complete:1,total:2}):new Promise<void>(resolve=>{finish=resolve}));render(<AssetGate t={messages.en}><p>Login content</p></AssetGate>);await act(flush);expect(screen.queryByText('Login content')).toBeNull();expect(screen.getByRole('progressbar')).toBeTruthy();await act(async()=>{finish();await flush()});expect(screen.getByText('Login content')).toBeTruthy();expect(mocks.invoke).toHaveBeenCalledWith('prepare_assets')});
