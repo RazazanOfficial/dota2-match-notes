@@ -10,6 +10,7 @@ import { CopyValue } from "./Shared";
 import type { ReplayProgress } from "@/lib/replay/progress";
 import { LoadingView } from "./LoadingView";
 import { AnalysisProgress } from "./AnalysisProgress";
+import { useAnalysisTask } from "./TaskCenter";
 import { ErrorNotice } from "./ErrorNotice";
 import { formatDateTime24 } from "../time";
 import { ComingSoon } from "./Workspace";
@@ -23,6 +24,7 @@ export function Analysis({ t, row, onBack, live = false, session }: {
     session?: Session;
 }) {
     const { match, updateMatch: setMatch, preparation, setPreparation, error, setError, checking } = useMatchDetails(row, live, session);
+    const queuedTask = useAnalysisTask(row.id);
     const [selected, setSelected] = useState<number | null>(null), [tab, setTab] = useState("summary"), [pending, setPending] = useState(false);
     const selectedSlot = selected !== null && match?.participants?.some(p => p.playerSlot === selected) ? selected
         : match?.participants?.find(p => p.isProfilePlayer)?.playerSlot ?? match?.participants?.[0]?.playerSlot ?? 0;
@@ -50,7 +52,7 @@ export function Analysis({ t, row, onBack, live = false, session }: {
     else
         return; e.preventDefault(); const key = tabs[(next + tabs.length) % tabs.length].key; setTab(key); document.getElementById(`detail-tab-${key}`)?.focus(); }}>{item.label}</button>)}</nav><div role="tabpanel" id="detail-panel" aria-labelledby={`detail-tab-${tab}`}>
     {tab === "summary" && <QuickSummary match={match} selected={selectedSlot} onSelect={setSelected} onAnalyze={() => setTab("analysis")} t={t}/>}
-    {tab === "analysis" && (match.analysis ? <Suspense fallback={<LoadingView t={t}/>}><PerformanceAnalysis analysis={match.analysis} selected={selectedSlot} onSelect={setSelected} t={t} onPositionOverrides={updates => setMatch(m => m ? ({ ...m, positionOverrides: { ...m.positionOverrides, ...updates }, analysis: m.analysis ? applyAnalysisPositionOverrides(m.analysis, updates) : undefined, participants: m.participants?.map(p => ({ ...p, position: updates[String(p.playerSlot)] ?? p.position })) }) : m)}/></Suspense> : <section className="panel analysis-preparation"><p>{live ? t.analysisPending : t.previewAnalysis}</p>{live && <><AnalysisProgress preparation={preparation} t={t}/>{(!preparation || ["basic", "failed", "expired"].includes(preparation.replay)) && <button className="primary-button" disabled={pending || checking} onClick={() => void requestAnalysis()}>{pending || checking ? t.checking : t.analyze}</button>}</>}{!!error && <ErrorNotice error={error} title={t.analysisFailed} t={t}/>}</section>)}
+    {tab === "analysis" && (match.analysis ? <Suspense fallback={<LoadingView t={t}/>}><PerformanceAnalysis analysis={match.analysis} selected={selectedSlot} onSelect={setSelected} t={t} onPositionOverrides={updates => setMatch(m => m ? ({ ...m, positionOverrides: { ...m.positionOverrides, ...updates }, analysis: m.analysis ? applyAnalysisPositionOverrides(m.analysis, updates) : undefined, participants: m.participants?.map(p => ({ ...p, position: updates[String(p.playerSlot)] ?? p.position })) }) : m)}/></Suspense> : <section className="panel analysis-preparation"><p>{live ? t.analysisPending : t.previewAnalysis}</p>{live && <><AnalysisProgress preparation={preparation} t={t} queue={preparation?.progress?.requestStartedAt === queuedTask?.progress.requestStartedAt ? queuedTask : null}/>{(!preparation || ["basic", "failed", "expired"].includes(preparation.replay)) && <button className="primary-button" disabled={pending || checking} onClick={() => void requestAnalysis()}>{pending || checking ? t.checking : t.analyze}</button>}</>}{!!error && <ErrorNotice error={error} title={t.analysisFailed} t={t}/>}</section>)}
     {tab === "journal" && <ComingSoon title={t.journal} t={t}/>} {tab === "images" && <ComingSoon title={t.images} t={t}/>}
   </div></div>;
 }

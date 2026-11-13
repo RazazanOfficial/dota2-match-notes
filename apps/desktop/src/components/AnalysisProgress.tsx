@@ -7,7 +7,7 @@ import { ErrorNotice, friendlyError } from "./ErrorNotice";
 import "./analysis-progress.css";
 
 const phaseIndex: Record<string, number> = {
-    queued: 0, checking_archive: 1, resolving_metadata: 1, connecting: 1,
+    queued: 1, checking_archive: 1, resolving_metadata: 1, connecting: 1,
     restoring_archive: 2, downloading: 2, validating: 2, awaiting_parse: 3, parsing: 3,
     completed: 5,
 };
@@ -30,11 +30,12 @@ function Liquid({ level }: { level: number }) {
     </span>;
 }
 
-export function AnalysisProgress({ preparation, t, compact = false, onCollapse }: {
+export function AnalysisProgress({ preparation, t, compact = false, onCollapse, queue }: {
     preparation: { replay: string; progress?: ReplayProgress | null; errorCode?: string | null } | null;
     t: Messages;
     compact?: boolean;
     onCollapse?: () => void;
+    queue?: { queueLane?: "prepare" | "parse" | null; queuePosition?: number | null; activeCount?: number | null } | null;
 }) {
     if (!preparation || preparation.replay === "basic" || preparation.replay === "expired") return null;
     const fa = isPersian(t);
@@ -47,15 +48,21 @@ export function AnalysisProgress({ preparation, t, compact = false, onCollapse }
     const inferred = errorStage(code);
     // Unknown terminal errors must not claim an arbitrary preparation stage failed.
     const active = ready ? 5 : failed || retry ? inferred : phaseIndex[phase] ?? null;
-    const stages = [t.analysisQueued, t.analysisConnect, t.analysisDownload, t.analysisParse, t.analysisReadyStep];
+    const stages = [t.analysisRegistered, t.analysisConnect, t.analysisDownload, t.analysisParse, t.analysisReadyStep];
     const downloading = !failed && !retry && !ready && phase === "downloading";
     const total = progress?.totalBytes;
     const percent = downloading && total != null && Number.isFinite(total) && total > 0 && Number.isFinite(progress?.bytes)
         ? Math.min(100, Math.max(0, Math.round(progress!.bytes / total * 100))) : null;
     const progressing = !failed && !retry && !ready && ["checking_archive", "resolving_metadata", "connecting", "restoring_archive", "downloading", "validating", "parsing"].includes(phase);
-    const label = ready ? t.analysisReady : failed ? t.analysisFailed : retry ? t.analysisRetry
+    const label = ready ? t.analysisReady : failed ? t.analysisFailed : retry ? code?.includes("metadata") || code === "replay_not_found" ? (fa ? "در انتظار اطلاعات ریپلی" : "Waiting for replay details") : t.analysisRetry
         : phase === "awaiting_parse" ? t.analysisAwaitingParse : phase === "uploading" ? t.analysisArchiving
         : active === null ? t.analysisRefresh : stages[Math.min(active, 4)];
+    const queued = !failed && !retry && !ready && (phase === "queued" || phase === "awaiting_parse")
+        && queue?.queueLane === (phase === "queued" ? "prepare" : "parse")
+        && Number.isInteger(queue.queuePosition) && (queue.queuePosition ?? 0) > 0;
+    const queueText = queued ? fa
+        ? `نوبت ${formatCount(queue!.queuePosition!, t)} در صف ${queue!.queueLane === "parse" ? "تحلیل" : "آماده‌سازی"}`
+        : `Position ${formatCount(queue!.queuePosition!, t)} in the ${queue!.queueLane === "parse" ? "analysis" : "preparation"} queue` : null;
     const requestKey = progress?.requestStartedAt || "current";
 
     return <div className={`analysis-progress analysis-progress-liquid ${compact ? "is-compact" : ""} ${failed ? "is-failed" : ""} ${retry ? "is-retrying" : ""} ${ready ? "is-ready" : ""}`} dir={fa ? "rtl" : "ltr"}>
@@ -66,6 +73,7 @@ export function AnalysisProgress({ preparation, t, compact = false, onCollapse }
             </span>
             {onCollapse && <button className="progress-collapse" onClick={onCollapse} aria-label={t.collapseProgress}><ChevronUp size={19}/></button>}
         </div>
+        {queueText && <p className="analysis-queue-status">{queueText}{queue?.activeCount != null && queue.activeCount > 0 && <> · {formatCount(queue.activeCount, t)} {fa ? "مچ در حال انجام" : "active"}</>}</p>}
         <ol className="analysis-steps" key={requestKey}>
             {stages.map((stage, index) => {
                 const done = active !== null && active > index;
@@ -95,7 +103,7 @@ export function AnalysisProgress({ preparation, t, compact = false, onCollapse }
             <div className="analysis-transfer-metrics"><bdi dir="ltr">{mb(progress.bytes)}{total != null && Number.isFinite(total) && total > 0 ? ` / ${mb(total)}` : ""}</bdi>{Number.isFinite(progress.bytesPerSecond) && progress.bytesPerSecond > 0 && <bdi dir="ltr">{mb(progress.bytesPerSecond)}/s</bdi>}</div>
         </div>}
         {phase === "uploading" && !ready && <p className="analysis-archive-note">{t.analysisArchiveIndependent}</p>}
-        {retry && <small className="analysis-retry-details">{t.analysisAttempts}{fa ? ": " : " "}<bdi>{formatCount(progress?.attempts || 1, t)}</bdi>{progress?.nextTryAt && <>{` · ${t.nextRetryTime}: `}<time dateTime={progress.nextTryAt}><bdi dir="ltr">{formatClock24(progress.nextTryAt, t)}</bdi></time></>}</small>}
+        {retry && <details className="analysis-retry-disclosure"><summary>{fa ? "جزئیات پردازش" : "Processing details"}</summary><small className="analysis-retry-details">{t.analysisAttempts}{fa ? ": " : " "}<bdi>{formatCount(progress?.attempts || 1, t)}</bdi>{progress?.nextTryAt && <>{` · ${t.nextRetryTime}: `}<time dateTime={progress.nextTryAt}><bdi dir="ltr">{formatClock24(progress.nextTryAt, t)}</bdi></time></>}</small></details>}
         {failed && <ErrorNotice code={code} title={`${t.analysisFailed}${inferred === null ? "" : ` · ${stages[inferred]}`}`} t={t}/>}
         {retry && code && <p className="retry-explanation">{friendlyError(code, t)}</p>}
     </div>;

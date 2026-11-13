@@ -1,6 +1,7 @@
 mod companion_core;
 mod companion;
 mod steam_paths;
+mod steam_launch_options;
 mod asset_cache;
 mod assets;
 mod replay;
@@ -84,7 +85,7 @@ pub fn run() {
             Ok(())
         })
         .manage(replay::ReplayState::default())
-        .invoke_handler(tauri::generate_handler![companion::companion_health, companion::companion_status, companion::configure_companion, assets::asset_status, assets::prepare_assets, launch_dota, open_steam_login, save_session_token, load_session_token, clear_session_token, replay::discover_dota, replay::replay_settings, replay::choose_dota_folder, replay::list_replays, replay::download_replay, recovery::export_recovery_codes, window_aspect::set_window_aspect_ratio])
+        .invoke_handler(tauri::generate_handler![companion::companion_health, companion::companion_status, companion::configure_companion, assets::asset_status, assets::prepare_assets, launch_dota, steam_launch_options::steam_launch_options_status, steam_launch_options::configure_steam_launch_options, open_steam_login, save_session_token, load_session_token, clear_session_token, replay::discover_dota, replay::replay_settings, replay::choose_dota_folder, replay::list_replays, replay::download_replay, recovery::export_recovery_codes, window_aspect::set_window_aspect_ratio])
         .run(tauri::generate_context!())
         .expect("error while running Dota Notes");
 }

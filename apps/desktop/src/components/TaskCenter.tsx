@@ -3,13 +3,20 @@ import {Activity,Check,ChevronDown,ChevronRight,Download,Clock3,LoaderCircle,Spa
 import {TaskManager,type DownloadTask,type AnalysisTask} from "../taskManager";
 import {isPersian,type Messages} from "../i18n";
 import {playUISound} from "../experience";
-import {formatClock24} from "../time";
+import {formatCount} from "../time";
 import {AnimatedContent} from "./AnimatedContent";
 import {AnalysisProgress} from "./AnalysisProgress";
 import {ErrorNotice} from "./ErrorNotice";
 import {CopyValue} from "./Shared";
 const Context=createContext<TaskManager|null>(null);
 export const useTaskManager=()=>useContext(Context);
+const emptySubscribe=()=>()=>{};
+export function useAnalysisTask(matchId:string){
+  const manager=useTaskManager();
+  return useSyncExternalStore(manager?.subscribe ?? emptySubscribe,
+    ()=>manager?.snapshot().analysis.find(task=>task.matchId===matchId) ?? null,
+    ()=>null);
+}
 export function TaskProvider({owner,live,t,children}:{owner:string;live:boolean;t:Messages;children:ReactNode}){
   const manager=useMemo(()=>new TaskManager(owner,live),[owner,live]);
   useEffect(()=>{manager.start();return()=>manager.stop();},[manager]);
@@ -19,8 +26,14 @@ const mb=(bytes:number)=>`${(bytes/1048576).toFixed(1)} MB`;
 function stageLabel(task:AnalysisTask,t:Messages){
   const phase=task.progress.phase,fa=isPersian(t);
   if(task.status==="failed")return t.analysisFailed;
-  if(phase==="retry_wait")return task.progress.errorCode?.match(/rate_limited|metadata_cooldown/)?(fa?"منتظر آزادشدن سهمیه":"Waiting for provider quota"):(fa?"بررسی بعدی زمان‌بندی شد":"Next check scheduled");
-  return ({queued:t.analysisQueued,checking_archive:t.analysisConnect,resolving_metadata:fa?"بررسی اطلاعات ریپلی":"Checking replay information",connecting:t.analysisConnect,downloading:t.analysisDownload,validating:t.analysisDownload,awaiting_parse:fa?"منتظر موتور تحلیل":"Waiting for analysis engine",parsing:t.analysisParse,completed:t.analysisReady} as Record<string,string>)[phase]||t.checking;
+  if(phase==="retry_wait")return task.progress.errorCode?.match(/metadata|replay_not_found/)?(fa?"در انتظار اطلاعات ریپلی":"Waiting for replay details"):task.progress.errorCode?.match(/rate_limited|cooldown/)?(fa?"منتظر آزادشدن سهمیه":"Waiting for provider quota"):(fa?"بررسی دوباره زمان‌بندی شده":"Another check is scheduled");
+  return ({queued:fa?"در صف آماده‌سازی":"Queued for replay preparation",checking_archive:t.analysisConnect,resolving_metadata:fa?"بررسی اطلاعات ریپلی":"Checking replay information",connecting:t.analysisConnect,downloading:t.analysisDownload,validating:t.analysisDownload,awaiting_parse:fa?"در صف تحلیل":"Queued for analysis",parsing:t.analysisParse,completed:t.analysisReady} as Record<string,string>)[phase]||t.checking;
+}
+function queueLabel(task:AnalysisTask,t:Messages){
+  if(!task.queueLane||!Number.isInteger(task.queuePosition)||!task.queuePosition||task.queuePosition<1)return null;
+  const fa=isPersian(t),lane=task.queueLane==="parse"?(fa?"تحلیل":"analysis"):(fa?"آماده‌سازی":"preparation");
+  const place=fa?`نوبت ${formatCount(task.queuePosition,t)} در صف ${lane}`:`Position ${formatCount(task.queuePosition,t)} in the ${lane} queue`;
+  return task.activeCount!=null&&task.activeCount>0?`${place} · ${formatCount(task.activeCount,t)} ${fa?"مچ در حال انجام":"active"}`:place;
 }
 function DownloadDetails({task,t,onDismiss}:{task:DownloadTask;t:Messages;onDismiss:()=>void}){
   const fa=isPersian(t),percent=task.totalBytes?Math.min(100,Math.round(task.bytes/task.totalBytes*100)):null;
@@ -46,8 +59,8 @@ function TaskDock({t}:{t:Messages}){
   {sync&&<span className="task-orb task-sync" title={fa?"دریافت مچ‌ها":"Fetching matches"}><Activity size={19}/><span>{fa?"دریافت مچ‌ها":"Fetching matches"}</span></span>}
   {open&&<AnimatedContent className="task-popover panel" identity={open}><section id="activity-panel" role="dialog" aria-label={open==="analysis"?(fa?"تحلیل‌های جاری":"Active analyses"):(fa?"دانلودها":"Downloads")}><header className="activity-panel-heading"><div><p className="eyebrow">{fa?"مرکز فعالیت":"ACTIVITY CENTRE"}</p><strong>{open==="analysis"?(fa?"تحلیل مچ‌ها":"Match analysis"):(fa?"دانلود ریپلی":"Replay downloads")}</strong></div><button aria-label={t.close} onClick={()=>close(true)}><X size={18}/></button></header><div className="task-popover-list" data-native-scroll>
   {open==="analysis"?active.map(task=>{const retry=task.progress.phase==="retry_wait",failed=task.status==="failed",id=task.matchId;return <article className={`activity-row ${expanded===id?"expanded":""}`} key={id}><header><span className={`task-kind-icon ${failed?"bad":""}`}>{failed?<AlertCircle size={18}/>:<Sparkles size={18}/>}</span><div className="task-row-title"><CopyValue value={id} t={t}/><small>{stageLabel(task,t)}</small></div>{failed&&<button className="task-dismiss" aria-label={t.close} onClick={()=>manager.dismissAnalysis(task)}><X size={15}/></button>}<button className="task-expand" aria-label={`${fa?"جزئیات":"Details"} ${id}`} aria-expanded={expanded===id} onClick={()=>setExpanded(expanded===id?null:id)}><ChevronDown size={17}/></button></header>
-  <div className="activity-row-meta"><i className={`signal-dot ${failed?"signal-error":retry?"signal-retry":""}`}/><small>{retry&&task.progress.nextTryAt?`${fa?"بررسی بعدی":"Next check"} ${formatClock24(task.progress.nextTryAt,t)}`:task.queueAhead!=null?`${fa?"جلوتر در صف":"Ahead in queue"}: ${task.queueAhead}`:stageLabel(task,t)}</small></div>
-  {expanded===id&&<AnimatedContent className="task-expanded-detail" identity={id}><AnalysisProgress t={t} preparation={{replay:task.status,progress:task.progress}}/>{task.progress.phase==="awaiting_parse"&&task.estimatedParseSeconds!=null&&<small>{fa?"میانگین زمان پس از آغاز تحلیل: ":"Average once parsing starts: "}{task.estimatedParseSeconds}s</small>}</AnimatedContent>}</article>;}):downloads.map(task=><DownloadDetails key={task.matchId} task={task} t={t} onDismiss={()=>manager.dismiss(task.matchId)}/>)}
+  <div className="activity-row-meta"><i className={`signal-dot ${failed?"signal-error":retry?"signal-retry":""}`}/><small>{queueLabel(task,t)||stageLabel(task,t)}</small></div>
+  {expanded===id&&<AnimatedContent className="task-expanded-detail" identity={id}><AnalysisProgress t={t} preparation={{replay:task.status,progress:task.progress}} queue={task}/>{task.progress.phase==="awaiting_parse"&&task.estimatedParseSeconds!=null&&<small>{fa?"میانگین زمان پس از آغاز تحلیل: ":"Average once parsing starts: "}{task.estimatedParseSeconds}s</small>}</AnimatedContent>}</article>;}):downloads.map(task=><DownloadDetails key={task.matchId} task={task} t={t} onDismiss={()=>manager.dismiss(task.matchId)}/>)}
   {open==="analysis"&&!active.length&&<div className="task-empty"><Check size={26}/><p>{fa?"تحلیل‌های درخواستی کامل شدند.":"Your analyses have finished."}</p></div>}</div></section></AnimatedContent>}
   </div>{state.toast&&<AnimatedContent className="task-toast" identity={state.toast.id}><div role="status" onMouseEnter={()=>manager.pauseToast(true)} onMouseLeave={()=>{if(!document.querySelector('.task-toast')?.contains(document.activeElement))manager.pauseToast(false);}} onFocus={()=>manager.pauseToast(true)} onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget as Node))manager.pauseToast(false);}}><span className="task-toast-icon"><Check size={19}/></span><div><strong>{state.toast.kind==="analysis"?(fa?"تحلیل آماده شد":"Analysis complete"):state.toast.kind==="download"?(fa?"ریپلی ذخیره شد":"Replay downloaded"):(fa?"تاریخچه به‌روز شد":"Matches updated")}</strong>{state.toast.matchId&&<CopyValue value={state.toast.matchId} t={t}/>}</div><button aria-label={t.close} onClick={()=>manager.dismissToast()}><X size={16}/></button><i className="toast-countdown" key={state.toast.id}/></div></AnimatedContent>}</>;
 }

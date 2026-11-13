@@ -63,9 +63,18 @@ describe("truthful analysis milestones", () => {
     it("replaces a request without retaining completed steps or previous transfer telemetry", () => {
         const view = render(<AnalysisProgress t={messages.en} preparation={{ replay: "ready", progress: progress("completed") }}/>);
         view.rerender(<AnalysisProgress t={messages.en} preparation={{ replay: "pending", progress: progress("queued", { requestStartedAt: "new-request" }) }}/>);
-        expect(view.container.querySelectorAll("li.done")).toHaveLength(0);
-        expect(view.container.querySelector("[aria-current=step] b")?.textContent).toBe(messages.en.analysisQueued);
+        expect(view.container.querySelectorAll("li.done")).toHaveLength(1);
+        expect(view.container.querySelector("[aria-current=step] b")?.textContent).toBe(messages.en.analysisConnect);
         expect(view.container.querySelector(".analysis-liquid")).toBeNull();
+    });
+    it("shows only the current lane's measured queue position and hides retry internals", () => {
+        const queue = { queueLane: "prepare" as const, queuePosition: 3, activeCount: 2 };
+        const view = render(<AnalysisProgress t={messages.fa} preparation={{ replay: "pending", progress: progress("queued") }} queue={queue}/>);
+        expect(view.container.querySelectorAll("li.done")).toHaveLength(1);
+        expect(view.container.querySelector(".analysis-queue-status")?.textContent).toContain("نوبت ۳ در صف آماده‌سازی");
+        view.rerender(<AnalysisProgress t={messages.fa} preparation={{ replay: "pending", progress: progress("retry_wait", { errorCode: "replay_metadata_pending", nextTryAt: "2026-11-13T04:00:00Z" }) }} queue={queue}/>);
+        expect(view.container.querySelector(".analysis-queue-status")).toBeNull();
+        expect(view.container.querySelector(".analysis-retry-disclosure")?.hasAttribute("open")).toBe(false);
     });
     it.each([
         ["replay_archive_check_failed", messages.en.analysisConnect],
