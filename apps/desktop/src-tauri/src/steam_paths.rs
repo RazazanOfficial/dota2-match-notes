@@ -106,7 +106,7 @@ pub fn discover_from(roots: &[PathBuf]) -> Vec<PathBuf> {
     }
     installs
 }
-pub fn discover() -> Vec<PathBuf> {
+pub fn steam_roots() -> Vec<PathBuf> {
     let mut roots = vec![];
     #[cfg(windows)]
     {
@@ -143,7 +143,10 @@ pub fn discover() -> Vec<PathBuf> {
             roots.push(PathBuf::from(home).join(".local/share/Steam"));
         }
     }
-    discover_from(&roots)
+    roots
+}
+pub fn discover() -> Vec<PathBuf> {
+    discover_from(&steam_roots())
 }
 #[cfg(test)]
 mod tests {

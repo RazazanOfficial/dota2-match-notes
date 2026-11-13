@@ -4,7 +4,7 @@ import {connectionState,subscribeConnection} from "./connection";
 import {syncStatusFeed} from "./syncStatusFeed";
 import {replayNative,validReplayId} from "./replays";
 import type {ReplayProgress} from "@/lib/replay/progress";
-export interface AnalysisTask {matchId:string;kind:string;status:string;requestedAt:string;updatedAt?:string;progress:ReplayProgress;queueAhead:number|null;estimatedParseSeconds:number|null}
+export interface AnalysisTask {matchId:string;kind:string;status:string;requestedAt:string;updatedAt?:string;progress:ReplayProgress;queueAhead:number|null;queueLane?:"prepare"|"parse"|null;queuePosition?:number|null;activeCount?:number|null;observedAt?:string|null;estimatedParseSeconds:number|null}
 export interface DownloadTask {matchId:string;status:"preparing"|"transferring"|"completed"|"failed";bytes:number;totalBytes:number|null;speed:number;errorCode?:string;updatedAt:number;requestedAt:number;preparation?:ReplayProgress;phase?:string}
 export interface TaskSnapshot {analysis:AnalysisTask[];downloads:DownloadTask[];sync:SyncJob|null;toast:{id:string;kind:"analysis"|"download"|"sync";matchId?:string}|null}
 const storageKey=(owner:string)=>`dota-notes.tasks.v1.${owner}`;

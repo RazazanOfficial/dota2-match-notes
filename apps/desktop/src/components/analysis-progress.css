@@ -31,7 +31,11 @@
 .analysis-progress-liquid .analysis-transfer progress::-webkit-progress-value{background:var(--accent);border-radius:5px;transition:width .25s ease-out}
 .analysis-progress-liquid .analysis-transfer progress::-moz-progress-bar{background:var(--accent);border-radius:5px}
 .analysis-progress-liquid .analysis-transfer progress:indeterminate{opacity:.65}
-.analysis-progress-liquid .analysis-retry-details,.analysis-progress-liquid .retry-explanation,.analysis-progress-liquid .analysis-archive-note{font-size:11px;line-height:1.8;color:var(--muted);margin:0;overflow-wrap:anywhere}
+.analysis-progress-liquid .analysis-retry-details,.analysis-progress-liquid .retry-explanation,.analysis-progress-liquid .analysis-archive-note,.analysis-progress-liquid .analysis-queue-status{font-size:11px;line-height:1.8;color:var(--muted);margin:0;overflow-wrap:anywhere}
+.analysis-progress-liquid .analysis-queue-status{color:var(--text)}
+.analysis-progress-liquid .analysis-retry-disclosure{font-size:11px;color:var(--muted)}
+.analysis-progress-liquid .analysis-retry-disclosure summary{cursor:pointer;width:fit-content}
+.analysis-progress-liquid .analysis-retry-disclosure .analysis-retry-details{display:block;margin-top:6px}
 .analysis-progress-liquid .failed .analysis-stage-orb{color:var(--bad);background:color-mix(in srgb,var(--bad) 13%,var(--panel2))}
 .analysis-progress-liquid.is-failed{border-color:color-mix(in srgb,var(--bad) 45%,var(--border))}
 .analysis-progress-liquid .failed b,.analysis-progress-liquid.is-failed .analysis-status{color:var(--bad)}

@@ -1,5 +1,5 @@
 import {useLiveMatch} from "../useLiveMatch";
-import {useTaskManager} from "./TaskCenter";
+import {useAnalysisTask,useTaskManager} from "./TaskCenter";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Download, Search, Swords, X, Sparkles, ArrowUpRight, Zap, Shield, Gamepad2, CircleHelp, Check, LoaderCircle, ArrowUpLeft, ChevronDown, Send, AlertCircle } from "lucide-react";
 import { heroById, heroImage, heroIcon } from "@/data/heroes";
@@ -44,7 +44,7 @@ export function Score({ value, t }: { value: number | null | undefined; t?: Mess
 }
 type Preparation = { replay: string; progress?: ReplayProgress | null; errorCode?: string | null };
 export function MatchRow({ match:sourceMatch, t, onOpen, live = false }: { match: HistoryMatch; t: Messages; onOpen: (m: HistoryMatch) => void; live?: boolean }) {
-    const match=useLiveMatch(sourceMatch,live),manager=useTaskManager();
+    const match=useLiveMatch(sourceMatch,live),manager=useTaskManager(),queuedTask=useAnalysisTask(sourceMatch.id);
     const hero = heroById(match.heroId), [preparation, setPreparation] = useState<Preparation | null>(match.analysisPreparation || null), [busy, setBusy] = useState(false), [error, setError] = useState<unknown>(null), [ready, setReady] = useState(false), [expanded, setExpanded] = useState(false);
     useEffect(() => {
         if (match.analyzed) {
@@ -96,7 +96,7 @@ export function MatchRow({ match:sourceMatch, t, onOpen, live = false }: { match
         <bdi role="cell" className="row-duration">{durationText(match.duration)}</bdi><span role="cell" className="match-id-cell"><CopyValue value={match.id} t={t}/></span>
         <span role="cell" className="items-cell"><MatchLoadout match={match} t={t}/></span>
         <span role="cell" className="details-cell"><button className="match-details-button" onClick={() => onOpen(match)} aria-label={`${t.details} ${match.id}`}>{isPersian(t) ? <ArrowUpRight size={17}/> : <ArrowUpLeft size={17}/>}</button></span>
-    </div>{expanded && (preparation || failed) && <div className="row-analysis-progress">{error ? <ErrorNotice error={error} title={t.analysisFailed} t={t}/> : <AnalysisProgress preparation={preparation || {replay:"failed"}} t={t} compact onCollapse={() => setExpanded(false)}/>} {failed && <button className="analysis-retry-button" onClick={()=>void analyze()}>{t.analysisRetryAction}</button>}</div>}</>;
+    </div>{expanded && (preparation || failed) && <div className="row-analysis-progress">{error ? <ErrorNotice error={error} title={t.analysisFailed} t={t}/> : <AnalysisProgress preparation={preparation || {replay:"failed"}} t={t} compact queue={preparation?.progress?.requestStartedAt === queuedTask?.progress.requestStartedAt ? queuedTask : null} onCollapse={() => setExpanded(false)}/>} {failed && <button className="analysis-retry-button" onClick={()=>void analyze()}>{t.analysisRetryAction}</button>}</div>}</>;
 }
 export function MatchTable({ matches, t, onOpen, groupDays = false, live = false }: { matches: HistoryMatch[]; t: Messages; onOpen: (m: HistoryMatch) => void; groupDays?: boolean; live?: boolean }) {
     const header = useRef<HTMLDivElement>(null);

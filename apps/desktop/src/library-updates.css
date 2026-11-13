@@ -3,7 +3,20 @@
 .asset-gate-card{width:min(560px,100%);padding:48px;border:1px solid #bda8eb26;border-radius:24px;background:#242032bb;box-shadow:0 24px 90px #0004;text-align:center}
 .asset-gate-card>img{width:56px;height:56px;object-fit:contain;margin:0 auto 20px}.asset-gate-card h1{font-size:24px;margin:10px 0 14px}.asset-gate-card>p:not(.eyebrow){color:#bdb5ce;font-size:14px;line-height:1.9;min-height:54px}
 .asset-gate-progress{display:flex;align-items:center;gap:16px;margin-top:32px}.asset-gate-progress progress{flex:1;height:7px;accent-color:#bea3ee;border:0;border-radius:20px;overflow:hidden}.asset-gate-metrics{display:flex;justify-content:space-between;color:#afa6c0;font-size:12px;margin:14px 0 26px}.asset-gate-metrics>span{display:flex;align-items:center;gap:6px}.asset-gate-card button{margin:auto}
-.companion-notice{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 16px;margin-bottom:16px;border:1px solid #c59b5433;border-radius:12px;font-size:12px;line-height:1.8}.companion-notice button{flex:none}
+.companion-setup.panel{display:flex;align-items:center;flex-wrap:wrap;gap:12px 20px;padding:16px 18px;border-color:color-mix(in srgb,var(--accent) 27%,var(--border));min-width:0}
+.companion-setup.is-compact{margin-bottom:16px}
+.companion-setup.is-configured{border-color:color-mix(in srgb,var(--good) 24%,var(--border))}
+.companion-setup-head{display:flex;align-items:flex-start;gap:12px;flex:1 1 240px;min-width:0}
+.companion-setup-head strong{font-size:12px}
+.companion-setup-head p{margin:4px 0 0;color:var(--muted);font-size:11px;line-height:1.7}
+.companion-setup-icon{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:10px;color:var(--accent);background:var(--panel2)}
+.companion-setup.is-configured .companion-setup-icon{color:var(--good)}
+.companion-setup-actions{display:flex;flex-wrap:wrap;gap:8px}
+.companion-setup-actions:empty{display:none}
+.companion-setup-error{flex-basis:100%;margin:0;color:var(--bad);font-size:11px;line-height:1.7}
+.companion-manual{flex-basis:100%;font-size:11px;color:var(--muted)}
+.companion-manual summary{cursor:pointer;width:fit-content}
+.companion-manual .companion-guide{margin-top:10px}
 /* Replay rows follow the history table rhythm. The command stays a compact utility. */
 .replay-match-header,.replay-match-row{grid-template-columns:72px 46px 46px 92px 60px 112px 66px 122px minmax(230px,1fr)!important;gap:14px!important;min-width:1040px;align-items:center}
 .replay-match-header.with-download,.replay-match-table.with-download .replay-match-header,.replay-match-row.with-download{grid-template-columns:72px 46px 46px 92px 60px 112px 66px 122px minmax(230px,1fr) 124px!important;min-width:1180px}
