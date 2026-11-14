@@ -12,7 +12,7 @@ export function CompanionGuide({ t }: { t: Messages }) {
   const fa = isPersian(t);
   return <div className="companion-guide">
     <p>{fa ? "اگر تنظیم خودکار ممکن نبود، در Steam ← Library ← Dota 2 ← Properties ← Launch Options این گزینه را به انتهای گزینه‌های فعلی اضافه کن:" : "If automatic setup is unavailable, append this option to the existing Steam → Library → Dota 2 → Properties → Launch Options:"}</p>
-    <CopyValue value="-gamestateintegration" t={t}/>
+    <CopyValue value="-gamestateintegration -console" t={t}/>
     <small>{fa ? "بعد از ذخیره، بازی را دوباره اجرا کن. دریافت دستی مچ مستقل و فعال است." : "Restart the game after saving. Manual match fetching remains available."}</small>
   </div>;
 }
@@ -25,12 +25,13 @@ function setupError(code: string, fa: boolean) {
   return fa ? "تنظیم خودکار کامل نشد. تنظیمات Steam را بررسی کن یا از روش دستی استفاده کن." : "Automatic setup did not finish. Check Steam settings or use the manual option.";
 }
 
-export function CompanionSetup({ owner, t, compact = false }: { owner: string; t: Messages; compact?: boolean }) {
+export function CompanionSetup({ owner, t, compact = false, silent = false }: { owner: string; t: Messages; compact?: boolean; silent?: boolean }) {
   const fa = isPersian(t);
   const [status, setStatus] = useState<{ owner: string; state: SteamState } | null>(null);
   const state = status?.owner === owner ? status.state : null;
   const [busy, setBusy] = useState(false), [error, setError] = useState("");
   const [companionFailed, setCompanionFailed] = useState(false), [attempt, setAttempt] = useState(0);
+  const [disabled, setDisabled] = useState(false);
   const requestVersion = useRef(0), writingOwner = useRef<string | null>(null), currentOwner = useRef(owner);
   currentOwner.current = owner;
   const refresh = useCallback(async () => {
@@ -50,6 +51,10 @@ export function CompanionSetup({ owner, t, compact = false }: { owner: string; t
     if (!isTauri()) return;
     void (async () => {
       try {
+        const enabled = await invoke<boolean>("companion_background_enabled");
+        if (!active) return;
+        setDisabled(!enabled);
+        if (!enabled) { setCompanionFailed(false); return; }
         const deviceId = await invoke<string | null>("companion_status");
         if (!active) return;
         const grant = await apiRequest<{ deviceId: string; steamId: string; token: string | null }>("/api/sync/companion", { method: "POST", body: JSON.stringify(deviceId ? { deviceId } : {}) });
@@ -89,19 +94,31 @@ export function CompanionSetup({ owner, t, compact = false }: { owner: string; t
     }
   }
 
+  async function enableBackground() {
+    try {
+      await invoke("set_companion_background_enabled", { enabled: true });
+      setDisabled(false);
+      setAttempt(value => value + 1);
+    } catch { setCompanionFailed(true); }
+  }
+
   const configured = state === "configured";
-  const message = configured ? (fa ? "گزینهٔ اجرای Dota 2 تنظیم شد. پس از اجرای بازی، دریافت خودکار جداگانه بررسی می‌شود." : "Dota 2's launch option is set. Automatic tracking is checked separately when the game runs.")
-    : state === "steam_running" ? (fa ? "Steam باز است. آن را کامل ببند و دوباره بررسی کن تا گزینه دائمی ذخیره شود." : "Steam is open. Close it completely, then check again to save the option.")
+  const message = disabled ? (fa ? "دریافت خودکار روی این دستگاه خاموش است." : "Automatic tracking is off on this device.")
+    : configured ? (fa ? "گزینه‌های اجرای Dota 2 تنظیم شدند. دریافت خودکار پس از اجرای بازی جداگانه بررسی می‌شود." : "Dota 2 launch options are set. Automatic tracking is checked separately when the game runs.")
+    : state === "steam_running" ? (fa ? "Steam باز است. پس از بسته شدن آن، گزینه‌های ضروری در پس‌زمینه اعمال می‌شوند." : "Steam is running. Required options will be applied in the background after it closes.")
     : state === "ambiguous" ? (fa ? "حساب فعال Steam با حساب این برنامه هماهنگ نیست یا چند محل تنظیمات پیدا شد." : "The active Steam account does not match this app, or multiple settings locations were found.")
     : state === "unavailable" ? (fa ? "تنظیمات Steam در این سیستم پیدا نشد." : "Steam settings were not found on this PC.")
     : state === null ? (fa ? "در حال بررسی گزینهٔ اجرای Dota 2…" : "Checking Dota 2 launch options…")
-    : (fa ? "گزینهٔ اجرای Dota 2 را برای دریافت خودکار مچ با یک کلیک تنظیم کن." : "Set Dota 2's launch option with one click to track matches automatically.");
+    : (fa ? "گزینه‌های ضروری Dota 2 در پس‌زمینه بررسی و اعمال می‌شوند." : "Required Dota 2 options are checked and applied in the background.");
 
+  if (silent) return null;
   return <section className={`companion-setup panel ${compact ? "is-compact" : ""} ${configured ? "is-configured" : ""}`} aria-label={fa ? "تنظیم دریافت خودکار مچ" : "Automatic match tracking setup"}>
     <div className="companion-setup-head"><span className="companion-setup-icon">{configured ? <Check size={18}/> : <Settings2 size={18}/>}</span><div><strong>{fa ? "دریافت خودکار مچ" : "Automatic match tracking"}</strong><p role="status">{message}</p></div></div>
     <div className="companion-setup-actions">
-      {state === "missing" && <button className="secondary-button" disabled={busy} onClick={() => void configure()}>{busy ? (fa ? "در حال تنظیم…" : "Setting up…") : (fa ? "تنظیم خودکار Dota 2" : "Set up Dota 2 automatically")}</button>}
-      {(state === "steam_running" || state === "ambiguous" || state === "unavailable") && <button className="secondary-button" onClick={() => void refresh()}>{fa ? "بررسی دوباره" : "Check again"}</button>}
+      {disabled ? <button className="secondary-button" onClick={() => void enableBackground()}>{fa ? "فعال‌کردن دریافت خودکار" : "Enable automatic tracking"}</button> : <>
+        {state === "missing" && <button className="secondary-button" disabled={busy} onClick={() => void configure()}>{busy ? (fa ? "در حال تنظیم…" : "Setting up…") : (fa ? "اعمال اکنون" : "Apply now")}</button>}
+        {(state === "steam_running" || state === "ambiguous" || state === "unavailable") && <button className="secondary-button" onClick={() => void refresh()}>{fa ? "بررسی دوباره" : "Check again"}</button>}
+      </>}
     </div>
     {error && <p className="companion-setup-error" role="alert">{error}</p>}
     {companionFailed && <p className="companion-setup-error">{fa ? "راه‌اندازی دریافت خودکار کامل نشد. دریافت دستی فعال است." : "Automatic tracking could not start. Manual fetching is available."} <button className="text-button" onClick={() => setAttempt(value => value + 1)}>{fa ? "تلاش دوباره" : "Retry"}</button></p>}

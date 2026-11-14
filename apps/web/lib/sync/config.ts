@@ -8,7 +8,6 @@ export interface SyncWorkerConfig {
   maxAttempts: number;
   retryBaseSeconds: number;
   lookbackSeconds: number;
-  initialMatches: number;
 }
 
 function parseToggle(name: string, fallback: boolean) {
@@ -82,12 +81,6 @@ export function getSyncWorkerConfig(): SyncWorkerConfig {
       21_600,
       300,
       86_400,
-    ),
-    initialMatches: parseInteger(
-      "SCHEDULED_SYNC_INITIAL_MATCHES",
-      1,
-      0,
-      3,
     ),
   };
 }

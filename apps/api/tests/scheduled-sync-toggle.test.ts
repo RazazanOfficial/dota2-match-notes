@@ -8,7 +8,6 @@ const repository = vi.hoisted(() => ({
   recoverStaleScheduledJobs: vi.fn(async () => ({ recovered: 0, failed: 0 })),
   rescheduleOrFailScheduledSyncJob: vi.fn(),
 }));
-const syncScheduledMatchesFromOpenDota = vi.hoisted(() => vi.fn());
 const runManualRangeSyncTick = vi.hoisted(() => vi.fn(async () => ({ processed: 0 })));
 vi.mock("../src/lib/sync/manual-service", () => ({ runManualRangeSyncTick }));
 
@@ -23,18 +22,15 @@ vi.mock("../src/lib/sync/config", () => ({
     maxAttempts: 3,
     retryBaseSeconds: 60,
     lookbackSeconds: 21_600,
-    initialMatches: 1,
   }),
 }));
 vi.mock("../src/lib/sync/repository", () => repository);
 vi.mock("../src/lib/opendota/service", () => ({
-  syncScheduledMatchesFromOpenDota,
+  fetchSelectedHistory: vi.fn(),
+  syncManualRangeBatch: vi.fn(),
 }));
 vi.mock("../src/lib/opendota/errors", () => ({
   OpenDotaError: class OpenDotaError extends Error {},
-}));
-vi.mock("../src/lib/sync/job", () => ({
-  scheduledSyncUserFromJob: vi.fn(),
 }));
 
 import { runScheduledSyncTick } from "../src/lib/sync/service";
@@ -54,6 +50,5 @@ describe("scheduled sync toggle", () => {
     expect(repository.recoverStaleScheduledJobs).toHaveBeenCalledTimes(1);
     expect(repository.enqueueDueScheduledSyncJobs).not.toHaveBeenCalled();
     expect(repository.claimNextScheduledSyncJob).not.toHaveBeenCalled();
-    expect(syncScheduledMatchesFromOpenDota).not.toHaveBeenCalled();
   });
 });

@@ -16,7 +16,6 @@ const ENV_NAMES = [
   "SCHEDULED_SYNC_MAX_ATTEMPTS",
   "SCHEDULED_SYNC_RETRY_BASE_SECONDS",
   "SCHEDULED_SYNC_LOOKBACK_SECONDS",
-  "SCHEDULED_SYNC_INITIAL_MATCHES",
 ] as const;
 const originalEnv = Object.fromEntries(
   ENV_NAMES.map((name) => [name, process.env[name]]),
@@ -48,7 +47,6 @@ describe("scheduled sync worker configuration", () => {
       maxAttempts: 3,
       retryBaseSeconds: 60,
       lookbackSeconds: 172_800,
-      initialMatches: 20,
     });
   });
 
@@ -102,13 +100,12 @@ describe("scheduled sync lookback policy", () => {
     start_time,
   }));
 
-  it("limits a never-synced account to the configured initial import", () => {
+  it("does not impose an initial-match cutoff", () => {
     const selection = selectRecentSyncMatches(matches, {
       maxNewMatches: 3,
-      initialMatches: 1,
     });
-    expect(selection.candidates.map((match) => match.start_time)).toEqual([300]);
-    expect(selection.ignoredOlder).toBe(2);
+    expect(selection.candidates.map((match) => match.start_time)).toEqual([100,200,300]);
+    expect(selection.ignoredOlder).toBe(0);
   });
 
   it("keeps a lookback overlap and orders selected matches chronologically", () => {

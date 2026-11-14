@@ -4,7 +4,22 @@ import {
   getRequestUser,
   hasValidRequestOrigin,
 } from "../../../lib/auth/request";
-import { registerCompanion } from "../../../lib/sync/companion";
+import { companionAccountRegistered, registerCompanion } from "../../../lib/sync/companion";
+import { openDotaErrorResponse } from "../../../lib/opendota/errors";
+export async function ELIGIBILITY(request: HttpRequest) {
+  const token = /^Bearer ([A-Za-z0-9_-]{43})$/.exec(
+    request.headers.get("authorization") || "",
+  )?.[1];
+  if (!token) return Response.json({ error: { code: "unauthorized" } }, { status: 401 });
+  const input = z.object({ steamId: z.string().regex(/^\d{17}$/) }).strict()
+    .safeParse(await request.json().catch(() => null));
+  if (!input.success)
+    return Response.json({ error: { code: "invalid_steam_id" } }, { status: 400 });
+  try {
+    return Response.json({ registered: await companionAccountRegistered(token, input.data.steamId) },
+      { headers: { "Cache-Control": "no-store" } });
+  } catch (error) { return openDotaErrorResponse(error); }
+}
 export async function POST(request: HttpRequest) {
   if (!hasValidRequestOrigin(request))
     return Response.json(

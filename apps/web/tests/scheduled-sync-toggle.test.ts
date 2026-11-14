@@ -22,7 +22,6 @@ vi.mock("../lib/sync/config", () => ({
     maxAttempts: 3,
     retryBaseSeconds: 60,
     lookbackSeconds: 21_600,
-    initialMatches: 1,
   }),
 }));
 vi.mock("../lib/sync/repository", () => repository);

@@ -102,6 +102,10 @@ export const users = pgTable(
     lastScheduledSyncAt: timestamp("last_scheduled_sync_at", {
       withTimezone: true,
     }),
+    companionLookupWindowAt: timestamp("companion_lookup_window_at", { withTimezone: true }).defaultNow().notNull(),
+    companionLookupCount: integer("companion_lookup_count").default(0).notNull(),
+    companionReportWindowAt: timestamp("companion_report_window_at", { withTimezone: true }).defaultNow().notNull(),
+    companionReportCount: integer("companion_report_count").default(0).notNull(),
     ...timestamps,
   },
   (table) => [
@@ -1124,6 +1128,10 @@ export const companionDevices = pgTable("companion_devices", {
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
+  lookupWindowAt: timestamp("lookup_window_at", { withTimezone: true }).defaultNow().notNull(),
+  lookupCount: integer("lookup_count").default(0).notNull(),
+  reportWindowAt: timestamp("report_window_at", { withTimezone: true }).defaultNow().notNull(),
+  reportCount: integer("report_count").default(0).notNull(),
 });
 export const matchObservations = pgTable("match_observations", {
   id: uuid("id").defaultRandom().primaryKey(),

@@ -9,7 +9,10 @@ import { MATCH_SYNC_GAME_MODES, manualMatchSyncInputSchema, saturdayWeekStart, t
 import { toJournalDateKey } from "../journal/timezone";
 import type { ManualSyncResult } from "../types";
 
-type ManualResult = Pick<ManualSyncResult, "checked" | "alreadyImported" | "dismissedByUser" | "imported" | "failed" | "deferred" | "ignoredOlder"> & {externalRequests?:number};
+type ManualResult = Pick<ManualSyncResult, "checked" | "alreadyImported" | "dismissedByUser" | "imported" | "failed" | "deferred" | "ignoredOlder"> & {externalRequests?:number; signupRetryCount?:number};
+const signupRetryCodes = new Set(["opendota_match_not_found", "player_not_found_in_match"]);
+const signupRetryDelayMs = 15 * 60_000;
+const signupRetryDeadlineMs = 24 * 60 * 60_000;
 
 function emptyResult(): ManualResult {
   return { checked: 0, alreadyImported: 0, dismissedByUser: 0, imported: [], failed: [], deferred: 0, ignoredOlder: 0 };
@@ -58,7 +61,8 @@ export async function latestManualRangeJob(userId: string) {
     id: syncJobs.id, status: syncJobs.status, request: syncJobs.manualRequest,
     attempted: syncJobs.manualAttempted, result: syncJobs.manualResult,
     error: syncJobs.errorMessage, finishedAt: syncJobs.finishedAt,
-  }).from(syncJobs).where(and(eq(syncJobs.userId, userId), eq(syncJobs.kind, "manual")))
+  }).from(syncJobs).where(and(eq(syncJobs.userId, userId), eq(syncJobs.kind, "manual"),
+    sql`coalesce(${syncJobs.manualRequest}->>'source', '') <> 'signup'`))
     .orderBy(desc(syncJobs.createdAt)).limit(1);
   return job || null;
 }
@@ -78,7 +82,7 @@ export async function runManualRangeSyncTick() {
     const [candidate] = await tx.select({
       id: syncJobs.id, userId: syncJobs.userId, request: syncJobs.manualRequest,
       attempted: syncJobs.manualAttempted, snapshot: syncJobs.manualSnapshot, result: syncJobs.manualResult, attempts: syncJobs.attempts,
-      steamAccountId: users.steamAccountId, createdAt: users.createdAt,
+      steamAccountId: users.steamAccountId, createdAt: users.createdAt, jobCreatedAt: syncJobs.createdAt,
     }).from(syncJobs).innerJoin(users, eq(syncJobs.userId, users.id))
       .where(and(eq(syncJobs.kind, "manual"), eq(syncJobs.status, "pending"), lte(syncJobs.runAfter, now)))
       .orderBy(asc(syncJobs.runAfter), asc(syncJobs.createdAt)).limit(1).for("update", { skipLocked: true });
@@ -89,7 +93,9 @@ export async function runManualRangeSyncTick() {
     return lease?.lockedAt ? { ...candidate, lockedAt: lease.lockedAt } : null;
   });
   if (!claimed) return { processed: 0 };
-  const request = claimed.request as ManualMatchSyncInput;
+  const request = claimed.request as ManualMatchSyncInput & { source?: string; cutoff?: string };
+  const signupCutoff = request.source === "signup" && request.cutoff
+    ? Date.parse(request.cutoff) : null;
   const previous = (claimed.result || emptyResult()) as ManualResult;
   let externalRequests=0;const onClaim=()=>{externalRequests+=1;};
   try {
@@ -99,33 +105,51 @@ export async function runManualRangeSyncTick() {
       const [saved]=await db.update(syncJobs).set({manualSnapshot:snapshot}).where(and(eq(syncJobs.id,claimed.id),eq(syncJobs.lockedAt,claimed.lockedAt))).returning({id:syncJobs.id});
       if(!saved)throw new Error("Manual sync lease expired");
     }
-    const batch = await syncManualRangeBatch(user, request, claimed.attempted, 20, snapshot,onClaim);
-    const attempted = [...claimed.attempted, ...batch.attemptedIds];
+    const eligibleSnapshot = signupCutoff !== null && Number.isFinite(signupCutoff)
+      ? snapshot.filter(match => match.start_time * 1_000 >= signupCutoff)
+      : snapshot;
+    const batch = await syncManualRangeBatch(user, request, claimed.attempted, 20, eligibleSnapshot,onClaim);
+    const attempted = [...new Set([...claimed.attempted, ...batch.attemptedIds])];
+    const attemptedNow = new Set(batch.attemptedIds);
+    const failed = [...previous.failed.filter(item => !attemptedNow.has(item.dotaMatchId)), ...batch.failed];
     const result: ManualResult = {
       checked: batch.checked, alreadyImported: Math.max(0,batch.alreadyImported-previous.imported.length),
       externalRequests:(previous.externalRequests||0)+externalRequests,
       dismissedByUser: batch.dismissedByUser, ignoredOlder: batch.ignoredOlder,
-      imported: [...previous.imported, ...batch.imported], failed: [...previous.failed, ...batch.failed], deferred: batch.deferred,
+      imported: [...previous.imported, ...batch.imported], failed, deferred: batch.deferred,
     };
-    const completed = batch.deferred === 0;
-    if (completed && !result.failed.length &&
+    const retryableIds = request.source === "signup" ? new Set(failed.filter(item => signupRetryCodes.has(item.code)).map(item => item.dotaMatchId)) : new Set<number>();
+    const retryCount = (previous.signupRetryCount || 0) + (batch.deferred === 0 && retryableIds.size ? 1 : 0);
+    result.signupRetryCount = retryCount;
+    const retrySignup = batch.deferred === 0 && retryableIds.size > 0 &&
+      retryCount < 96 && Date.now() < claimed.jobCreatedAt.getTime() + signupRetryDeadlineMs;
+    const completed = batch.deferred === 0 && !retrySignup;
+    const finalStatus = completed && request.source === "signup" && failed.length ? "failed" : completed ? "completed" : "pending";
+    if (completed && request.source !== "signup" && !result.failed.length &&
         (!request.gameModes || new Set(request.gameModes).size === MATCH_SYNC_GAME_MODES.length)) {
       await markJournalRangeCompleted(claimed.userId, request.from, request.to);
     }
-    const [saved] = await db.update(syncJobs).set({ status: completed ? "completed" : "pending", lockedAt: null,
+    const [saved] = await db.update(syncJobs).set({ status: finalStatus, lockedAt: null,
       attempts: 0,
-      runAfter: new Date(Date.now() + 1_000), finishedAt: completed ? new Date() : null,
-      manualAttempted: attempted, manualResult: result, errorMessage: null })
+      runAfter: new Date(Date.now() + (retrySignup ? signupRetryDelayMs : 1_000)), finishedAt: completed ? new Date() : null,
+      manualAttempted: retrySignup ? attempted.filter(id => !retryableIds.has(id)) : attempted,
+      manualResult: result, errorMessage: finalStatus === "failed" ? "signup_match_import_incomplete" : null })
       .where(and(eq(syncJobs.id, claimed.id), eq(syncJobs.status, "processing"), eq(syncJobs.lockedAt, claimed.lockedAt)))
       .returning({ id: syncJobs.id });
     if (!saved) throw new Error("Manual sync lease expired");
-    return { processed: 1, id: claimed.id, status: completed ? "completed" : "pending", attempted: attempted.length, remaining: batch.deferred };
+    if (completed && request.source === "signup" && result.failed.length === 0) {
+      await db.update(users).set({ lastScheduledSyncAt: new Date(), updatedAt: new Date() })
+        .where(eq(users.id, claimed.userId));
+    }
+    return { processed: 1, id: claimed.id, status: finalStatus, attempted: attempted.length, remaining: batch.deferred + (retrySignup ? retryableIds.size : 0) };
   } catch (error) {
-    const transient = error instanceof OpenDotaError && (error.status === 429 || error.status >= 500);
+    const signupNotReady = request.source === "signup" && error instanceof OpenDotaError &&
+      error.code === "opendota_player_not_found" && Date.now() < claimed.jobCreatedAt.getTime() + signupRetryDeadlineMs;
+    const transient = error instanceof OpenDotaError && (error.status === 429 || error.status >= 500 || signupNotReady);
     const retries = claimed.attempts + 1;
     const canRetry = transient && retries < 30;
     await db.update(syncJobs).set({manualResult:{...previous,externalRequests:(previous.externalRequests||0)+externalRequests}, status: canRetry ? "pending" : "failed", lockedAt: null,
-      runAfter: new Date(Date.now() + Math.max(90, error instanceof OpenDotaError ? error.retryAfterSeconds || 0 : 0) * 1_000),
+      runAfter: new Date(Date.now() + Math.max(signupNotReady ? 900 : 90, error instanceof OpenDotaError ? error.retryAfterSeconds || 0 : 0) * 1_000),
       finishedAt: canRetry ? null : new Date(), errorMessage: error instanceof OpenDotaError ? error.code : "manual_sync_failed" })
       .where(and(eq(syncJobs.id, claimed.id), eq(syncJobs.status, "processing"), eq(syncJobs.lockedAt, claimed.lockedAt)));
     return { processed: 1, id: claimed.id, status: canRetry ? "pending" : "failed", errorCode: error instanceof OpenDotaError ? error.code : "manual_sync_failed" };
