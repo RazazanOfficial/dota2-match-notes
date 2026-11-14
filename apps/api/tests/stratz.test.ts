@@ -1,10 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchStratzMatchOnce } from "../src/lib/stratz/client";
 import { getStratzConfig } from "../src/lib/stratz/config";
-import {
-  buildStratzEnrichment,
-  roleFromStratzPosition,
-} from "../src/lib/stratz/enrichment";
+import { roleFromStratzPosition } from "../src/lib/stratz/diagnostics";
 import { StratzError } from "../src/lib/stratz/errors";
 import { shouldImmediatelyRetryStratz } from "../src/lib/stratz/gateway";
 import { nextStratzReservationAt } from "../src/lib/stratz/rate-limit";
@@ -22,12 +19,6 @@ const ENV_NAMES = [
   "STRATZ_RETRY_DELAY_MS",
   "STRATZ_MAX_ATTEMPTS",
   "STRATZ_MIN_REQUEST_INTERVAL_MS",
-  "STRATZ_BACKFILL_ON_MANUAL_SYNC",
-  "STRATZ_INLINE_PROCESS_BATCH_SIZE",
-  "STRATZ_PROCESS_BATCH_SIZE",
-  "STRATZ_STALE_LOCK_SECONDS",
-  "STRATZ_JOB_MAX_ATTEMPTS",
-  "STRATZ_JOB_RETRY_BASE_SECONDS",
 ] as const;
 const originalEnv = Object.fromEntries(
   ENV_NAMES.map((name) => [name, process.env[name]]),
@@ -45,12 +36,6 @@ beforeEach(() => {
   process.env.STRATZ_RETRY_DELAY_MS = "2000";
   process.env.STRATZ_MAX_ATTEMPTS = "2";
   process.env.STRATZ_MIN_REQUEST_INTERVAL_MS = "1000";
-  process.env.STRATZ_BACKFILL_ON_MANUAL_SYNC = "false";
-  process.env.STRATZ_INLINE_PROCESS_BATCH_SIZE = "3";
-  process.env.STRATZ_PROCESS_BATCH_SIZE = "10";
-  process.env.STRATZ_STALE_LOCK_SECONDS = "900";
-  process.env.STRATZ_JOB_MAX_ATTEMPTS = "6";
-  process.env.STRATZ_JOB_RETRY_BASE_SECONDS = "120";
 });
 
 afterEach(() => {
@@ -80,10 +65,6 @@ describe("STRATZ configuration", () => {
       maxAttempts: 2,
       retryDelayMs: 2_000,
       minRequestIntervalMs: 1_000,
-      backfillOnManualSync: false,
-      inlineProcessBatchSize: 3,
-      processBatchSize: 10,
-      jobMaxAttempts: 6,
     });
   });
 
@@ -101,9 +82,9 @@ describe("STRATZ configuration", () => {
       "Invalid env: STRATZ_MIN_REQUEST_INTERVAL_MS",
     );
     process.env.STRATZ_MIN_REQUEST_INTERVAL_MS = "1000";
-    process.env.STRATZ_BACKFILL_ON_MANUAL_SYNC = "yes";
+    process.env.STRATZ_DIAGNOSTICS_ENABLED = "yes";
     expect(() => getStratzConfig()).toThrow(
-      "Invalid env: STRATZ_BACKFILL_ON_MANUAL_SYNC",
+      "Invalid env: STRATZ_DIAGNOSTICS_ENABLED",
     );
   });
 });
@@ -199,48 +180,9 @@ describe("STRATZ client and validation", () => {
     expect(body.query).not.toContain("server-only-token");
   });
 
-  it("maps explicit position and authoritative successful bans", () => {
+  it("maps explicit positions for read-only diagnostics", () => {
     expect(roleFromStratzPosition("POSITION_5")).toBe("hard_support");
     expect(roleFromStratzPosition("UNKNOWN")).toBeNull();
-    expect(
-      buildStratzEnrichment({
-        steamAccountId: 42,
-        expectedHeroId: 35,
-        heroPoolEligible: true,
-        match: {
-          id: 100,
-          parsedDateTime: 123,
-          players: [
-            { steamAccountId: 42, heroId: 35, position: "POSITION_2" },
-            { steamAccountId: 43, heroId: 2, playerSlot: 1 },
-            { steamAccountId: 44, heroId: 3, playerSlot: 128 },
-          ],
-          pickBans: [
-            {
-              isPick: false,
-              heroId: 80,
-              bannedHeroId: 34,
-              order: 2,
-              wasBannedSuccessfully: true,
-            },
-            {
-              isPick: false,
-              heroId: 1,
-              bannedHeroId: 1,
-              order: 3,
-              wasBannedSuccessfully: false,
-            },
-          ],
-        },
-      }),
-    ).toMatchObject({
-      role: "mid_lane",
-      picks: [
-        { heroId: 2, heroName: "Axe", team: 0 },
-        { heroId: 3, heroName: "Bane", team: 1 },
-      ],
-      bans: [{ heroId: 34, heroName: "Tinker" }],
-    });
   });
 
   it("distinguishes an intermittent HTML 503 from a Cloudflare challenge", async () => {

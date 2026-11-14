@@ -16,6 +16,9 @@ export function topologyMiddleware(config: Topology): RequestHandler {
       next(); return;
     }
     if (isInternalPath(req.path)) { res.status(404).json({ ok: false, error: { code: "not_found" } }); return; }
+    // Iran aggregates its local snapshot with Germany's authenticated report.
+    // Compute still requires both the bridge token and the administrator session.
+    if (["GET", "HEAD"].includes(req.method.toUpperCase()) && /^\/api\/(?:v1\/)?admin\/service-monitor\/?$/i.test(req.path)) { next(); return; }
     if (!isComputeRoute(req.method, req.path)) { next(); return; }
     const headers = filteredHeaders(req.headers);
     headers[COMPUTE_HEADER] = config.computeToken;

@@ -23,12 +23,6 @@ vi.mock("../lib/opendota/repository", () => ({
   markJournalRangeCompleted: mocks.completed,
   saveDiscoveredOpenDotaMatch: mocks.save,
 }));
-vi.mock("../lib/stratz/config", () => ({
-  getStratzConfig: () => ({ backfillOnManualSync: false, inlineProcessBatchSize: 0 }),
-}));
-vi.mock("../lib/stratz/job-repository", () => ({ enqueueStratzBackfillForUser: vi.fn() }));
-vi.mock("../lib/stratz/job-service", () => ({ runStratzEnrichmentTick: vi.fn() }));
-vi.mock("../lib/opendota-parse/repository", () => ({ requestOpenDotaAnalysisRange: vi.fn() }));
 
 import { syncRecentMatchesFromOpenDota, syncManualRangeBatch } from "../lib/opendota/service";
 

@@ -89,15 +89,36 @@ export interface AdminOverview {
   recentAuditLogs: { id: string; action: string; createdAt: string; actorUserId: string | null; targetUserId: string | null; metadata: Record<string, unknown> }[];
 }
 export interface MonitorUnit { id: string; properties: Record<string, string>; logs: { at: string | null; priority: number; message: string }[]; error: string | null }
+export interface MonitorHost { id: "iran" | "germany"; label: string; capturedAt: string | null; stale: boolean; snapshotError: string | null; units: MonitorUnit[] }
+export type MonitorState = "running" | "waiting" | "idle" | "disabled" | "failed" | "stopped" | "stale" | "retrying" | "unknown";
 export interface ServiceMonitor { capturedAt: string | null; stale: boolean; snapshotError: string | null; units: MonitorUnit[];
+  hosts?: MonitorHost[]; stages?: { id: "prepare" | "parse" | "archive"; active: number; pending: number; failed: number | null }[];
   queues: { source: string; status: string; total: number }[]; failures: { source: string; at: string; detail: string }[] }
-export function unitState(unit: MonitorUnit) {
+export function unitState(unit: MonitorUnit, context: { now?: number; stale?: boolean; target?: MonitorUnit } = {}): MonitorState {
   const p = unit.properties;
-  if (unit.error || p.LoadState === "not-found" || p.ActiveState === "failed" || p.Result && !["success", "done"].includes(p.Result)) return "failed";
-  if (p.ActiveState === "active" || p.ActiveState === "activating") return "active";
-  // An idle worker is healthy after a successful run. A stopped API/web/database
-  // is not a successful oneshot and must never be painted green.
-  const worker = /^dota2notes-(?:replay|sync|images|opendota-parse|performance-reference|monitor|stratz)\.service$/.test(unit.id);
-  if (worker && p.ActiveState === "inactive" && p.Result === "success" && (!p.ExecMainStatus || p.ExecMainStatus === "0")) return "completed";
-  return "inactive";
+  if (context.stale) return "stale";
+  if (unit.error) return "unknown";
+  if (p.LoadState === "not-found" || p.ActiveState === "failed") return "failed";
+  if (p.SubState === "auto-restart") return "retrying";
+  const active = p.ActiveState === "active" || p.ActiveState === "activating";
+  if (!active && p.ExpectedActive === "no") return "disabled";
+  if (p.Result && !["success", "done"].includes(p.Result)) return "failed";
+  if (unit.id.endsWith(".timer")) {
+    if (!active) return p.ExpectedActive === "yes" ? "stopped" : p.UnitFileState === "disabled" || p.ExpectedActive === "no" ? "disabled" : "unknown";
+    const next = Date.parse(p.NextRunAt || "");
+    const targetActive = ["active", "activating"].includes(context.target?.properties.ActiveState || "");
+    if (targetActive) return "running";
+    if (!Number.isFinite(next)) return "unknown";
+    const accuracy = Number(p.TimerAccuracySec);
+    const grace = Math.max(0, Number.isFinite(accuracy) ? accuracy : 60) * 1000 + 15_000;
+    return (context.now ?? Date.now()) > next + grace ? "failed" : "waiting";
+  }
+  if (active) return "running";
+  const oneshot = /^dota2notes-(?:images|performance-reference|monitor)\.service$/.test(unit.id);
+  if (oneshot) {
+    if (p.ExpectedActive === "no") return "disabled";
+    if (p.Result === "success" && p.ExecMainStatus === "0" && Number.isFinite(Date.parse(p.ExecMainExitTimestamp || ""))) return "idle";
+    return "unknown";
+  }
+  return "stopped";
 }

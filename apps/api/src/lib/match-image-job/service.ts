@@ -1,9 +1,7 @@
 import { MatchImageError } from "../match-image/errors";
-import { buildMatchImageModel } from "../match-image/model";
+import { buildLocalReplayImageModel } from "../match-image/model";
 import { renderGeneratedMatchImages } from "../match-image/renderer";
 import { publishGeneratedMatchImages } from "../media/service";
-import { getOpenDotaAnalysisState } from "../opendota-parse/repository";
-import { hasParsedOpenDotaReplay, parseOpenDotaMatch } from "../opendota/validation";
 import { getMatchImageJobConfig } from "./config";
 import { describeMatchImageJobError } from "./policy";
 import {
@@ -30,22 +28,21 @@ export async function runMatchImageJobTick() {
       if (!source?.dotaMatchId || !source.rawData) {
         throw new MatchImageError(
           "image_source_not_found",
-          "داده معتبر OpenDota برای تولید تصویر پیدا نشد",
+          "اطلاعات اولیه مچ برای تولید تصویر پیدا نشد",
         );
       }
-      if (!hasParsedOpenDotaReplay(source.rawData as Record<string, unknown>)) {
-        const parseState = await getOpenDotaAnalysisState(job.matchId);
-        if (!parseState || !["pending", "processing"].includes(parseState.status)) {
-          const outcome = await rescheduleOrFailMatchImageJob({ job, config, errorCode: "opendota_analysis_not_ready", errorMessage: "Replay analysis was not explicitly requested or cannot be completed", permanent: true });
-          jobs.push({ id: job.id, matchId: job.matchId, dotaMatchId: String(source.dotaMatchId), status: outcome.status, attempts: job.attempts, errorCode: "opendota_analysis_not_ready" });
+      let model;
+      try {
+        model = buildLocalReplayImageModel(source.rawData, source.localReplayData, source.steamAccountId);
+      } catch (error) {
+        if (error instanceof MatchImageError && error.code === "image_local_analysis_not_ready" &&
+          (source.replayJobStatus === "pending" || source.replayJobStatus === "processing")) {
+          await deferMatchImageJobUntilReplayParsed(job);
+          jobs.push({ id: job.id, matchId: job.matchId, dotaMatchId: String(source.dotaMatchId), status: "waiting_for_parse", attempts: job.attempts });
           continue;
         }
-        await deferMatchImageJobUntilReplayParsed(job);
-        jobs.push({ id: job.id, matchId: job.matchId, dotaMatchId: String(source.dotaMatchId), status: "waiting_for_parse", attempts: job.attempts });
-        continue;
+        throw error;
       }
-      const match = parseOpenDotaMatch(source.rawData, source.dotaMatchId);
-      const model = buildMatchImageModel(match, source.steamAccountId);
       const artifacts = await renderGeneratedMatchImages(model, { onProgress: (progress) => updateMatchImageJobProgress(job, { stage: "rendering", ...progress }) });
       await updateMatchImageJobProgress(job, { stage: "uploading", currentImage: 1, completedImages: 0 });
       const images = await publishGeneratedMatchImages(job.matchId, artifacts, (progress) => updateMatchImageJobProgress(job, { stage: "uploading", ...progress }));

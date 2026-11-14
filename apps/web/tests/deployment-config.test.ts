@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -9,7 +9,7 @@ function fixture(path: string) {
 describe("production reverse proxy", () => {
   const nginx = fixture("deploy/nginx/dota2notes.ir.conf");
 
-  it("proxies the public domain only to the local Next.js port", () => {
+  it("routes the public website to the local Next.js server", () => {
     expect(nginx).toContain("server_name dota2notes.ir;");
     expect(nginx).toContain("server_name www.dota2notes.ir;");
     expect(nginx).toContain("return 301 https://dota2notes.ir$request_uri;");
@@ -24,17 +24,17 @@ describe("production reverse proxy", () => {
     expect(nginx).toMatch(
       /location = \/api\/internal\/images\/tick\s*\{\s*return 404;/,
     );
-    expect(nginx).toMatch(
-      /location = \/api\/internal\/stratz\/tick\s*\{\s*return 404;/,
-    );
+    expect(nginx).toContain("location ~* ^/api/(v1/)?internal(/|$)");
   });
 });
 
 describe("production systemd units", () => {
   const appService = fixture("deploy/systemd/dota2notes.service");
-  const syncTimer = fixture("deploy/systemd/dota2notes-sync.timer");
+  const syncService = fixture("deploy/systemd/dota2notes-sync-daemon.service");
+  const replayService = fixture("deploy/systemd/dota2notes-replay.service");
   const imageTimer = fixture("deploy/systemd/dota2notes-images.timer");
-  const stratzTimer = fixture("deploy/systemd/dota2notes-stratz.timer");
+  const referenceTimer = fixture("deploy/systemd/dota2notes-performance-reference.timer");
+  const monitorTimer = fixture("deploy/systemd/dota2notes-monitor.timer");
 
   it("runs Next.js as the restricted app user on localhost", () => {
     expect(appService).toContain("User=dota2notes");
@@ -46,16 +46,34 @@ describe("production systemd units", () => {
     expect(appService).toContain("MemoryMax=2048M");
   });
 
-  it("schedules independent sync, image, and STRATZ workers", () => {
-    expect(syncTimer).toContain("OnCalendar=hourly");
-    expect(syncTimer).toContain("Persistent=true");
+  it("runs sync and replay continuously and schedules images, references and monitoring", () => {
+    expect(syncService).toContain("Type=simple");
+    expect(syncService).toContain("dist/worker.js sync --watch");
+    expect(syncService).toContain("Requires=dota2notes-link.service");
+    expect(replayService).toContain("Type=simple");
+    expect(replayService).toContain("scripts/replay-parser/run-pipeline.mjs");
+    expect(replayService).toContain("Restart=on-failure");
     expect(imageTimer).toContain("OnCalendar=*-*-* *:*:00");
     expect(imageTimer).toContain("Persistent=true");
-    expect(stratzTimer).toContain("OnCalendar=*-*-* *:*:00");
-    expect(stratzTimer).toContain("Persistent=true");
+    expect(referenceTimer).toContain("OnUnitActiveSec=1m");
+    expect(referenceTimer).toContain("Unit=dota2notes-performance-reference.service");
+    expect(monitorTimer).toContain("OnUnitActiveSec=1m");
+    expect(monitorTimer).toContain("Unit=dota2notes-monitor.service");
   });
 
-  it("keeps hourly sync disabled in the current deployment guide", () => {
+  it("does not distribute retired worker units in either deployment directory", () => {
+    for (const name of [
+      "dota2notes-sync.timer", "dota2notes-sync-manual.timer", "dota2notes-sync.service",
+      "dota2notes-replay.timer", "dota2notes-stratz.timer", "dota2notes-stratz.service",
+      "dota2notes-opendota-parse.timer", "dota2notes-opendota-parse.service",
+    ]) {
+      for (const directory of ["deploy/systemd", "apps/web/deploy/systemd"]) {
+        expect(existsSync(new URL(`../../../${directory}/${name}`, import.meta.url))).toBe(false);
+      }
+    }
+  });
+
+  it("starts the current continuous workers and timers in the deployment guide", () => {
     const guide = fixture("docs/deployment-ubuntu.md");
     expect(guide).not.toContain("enable --now dota2notes-sync.timer");
     expect(guide).toMatch(/systemctl start dota2notes-images\.timer(?:\s|$)/);
@@ -69,9 +87,9 @@ describe("production worker invocation", () => {
   const apiEnv = fixture("../api/src/env.ts");
 
   it("allows only known localhost worker paths and hides the secret from argv", () => {
-    expect(worker).toContain('endpoint="/api/internal/sync/tick"');
     expect(worker).toContain('endpoint="/api/internal/images/tick"');
-    expect(worker).toContain('endpoint="/api/internal/stratz/tick"');
+    expect(worker).toContain('endpoint="/api/internal/performance-reference/tick"');
+    expect(worker).not.toMatch(/endpoint="\/api\/internal\/(?:sync|stratz|opendota-parse)\/tick"/);
     expect(worker).toContain("curl --config -");
     expect(worker).not.toContain("curl -H");
   });

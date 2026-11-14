@@ -3,7 +3,6 @@ import {
   fetchOpenDotaMatch,
   fetchOpenDotaPlayerMatchesSince,
   fetchOpenDotaRecentMatches,
-  requestOpenDotaParse,
 } from "../lib/opendota/client";
 import { getOpenDotaConfig } from "../lib/opendota/config";
 import { OpenDotaError } from "../lib/opendota/errors";
@@ -205,20 +204,6 @@ describe("OpenDota HTTP client", () => {
       code: "opendota_rate_limited",
       retryAfterSeconds: 45,
     });
-  });
-
-  it("submits one parse request with POST and validates the queue job", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(Response.json({ job: { jobId: 12345 } }));
-    vi.stubGlobal("fetch", fetchMock);
-    await expect(requestOpenDotaParse(matchPayload.match_id)).resolves.toEqual({ jobId: "12345" });
-    const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
-    expect(url.pathname).toBe(`/api/request/${matchPayload.match_id}`);
-    expect(init).toMatchObject({ method: "POST", cache: "no-store" });
-  });
-
-  it("rejects a malformed parse queue response", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ job: {} })));
-    await expect(requestOpenDotaParse(matchPayload.match_id)).rejects.toMatchObject({ code: "invalid_opendota_parse_response" });
   });
 
   it("fetches recent matches for one Steam account id", async () => {

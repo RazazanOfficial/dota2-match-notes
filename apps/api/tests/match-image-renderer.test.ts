@@ -3,7 +3,7 @@ import sharp from "sharp";
 import { createHeroPortraitLoader } from "../src/lib/match-image/assets";
 import { getMatchImageConfig } from "../src/lib/match-image/config";
 import { MatchImageError } from "../src/lib/match-image/errors";
-import { buildMatchImageModel } from "../src/lib/match-image/model";
+import { buildLocalReplayImageModel, buildMatchImageModel } from "../src/lib/match-image/model";
 import { renderGeneratedMatchImages } from "../src/lib/match-image/renderer";
 import { validateGeneratedMatchImages } from "../src/lib/media/validation";
 import { parseOpenDotaMatch } from "../src/lib/opendota/validation";
@@ -58,6 +58,35 @@ afterEach(() => {
 });
 
 describe("match image model", () => {
+  function localReplay(payload: ReturnType<typeof matchPayload>) {
+    return { match_id: payload.match_id, version: 22, players: payload.players.map((player) => ({
+      player_slot: player.player_slot, times: [0, 60], gold_t: [600, 1000], lh_t: [0, 5],
+      dn_t: [0, 1], xp_t: [0, 500], networth_t: [600, 1000], camps_stacked_t: [0, 0],
+      hero_damage_t: [0, 50], hero_healing_t: [0, 0],
+    })) };
+  }
+
+  it("builds images with the basic summary and validated local analysis, without external parsed data", () => {
+    const payload = matchPayload();
+    const model = buildLocalReplayImageModel(payload, localReplay(payload), FOCUS_ACCOUNT_ID);
+    expect(model.matchId).toBe(String(payload.match_id));
+    expect(model.radiantPlayers).toHaveLength(5);
+    expect(model.direPlayers).toHaveLength(5);
+    expect(model.focusPlayer.netWorth).toBe(payload.players[0].net_worth);
+  });
+
+  it("rejects external parsed data alone and a local replay from a different match", () => {
+    const payload = matchPayload();
+    expect(() => buildLocalReplayImageModel({ ...payload, version: 22 }, null, FOCUS_ACCOUNT_ID))
+      .toThrow("تحلیل معتبر parser محلی");
+    expect(() => buildLocalReplayImageModel(payload, { ...localReplay(payload), match_id: 1 }, FOCUS_ACCOUNT_ID))
+      .toThrow("تحلیل معتبر parser محلی");
+    const incomplete = localReplay(payload);
+    incomplete.players[0].xp_t = [];
+    expect(() => buildLocalReplayImageModel(payload, incomplete, FOCUS_ACCOUNT_ID))
+      .toThrow("تحلیل معتبر parser محلی");
+  });
+
   it("builds two teams and the focused player result", () => {
     const payload = matchPayload();
     const match = parseOpenDotaMatch(payload, payload.match_id);

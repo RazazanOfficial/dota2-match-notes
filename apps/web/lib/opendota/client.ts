@@ -122,20 +122,6 @@ export async function fetchOpenDotaMatch(dotaMatchId: number) {
   return parseOpenDotaMatch(raw, dotaMatchId);
 }
 
-export async function requestOpenDotaParse(dotaMatchId: number) {
-  const raw = await fetchOpenDotaJson(
-    `request/${dotaMatchId}`,
-    { code: "opendota_match_not_found", message: "این Match ID برای Parse پیدا نشد" },
-    "POST",
-  );
-  const job = raw && typeof raw === "object" ? (raw as { job?: { jobId?: unknown } }).job : undefined;
-  const jobId = String(job?.jobId || "");
-  if (!/^\d+$/.test(jobId)) {
-    throw new OpenDotaError(502, "invalid_opendota_parse_response", "پاسخ صف Parse از OpenDota معتبر نیست");
-  }
-  return { jobId };
-}
-
 export async function fetchOpenDotaRecentMatches(steamAccountId: number) {
   const raw = await fetchOpenDotaJson(
     `players/${steamAccountId}/recentMatches`,

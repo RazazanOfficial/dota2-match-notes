@@ -18,13 +18,25 @@ vi.mock("../src/routes/registry", async importOriginal => {
 import { createApp } from "../src/app";
 import inventory from "../../../docs/backend-source-inventory.json";
 
+// The inventory records the original migration surface. These two workers were
+// deliberately retired; keep testing their absence on both API prefixes.
+const retiredWorkerRoutes = new Set([
+  "/api/internal/opendota-parse/tick", "/api/internal/stratz/tick",
+]);
+
 beforeEach(() => { vi.stubEnv("APP_URL", "https://dota.example"); vi.stubEnv("API_TRUST_PROXY", ""); vi.stubEnv("API_ALLOWED_ORIGINS", "http://localhost:1420"); });
-describe("all original routes over Express", () => {
+describe("original route compatibility and explicit retirements over Express", () => {
   for (const route of inventory.routes) for (const method of route.methods) {
-    it(`${method} ${route.path} supports both legacy and v1 paths`, async () => {
+    const retired = retiredWorkerRoutes.has(route.path);
+    it(`${method} ${route.path} ${retired ? "is retired on both legacy and v1 paths" : "supports both legacy and v1 paths"}`, async () => {
       const path = route.path.replace(/\[([^\]]+)\]/g, (_, key) => key === "date" ? "2026-10-03" : key === "handle" ? "merij" : "9008411473");
       for (const prefix of ["/api", "/api/v1"]) {
         const response = await (request(createApp()) as unknown as Record<string, (path:string)=>request.Test>)[method.toLowerCase()](path.replace(/^\/api/, prefix) + "?test=value");
+        if (retired) {
+          expect(response.status).toBe(404);
+          expect(response.body.error.code).toBe("not_found");
+          continue;
+        }
         expect(response.status).toBe(200);
         if (route.path === "/api/health" && prefix === "/api/v1") {
           expect(response.body.apiVersion).toBe("v1");

@@ -72,7 +72,7 @@ describe("independent API production configuration", () => {
 describe("deployment independence", () => {
   function file(path: string) { return readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8"); }
   it("starts every HTTP worker after Express rather than the frontend", () => {
-    for (const kind of ["sync","images","stratz","performance-reference","opendota-parse"]) {
+    for (const kind of ["images","performance-reference"]) {
       const unit=file(`deploy/systemd/dota2notes-${kind}.service`);
       expect(unit).toContain("After=network-online.target dota2notes-api.service");
       expect(unit).not.toContain("dota2notes.service");

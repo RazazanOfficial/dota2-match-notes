@@ -11,12 +11,6 @@ export interface StratzConfig {
   retryDelayMs: number;
   maxAttempts: number;
   minRequestIntervalMs: number;
-  backfillOnManualSync: boolean;
-  inlineProcessBatchSize: number;
-  processBatchSize: number;
-  staleLockSeconds: number;
-  jobMaxAttempts: number;
-  jobRetryBaseSeconds: number;
 }
 
 const DEFAULT_ENDPOINT = "https://api.stratz.com/graphql";
@@ -99,22 +93,6 @@ export function getStratzConfig(): StratzConfig {
       1_000,
       1_000,
       60_000,
-    ),
-    backfillOnManualSync: parseBoolean("STRATZ_BACKFILL_ON_MANUAL_SYNC"),
-    inlineProcessBatchSize: parseInteger(
-      "STRATZ_INLINE_PROCESS_BATCH_SIZE",
-      3,
-      0,
-      10,
-    ),
-    processBatchSize: parseInteger("STRATZ_PROCESS_BATCH_SIZE", 10, 1, 50),
-    staleLockSeconds: parseInteger("STRATZ_STALE_LOCK_SECONDS", 900, 60, 3_600),
-    jobMaxAttempts: parseInteger("STRATZ_JOB_MAX_ATTEMPTS", 6, 1, 20),
-    jobRetryBaseSeconds: parseInteger(
-      "STRATZ_JOB_RETRY_BASE_SECONDS",
-      120,
-      10,
-      7_200,
     ),
   };
 }

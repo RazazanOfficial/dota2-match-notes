@@ -5,6 +5,20 @@ import type {
   OpenDotaPlayer,
 } from "../opendota/validation";
 import { MatchImageError } from "./errors";
+import { parseOpenDotaMatch } from "../opendota/validation";
+import { overlayReplayData } from "../replay/overlay";
+
+// The basic summary owns identity/result/final scoreboard values. Replay-only
+// fields must come from a complete, validated local parser output.
+export function buildLocalReplayImageModel(
+  summary: Record<string, unknown>, localReplayData: unknown, steamAccountId: number,
+) {
+  const replay = overlayReplayData(summary, localReplayData);
+  if (replay.source !== "local") {
+    throw new MatchImageError("image_local_analysis_not_ready", "تحلیل معتبر parser محلی برای تولید تصویر آماده نیست");
+  }
+  return buildMatchImageModel(parseOpenDotaMatch(replay.match, Number(summary.match_id)), steamAccountId);
+}
 
 export interface MatchImagePlayer {
   accountId: number | null;

@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
+import { enqueueLocalReplayImages } from "./local-replay-images.mjs";
 import { extractLaneEvents } from "./lane-events.mjs";
 import { pipeline } from "node:stream/promises";
 import { Transform } from "node:stream";
@@ -137,6 +138,7 @@ async function store(matchId, blob) {
       "UPDATE dota_matches SET local_replay_data = $2::jsonb, local_replay_parsed_at = now(), updated_at = now() WHERE match_id = $1",
       [matchId, JSON.stringify(blob)],
     );
+    await enqueueLocalReplayImages(db, matchId);
     await db.query("COMMIT");
   } catch (error) { await db.query("ROLLBACK"); throw error; }
   finally { db.release(); await pool.end(); }
