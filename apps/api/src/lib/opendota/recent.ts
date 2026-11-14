@@ -18,7 +18,6 @@ export function selectRecentSyncMatches(
     maxNewMatches: number;
     since?: Date | null;
     lookbackSeconds?: number;
-    initialMatches?: number;
   },
 ) {
   let eligible = matches;
@@ -29,8 +28,6 @@ export function selectRecentSyncMatches(
         1_000,
     );
     eligible = matches.filter((match) => match.start_time >= cutoff);
-  } else if (options.initialMatches !== undefined) {
-    eligible = matches.slice(0, options.initialMatches);
   }
 
   return {

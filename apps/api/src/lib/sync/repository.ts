@@ -11,6 +11,7 @@ import {
 } from "drizzle-orm";
 import { getDb } from "../db";
 import { syncJobs, users } from "../db/schema";
+import type { OpenDotaRecentMatch } from "../opendota/validation";
 import type { SyncWorkerConfig } from "./config";
 
 export interface ClaimedScheduledJob {
@@ -22,6 +23,9 @@ export interface ClaimedScheduledJob {
   steamAccountId: number;
   lastManualSyncAt: Date | null;
   lastScheduledSyncAt: Date | null;
+  createdAt: Date;
+  snapshot: OpenDotaRecentMatch[] | null;
+  attempted: number[];
 }
 
 export async function enqueueDueScheduledSyncJobs(
@@ -153,6 +157,9 @@ export async function claimNextScheduledSyncJob() {
         steamAccountId: users.steamAccountId,
         lastManualSyncAt: users.lastManualSyncAt,
         lastScheduledSyncAt: users.lastScheduledSyncAt,
+        createdAt: syncJobs.createdAt,
+        snapshot: syncJobs.manualSnapshot,
+        attempted: syncJobs.manualAttempted,
       })
       .from(syncJobs)
       .innerJoin(users, eq(syncJobs.userId, users.id))
@@ -220,6 +227,23 @@ export async function completeScheduledSyncJob(job: ClaimedScheduledJob) {
       .set({ lastScheduledSyncAt: finishedAt, updatedAt: finishedAt })
       .where(eq(users.id, job.userId));
   });
+}
+
+export async function continueScheduledSyncJob(
+  job: ClaimedScheduledJob,
+  snapshot: OpenDotaRecentMatch[],
+  attempted: number[],
+) {
+  const [saved] = await getDb().update(syncJobs).set({
+    status: "pending",
+    lockedAt: null,
+    attempts: 0,
+    runAfter: new Date(Date.now() + 1_000),
+    manualSnapshot: snapshot,
+    manualAttempted: attempted,
+  }).where(and(eq(syncJobs.id, job.id), eq(syncJobs.status, "processing"),
+    eq(syncJobs.lockedAt, job.lockedAt))).returning({ id: syncJobs.id });
+  if (!saved) throw new Error("Scheduled sync job lease was lost");
 }
 
 export async function rescheduleOrFailScheduledSyncJob(params: {

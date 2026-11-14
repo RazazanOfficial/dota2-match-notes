@@ -59,7 +59,6 @@ export async function runScheduledSyncTick() {
         scheduledSyncUserFromJob(job),
         {
           lookbackSeconds: config.lookbackSeconds,
-          initialMatches: config.initialMatches,
         },
       );
       await completeScheduledSyncJob(job);

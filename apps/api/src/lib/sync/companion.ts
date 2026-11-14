@@ -15,40 +15,82 @@ export async function registerCompanion(userId: string, deviceId?: string) {
   const token = randomBytes(32).toString("base64url"),
     hash = companionHash(token),
     db = getDb();
-  // Device credentials are scoped to reporting match IDs, never general account access.
-  // Reopening/closing the UI must not rotate the credential of an already running agent.
-  if (deviceId) {
-    const existing =
-      await db.execute(sql`UPDATE companion_devices SET last_seen_at=now()
-      WHERE id=${deviceId}::uuid AND user_id=${userId}::uuid AND revoked_at IS NULL
-      AND expires_at>now()+interval '1 day' RETURNING id`);
-    if (existing.rows[0])
-      return { deviceId: String(existing.rows[0].id), token: null };
-  }
-  // An expiring device gets a replacement; its old token stays valid during handoff.
-  const row = (
-    await db.execute(sql`INSERT INTO companion_devices(user_id,token_hash,expires_at)
-    VALUES(${userId}::uuid,${hash},now()+interval '180 days') RETURNING id`)
-  ).rows[0];
-  return { deviceId: String(row.id), token };
+  return db.transaction(async tx => {
+    // Serialize registrations for an owner before counting active devices.
+    const owner = (await tx.execute(sql`SELECT id FROM users WHERE id=${userId}::uuid FOR UPDATE`)).rows[0];
+    if (!owner) throw new OpenDotaError(404, "user_not_found", "Account not found");
+    // Reopening/closing the UI must not rotate the credential of a running agent.
+    if (deviceId) {
+      const existing = await tx.execute(sql`UPDATE companion_devices SET last_seen_at=now()
+        WHERE id=${deviceId}::uuid AND user_id=${userId}::uuid AND revoked_at IS NULL
+        AND expires_at>now()+interval '1 day' RETURNING id`);
+      if (existing.rows[0]) return { deviceId: String(existing.rows[0].id), token: null };
+    }
+    const count = (await tx.execute(sql`SELECT count(*)::int AS n FROM companion_devices
+      WHERE user_id=${userId}::uuid AND revoked_at IS NULL AND expires_at>now()`)).rows[0];
+    if (Number(count.n) >= 16)
+      throw new OpenDotaError(429, "companion_device_limit", "Too many active devices");
+    // An expiring device gets a replacement; its old token stays valid during handoff.
+    const row = (await tx.execute(sql`INSERT INTO companion_devices(user_id,token_hash,expires_at)
+      VALUES(${userId}::uuid,${hash},now()+interval '180 days') RETURNING id`)).rows[0];
+    return { deviceId: String(row.id), token };
+  });
+}
+export async function companionAccountRegistered(token: string, steamId: string) {
+  return getDb().transaction(async (tx) => {
+    const owner = (await tx.execute(sql`SELECT user_id FROM companion_devices WHERE token_hash=${companionHash(token)}
+      AND revoked_at IS NULL AND expires_at>now()`)).rows[0];
+    if (!owner) throw new OpenDotaError(401, "companion_unauthorized", "Background access expired");
+    const account = (await tx.execute(sql`SELECT id,companion_lookup_count,companion_lookup_window_at
+      FROM users WHERE id=${owner.user_id}::uuid FOR UPDATE`)).rows[0];
+    if (!account) throw new OpenDotaError(401, "companion_unauthorized", "Background access expired");
+    const device = (await tx.execute(sql`SELECT id,lookup_count,lookup_window_at
+      FROM companion_devices WHERE token_hash=${companionHash(token)}
+      AND revoked_at IS NULL AND expires_at>now() FOR UPDATE`)).rows[0];
+    if (!device)
+      throw new OpenDotaError(401, "companion_unauthorized", "Background access expired");
+    const expired = Date.parse(String(device.lookup_window_at)) <= Date.now() - 86_400_000;
+    const accountExpired = Date.parse(String(account.companion_lookup_window_at)) <= Date.now() - 86_400_000;
+    if ((!expired && Number(device.lookup_count) >= 5000) ||
+        (!accountExpired && Number(account.companion_lookup_count) >= 5000))
+      throw new OpenDotaError(429, "companion_lookup_limit", "Too many account checks", 3600);
+    await tx.execute(sql`UPDATE users SET
+      companion_lookup_count=CASE WHEN companion_lookup_window_at<=now()-interval '1 day' THEN 1 ELSE companion_lookup_count+1 END,
+      companion_lookup_window_at=CASE WHEN companion_lookup_window_at<=now()-interval '1 day' THEN now() ELSE companion_lookup_window_at END
+      WHERE id=${account.id}::uuid`);
+    await tx.execute(sql`UPDATE companion_devices SET
+      lookup_count=CASE WHEN lookup_window_at<=now()-interval '1 day' THEN 1 ELSE lookup_count+1 END,
+      lookup_window_at=CASE WHEN lookup_window_at<=now()-interval '1 day' THEN now() ELSE lookup_window_at END
+      WHERE id=${device.id}::uuid`);
+    const row = (await tx.execute(sql`SELECT EXISTS(SELECT 1 FROM users WHERE steam_id=${steamId}) AS registered`)).rows[0];
+    return Boolean(row.registered);
+  });
 }
 export async function acceptObservation(
   token: string,
   matchId: number,
   endedAt: Date,
+  steamId: string,
 ) {
   const db = getDb();
   return db.transaction(async (tx) => {
-    // Serialize all devices for this user. Password reset and account deletion
-    // also lock the user before devices; preserve that order and recheck access.
-    const owner = (
-      await tx.execute(sql`SELECT d.user_id FROM companion_devices d JOIN users u ON u.id=d.user_id
-      WHERE d.token_hash=${companionHash(token)} AND d.revoked_at IS NULL AND d.expires_at>now() FOR UPDATE OF u`)
-    ).rows[0];
+    // Lock owner and target in the same order for reciprocal A→B / B→A reports.
+    // Password reset and account deletion lock users before device rows too.
+    const owner = (await tx.execute(sql`SELECT user_id FROM companion_devices
+      WHERE token_hash=${companionHash(token)} AND revoked_at IS NULL AND expires_at>now()`)).rows[0];
     if (!owner)
       throw new OpenDotaError(401, "companion_unauthorized", "Background access expired");
+    const candidate = (await tx.execute(sql`SELECT id FROM users WHERE steam_id=${steamId}`)).rows[0];
+    const targetId = candidate ? String(candidate.id) : null;
+    const locked = (await tx.execute(sql`SELECT id FROM users WHERE id IN
+      (${String(owner.user_id)}::uuid, ${targetId || String(owner.user_id)}::uuid)
+      ORDER BY id FOR UPDATE`)).rows.map(row => String(row.id));
+    if (!locked.includes(String(owner.user_id)))
+      throw new OpenDotaError(401, "companion_unauthorized", "Background access expired");
+    const ownerQuota = (await tx.execute(sql`SELECT companion_report_count,companion_report_window_at
+      FROM users WHERE id=${owner.user_id}::uuid`)).rows[0];
     const device = (
-      await tx.execute(sql`SELECT d.id,d.user_id FROM companion_devices d
+      await tx.execute(sql`SELECT d.id,d.user_id,d.report_count,d.report_window_at FROM companion_devices d
       WHERE d.token_hash=${companionHash(token)} AND d.revoked_at IS NULL AND d.expires_at>now() FOR UPDATE`)
     ).rows[0];
     if (!device)
@@ -57,17 +99,32 @@ export async function acceptObservation(
         "companion_unauthorized",
         "Background access expired",
       );
-    const existing = (
+    const targetExists = targetId !== null && locked.includes(targetId);
+    const existing = targetExists ? (
       await tx.execute(
-        sql`SELECT status FROM match_observations WHERE user_id=${device.user_id}::uuid AND match_id=${matchId}`,
+        sql`SELECT status FROM match_observations WHERE user_id=${targetId}::uuid AND match_id=${matchId}`,
       )
-    ).rows[0];
+    ).rows[0] : null;
     if (existing) return { accepted: true, status: String(existing.status) };
+    const reportExpired = Date.parse(String(device.report_window_at)) <= Date.now() - 86_400_000;
+    const accountReportExpired = Date.parse(String(ownerQuota.companion_report_window_at)) <= Date.now() - 86_400_000;
+    if ((!reportExpired && Number(device.report_count) >= 100) ||
+        (!accountReportExpired && Number(ownerQuota.companion_report_count) >= 100))
+      throw new OpenDotaError(429, "companion_device_daily_limit", "Too many device reports", 3600);
+    await tx.execute(sql`UPDATE users SET
+      companion_report_count=CASE WHEN companion_report_window_at<=now()-interval '1 day' THEN 1 ELSE companion_report_count+1 END,
+      companion_report_window_at=CASE WHEN companion_report_window_at<=now()-interval '1 day' THEN now() ELSE companion_report_window_at END
+      WHERE id=${owner.user_id}::uuid`);
+    await tx.execute(sql`UPDATE companion_devices SET last_seen_at=now(),
+      report_count=CASE WHEN report_window_at<=now()-interval '1 day' THEN 1 ELSE report_count+1 END,
+      report_window_at=CASE WHEN report_window_at<=now()-interval '1 day' THEN now() ELSE report_window_at END
+      WHERE id=${device.id}::uuid`);
+    if (!targetExists) return { accepted: false, status: "ignored" };
     const count = (
       await tx.execute(
         // deadline_at is server-assigned to receipt time + one day. Client
         // timestamps may be up to 30 days old and cannot enforce this quota.
-        sql`SELECT count(*)::int AS n FROM match_observations WHERE user_id=${device.user_id}::uuid AND deadline_at>now()`,
+        sql`SELECT count(*)::int AS n FROM match_observations WHERE user_id=${targetId}::uuid AND deadline_at>now()`,
       )
     ).rows[0];
     if (Number(count.n) >= 100)
@@ -78,11 +135,8 @@ export async function acceptObservation(
         3600,
       );
     await tx.execute(sql`INSERT INTO match_observations(user_id,match_id,ended_at,run_after,deadline_at)
-      VALUES(${device.user_id}::uuid,${matchId},${endedAt.toISOString()}::timestamptz,
+      VALUES(${targetId}::uuid,${matchId},${endedAt.toISOString()}::timestamptz,
       greatest(now(),${endedAt.toISOString()}::timestamptz+interval '5 minutes'),now()+interval '1 day') ON CONFLICT DO NOTHING`);
-    await tx.execute(
-      sql`UPDATE companion_devices SET last_seen_at=now() WHERE id=${device.id}::uuid`,
-    );
     return { accepted: true, status: "pending" };
   });
 }

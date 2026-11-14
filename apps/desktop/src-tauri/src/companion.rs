@@ -1,5 +1,27 @@
 use tauri::Manager;
 #[tauri::command]
+pub async fn companion_background_enabled() -> bool {
+    tauri::async_runtime::spawn_blocking(|| {
+        crate::companion_core::retry_pending_revocations();
+        crate::companion_core::background_enabled()
+    }).await.unwrap_or(false)
+}
+#[tauri::command]
+pub async fn companion_runtime_status() -> Result<crate::companion_core::RuntimeStatus, String> {
+    tauri::async_runtime::spawn_blocking(crate::companion_core::runtime_status)
+        .await.map_err(|_| "companion_status_failed".to_owned())
+}
+#[tauri::command]
+pub async fn set_companion_background_enabled(
+    window: tauri::WebviewWindow,
+    enabled: bool,
+) -> Result<(), String> {
+    if window.label() != "main" { return Err("companion_config_invalid".into()); }
+    tauri::async_runtime::spawn_blocking(move ||
+        crate::companion_core::set_background_enabled(enabled))
+        .await.map_err(|_| "companion_setup_failed".to_owned())?
+}
+#[tauri::command]
 pub async fn companion_status() -> Result<Option<String>, String> {
     Ok(crate::companion_core::config()
         .ok()
@@ -32,6 +54,9 @@ pub async fn configure_companion(
         return Err("companion_config_invalid".into());
     }
     tauri::async_runtime::spawn_blocking(move || {
+        if !crate::companion_core::background_enabled() {
+            return Err("companion_background_disabled".into());
+        }
         let token = match token {
             Some(token) => token,
             None => {
@@ -52,11 +77,7 @@ pub async fn configure_companion(
             return Err("companion_config_invalid".into());
         }
         let config = crate::companion_core::new_config(device_id, steam_id, &token);
-        if let Ok(previous) = crate::companion_core::config() {
-            if previous.steam_id != config.steam_id {
-                crate::companion_core::disconnect()?;
-            }
-        }
+        let previous = crate::companion_core::config().ok();
         crate::companion_core::credential(&config)?
             .set_password(&token)
             .map_err(|_| "companion_credential_failed")?;
@@ -72,7 +93,11 @@ pub async fn configure_companion(
         if !executable.is_file() {
             return Err("companion_missing".into());
         }
-        crate::companion_core::schedule(&config, &executable)
+        crate::companion_core::schedule(&config, &executable)?;
+        if let Some(previous) = previous.filter(|old| old.device_id != config.device_id) {
+            crate::companion_core::revoke_previous_device(&previous);
+        }
+        Ok(())
     })
     .await
     .map_err(|_| "companion_setup_failed")?

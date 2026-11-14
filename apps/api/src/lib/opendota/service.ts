@@ -68,7 +68,6 @@ interface RecentSyncOptions {
   maxNewMatches: number;
   since?: Date | null;
   lookbackSeconds?: number;
-  initialMatches?: number;
   throwOnRetryableError?: boolean;
   onExternalRequestClaimed?: () => void;
   range?: { from: string; to: string };
@@ -355,23 +354,6 @@ export async function syncManualRangeBatch(
     range: { from: request.from, to: request.to },
     gameModes: request.gameModes,
     skipMatchIds: new Set(attempted),
-    throwOnRetryableError: true,
-  });
-}
-
-export async function syncScheduledMatchesFromOpenDota(
-  user: RecentSyncUser & {
-    lastManualSyncAt: Date | null;
-    lastScheduledSyncAt: Date | null;
-  },
-  options: { lookbackSeconds: number; initialMatches: number },
-) {
-  const config = getOpenDotaConfig();
-  return discoverRecentMatches(user, {
-    maxNewMatches: config.maxNewMatchesPerSync,
-    since: user.lastScheduledSyncAt || user.lastManualSyncAt,
-    lookbackSeconds: options.lookbackSeconds,
-    initialMatches: options.initialMatches,
     throwOnRetryableError: true,
   });
 }

@@ -56,6 +56,7 @@ import * as signupCodesReissue from "./auth/signup/codes/reissue/route";
 import * as signupCodesSaved from "./auth/signup/codes/saved/route";
 
 export const routes = [
+  { path: "/sync/companion/eligibility", method: "POST", handler: companion.ELIGIBILITY },
   { path: "/sync/companion", method: "POST", handler: companion.POST },
   { path: "/sync/companion", method: "DELETE", handler: companion.DELETE },
   { path: "/sync/observations", method: "POST", handler: observations.POST },

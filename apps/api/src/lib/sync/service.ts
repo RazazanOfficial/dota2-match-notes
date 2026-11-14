@@ -1,13 +1,14 @@
 import {runObservedMatchTick} from "./companion";
 import { logFailure } from "../../http/log";
 import { OpenDotaError } from "../opendota/errors";
-import { syncScheduledMatchesFromOpenDota } from "../opendota/service";
+import { fetchSelectedHistory, syncManualRangeBatch } from "../opendota/service";
+import { toJournalDateKey } from "../journal/timezone";
 import { getSyncWorkerConfig } from "./config";
-import { scheduledSyncUserFromJob } from "./job";
 import { runManualRangeSyncTick } from "./manual-service";
 import {
   claimNextScheduledSyncJob,
   completeScheduledSyncJob,
+  continueScheduledSyncJob,
   enqueueDueScheduledSyncJobs,
   recoverStaleScheduledJobs,
   rescheduleOrFailScheduledSyncJob,
@@ -58,18 +59,28 @@ export async function runScheduledSyncTick() {
     if (!job) break;
 
     try {
-      const sync = await syncScheduledMatchesFromOpenDota(
-        scheduledSyncUserFromJob(job),
-        {
-          lookbackSeconds: config.lookbackSeconds,
-          initialMatches: config.initialMatches,
-        },
-      );
-      await completeScheduledSyncJob(job);
+      const cursor = job.lastScheduledSyncAt || job.lastManualSyncAt;
+      const cutoff = cursor
+        ? new Date(cursor.getTime() - config.lookbackSeconds * 1_000)
+        : new Date(job.createdAt.getTime() - 3 * 86_400_000);
+      const user = { id: job.userId, steamAccountId: job.steamAccountId, createdAt: job.createdAt };
+      const range = { from: toJournalDateKey(cutoff), to: toJournalDateKey(job.createdAt) };
+      const snapshot = job.snapshot || await fetchSelectedHistory(user, range);
+      const eligible = snapshot.filter(match =>
+        match.start_time * 1_000 >= cutoff.getTime() &&
+        match.start_time * 1_000 <= job.createdAt.getTime());
+      const sync = await syncManualRangeBatch(user,
+        { scope: "week", ...range, mode: "basic" }, job.attempted, 20, eligible);
+      if (sync.deferred > 0) {
+        await continueScheduledSyncJob(job, snapshot,
+          [...job.attempted, ...sync.attemptedIds]);
+      } else {
+        await completeScheduledSyncJob(job);
+      }
       jobs.push({
         id: job.id,
         userId: job.userId,
-        status: "completed",
+        status: sync.deferred > 0 ? "pending" : "completed",
         attempts: job.attempts,
         sync,
       });

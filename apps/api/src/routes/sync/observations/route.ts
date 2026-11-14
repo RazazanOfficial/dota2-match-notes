@@ -12,6 +12,7 @@ export async function POST(request: HttpRequest) {
     .object({
       matchId: z.number().int().min(10_000_000).max(999_999_999_999),
       endedAt: z.union([z.iso.datetime(), z.number().int().positive()]),
+      steamId: z.string().regex(/^\d{17}$/),
     })
     .strict()
     .safeParse(await request.json().catch(() => null));
@@ -31,7 +32,7 @@ export async function POST(request: HttpRequest) {
     return Response.json(
       {
         ok: true,
-        ...(await acceptObservation(token, input.data.matchId, endedAt)),
+        ...(await acceptObservation(token, input.data.matchId, endedAt, input.data.steamId)),
       },
       { status: 202, headers: { "Cache-Control": "no-store" } },
     );

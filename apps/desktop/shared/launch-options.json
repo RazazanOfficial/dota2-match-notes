@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "options": [
+    {
+      "id": "novid",
+      "flag": "-novid",
+      "fa": "رد شدن از ویدیوی آغاز بازی",
+      "en": "Skip the intro video",
+      "conflictsWith": []
+    },
+    {
+      "id": "fullscreen",
+      "flag": "-fullscreen",
+      "fa": "شروع در حالت تمام‌صفحه",
+      "en": "Start in fullscreen",
+      "conflictsWith": ["windowed"]
+    },
+    {
+      "id": "windowed",
+      "flag": "-windowed",
+      "fa": "شروع در حالت پنجره‌ای",
+      "en": "Start in windowed mode",
+      "conflictsWith": ["fullscreen"]
+    }
+  ]
+}

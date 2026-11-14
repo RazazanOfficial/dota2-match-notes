@@ -14,6 +14,7 @@
 .companion-setup-actions{display:flex;flex-wrap:wrap;gap:8px}
 .companion-setup-actions:empty{display:none}
 .companion-setup-error{flex-basis:100%;margin:0;color:var(--bad);font-size:11px;line-height:1.7}
+.launch-options-runtime{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0;font-size:12px}.launch-options-runtime span{padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--panel2)}.launch-options-runtime strong{font-weight:600}@media(max-width:700px){.launch-options-runtime{grid-template-columns:1fr}}
 .companion-manual{flex-basis:100%;font-size:11px;color:var(--muted)}
 .companion-manual summary{cursor:pointer;width:fit-content}
 .companion-manual .companion-guide{margin-top:10px}
@@ -32,3 +33,4 @@
 .task-row-title>.copy-value{width:auto!important;height:auto!important;min-height:24px!important;padding:3px 2px!important;flex:none!important}
 .task-toast .copy-value{width:auto!important;height:auto!important;display:inline-flex!important;gap:8px;padding:2px!important}
 .companion-guide{display:grid;gap:9px;min-width:0}.companion-guide p{margin:0;line-height:1.9}.companion-guide>.copy-value{justify-self:start;direction:ltr}.companion-guide small{color:var(--muted);line-height:1.8}
+.launch-options-panel{display:grid;gap:14px;padding:22px}.launch-options-panel h2{margin:0;font-size:17px}.launch-options-panel p{margin:0;color:var(--muted);font-size:12px;line-height:1.8}.launch-options-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}.launch-option{display:flex;align-items:center;gap:12px;min-width:0;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--panel2);cursor:pointer}.launch-option.is-required{cursor:default;border-color:color-mix(in srgb,var(--good) 30%,var(--border))}.launch-option svg{flex:none;color:var(--good)}.launch-option input{flex:none;accent-color:var(--accent);width:17px;height:17px}.launch-option div{display:grid;gap:4px;min-width:0}.launch-option strong{font-size:13px;direction:ltr;text-align:start}.launch-option small{font-size:11px;color:var(--muted);line-height:1.6}.launch-options-actions{display:flex;gap:10px;flex-wrap:wrap}.launch-options-actions button{display:inline-flex;align-items:center;gap:7px}

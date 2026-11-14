@@ -17,7 +17,6 @@
 | `LOCAL_REPLAY_WORKER_ENABLED` | `false` | `true` |
 | `SCHEDULED_SYNC_ENABLED` | `off` | `on` برای دریافت دوره ای فعلی |
 | `SCHEDULED_SYNC_LOOKBACK_SECONDS` | پردازش اجرا نمی شود | `172800` |
-| `SCHEDULED_SYNC_INITIAL_MATCHES` | پردازش اجرا نمی شود | `20` |
 | `LOCAL_REPLAY_DOWNLOAD_MODE` | worker غیرفعال | `direct` |
 
 رمز URL باید encode شود؛ URL واقعی DB را در خروجی تشخیصی چاپ نکن.
