@@ -9,7 +9,7 @@ import { setTimeout } from "node:timers/promises";
 import { requireComputeNode } from "./node-role.mjs";
 requireComputeNode();
 
-const kinds = ["sync", "images", "stratz", "performance-reference", "opendota-parse"];
+const kinds = ["sync", "images", "performance-reference"];
 const kind = process.argv[2];
 if (!kinds.includes(kind)) throw new Error(`Worker kind must be one of ${kinds.join(", ")}`);
 if (process.argv.slice(3).some(arg => arg !== "--watch")) throw new Error("Unknown worker option");

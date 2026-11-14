@@ -18,7 +18,6 @@
 | `SCHEDULED_SYNC_ENABLED` | `off` | `on` برای دریافت دوره ای فعلی |
 | `SCHEDULED_SYNC_LOOKBACK_SECONDS` | پردازش اجرا نمی شود | `172800` |
 | `SCHEDULED_SYNC_INITIAL_MATCHES` | پردازش اجرا نمی شود | `20` |
-| `OPENDOTA_PARSE_ENABLED` | `false` | در نصب فعلی `false` |
 | `LOCAL_REPLAY_DOWNLOAD_MODE` | worker غیرفعال | `direct` |
 
 رمز URL باید encode شود؛ URL واقعی DB را در خروجی تشخیصی چاپ نکن.
@@ -56,12 +55,12 @@ ENV به تنهایی همه مقادیر موثر systemd را نشان نمی 
 | `dota2notes-sync-daemon.service` | غیرفعال | فعال |
 | `dota2notes-replay.service` | غیرفعال | فعال و مداوم |
 | `dota2notes-images.timer` | غیرفعال | فعال؛ service تک اجراست |
-| `dota2notes-monitor.timer` | برای پنل compute لازم نیست | فعال؛ collector تک اجراست |
+| `dota2notes-monitor.timer` | فعال؛ گزارش ایران | فعال؛ گزارش آلمان |
 | `dota2notes-performance-reference.timer` | غیرفعال | در نصب گزارش شده خاموش؛ فعال سازی جدا پس از بررسی STRATZ |
-| `dota2notes-replay.timer` | خاموش | خاموش؛ pipeline جایگزین آن است |
-| `dota2notes-sync.timer` و `dota2notes-sync-manual.timer` | خاموش | خاموش؛ daemon جایگزین آنهاست |
-| `dota2notes-stratz.timer` | خاموش | خاموش؛ enrichment قدیمی بازنشسته است |
-| `dota2notes-opendota-parse.timer` | خاموش | خاموش در نصب فعلی |
+
+unitهای قدیمی sync/replay و workerهای Parse خارجی و enrichment مچ STRATZ از runtime حذف شده‌اند.
+دریافت اطلاعات اولیه OpenDota و مرجع عمومی STRATZ باقی هستند. تولید عکس از نتیجهٔ local parser انجام می‌شود.
+برای نصب collector هر دو میزبان و حذف unitهای نصب‌شدهٔ قدیمی، [راهنمای مانیتور](service-monitoring.md) را ببین.
 
 این جدول وضعیت مورد انتظار است، نه گزارش لحظه ای systemd.
 برای دیدن مقدار موثر، بدون چاپ env خصوصی:

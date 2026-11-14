@@ -66,6 +66,14 @@ beforeAll(async () => {
 afterAll(async () => { await client.close(); if(oldFolder) await rm(oldFolder,{recursive:true,force:true}); vi.unstubAllEnvs(); });
 
 describe("PostgreSQL schema migration and real Express services", () => {
+  it("does not expose retired external parser or STRATZ enrichment worker routes", async () => {
+    const app = createApp();
+    for (const path of ["opendota-parse", "stratz"]) {
+      const result = await request(app).post(`/api/internal/${path}/tick`)
+        .set("Authorization", "Bearer integration-test-worker-secret-123456789").send({});
+      expect(result.status).toBe(404);
+    }
+  });
   it('returns persisted request versions after accepting an analysis retry',async()=>{
     const matchId=9100099901,startedAt=new Date();
     const [day]=await db.select().from(journalDays).where(eq(journalDays.userId,userId)).limit(1);

@@ -16,8 +16,9 @@ import {
 } from "../db/schema";
 import { isHeroPoolEligibleMode } from "../hero-pool/rules";
 import { OpenDotaError } from "./errors";
-import { hasParsedOpenDotaReplay, type OpenDotaMatch, type OpenDotaPlayer } from "./validation";
+import type { OpenDotaMatch, OpenDotaPlayer } from "./validation";
 import { preserveVerifiedReplayRaw } from "../replay/metadata-fields";
+import { overlayReplayData } from "../replay/overlay";
 
 export async function findOpenDotaSyncTarget(userId: string, matchId: string) {
   const [target] = await getDb()
@@ -358,7 +359,7 @@ export async function saveDiscoveredOpenDotaMatch(params: {
       );
     }
 
-    const [storedMatch] = await tx.select({ rawData: dotaMatches.rawData }).from(dotaMatches)
+    const [storedMatch] = await tx.select({ rawData: dotaMatches.rawData, localReplayData: dotaMatches.localReplayData }).from(dotaMatches)
       .where(eq(dotaMatches.matchId, match.match_id)).limit(1);
     const rawData = preserveVerifiedReplayRaw(match, storedMatch?.rawData, match.match_id);
     await tx
@@ -425,6 +426,9 @@ export async function saveDiscoveredOpenDotaMatch(params: {
       })
       .returning({ id: journalMatches.id });
 
+    if (overlayReplayData(rawData, storedMatch?.localReplayData).source === "local") {
+      await tx.insert(matchImageJobs).values({ matchId: saved.id, runAfter: now, updatedAt: now }).onConflictDoNothing();
+    }
     await tx.update(users).set({ updatedAt: now }).where(eq(users.id, userId));
     return {
       created: true as const,
@@ -494,7 +498,7 @@ export async function saveOpenDotaMatch(params: {
       );
     }
 
-    const [storedMatch] = await tx.select({ rawData: dotaMatches.rawData }).from(dotaMatches)
+    const [storedMatch] = await tx.select({ rawData: dotaMatches.rawData, localReplayData: dotaMatches.localReplayData }).from(dotaMatches)
       .where(eq(dotaMatches.matchId, match.match_id)).limit(1);
     const rawData = preserveVerifiedReplayRaw(match, storedMatch?.rawData, match.match_id);
     await tx
@@ -580,7 +584,7 @@ export async function saveOpenDotaMatch(params: {
         ),
       );
 
-    if (params.queueImages !== false && hasParsedOpenDotaReplay(match)) {
+    if (params.queueImages !== false && overlayReplayData(rawData, storedMatch?.localReplayData).source === "local") {
       await tx
         .insert(matchImageJobs)
         .values({ matchId: saved.id, runAfter: now, updatedAt: now })

@@ -2,23 +2,14 @@
 set -euo pipefail
 
 case "${1:-}" in
-  sync)
-    endpoint="/api/internal/sync/tick"
-    ;;
   images)
     endpoint="/api/internal/images/tick"
-    ;;
-  stratz)
-    endpoint="/api/internal/stratz/tick"
     ;;
   performance-reference)
     endpoint="/api/internal/performance-reference/tick"
     ;;
-  opendota-parse)
-    endpoint="/api/internal/opendota-parse/tick"
-    ;;
   *)
-    echo "usage: call-worker.sh sync|images|stratz|performance-reference|opendota-parse" >&2
+    echo "usage: call-worker.sh images|performance-reference" >&2
     exit 64
     ;;
 esac

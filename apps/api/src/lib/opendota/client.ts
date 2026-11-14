@@ -14,7 +14,6 @@ function parseRetryAfter(value: string | null) {
 export async function fetchOpenDotaJson(
   path: string,
   notFound: { code: string; message: string },
-  method: "GET" | "POST" = "GET",
 ) {
   requireComputeNode();
   const config = getOpenDotaConfig();
@@ -26,7 +25,7 @@ export async function fetchOpenDotaJson(
   let response: Response | undefined;
   try {
     response = await fetch(url, {
-      method,
+      method: "GET",
       headers: { Accept: "application/json" },
       cache: "no-store",
       signal: controller.signal,
@@ -122,20 +121,6 @@ export async function fetchOpenDotaMatch(dotaMatchId: number) {
     message: "این Match ID پیدا نشد",
   });
   return parseOpenDotaMatch(raw, dotaMatchId);
-}
-
-export async function requestOpenDotaParse(dotaMatchId: number) {
-  const raw = await fetchOpenDotaJson(
-    `request/${dotaMatchId}`,
-    { code: "opendota_match_not_found", message: "این Match ID برای Parse پیدا نشد" },
-    "POST",
-  );
-  const job = raw && typeof raw === "object" ? (raw as { job?: { jobId?: unknown } }).job : undefined;
-  const jobId = String(job?.jobId || "");
-  if (!/^\d+$/.test(jobId)) {
-    throw new OpenDotaError(502, "invalid_opendota_parse_response", "پاسخ صف Parse از OpenDota معتبر نیست");
-  }
-  return { jobId };
 }
 
 export async function fetchOpenDotaRecentMatches(steamAccountId: number) {

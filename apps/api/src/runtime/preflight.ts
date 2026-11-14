@@ -12,10 +12,9 @@ import { getMatchImageConfig } from "../lib/match-image/config";
 import { HEROES, heroPortraitFileName } from "../data/heroes";
 import { getStratzConfig } from "../lib/stratz/config";
 import { checkStratzCurlAvailable } from "../lib/stratz/curl-transport";
-import { getOpenDotaParseConfig } from "../lib/opendota-parse/config";
 import { getMatchImageJobConfig } from "../lib/match-image-job/config";
 
-export const PREFLIGHT_ROLES = ["api", "sync", "images", "stratz", "performance-reference", "opendota-parse", "replay"] as const;
+export const PREFLIGHT_ROLES = ["api", "sync", "images", "performance-reference", "replay"] as const;
 export type PreflightRole = typeof PREFLIGHT_ROLES[number];
 export async function preflight(role: PreflightRole = "api") {
   const failures: string[] = [];
@@ -46,7 +45,6 @@ export async function preflight(role: PreflightRole = "api") {
     if (/CHANGE_ME|YOUR_|REPLACE_|AT_LEAST/i.test(process.env.SYNC_WORKER_SECRET || "")) throw new Error();
   });
   await check("opendota_config", () => getOpenDotaConfig());
-  await check("opendota_parse_config", () => getOpenDotaParseConfig());
   await check("api_port", () => {
     const port = Number(process.env.API_PORT || 4100);
     if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error();
@@ -62,7 +60,7 @@ export async function preflight(role: PreflightRole = "api") {
       if (HEROES.some(hero => !portraits.has(heroPortraitFileName(hero)))) throw new Error();
     });
   }
-  if (role === "stratz" || role === "performance-reference") {
+  if (role === "performance-reference") {
     await check("stratz_config", () => {
       getStratzConfig();
       if (/CHANGE_ME|YOUR_|REPLACE_/i.test(process.env.STRATZ_API_TOKEN || "")) throw new Error();

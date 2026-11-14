@@ -10,6 +10,7 @@ import { getDb } from "../db";
 import {
   dotaMatches,
   journalMatches,
+  localReplayJobs,
   matchImageJobs,
   users,
 } from "../db/schema";
@@ -20,6 +21,19 @@ export interface ClaimedMatchImageJob {
   matchId: string;
   attempts: number;
   lockedAt: Date;
+}
+
+// Retry a missing/failed image job when an already parsed journal match is
+// explicitly requested again. Completed and currently active images stay put.
+export async function queueLocalReplayImagesIfNeeded(matchId: string) {
+  const now = new Date();
+  await getDb().insert(matchImageJobs).values({ matchId, runAfter: now, updatedAt: now }).onConflictDoUpdate({
+    target: matchImageJobs.matchId,
+    set: { status: "pending", attempts: 0, runAfter: now, startedAt: null, lockedAt: null,
+      finishedAt: null, errorCode: null, errorMessage: null, progressStage: "queued",
+      currentImage: 0, completedImages: 0, updatedAt: now },
+    setWhere: eq(matchImageJobs.status, "failed"),
+  });
 }
 
 export async function recoverStaleMatchImageJobs(
@@ -154,10 +168,13 @@ export async function getMatchImageJobSource(matchId: string) {
       dotaMatchId: journalMatches.dotaMatchId,
       steamAccountId: users.steamAccountId,
       rawData: dotaMatches.rawData,
+      localReplayData: dotaMatches.localReplayData,
+      replayJobStatus: localReplayJobs.status,
     })
     .from(journalMatches)
     .innerJoin(users, eq(journalMatches.userId, users.id))
     .innerJoin(dotaMatches, eq(journalMatches.dotaMatchId, dotaMatches.matchId))
+    .leftJoin(localReplayJobs, eq(dotaMatches.matchId, localReplayJobs.matchId))
     .where(eq(journalMatches.id, matchId))
     .limit(1);
 
@@ -276,8 +293,8 @@ export async function deferMatchImageJobUntilReplayParsed(job: ClaimedMatchImage
     progressStage: "queued",
     currentImage: 0,
     completedImages: 0,
-    errorCode: "waiting_for_opendota_parse",
-    errorMessage: "waiting for parsed OpenDota replay data",
+    errorCode: "waiting_for_local_parse",
+    errorMessage: "waiting for local replay analysis",
     updatedAt: now,
   }).where(and(eq(matchImageJobs.id, job.id), eq(matchImageJobs.status, "processing"), eq(matchImageJobs.lockedAt, job.lockedAt))).returning({ id: matchImageJobs.id });
   if (!deferred) throw new Error("Match image job lease was lost");

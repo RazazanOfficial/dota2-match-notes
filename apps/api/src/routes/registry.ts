@@ -26,9 +26,7 @@ import * as r16 from "./auth/steam/route";
 import * as r17 from "./health/route";
 import * as r18 from "./hero-pool/me/route";
 import * as r19 from "./internal/images/tick/route";
-import * as r20 from "./internal/opendota-parse/tick/route";
 import * as r21 from "./internal/performance-reference/tick/route";
-import * as r22 from "./internal/stratz/tick/route";
 import * as r23 from "./internal/sync/tick/route";
 import * as r24 from "./journal/days/[date]/route";
 import * as r25 from "./journal/me/route";
@@ -103,9 +101,7 @@ export const routes = [
   { path: "/hero-pool/me", method: "GET", handler: r18.GET },
   { path: "/hero-pool/me", method: "PUT", handler: r18.PUT },
   { path: "/internal/images/tick", method: "POST", handler: r19.POST },
-  { path: "/internal/opendota-parse/tick", method: "POST", handler: r20.POST },
   { path: "/internal/performance-reference/tick", method: "POST", handler: r21.POST },
-  { path: "/internal/stratz/tick", method: "POST", handler: r22.POST },
   { path: "/internal/sync/tick", method: "POST", handler: r23.POST },
   { path: "/journal/days/:date", method: "PUT", handler: r24.PUT },
   { path: "/journal/me", method: "GET", handler: r25.GET },

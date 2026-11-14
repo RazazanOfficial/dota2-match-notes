@@ -1,36 +1,109 @@
-import { useState } from "react";
-import { Activity, RefreshCw, CircleAlert, Server } from "lucide-react";
+import { useEffect, useState } from "react";
+import { RefreshCw, CircleAlert, Server, ChevronDown, CircleHelp, Clock3, Copy, Check } from "lucide-react";
 import type { ReplayMonitorSnapshot } from "@/lib/replay/monitor-types";
 import type { Messages } from "../i18n";
-import { adminBytes, adminDate, adminNumber, adminStatus, adminText, unitState, useAccountRead, type ServiceMonitor } from "../admin";
+import { adminBytes, adminDate, adminNumber, adminStatus, adminText, unitState, useAccountRead, type ServiceMonitor, type MonitorHost, type MonitorUnit, type MonitorState } from "../admin";
 import { CopyValue } from "./Shared";
 import { AdminReadState } from "./AdminShared";
 
-const names: Record<string, [string,string]> = {
-  "dota2notes-api.service":["API","API"], "dota2notes.service":["وب","Website"],
-  "dota2notes-replay.service":["پردازش ریپلی","Replay worker"], "dota2notes-replay.timer":["زمان‌بندی ریپلی","Replay timer"],
-  "dota2notes-sync.service":["دریافت مچ","Match fetch worker"], "dota2notes-sync-manual.timer":["دریافت دستی مچ","Manual match fetch timer"],
-  "dota2notes-performance-reference.service":["مرجع آماری","Reference worker"], "dota2notes-performance-reference.timer":["زمان‌بندی مرجع","Reference timer"],
-  "dota2notes-monitor.service":["ثبت وضعیت سرویس‌ها","Service collector"], "dota2notes-monitor.timer":["زمان‌بندی مانیتور","Monitor timer"],
-  "dota2notes-images.service":["ساخت تصاویر","Image worker"], "dota2notes-images.timer":["زمان‌بندی تصاویر","Image timer"],
-  "dota2notes-opendota-parse.service":["Parse خارجی","External parse worker"], "dota2notes-opendota-parse.timer":["زمان‌بندی Parse","External parse timer"],
+const serviceInfo: Record<string, { title: string; description: [string, string] }> = {
+  "dota2notes.service": { title: "Website", description: ["صفحات وب و صفحهٔ دانلود Dota Notes را روی ایران اجرا می‌کند.", "Serves the Dota Notes website and download page in Iran."] },
+  "dota2notes-api.service": { title: "API", description: ["درخواست‌های برنامه را دریافت می‌کند؛ حساب، اطلاعات ذخیره‌شده و درخواست کارها را مدیریت می‌کند.", "Handles application requests, accounts, stored data and job submissions."] },
+  "dota2notes-link.service": { title: "Private Link", description: ["اتصال خصوصی SSH بین آلمان و ایران برای دیتابیس و درخواست‌های منتخب API.", "Private SSH connection between Germany and Iran for database access and selected API requests."] },
+  "dota2notes-sync-daemon.service": { title: "Match Sync", description: ["دریافت و ثبت مچ‌ها از تقویم، گزارش Companion و بررسی دوره‌ای حساب.", "Fetches and saves matches from calendar requests, Companion reports and periodic account checks."] },
+  "dota2notes-replay.service": { title: "Replay Processing", description: ["آماده‌سازی فایل، تحلیل با parser و آپلود آرشیو را در بخش‌های مستقل اجرا می‌کند.", "Runs independent replay preparation, local parsing and archive upload workers."] },
+  "dota2notes-images.service": { title: "Image Generation", description: ["سه تصویر نمای کلی، جدول بازیکنان و عملکرد را از تحلیل مچ می‌سازد.", "Creates overview, scoreboard and player performance images from match analysis."] },
+  "dota2notes-images.timer": { title: "Image Schedule", description: ["زمان اجرای بررسی صف تولید تصاویر مچ را تعیین می‌کند.", "Schedules checks for queued match image jobs."] },
+  "dota2notes-performance-reference.service": { title: "Statistical Reference", description: ["آمار عمومی هیروها و پوزیشن‌ها را از STRATZ دریافت و ذخیره می‌کند.", "Collects and stores public hero and position reference statistics from STRATZ."] },
+  "dota2notes-performance-reference.timer": { title: "Reference Schedule", description: ["زمان اجرای دستهٔ بعدی دریافت مرجع آماری را تعیین می‌کند؛ خاموشی عمدی خطا نیست.", "Schedules the next reference collection batch. Intentional disabling is not a failure."] },
+  "dota2notes-monitor.service": { title: "Service Monitor", description: ["وضعیت سرویس‌ها و لاگ‌های اخیر همین میزبان را برای این صفحه ثبت می‌کند.", "Captures this host's service states and recent logs for this page."] },
+  "dota2notes-monitor.timer": { title: "Monitor Schedule", description: ["زمان تازه‌سازی گزارش وضعیت این میزبان را تعیین می‌کند.", "Schedules this host's service snapshot refresh."] },
+  "nginx.service": { title: "Nginx", description: ["درخواست‌های دامنه را به وب‌سایت یا API می‌رساند و فایل‌های عمومی را ارائه می‌کند.", "Routes domain requests to the website or API and serves public assets."] },
+  "postgresql.service": { title: "PostgreSQL", description: ["دیتابیس اصلی پروژه در ایران؛ روشن بودن unit به‌تنهایی سلامت queryها را ثابت نمی‌کند.", "The primary database in Iran. An active unit alone does not establish query health."] },
 };
+const stateLabels: Record<MonitorState, string> = { running: "Running", waiting: "Waiting", idle: "Idle", disabled: "Disabled", failed: "Failed", stopped: "Stopped", stale: "Stale", retrying: "Retrying", unknown: "Unknown" };
+const stageTitles = { prepare: "File Preparation", parse: "Local Parser", archive: "Archive Upload" };
+const hostTitle = (id: MonitorHost["id"]) => id === "iran" ? "Iran VPS" : "Germany VPS";
+const snapshotStale = (host: MonitorHost, now: number) => host.stale || !!host.snapshotError || !host.capturedAt || !Number.isFinite(Date.parse(host.capturedAt)) || now - Date.parse(host.capturedAt) > 180_000 || Date.parse(host.capturedAt) > now + 60_000;
+function countdown(value: string | undefined, now: number) {
+  const next = Date.parse(value || "");
+  if (!Number.isFinite(next)) return "—";
+  const seconds = Math.max(0, Math.ceil((next - now) / 1000));
+  const hours = Math.floor(seconds / 3600), minutes = Math.floor(seconds % 3600 / 60);
+  return hours ? `${hours}:${String(minutes).padStart(2,"0")}:${String(seconds % 60).padStart(2,"0")}` : `${minutes}:${String(seconds % 60).padStart(2,"0")}`;
+}
+function monitorHosts(monitor: ServiceMonitor): MonitorHost[] {
+  const available = monitor.hosts?.length ? monitor.hosts : [{ id: "germany" as const, label: "Germany VPS", capturedAt: monitor.capturedAt, stale: monitor.stale, snapshotError: monitor.snapshotError, units: monitor.units }];
+  return (["iran", "germany"] as const).map(id => {
+    const host = available.find(item => item.id === id);
+    return host || { id, label: hostTitle(id), capturedAt: null, stale: true, snapshotError: null, units: [] };
+  });
+}
+function ServiceLogs({ unit, target, t }: { unit: MonitorUnit; target?: MonitorUnit; t: Messages }) {
+  const [filter, setFilter] = useState("all");
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
+  const source = unit;
+  const execution = unit.id.endsWith(".timer") && target ? target : unit;
+  const logs = source.logs.filter(log => filter === "all" || log.priority <= (filter === "error" ? 3 : 4));
+  async function copyLogs() {
+    try {
+      await navigator.clipboard.writeText(logs.map(log => `${log.at || "—"} [${log.priority <= 3 ? "ERROR" : log.priority === 4 ? "WARN" : "INFO"}] ${log.message}`).join("\n"));
+      setCopyState("copied");
+    } catch { setCopyState("error"); }
+  }
+  return <div className="service-expanded">
+    <div className="service-terminal-heading"><span className="terminal-dots" aria-hidden="true"><i/><i/><i/></span><code dir="ltr">{source.id}</code><div className="service-log-actions"><select aria-label={adminText(t,"فیلتر لاگ","Log filter")} value={filter} onChange={event=>{setFilter(event.target.value);setCopyState("idle");}}><option value="all">{t.all}</option><option value="warning">Warning + Error</option><option value="error">Error</option></select><button className="service-copy" onClick={copyLogs} disabled={!logs.length}>{copyState === "copied" ? <Check size={14}/> : <Copy size={14}/>} {adminText(t,"کپی لاگ","Copy logs")}</button></div></div>
+    <p className="sr-only" role="status">{copyState === "copied" ? t.copied : copyState === "error" ? t.copyError : ""}</p>
+    <dl className="service-facts"><div><dt>{adminText(t,"آخرین شروع","Last started")}</dt><dd>{adminDate(execution.properties.ExecMainStartTimestamp || execution.properties.ActiveEnterTimestamp,t)}</dd></div><div><dt>{adminText(t,"آخرین پایان","Last finished")}</dt><dd>{adminDate(execution.properties.ExecMainExitTimestamp,t)}</dd></div><div><dt>{adminText(t,"نتیجهٔ آخرین اجرا","Last result")}</dt><dd dir="ltr">{execution.properties.ExecMainExitTimestamp ? `${execution.properties.Result || "Unknown"} · Exit ${execution.properties.ExecMainStatus || "—"}` : "—"}</dd></div><div><dt>{adminText(t,"وضعیت ثبت‌شده","Recorded state")}</dt><dd dir="ltr">{unit.properties.ActiveState || "Unknown"} / {unit.properties.SubState || "Unknown"}</dd></div></dl>
+    {(unit.error || source.error) && <p className="service-detail-warning">{unit.error || source.error}</p>}
+    <div className="service-terminal" role="log" aria-label={`${adminText(t,"لاگ","Logs")} ${source.id}`}>{logs.length ? logs.map((log,index)=><div key={`${log.at}:${index}`} className={log.priority <= 3 ? "log-error" : log.priority === 4 ? "log-warning" : ""}><time>{adminDate(log.at,t)}</time><b>{log.priority <= 3 ? "ERROR" : log.priority === 4 ? "WARN" : "INFO"}</b><span dir="auto">{log.message}</span></div>) : <p>{adminText(t,"لاگی در این گزارش ثبت نشده است.","No log entries in this snapshot.")}</p>}</div>
+  </div>;
+}
+function ServiceCard({ unit, host, now, t, open, toggle }: { unit: MonitorUnit; host: MonitorHost; now: number; t: Messages; open: boolean; toggle: () => void }) {
+  const info = serviceInfo[unit.id], timer = unit.id.endsWith(".timer");
+  const target = host.units.find(item => item.id === (unit.properties.TargetUnit || unit.id.replace(/\.timer$/, ".service")));
+  const stale = snapshotStale(host,now);
+  const state = unitState(unit,{now,stale,target});
+  const descriptionId = `help-${host.id}-${unit.id.replaceAll(".","-")}`;
+  const detailsId = `details-${host.id}-${unit.id.replaceAll(".","-")}`;
+  const next = timer && state !== "disabled" && !stale ? unit.properties.NextRunAt : undefined;
+  return <article className={`service-entry monitor-state-${state} ${open ? "is-open" : ""}`}>
+    <button className="service-card-trigger" aria-expanded={open} aria-controls={detailsId} onClick={toggle}>
+      <span className="service-card-title"><Server size={16}/><strong dir="ltr">{info.title}</strong></span>
+      <code className="service-command" dir="ltr">{unit.id}</code>
+      <span className="service-card-bottom"><span className="service-status" dir="ltr"><i/>{stateLabels[state]}</span><ChevronDown size={16} className="service-chevron"/></span>
+      {timer && <span className="service-timer-summary"><span>{adminText(t,"اجرای بعدی","Next run")} <bdi>{adminDate(next,t)}</bdi></span><strong dir="ltr">{countdown(next,now)}</strong></span>}
+    </button>
+    <span className="service-help"><button aria-label={adminText(t,`دربارهٔ ${info.title}`,`About ${info.title}`)} aria-describedby={descriptionId}><CircleHelp size={17}/></button><span id={descriptionId} role="tooltip">{adminText(t,...info.description)}</span></span>
+    {open && <div id={detailsId} className="service-details">
+      {timer && <dl className="service-facts service-schedule-facts"><div><dt>{adminText(t,"برنامهٔ اجرا","Schedule")}</dt><dd dir="ltr">{unit.properties.Schedule || "Unknown"}</dd></div><div><dt>{adminText(t,"آخرین فراخوانی","Last triggered")}</dt><dd>{adminDate(unit.properties.LastTriggerUSec,t)}</dd></div><div><dt>{adminText(t,"اجرای بعدی","Next run")}</dt><dd>{adminDate(next,t)}</dd></div></dl>}
+      {(state === "unknown" || state === "stale") && <p className="service-detail-warning">{state === "stale" ? adminText(t,"گزارش تازه نداریم؛ وضعیت فعلی قابل تأیید نیست.","The snapshot is stale; the current state cannot be confirmed.") : adminText(t,"اطلاعات کافی برای تأیید وضعیت یا موعد بعدی موجود نیست.","There is not enough information to confirm the state or next run.")}</p>}
+      <ServiceLogs unit={unit} target={target} t={t}/>
+    </div>}
+  </article>;
+}
 export function AdminServices({ t }: {t:Messages}) {
   const read = useAccountRead<{monitor:ServiceMonitor}>("/api/admin/service-monitor",true,30000);
   const monitor = read.data?.monitor;
-  const [selected,setSelected] = useState("dota2notes-api.service"), [filter,setFilter] = useState("all");
-  const current = monitor?.units.find(unit=>unit.id === selected) || monitor?.units[0];
-  const logs = current?.logs.filter(log=>filter === "all" || log.priority <= (filter === "error" ? 3 : 4)) || [];
-  const issues = monitor?.units.filter(unit=>unitState(unit) === "failed").length || 0;
-  return <div className="screen-stack"><div className="admin-toolbar"><span className="admin-live"><i className={`signal-dot ${issues ? "signal-error" : !monitor || monitor.stale ? "signal-retry" : ""}`}/>{adminText(t,"آخرین گزارش","Snapshot")}: {adminDate(monitor?.capturedAt,t)}</span><button className="secondary-button" disabled={read.busy} onClick={read.refresh}><RefreshCw size={16}/>{t.refresh}</button></div><AdminReadState error={read.error} busy={read.busy} hasData={!!monitor} t={t}/>
-    {monitor && <>{(monitor.stale || monitor.snapshotError) && <div className="admin-warning" role="status"><CircleAlert size={20}/><p>{adminText(t,"گزارش وضعیت سرویس‌ها تازه نیست؛ timer مانیتور را بررسی کن. آمار صف‌ها جداگانه از دیتابیس دریافت شده است.","The service snapshot is unavailable or stale. Check the monitor timer. Queue totals were read separately from the database.")}</p></div>}
-    <div className="service-card-grid">{monitor.units.map(unit=>{
-      const status = unitState(unit), label = names[unit.id];
-      return <button key={unit.id} className={`panel service-card ${selected === unit.id ? "selected" : ""} state-${status}`} aria-pressed={selected === unit.id} onClick={()=>setSelected(unit.id)}><span><Server size={18}/><strong>{label ? adminText(t,...label) : unit.id.replace(/\.service$|\.timer$/g,"")}</strong></span><code>{unit.id}</code><span className="service-state"><i/>{status === "inactive" ? adminText(t,"غیرفعال","Inactive") : status === "completed" ? adminText(t,"اجرای قبلی موفق","Last run succeeded") : adminStatus(status,t)}</span><small>{adminText(t,"خروج","Exit")}: {unit.properties.ExecMainStatus || "—"} · {unit.properties.SubState || "—"}</small></button>;
-    })}</div>
-    <section className="panel account-section"><h2>{adminText(t,"صف‌های پردازش","Processing queues")}</h2><div className="admin-queue-grid">{monitor.queues.map(q=><div className="queue-count" key={`${q.source}:${q.status}`}><span>{q.source === "replay_archive" ? adminText(t,"آرشیو مستقل ریپلی","Independent replay archive") : q.source} · {adminStatus(q.status,t)}</span><strong>{adminNumber(q.total,t)}</strong></div>)}</div>{!!monitor.failures.length && <details className="admin-disclosure"><summary>{adminText(t,"آخرین خطاهای صف","Recent queue failures")}</summary><div className="admin-event-list">{monitor.failures.map((failure,index)=><div key={index}><b>{failure.source}</b><time>{adminDate(failure.at,t)}</time><code>{failure.detail}</code></div>)}</div></details>}</section>
-    {current && <section className="panel account-section"><div className="section-heading"><h2><Activity size={18}/> <bdi>{current.id}</bdi></h2><select aria-label={adminText(t,"فیلتر لاگ","Log filter")} value={filter} onChange={event=>setFilter(event.target.value)}><option value="all">{t.all}</option><option value="warning">Warning + Error</option><option value="error">Error</option></select></div><dl className="account-facts"><div><dt>{adminText(t,"آخرین اجرا","Last run")}</dt><dd>{adminDate(current.properties.ExecMainExitTimestamp || current.properties.ActiveEnterTimestamp,t)}</dd></div><div><dt>{adminText(t,"اجرای بعدی","Next tick")}</dt><dd>{adminDate(current.properties.NextElapseUSecRealtime,t)}</dd></div><div><dt>{adminText(t,"وضعیت","State")}</dt><dd><bdi>{current.properties.ActiveState} / {current.properties.SubState}</bdi></dd></div></dl>
-    {current.error && <p className="admin-warning">{current.error}</p>}<div className="admin-log" role="log" aria-label={`${adminText(t,"لاگ","Logs")} ${current.id}`}>{logs.map((log,index)=><p key={`${log.at}:${index}`} className={log.priority<=3 ? "log-error" : log.priority===4 ? "log-warning" : ""}><time>{adminDate(log.at,t)}</time><b>{log.priority<=3 ? "ERROR" : log.priority===4 ? "WARN" : "INFO"}</b><span dir="auto">{log.message}</span></p>)}{!logs.length && <p>{adminText(t,"لاگی در این گزارش ثبت نشده است.","No log entries in this snapshot.")}</p>}</div><small className="muted">{adminText(t,"حداکثر ۳۵ خط اخیر هر سرویس. گزارش هر دقیقه ثبت می‌شود؛ worker مقطعی پس از اجرای موفق غیرفعال می‌شود.","Up to 35 recent lines per service. Snapshots are collected every minute; a successful oneshot worker returns to inactive.")}</small></section>}
+  const [expanded,setExpanded] = useState<string | null>(null), [now,setNow] = useState(Date.now);
+  useEffect(()=>{
+    const update = () => { if (document.visibilityState !== "hidden") setNow(Date.now()); };
+    const timer = window.setInterval(update,1000);
+    document.addEventListener("visibilitychange",update);
+    return ()=>{window.clearInterval(timer);document.removeEventListener("visibilitychange",update);};
+  },[]);
+  const hosts = monitor ? monitorHosts(monitor).map(host=>({...host,units:host.units.filter(unit=>serviceInfo[unit.id] && (host.id !== "germany" || !["dota2notes.service","nginx.service","postgresql.service"].includes(unit.id)))})) : [];
+  return <div className="screen-stack service-monitor-screen">
+    <div className="admin-toolbar"><p className="muted service-monitor-intro">{adminText(t,"وضعیت هر سرور و اجرای واقعی کارها؛ گزارش‌ها هر دقیقه ثبت می‌شوند.","Host status and actual work. Service snapshots refresh every minute.")}</p><button className="secondary-button" disabled={read.busy} onClick={read.refresh}><RefreshCw size={16}/>{t.refresh}</button></div>
+    <AdminReadState error={read.error} busy={read.busy} hasData={!!monitor} t={t}/>
+    {monitor && <>{(monitor.stale || monitor.snapshotError) && <div className="admin-warning" role="status"><CircleAlert size={18}/><p>{adminText(t,"گزارش وضعیت سرویس‌ها تازه نیست؛ timer مانیتور را بررسی کن. آمار صف‌ها جداگانه از دیتابیس دریافت شده است.","The service snapshot is unavailable or stale. Check the monitor timer. Queue totals were read separately from the database.")}</p></div>}
+      {(["services","timers"] as const).map(section=><section key={section} className="panel service-section"><header className="service-section-heading"><h2 dir="ltr">{section === "services" ? <Server size={19}/> : <Clock3 size={19}/>} {section === "services" ? "Services" : "Timers"}</h2></header><div className="service-hosts">{hosts.map(host=>{
+        const units = host.units.filter(unit=>unit.id.endsWith(section === "timers" ? ".timer" : ".service"));
+        const stale = snapshotStale(host,now);
+        return <section key={host.id} className="service-host"><header className="service-host-heading"><h3 dir="ltr">{hostTitle(host.id)}</h3><span className={`service-host-snapshot ${stale ? "is-stale" : ""}`}><i/>{adminText(t,"گزارش","Snapshot")}: {adminDate(host.capturedAt,t)}</span></header>{host.snapshotError && <p className="service-detail-warning" role="status">{host.snapshotError}</p>}{units.length ? <div className="service-card-grid">{units.map(unit=><ServiceCard key={unit.id} unit={unit} host={host} now={now} t={t} open={expanded === `${host.id}:${unit.id}`} toggle={()=>setExpanded(current=>current === `${host.id}:${unit.id}` ? null : `${host.id}:${unit.id}`)}/>)}</div> : <p className="service-empty">{!host.capturedAt ? adminText(t,"گزارش این سرور هنوز در دسترس نیست.","This host's snapshot is not available yet.") : adminText(t,"موردی برای این سرور تعریف نشده است.","No units are assigned to this host.")}</p>}</section>;
+      })}</div></section>)}
+      {!!monitor.stages?.length && <section className="panel service-section"><h2 dir="ltr">Replay Stages</h2><div className="service-stage-grid">{monitor.stages.map(stage=><div key={stage.id}><strong dir="ltr">{stageTitles[stage.id]}</strong><dl><div><dt>{adminText(t,"در حال اجرا","Active")}</dt><dd>{adminNumber(stage.active,t)}</dd></div><div><dt>{adminText(t,"در صف","Queued")}</dt><dd>{adminNumber(stage.pending,t)}</dd></div><div><dt>{adminText(t,"ناموفق","Failed")}</dt><dd>{stage.failed == null ? "—" : adminNumber(stage.failed,t)}</dd></div></dl></div>)}</div></section>}
+      <section className="panel account-section"><h2>{adminText(t,"صف‌های پردازش","Processing queues")}</h2><div className="admin-queue-grid">{monitor.queues.map(q=><div className="queue-count" key={`${q.source}:${q.status}`}><span>{q.source === "replay_archive" ? adminText(t,"آرشیو مستقل ریپلی","Independent replay archive") : q.source} · {adminStatus(q.status,t)}</span><strong>{adminNumber(q.total,t)}</strong></div>)}</div>{!!monitor.failures.length && <details className="admin-disclosure"><summary>{adminText(t,"آخرین خطاهای صف","Recent queue failures")}</summary><div className="admin-event-list">{monitor.failures.map((failure,index)=><div key={index}><b>{failure.source}</b><time>{adminDate(failure.at,t)}</time><code>{failure.detail}</code></div>)}</div></details>}</section>
     </>}
   </div>;
 }

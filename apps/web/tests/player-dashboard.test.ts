@@ -24,6 +24,7 @@ describe("player sync dashboard", () => {
           lastManualSyncAt: lastSyncAt,
           lastDaySyncAt: lastSyncAt,
           lastWeekSyncAt: lastSyncAt,
+          lastMonthSyncAt: null,
           manualSyncCursorAt: lastSyncAt,
         },
         counts: { pending: 1, processing: 0, completed: 0, failed: 0 },

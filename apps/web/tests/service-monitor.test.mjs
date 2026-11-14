@@ -12,7 +12,9 @@ describe("service monitor collector boundaries", () => {
   it("limits systemd units to a fixed allowlist", () => {
     expect(UNITS).toContain("dota2notes-performance-reference.timer");
     expect(UNITS).toContain("nginx.service");
-    expect(UNITS).toContain("dota2notes-sync-manual.timer");
+    expect(UNITS).toContain("dota2notes-sync-daemon.service");
+    expect(UNITS).not.toContain("dota2notes-sync-manual.timer");
+    expect(UNITS).not.toContain("dota2notes-replay.timer");
     expect(UNITS).toContain("dota2notes-monitor.timer");
     expect(UNITS).toContain("dota2notes-monitor.service");
     expect(UNITS).not.toContain("ssh.service");

@@ -5,7 +5,6 @@ import {
   journalMatches,
   matchImageJobs,
   matchImages,
-  openDotaParseJobs,
   users,
 } from "../db/schema";
 
@@ -39,24 +38,6 @@ export function buildQueueAheadExpression() {
   )`;
 }
 
-export function buildParseQueueAheadExpression() {
-  const queuedJobs = alias(openDotaParseJobs, "queued_parse_jobs");
-  return sql<number>`(
-    select count(*)::int from ${openDotaParseJobs} as "queued_parse_jobs"
-    where ${queuedJobs.status} = 'processing' or (
-      ${queuedJobs.status} = 'pending' and (
-        ${queuedJobs.runAfter} < ${openDotaParseJobs.runAfter} or (
-          ${queuedJobs.runAfter} = ${openDotaParseJobs.runAfter} and (
-            ${queuedJobs.createdAt} < ${openDotaParseJobs.createdAt} or (
-              ${queuedJobs.createdAt} = ${openDotaParseJobs.createdAt} and ${queuedJobs.id} < ${openDotaParseJobs.id}
-            )
-          )
-        )
-      )
-    )
-  )`;
-}
-
 export async function getPlayerSyncSnapshot(userId: string) {
   const db = getDb();
   const [user] = await db
@@ -74,7 +55,7 @@ export async function getPlayerSyncSnapshot(userId: string) {
 
   if (!user) return null;
 
-  const [imageJobs, countRows, parseJobs] = await Promise.all([
+  const [imageJobs, countRows] = await Promise.all([
     db
       .select({
         id: matchImageJobs.id,
@@ -119,31 +100,13 @@ export async function getPlayerSyncSnapshot(userId: string) {
       )
       .where(eq(journalMatches.userId, userId))
       .groupBy(matchImageJobs.status),
-    db.select({
-      id: openDotaParseJobs.id,
-      matchId: journalMatches.id,
-      dotaMatchId: journalMatches.dotaMatchId,
-      heroId: journalMatches.heroId,
-      heroName: journalMatches.heroName,
-      status: openDotaParseJobs.status,
-      attempts: openDotaParseJobs.attempts,
-      runAfter: openDotaParseJobs.runAfter,
-      finishedAt: openDotaParseJobs.finishedAt,
-      errorCode: openDotaParseJobs.errorCode,
-      updatedAt: openDotaParseJobs.updatedAt,
-      createdAt: openDotaParseJobs.createdAt,
-      queueAhead: buildParseQueueAheadExpression(),
-    }).from(openDotaParseJobs).innerJoin(journalMatches, eq(openDotaParseJobs.matchId, journalMatches.id))
-      .where(and(eq(journalMatches.userId, userId), inArray(openDotaParseJobs.status, ["pending", "processing"]))),
   ]);
 
   const counts = { pending: 0, processing: 0, completed: 0, failed: 0 };
   for (const row of countRows) counts[row.status] = row.total;
-  for (const job of parseJobs) counts[job.status] += 1;
 
   const jobs = [
     ...imageJobs.map((job) => ({ ...job, kind: "images" as const })),
-    ...parseJobs.map((job) => ({ ...job, kind: "analysis" as const, imageCount: 0 })),
   ].sort((left, right) => {
     if (left.status !== right.status) return left.status === "processing" ? -1 : 1;
     return left.runAfter.getTime() - right.runAfter.getTime() || left.createdAt.getTime() - right.createdAt.getTime() || left.id.localeCompare(right.id);

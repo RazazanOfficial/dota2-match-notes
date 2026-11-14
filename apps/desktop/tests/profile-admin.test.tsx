@@ -4,6 +4,7 @@ import { act, cleanup, fireEvent, render, renderHook, screen, waitFor, within } 
 import { App } from "../src/App";
 import { Admin } from "../src/components/Admin";
 import { Profile } from "../src/components/Profile";
+import { AdminServices } from "../src/components/AdminMonitoring";
 import { previewProfile } from "../src/components/Shared";
 import { messages } from "../src/i18n";
 import * as api from "../src/api";
@@ -111,11 +112,42 @@ describe("admin operations",()=>{
     await screen.findByText("1 files deleted.");
     expect(request).toHaveBeenCalledWith("/api/admin/replay-archive",{method:"POST",body:'{"key":"replays/2026/10/10/9036364671.dem.bz2"}'},180000);
   });
-  it("distinguishes a successful idle worker from a stopped API",()=>{
-    const properties={ActiveState:"inactive",SubState:"dead",Result:"success",ExecMainStatus:"0"};
-    expect(unitState({id:"dota2notes-sync.service",properties,logs:[],error:null})).toBe("completed");
-    expect(unitState({id:"dota2notes-api.service",properties,logs:[],error:null})).toBe("inactive");
+  it("requires an actual successful oneshot run and never paints a stopped daemon green",()=>{
+    const properties={ActiveState:"inactive",SubState:"dead",Result:"success",ExecMainStatus:"0",ExecMainExitTimestamp:"2026-11-14T07:00:00Z"};
+    expect(unitState({id:"dota2notes-images.service",properties,logs:[],error:null})).toBe("idle");
+    expect(unitState({id:"dota2notes-api.service",properties,logs:[],error:null})).toBe("stopped");
+    expect(unitState({id:"dota2notes-sync-daemon.service",properties,logs:[],error:null})).toBe("stopped");
+    expect(unitState({id:"dota2notes-replay.service",properties,logs:[],error:null})).toBe("stopped");
+    expect(unitState({id:"dota2notes-images.service",properties:{...properties,ExecMainExitTimestamp:""},logs:[],error:null})).toBe("unknown");
     expect(unitState({id:"dota2notes-replay.service",properties:{...properties,Result:"exit-code"},logs:[],error:null})).toBe("failed");
+  });
+  it("uses real timer deadlines with grace, running target and intentional disable states",()=>{
+    const now=Date.parse("2026-11-14T07:00:00Z");
+    const timer={id:"dota2notes-images.timer",properties:{ActiveState:"active",NextRunAt:new Date(now-30_000).toISOString(),TimerAccuracySec:"60",TargetUnit:"dota2notes-images.service"},logs:[],error:null};
+    expect(unitState(timer,{now})).toBe("waiting");
+    expect(unitState(timer,{now:now+60_000})).toBe("failed");
+    expect(unitState(timer,{now:now+60_000,target:{id:"dota2notes-images.service",properties:{ActiveState:"activating"},logs:[],error:null}})).toBe("running");
+    expect(unitState({...timer,properties:{ActiveState:"active"}},{now})).toBe("unknown");
+    expect(unitState({...timer,properties:{ActiveState:"inactive",UnitFileState:"disabled",ExpectedActive:"no"}},{now})).toBe("disabled");
+    expect(unitState(timer,{now,stale:true})).toBe("stale");
+  });
+  it("keeps host identity and exposes logs only after expanding the service",async()=>{
+    const capturedAt=new Date().toISOString();
+    vi.spyOn(api,"apiRequest").mockResolvedValue({monitor:{capturedAt,stale:false,snapshotError:null,units:[],queues:[],failures:[],hosts:[
+      {id:"iran",label:"Iran VPS",capturedAt,stale:false,snapshotError:null,units:[{id:"dota2notes.service",properties:{ActiveState:"active",SubState:"running"},error:null,logs:[{at:capturedAt,priority:6,message:"Website listening in Iran"}]}]},
+      {id:"germany",label:"Germany VPS",capturedAt,stale:false,snapshotError:null,units:[{id:"dota2notes-sync-daemon.service",properties:{ActiveState:"active",SubState:"running"},error:null,logs:[]}]}
+    ]}} as never);
+    render(<AdminServices t={messages.en}/>);
+    const website=await screen.findByRole("button",{name:/Website.*Running/});
+    expect(screen.getAllByRole("heading",{name:"Iran VPS"})).toHaveLength(2);
+    expect(screen.getAllByRole("heading",{name:"Germany VPS"})).toHaveLength(2);
+    expect(screen.queryByText("Website listening in Iran")).toBeNull();
+    expect(screen.getByRole("button",{name:"About Website"}).getAttribute("aria-describedby")).toBeTruthy();
+    fireEvent.click(website);
+    expect(screen.getByText("Website listening in Iran")).toBeTruthy();
+    expect(website.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(website);
+    expect(screen.queryByText("Website listening in Iran")).toBeNull();
   });
   it("keeps queue statistics visible when no service snapshot exists",async()=>{
     const request=requests(), original=request.getMockImplementation()!;

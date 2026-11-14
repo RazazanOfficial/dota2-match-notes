@@ -1,68 +1,79 @@
-# پایش سرویس ها و صف ها
+# پایش سرویس‌ها و صف‌ها
 
-پنل ادمین snapshot خواندنی است؛ از داخل آن فرمان systemd اجرا یا سرویس restart نمی شود.
-route مربوط به مانیتور از ایران به compute هدایت می شود؛ آمار سیستم عامل نمایش داده شده متعلق به آلمان است.
-وضعیت ایران، Nginx عمومی و PostgreSQL اصلی باید جدا روی ایران بررسی شود؛ سبز بودن صفحه compute اثبات سلامت همه میزبان ها نیست.
+صفحهٔ Services فقط گزارش می‌خواند؛ فرمان systemd یا restart اجرا نمی‌کند.
+Services و Timers بر اساس Iran VPS و Germany VPS گروه‌بندی می‌شوند.
+API ایران snapshot محلی را با snapshot آلمان از مسیر خصوصی ترکیب می‌کند.
+سمت آلمان token پل و session معتبر Super Admin همچنان الزامی‌اند.
+قطع آلمان گزارش ایران را حذف نمی‌کند؛ گزارش آلمان با پیام unavailable نمایش داده می‌شود.
+دریافت خصوصی حداکثر هشت ثانیه و پاسخ حداکثر ۵۱۲ KiB است؛ redirect دنبال نمی‌شود.
+آمار صف‌ها از PostgreSQL اصلی خوانده می‌شوند؛ این پنل health مستقیم providerها نیست.
 
-## collector
+## نقش میزبان‌ها
 
-سورس canonical در `apps/api/scripts/service-monitor/collect.mjs` است.
-collector با allowlist ثابت وضعیت unitها و journal محدود پروژه را می خواند؛ ورودی کاربر به systemctl/journalctl نمی رسد.
-نصب root-owned خارج از checkout انجام می شود. روی آلمان، هنگام تغییر خود collector:
-
-```bash
-sudo bash <<'BASH'
-set -euo pipefail
-cd /var/www/dota2notes
-install -d -o root -g root -m 755 /usr/local/libexec/dota2notes
-install -o root -g root -m 644 apps/api/scripts/service-monitor/collect.mjs \
-  /usr/local/libexec/dota2notes/collect.mjs
-install -d -o root -g dota2notes -m 750 /var/lib/dota2notes/monitor
-DotaMonitorGid=$(getent group dota2notes | cut -d: -f3)
-test -n "$DotaMonitorGid"
-install -o root -g root -m 600 /dev/null /etc/dota2notes-monitor.conf
-printf 'MONITOR_GROUP_GID=%s\n' "$DotaMonitorGid" > /etc/dota2notes-monitor.conf
-install -o root -g root -m 644 deploy/systemd/dota2notes-monitor.service \
-  deploy/systemd/dota2notes-monitor.timer /etc/systemd/system/
-systemctl daemon-reload
-systemctl enable --now dota2notes-monitor.timer
-systemctl start dota2notes-monitor.service
-sudo -u dota2notes test -r /var/lib/dota2notes/monitor/status.json
-BASH
-```
-
-این بلوک فقط تنظیم اختصاصی collector را بازسازی می کند؛ env برنامه را تغییر نمی دهد.
-در آپدیت صرف Markdown لازم نیست. کپی فایل collector بدون نصب دوباره نسخه root-owned، نسخه فعال را عوض نمی کند.
-
-## تفسیر درست وضعیت
-
-| نشانه | معنی |
+| میزبان | سرویس‌های گزارش‌شده |
 | --- | --- |
-| API، replay و sync daemon: `active/running` | فرایند اصلی برقرار است؛ موفقیت provider را ثابت نمی کند |
-| images/monitor service: `inactive/dead` با `Result=success` | برای واحد تک اجرا پس از پایان طبیعی است؛ timer و زمان آخرین اجرا هم بررسی شوند |
-| replay/sync قدیمی: disabled یا inactive | با daemon فعلی مورد انتظار است |
-| performance reference timer خاموش | در نصب گزارش شده تصمیم عمدی است؛ برای سبز شدن پنل فعال نشود |
-| snapshot بیش از سه دقیقه قدیمی | collector/timer/مجوز خواندن بررسی شود |
-| queue pending با API سالم | worker، موعد retry، quota یا لینک DB بررسی شود |
+| ایران | Website، API، Nginx، PostgreSQL، Monitor |
+| آلمان | Private Link، API، Match Sync، Replay Processing، Image Generation، Statistical Reference، Monitor |
 
-پنل باز به طور دوره ای تازه می شود؛ اتصال WebSocket سراسری لحظه ای نداریم.
-صف ها از DB خوانده می شوند و می توانند از snapshot سیستم عامل جدیدتر باشند.
-collector logهای مشکوک به secret را حذف می کند، ولی log اصلی سرویس هم نباید token یا URL امضاشده داشته باشد.
-این پنل health مستقیم ParsPack، Cloudflare، STRATZ یا Valve نیست.
+collector فقط allowlist ثابت و journal محدود پروژه را می‌خواند؛ ورودی کاربر به فرمان‌ها نمی‌رسد.
+سورس `apps/api/scripts/service-monitor/collect.mjs` است؛ نسخهٔ فعال root-owned و خارج از checkout نصب می‌شود.
+snapshot نسخهٔ ۲ نقش صریح app/compute دارد. نسخهٔ قدیمی بدون نقش برای تشخیص میزبان کافی نیست.
 
-## مشاهده هدفمند
+## نصب در انتشار این تغییر
 
-روی آلمان:
+پس از استقرار runtime سازگار، روی ایران:
 
 ```bash
-sudo systemctl show dota2notes-link.service dota2notes-api.service \
-  dota2notes-replay.service dota2notes-sync-daemon.service \
-  -p Id -p ActiveState -p SubState -p NRestarts --no-pager
-sudo journalctl -u dota2notes-sync-daemon.service -u dota2notes-replay.service \
-  --since '15 minutes ago' -n 100 --no-pager
-sudo systemctl show dota2notes-monitor.service \
-  -p Result -p ExecMainStatus -p ExecMainExitTimestamp --no-pager
+cd /var/www/dota2notes
+sudo bash deploy/scripts/install-service-monitor.sh app
 ```
 
-زمان ساخت مرجع ماهانه عدد ثابت ۱۳۲ دقیقه نیست؛ تعداد batch، پاسخ provider، retry، quota و خاموش بودن timer اثر دارند.
-برای پیشرفت واقعی cursor و وضعیت نسخه را بخوان؛ [قرارداد مرجع](monthly-reference-services.md) مرجع است.
+و روی آلمان:
+
+```bash
+cd /var/www/dota2notes
+sudo bash deploy/scripts/install-service-monitor.sh compute
+```
+
+اسکریپت collector، unitهای مانیتور و `/etc/dota2notes-monitor.conf` شامل نقش و GID را نصب می‌کند.
+env برنامه یا وضعیت timer مرجع را تغییر نمی‌دهد. صرف pull نسخهٔ فعال collector را عوض نمی‌کند.
+برای حذف unitهای قدیمی نصب‌شده، پس از بررسی انتشار و با مجوز اپراتور، روی هر میزبان:
+
+```bash
+sudo bash /var/www/dota2notes/deploy/scripts/retire-legacy-workers.sh --apply
+```
+
+این عملیات روی production هنگام توسعه اجرا نشده است. نصب سفارشی خارج از مسیر موردانتظار باعث توقف پیش از حذف می‌شود.
+سوابق و جدول‌های قدیمی DB حفظ می‌شوند؛ migration تخریبی جزو این تغییر نیست.
+
+## معنی وضعیت‌ها
+
+| وضعیت | معنی |
+| --- | --- |
+| Running | فرایند دائمی برقرار است یا یک اجرای کوتاه در حال انجام است |
+| Waiting | timer روشن است و موعد بعدی معتبر دارد |
+| Idle | worker کوتاه پایان موفق با timestamp واقعی دارد |
+| Disabled | خاموشی عمدی؛ مرجع خاموش برای سبز شدن پنل فعال نمی‌شود |
+| Stale / Unknown | گزارش یا زمان معتبر نداریم؛ سلامت حدس زده نمی‌شود |
+| Failed / Stopped | شکست، توقف غیرمنتظره یا عبور از موعد معتبر پس از حاشیهٔ مجاز |
+
+API، Match Sync و Replay Processing دائمی‌اند؛ inactive/dead آن‌ها پایان موفق یک oneshot نیست.
+مقدار پیش‌فرض Result=success بدون timestamp خروج، مدرک اجرای موفق نیست.
+timer برنامهٔ مؤثر، آخرین اجرا، نتیجه، موعد بعدی و شمارش معکوس دارد.
+موعد از systemd می‌آید؛ برای timerهای monotonic خروجی JSON list-timers استفاده می‌شود.
+اگر موعد قابل خواندن نباشد، شمارش معکوس فرضی ساخته نمی‌شود.
+Accuracy/RandomizedDelay و ادامه داشتن اجرای قبلی در تشخیص عقب‌افتادگی لحاظ می‌شوند.
+گزارش بیش از سه دقیقه قدیمی مستقل از حرکت شمارنده Stale است.
+زمان سرور و مرورگر و نسخهٔ systemd باید در پذیرش زنده بررسی شوند.
+
+Replay Processing یک service باقی است؛ prepare/parse/archive از صف واقعی جدا نمایش داده می‌شوند.
+تعداد active فقط lease با heartbeat تازه را می‌شمارد. شکست foreground بدون phase قابل اتکا به مرحلهٔ حدسی نسبت داده نمی‌شود.
+سبز بودن process موفقیت تک‌تک jobها را ثابت نمی‌کند؛ خطاهای صف جدا نمایش داده می‌شوند.
+
+## پذیرش پس از استقرار
+
+روی هر میزبان نقش snapshot، تازگی فایل و نتیجهٔ collector بررسی شود.
+توقف collector باید Stale، قطع پل باید unavailable آلمان، و خاموشی عمدی مرجع باید Disabled نشان دهد.
+وب/Nginx/PostgreSQL باید از ایران گزارش شوند. تایمرهای حذف‌شده نباید کارت داشته باشند.
+لاگ‌ها محدود و پاکسازی‌شده‌اند؛ token، URL امضاشده و env خصوصی وارد گزارش نشوند.
+دریافت واقعی مچ، تولید سه عکس از local parser و تحلیل/آرشیو ریپلی جدا بررسی شوند.

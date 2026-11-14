@@ -5,6 +5,7 @@ import { getDb } from "../db";
 import { dotaMatches, journalMatches, localReplayJobs, replayArchiveJobs } from "../db/schema";
 import { REPLAY_REQUEST_MAX_AGE_DAYS } from "../opendota/analysis-policy";
 import { replayObjectHead } from "./archive-storage";
+import { queueLocalReplayImagesIfNeeded } from "../match-image-job/repository";
 import { overlayReplayData } from "./overlay";
 import { progressFromRow } from "./progress";
 const progressFields = {
@@ -60,7 +61,9 @@ export async function requestReplayJob(journalMatchId: string, userId: string, i
   const [owned] = await getDb().select({ matchId: journalMatches.dotaMatchId })
     .from(journalMatches).where(and(eq(journalMatches.id, journalMatchId), eq(journalMatches.userId, userId))).limit(1);
   if (!owned?.matchId) return "not_found" as const;
-  return requestReplayByDotaId(owned.matchId, intent, userId);
+  const result = await requestReplayByDotaId(owned.matchId, intent, userId);
+  if (intent === "analysis" && result === "ready") await queueLocalReplayImagesIfNeeded(journalMatchId);
+  return result;
 }
 
 // Standalone match requests use the same global job, without creating a journal entry.
