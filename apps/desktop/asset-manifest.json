@@ -1,5 +1,5 @@
 {
-  "version": "39f45443779b9ee16c7a2ff8077bfa7cc6f3f782af3c040276157bfe28e60c94",
+  "version": "fa8805bd5be855b1a04fdd78657f2cfa0bfd8a660939398d342c5c97faf73bd4",
   "files": [
     {
       "path": "buffs/abyssal_underlord_atrophy_aura.png",
@@ -296,10 +296,16 @@
       "object": "5d43658878c4e19b1b9a96743040c1be4c1dde151291ce8db3f2a429dd2b051c.png"
     },
     {
+      "path": "flags/de.svg",
+      "bytes": 185,
+      "sha256": "fd2032f5bb2c379135f7ab90eac47fc0523215cb358d5618fa13d08fc7e30cd5",
+      "object": "fd2032f5bb2c379135f7ab90eac47fc0523215cb358d5618fa13d08fc7e30cd5.svg"
+    },
+    {
       "path": "flags/ir.svg",
-      "bytes": 263,
-      "sha256": "bb928b35b37e6e80693400fdc62f280a03077a92d503daf1ee9c8415ae4b7539",
-      "object": "bb928b35b37e6e80693400fdc62f280a03077a92d503daf1ee9c8415ae4b7539.svg"
+      "bytes": 97320,
+      "sha256": "c7c301c7e2df4061856066610ae3233503823d22fce107ec5c39baedbd1108fa",
+      "object": "c7c301c7e2df4061856066610ae3233503823d22fce107ec5c39baedbd1108fa.svg"
     },
     {
       "path": "flags/us.svg",
