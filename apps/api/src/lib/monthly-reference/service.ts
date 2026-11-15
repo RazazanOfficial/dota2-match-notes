@@ -1,7 +1,8 @@
 import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { monthlyHeroPerformance, monthlyHeroPositionMeta, monthlyPositionPerformance, monthlyReferenceEvents, monthlyReferenceVersions } from "../db/schema";
-import { METRICS, MODES, RANKS, RANK_GROUPS, REFERENCE_POLICY, monthDate, monthIsSettled, monthKey, performanceJobs, previousMonth, referenceWindow, type Means } from "./model";
+import { METRICS, MODES, RANKS, RANK_GROUPS, REFERENCE_POLICY, monthDate, monthIsSettled, performanceJobs, previousMonth, referenceWindow, type Means } from "./model";
+import { assertMonthlyReferencePartitions } from "./partitions";
 import { fetchMonthlyMeta, fetchMonthlyPerformance, type PerformanceRow } from "./providers";
 import { META_SOURCE_RECHECK_MS, MonthlyMetaPendingError, pendingMetaRetryAt } from "./availability";
 
@@ -32,6 +33,7 @@ export async function ensureMonthlyReference(now = new Date(), force = false, re
   if (!monthIsSettled(month, now)) return { status: "waiting-week", month: monthDate(month) };
   return locked(async tx => {
     const monthString = monthDate(month);
+    await assertMonthlyReferencePartitions(tx, month);
     const [building] = await tx.select().from(monthlyReferenceVersions)
       .where(and(eq(monthlyReferenceVersions.referenceMonth, monthString), eq(monthlyReferenceVersions.status, "building"),
         eq(monthlyReferenceVersions.sourcePolicy, REFERENCE_POLICY))).limit(1);
@@ -49,24 +51,26 @@ export async function ensureMonthlyReference(now = new Date(), force = false, re
     const [created] = await tx.insert(monthlyReferenceVersions).values({ referenceMonth: monthString, sourcePolicy: REFERENCE_POLICY }).returning({ id: monthlyReferenceVersions.id });
     await tx.insert(monthlyReferenceEvents).values({ versionId: created.id, service: "system", level: "info",
       message: `${force ? "بازخوانی دستی از صفر" : "ساخت خودکار مرجع"}؛ مبنا: هفته‌های STRATZ از ${referenceWindow(month).start} تا ${referenceWindow(month).endExclusive} (پایان بازه غیرشامل، UTC)؛ مرجع فعال قبلی حفظ می‌شود` });
-    const end = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 1));
-    const lower = monthString, upper = monthDate(end), suffix = monthKey(month);
-    // Suffix and date values only come from Date UTC year/month, never request text.
-    for (const parent of ["monthly_hero_position_meta", "monthly_hero_performance_reference", "monthly_position_performance_reference"]) {
-      await tx.execute(sql.raw(`CREATE TABLE IF NOT EXISTS "${parent}_${suffix}" PARTITION OF "${parent}" FOR VALUES FROM ('${lower}') TO ('${upper}')`));
-    }
-    return { status: "created", month: lower, versionId: created.id };
+    return { status: "created", month: monthString, versionId: created.id };
   });
 }
 
-async function buildingVersion() {
-  return (await getDb().select().from(monthlyReferenceVersions)
+async function buildingVersion(db = getDb()) {
+  return (await db.select().from(monthlyReferenceVersions)
     .where(and(eq(monthlyReferenceVersions.status, "building"), eq(monthlyReferenceVersions.sourcePolicy, REFERENCE_POLICY)))
     .orderBy(monthlyReferenceVersions.referenceMonth).limit(1))[0];
 }
 
+async function runnableVersion() {
+  return locked(async tx => {
+    const version = await buildingVersion(tx);
+    if (version) await assertMonthlyReferencePartitions(tx, new Date(`${version.referenceMonth}T00:00:00Z`));
+    return version;
+  });
+}
+
 export async function runMonthlyMetaTick(now = new Date()) {
-  const version = await buildingVersion();
+  const version = await runnableVersion();
   if (!version) return { status: "idle" as const };
   const task = metaTasks[version.metaCursor];
   if (!task) return { status: "complete" as const, versionId: version.id };
@@ -82,6 +86,7 @@ export async function runMonthlyMetaTick(now = new Date()) {
     return locked(async tx => {
       const [current] = await tx.select().from(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.id, version.id)).limit(1);
       if (!current || current.metaCursor !== version.metaCursor || current.status !== "building") return { status: "advanced" as const };
+      await assertMonthlyReferencePartitions(tx, month);
       const alreadyWaiting = pendingMetaRetryAt(current.metaLastError, current.metaLastErrorAt, now);
       if (alreadyWaiting) return waiting(alreadyWaiting);
       await tx.update(monthlyReferenceVersions).set({ metaLastError: error.message,
@@ -96,6 +101,7 @@ export async function runMonthlyMetaTick(now = new Date()) {
   return locked(async tx => {
     const [current] = await tx.select().from(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.id, version.id)).limit(1);
     if (!current || current.metaCursor !== version.metaCursor || current.status !== "building") return { status: "advanced" as const };
+    await assertMonthlyReferencePartitions(tx, month);
     for (let i = 0; i < rows.length; i += 300) {
       await tx.insert(monthlyHeroPositionMeta).values(rows.slice(i, i + 300).map(row => ({ ...row, referenceMonth: version.referenceMonth, versionId: version.id })));
     }
@@ -209,9 +215,10 @@ async function insertRows(tx: ReturnType<typeof getDb>, version: { id: string; r
 }
 
 export async function runMonthlyPerformanceTick() {
-  const version = await buildingVersion();
+  const version = await runnableVersion();
   if (!version || version.metaCursor < metaTasks.length) return { status: "waiting-meta" as const };
-  const jobs = performanceJobs(new Date(`${version.referenceMonth}T00:00:00Z`));
+  const month = new Date(`${version.referenceMonth}T00:00:00Z`);
+  const jobs = performanceJobs(month);
   const job = jobs[version.performanceCursor];
   if (!job) return { status: "complete" as const, versionId: version.id };
   const meta = await getDb().select({ heroId: monthlyHeroPositionMeta.heroId, position: monthlyHeroPositionMeta.position,
@@ -226,6 +233,7 @@ export async function runMonthlyPerformanceTick() {
   return locked(async tx => {
     const [current] = await tx.select().from(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.id, version.id)).limit(1);
     if (!current || current.performanceCursor !== version.performanceCursor || current.status !== "building") return { status: "advanced" as const };
+    await assertMonthlyReferencePartitions(tx, month);
     await insertRows(tx, version, rows, allowed);
     const last = version.performanceCursor + 1 === jobs.length;
     const pruned = last ? await pruneUnderSampledHeroRows(tx, version.id) : 0;

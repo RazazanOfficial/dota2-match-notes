@@ -31,6 +31,7 @@ import { saturdayWeekStart } from "../src/lib/opendota/sync-request";
 import { toJournalDateKey } from "../src/lib/journal/timezone";
 import * as monthlyProviders from "../src/lib/monthly-reference/providers";
 import { MonthlyMetaPendingError } from "../src/lib/monthly-reference/availability";
+import { REFERENCE_PARENTS } from "../src/lib/monthly-reference/partitions";
 import { ensureMonthlyReference, runMonthlyMetaTick, runMonthlyPerformanceTick } from "../src/lib/monthly-reference/service";
 import { REFERENCE_POLICY, PREVIOUS_REFERENCE_POLICY, performanceJobs, weekStartsInMonth } from "../src/lib/monthly-reference/model";
 import { monthlyReferenceEvents, monthlyHeroPositionMeta, monthlyHeroPerformance, monthlyPositionPerformance } from "../src/lib/db/schema";
@@ -61,6 +62,10 @@ beforeAll(async () => {
   await db.insert(journalDays).values({userId,day:"2026-09-15",completed:true});
   await migrate(db, { migrationsFolder: migrationFolder });
   await migrate(db, { migrationsFolder: migrationFolder });
+  // Match owner-side partition provisioning; the request runtime performs DML.
+  for (const month of ["08", "09"]) for (const parent of REFERENCE_PARENTS) {
+    await client.exec(`CREATE TABLE "${parent}_2026_${month}" PARTITION OF "${parent}" FOR VALUES FROM ('2026-${month}-01') TO ('2026-${Number(month) + 1}-01')`);
+  }
   const session=await createSession(userId);cookie=`${SESSION_COOKIE}=${session.token}`;
 },60_000);
 afterAll(async () => { await client.close(); if(oldFolder) await rm(oldFolder,{recursive:true,force:true}); vi.unstubAllEnvs(); });

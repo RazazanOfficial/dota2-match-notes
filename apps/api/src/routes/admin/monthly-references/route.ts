@@ -4,6 +4,7 @@ import { adminErrorResponse, AdminError } from "../../../lib/admin/errors";
 import { hasValidRequestOrigin } from "../../../lib/auth/request";
 import { ensureMonthlyReference, getMonthlyHeroDetails, getMonthlyReferenceEvents, listMonthlyReferences } from "../../../lib/monthly-reference/service";
 import { referenceTaskTotals, referenceWindow, REFERENCE_POLICY } from "../../../lib/monthly-reference/model";
+import { MonthlyReferencePartitionsError } from "../../../lib/monthly-reference/partitions";
 import { HEROES } from "../../../data/heroes";
 import { z } from "zod";
 
@@ -43,5 +44,8 @@ export async function POST(request: HttpRequest) {
     const input = z.object({ month: z.string().regex(/^20\d{2}-(0[1-9]|1[0-2])$/).optional() }).strict().parse(await request.json());
     const result = await ensureMonthlyReference(new Date(), true, input.month);
     return Response.json({ ok: true, result }, { headers: { "Cache-Control": "private, no-store" } });
-  } catch (error) { return adminErrorResponse(error); }
+  } catch (error) {
+    if (error instanceof MonthlyReferencePartitionsError) return adminErrorResponse(new AdminError(error.status, error.code, error.message));
+    return adminErrorResponse(error);
+  }
 }
