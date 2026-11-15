@@ -18,7 +18,7 @@ Status: discovery | agreed | implementing | verifying | ready | deployed | block
 ## Acceptance and verification
 
 - Observable acceptance criteria, including relevant failure/boundary cases:
-- Checks and environments needed:
+- Minimal checks/environments needed; current results that can be reused:
 - Actual results: command, environment/revision, pass/fail/skip and evidence:
 - Review findings and disposition; separate-context review used or unavailable:
 
@@ -26,6 +26,7 @@ Status: discovery | agreed | implementing | verifying | ready | deployed | block
 
 - Roles actually used, owned paths and shared resources:
 - Files changed and decisions made:
+- Deployment impact: Software / VPS IRAN / VPS GERMAN / DATABASE, if relevant:
 - Release/migration/env/asset compatibility and recovery, if relevant:
 - Publication/deployment requested, target and revision, if applicable:
 - Host-by-host observed deployment/acceptance, if executed:
