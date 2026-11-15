@@ -17,6 +17,14 @@
 
 ### DB-01 — P2: ساخت partition توسط نقش محدود compute
 
+به‌روزرسانی ۲۰۲۶-۱۱-۱۵: رفع در سورس شامل حذف DDL از worker، بررسی partition پیش از
+تغییر builder و اسکریپت آماده‌سازی با مالک ایران است؛ [روش اعمال](monthly-reference-services.md).
+اعمال و پذیرش روی production توسط اپراتور انجام می‌شود و از تست محلی نتیجه‌گیری نمی‌شود.
+اعتبارسنجی محلی Windows: تست کامل API با ۵۵۱ pass و یک skip مخصوص Linux، بیلد API،
+آماده‌سازی release و typecheck وب موفق شدند. تست PGlite نقش compute بدون CREATE،
+DDL قدیمی با خطای 42501، پاسخ 503، حفظ builder و یک batch موفق با DML را پوشش می‌دهد؛
+این تست تک‌نشستی جای آزمون همزمانی چند اتصال یا پذیرش STRATZ زنده را نمی‌گیرد.
+
 محل: `apps/api/src/lib/monthly-reference/service.ts:56`، تابع `ensureMonthlyReference`.
 این تابع هنگام ساخت نسخهٔ ماهانه، `CREATE TABLE ... PARTITION OF` اجرا می‌کند؛ مسیر tick مرجع از compute فراخوانی می‌شود.
 مطابق قرارداد مجوزهای فعلی، `dota_notes_compute` مالک parent/schema نیست و مجوز DDL ندارد.

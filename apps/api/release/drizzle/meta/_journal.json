@@ -225,6 +225,13 @@
       "when": 1794052800000,
       "tag": "0031_automatic_library",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1794660000000,
+      "tag": "0032_companion_quotas",
+      "breakpoints": true
     }
   ]
 }

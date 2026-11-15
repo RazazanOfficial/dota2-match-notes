@@ -147,6 +147,8 @@ sudo -u dota2notes -H npm ci --prefix apps/api/release --workspaces=false
 sudo -u dota2notes -H env \
   DOTENV_CONFIG_PATH=/var/www/dota2notes/.env.production \
   node apps/api/release/dist/migrate.js
+sudo -u postgres psql -X -v ON_ERROR_STOP=1 -d dota_notes \
+  -f deploy/scripts/prepare-monthly-reference-partitions.sql
 sudo -u postgres psql -X -v ON_ERROR_STOP=1 -d dota_notes <<'SQL'
 GRANT SELECT, INSERT, UPDATE, DELETE
 ON TABLE sync_history_cache, companion_devices, match_observations
@@ -159,6 +161,9 @@ BASH
 ```
 
 grant بالا برای جدول های قابلیت فعلی است؛ migration آینده اگر جدول جدیدی برای worker دارد، مجوز همان جدول نیز باید اضافه شود.
+آماده‌سازی partitionهای مرجع با مالک دیتابیس انجام می‌شود؛ worker compute مجوز CREATE
+نمی‌گیرد. این مرحله ۱۱ ماه گذشته، ماه جاری و ماه بعد را پوشش می‌دهد؛ بدون استقرار هم
+حداقل ماهی یک بار در ایران اجرا شود. [قرارداد مرجع](monthly-reference-services.md).
 اگر manifest پس از publish تغییر کرد، قبل از ادامه اختلاف بایت ها و line ending را حل کن؛ manifest سرور و نصاب نباید مستقل بازسازی و ناسازگار شوند.
 انتشار assets باید قبل از `release:prepare` باشد؛ این فرمان پوشه public را به runtime کپی می کند.
 
