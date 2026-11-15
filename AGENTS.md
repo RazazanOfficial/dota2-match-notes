@@ -43,6 +43,31 @@ because English prompts are assumed to produce better results.
   mandatory committee or new planning documents. A bug fix is not permission to
   refactor unrelated modules or upgrade every dependency.
 
+## Efficient execution and token use
+
+- Treat MeriJ's time and token budget as constraints. Each read, tool call,
+  delegation and check must resolve a specific remaining question. Reuse current
+  evidence for unchanged code/environment; do not repeatedly read instructions,
+  rescan the repository, dump long logs or rediscover another agent's findings.
+- Choose the smallest verification plan before running commands. Run the relevant
+  regression checks and required typecheck/build once when the change is ready.
+  Do not automatically climb from focused tests to full suites and back again.
+  A passed suite already covers its individual tests; do not rerun them for a
+  cleaner report. Repeat only checks invalidated by a substantive change or failure.
+- Text/instruction-only edits normally need diff, link or syntax inspection, not
+  application tests, dependency installation, builds, installers or live probes.
+  Do not add speculative edge cases or cosmetic edits after validation merely to
+  justify another verification round. Keep assertions and consequential checks.
+- The lead owns one shared check plan and concise evidence record. Reviewers
+  inspect the assigned diff by default; they do not duplicate the author's tests
+  unless a concrete finding needs independent reproduction. Re-review only the
+  affected fix, not the entire task. Do not launch agents for routine docs/Git/log
+  interpretation or create task reports when the existing context is sufficient.
+- Batch independent reads and return bounded output. Stop once acceptance and
+  required checks are satisfied. If MeriJ stops or declines further tests, respect
+  that decision, report the verification limit and do not retry through another
+  tool or permission route. Do not hide failures or claim unexecuted checks passed.
+
 ## Team and routing
 
 Square brackets are project aliases, not native executable commands. For a
@@ -65,7 +90,9 @@ actual identity when spawning; mentioning a label is not proof of delegation.
 | `[docs]` / `docs` | Changed contracts, operations guidance and handoff accuracy |
 
 - Perform task analysis in the main thread by default; spawn only when a separate
-  context or independent work is useful. Usually use at most two concurrent
+  context or independent work resolves a concrete risk or independent subtask.
+  Give a bounded question rather than asking every role to audit the whole project.
+  Usually use at most two concurrent
   specialists. More needs a concrete benefit, not a desire to activate all roles.
 - Each delegation states the task/criteria, root and revision, relevant dirty
   files, mode (review/propose/implement), owned paths, allowed commands/resources,
@@ -126,12 +153,15 @@ actual identity when spawning; mentioning a label is not proof of delegation.
 - Verify scripts in the current package manifests. Known commands include
   `npm run test:desktop`, `npm run test -w @dota-notes/api`, `npm run typecheck`,
   `npm run api:build`, `npm run test:native-replay` and `npm run test:companion`.
+  These are available commands, not a checklist to run on every task.
   Web/shared changes may require `npm test` and `npm run build`. Use committed
   lockfiles; reinstall dependencies when needed, not before every trivial task.
-- On Windows, run `node apps/desktop/scripts/prepare-native.mjs` before full native
-  tests require the Companion resource; then the applicable Cargo tests and
-  `npm run desktop:installer`. API/asset rollout precedes distributing its client.
-- For UI, inspect actual states and relevant window sizes, fa/en, keyboard and
+- For native/installer work on Windows, run
+  `node apps/desktop/scripts/prepare-native.mjs` before selected full native tests
+  require the Companion resource; run applicable Cargo checks and build an installer
+  when requested or needed for release acceptance. Backend/docs fixes do not require
+  a desktop installer. API/asset rollout precedes distributing its client.
+- For UI, inspect affected actual states and representative window sizes, fa/en, keyboard and
   reduced motion; use Figma when it helps. Browser screenshots do not validate
   Windows IPC, installation, Steam paths or the background task.
 - Run `git diff --check` and inspect final scope. Report commands, pass/fail/skip,
@@ -144,8 +174,10 @@ actual identity when spawning; mentioning a label is not proof of delegation.
 ## Git, publication and live infrastructure
 
 - Use MeriJ's configured Git author/committer and authenticated GitHub account.
-  Verify effective identities, intended remote and authenticated account before
-  publishing; ask once if missing or ambiguous. Do not guess a verified email,
+  Reuse identities and remote already verified in the unchanged session. Check once
+  before publishing when missing, changed or ambiguous; do not insert repeated
+  identity checks or configuration into the commands MeriJ runs himself.
+  Do not guess a verified email,
   print credentials, rewrite global config or overwrite history to change authors.
 - No AI/bot co-author trailers, automatic AI attribution, bot identity or adding
   Codex as a repository collaborator. Inspect final commit metadata/message before
@@ -161,6 +193,12 @@ actual identity when spawning; mentioning a label is not proof of delegation.
   those operations. Prepare and verify the changes, then provide the commands
   for MeriJ to run. Do not force-push. Preserve the project's agreed `--no-ff`
   integration flow in the proposed commands unless the user changes it.
+- Give ordinary `git add`, `git commit`, `git push` and `git merge --no-ff`
+  commands. Do not wrap them in Invoke helpers, custom functions or unnecessary
+  variables. Do not introduce manual commit-SHA entry/comparison or identity setup
+  for a routine rollout. Keep revision/checksum checks only when a concrete artifact,
+  concurrent release or recovery requirement needs them. Preserve approved scope
+  and unrelated changes; simplicity does not authorize blind staging or reset.
 - Production deploys, schema execution, credential changes and destructive cleanup
   need authorization for that operation/target. Honor an already authorized rollout
   without repeated prompts. Prepare a concrete plan and checks before any needed
@@ -180,3 +218,26 @@ actual identity when spawning; mentioning a label is not proof of delegation.
 - Keep text UTF-8/LF per `.gitattributes`. No automatic package-wide upgrades,
   production scans/load tests, new paid services or Figma writes without relevant
   task scope. Update only what the approved change and evidence justify.
+
+## Responding to "استقرار"
+
+- A fresh deployment request, even only the word "استقرار", requires complete,
+  directly executable Persian instructions in the reply. Read the canonical runbook
+  internally; do not substitute a document reference or link for the actual steps.
+- First state the impact for all four areas: Software (نرم افزار), VPS IRAN,
+  VPS GERMAN and DATABASE. Distinguish code/schema changes from required publication:
+  desktop assets can require Iran deployment even without an API logic change.
+- Then give steps in this order: MeriJ's local computer/preparation, simple Git
+  commit/push/merge commands, then only the affected VPS/DB operations in dependency
+  order. Clearly label each machine; migrations and owner maintenance belong to Iran.
+  Omit unrelated hosts, tests, builds, migrations, reinstalls and service restarts.
+- Use plain commands with the actual branch and paths. Shell deployment blocks
+  must stop on the first failed step, e.g. with `&&`; do not let a failed pull/build
+  proceed into release preparation or restart. Keep necessary startup readiness
+  checks bounded; a successful service start need not mean its port is ready yet.
+- For an in-progress rollout or supplied terminal log, identify completed/failed
+  steps and resume at the first incomplete step. Do not restart Git publication,
+  rebuild a successful stage or repeat a deployment on a healthy host. Preserve
+  conflicting local/generated files before resolving them; no broad reset/clean.
+- Preparing these instructions does not authorize the agent to perform MeriJ's
+  Git operations or live deployment. Report what remains for him to execute.
