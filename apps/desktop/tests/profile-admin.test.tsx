@@ -155,8 +155,9 @@ describe("admin operations",()=>{
     render(<Admin session={{...previewProfile,isSuperAdmin:true}} t={messages.en} live/>);
     fireEvent.click(screen.getByRole("tab",{name:"Services"}));
     expect(await screen.findByText(/The service snapshot is unavailable or stale/)).toBeTruthy();
-    expect(screen.getByText("sync · Failed")).toBeTruthy();
-    expect(screen.getByRole("heading",{name:"Processing queues"})).toBeTruthy();
+    expect(screen.getByText("Match Sync")).toBeTruthy();
+    expect(screen.getByText("Failed")).toBeTruthy();
+    expect(screen.getByRole("heading",{name:"Processing Queues"})).toBeTruthy();
   });
   it("preserves a release's formatted content and requires consent before publishing",async()=>{
     const release={id:"release-one",version:"3.2.1",title:"Release title",summary:"Existing summary",status:"draft",content:{type:"doc",content:[{type:"heading",attrs:{level:2},content:[{type:"text",text:"Formatted heading"}]},{type:"paragraph",content:[{type:"text",marks:[{type:"bold"}],text:"Keep this bold text"}]}]}};
