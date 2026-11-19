@@ -1,7 +1,7 @@
 import { toJournalDateKey } from "@/lib/date";
 import { heroById } from "@/data/heroes";
 import { calculatePerformanceScoreOrNull } from "@/lib/dota/performance-score";
-import { LANE_WEIGHTS, type LaneKey } from "@/lib/dota/lane-efficiency";
+import { calculateLaneEfficiency } from "@/lib/dota/lane-efficiency";
 import type { Match, MatchParticipant } from "@/lib/types";
 import { mockAnalysis } from "./analysisFixture";
 import { buildPersianCalendarMonth } from "@/lib/persian-calendar";
@@ -149,9 +149,14 @@ export function detailFor(row: HistoryMatch): Match {
             }
         }
         p.performanceScore = calculatePerformanceScoreOrNull(p.benchmarks, analysis.durationMinutes, p.position) ?? undefined;
-        const weights = LANE_WEIGHTS[p.position || 1];
-        const parts = (Object.keys(weights) as LaneKey[]).map(key => ({ key, label: { lh: "LH", deaths: "Death", networth: "Net Worth", dn: "Deny", kills: "Kill", assists: "Assist", ward: "Ward", resources: "Resources" }[key], value: weights[key] * .76, maximum: weights[key], actual: 4, mean: 3 }));
-        p.laneEfficiency = { score: 76, subtotal: 76, covered: 100, bonus: 0, referenceMonth: "2026-09-01", referenceVersion: "sample", cohort: "hero-position", samples: 320, parts, notes: ["Offline sample reference"] };
+        p.laneEfficiency = calculateLaneEfficiency({ slot: p.playerSlot, heroId: p.heroId, position: p.position,
+            positions: new Map(analysis.players.map(player => [player.playerSlot, player.position])),
+            heroIds: new Map(analysis.players.map(player => [player.playerSlot, player.heroId])),
+            duration: analysis.durationMinutes * 60, gameMode: row.mode === "Turbo" ? 23 : 22, lobbyType: row.mode === "Ranked" ? 7 : 0,
+            reference: { month: "2026-09-01", versionId: "sample", hero: [], position: [1,2,3,4,5].map(position => ({ position, sampleCount: 1800, cs: 55, deaths: 1.5, networth: 4800, dn: 7, kills: 2, assists: 3 })) },
+            events: { version: 2, snapshotAt: 600, coordinateSystem: "dota-grid", snapshots: [{ slot: p.playerSlot, heroId: p.heroId, time: 600, lh: 54, dn: 8, networth: 4700, kills: 2, deaths: 1, assists: 3 }],
+                purchases: [{ slot: p.playerSlot, time: -89, item: "item_tango", charges: 3 }, { slot: p.playerSlot, time: 120, item: "item_flask", charges: 1 }],
+                wards: [{ slot: p.playerSlot, type: "obs", time: 0, handle: 1, attackerSlot: null }, { slot: p.playerSlot, type: "obs_left", time: 300, handle: 1, attackerSlot: null }], combat: [], assists: [] } });
         p.laneImpact = { availability: "partial", roleGroup: (p.position || 1) > 3 ? "support" : "core", laneRole: p.position, opponentPlayerSlot: analysis.players[(i + 5) % 10].playerSlot, lastHitsAt10: 54, deniesAt10: 8, netWorthAt10: 4700, xpAt10: 5100, killsAt10: 2, deathsAt10: 1, laneEfficiency: 76, resourcePurchasesAt10: 3, observerPlacementsAt10: 1, sentryPlacementsAt10: 1, netWorthDelta: 420, xpDelta: 290, lastHitDelta: 7, assessment: i < 5 ? "ahead" : "behind", confidence: "medium", evidence: [], note: "Offline sample" };
     }
     analysis.players[0].ownershipEvents = [{ item: "gem", purchaserPlayerSlot: 0, holderPlayerSlot: 128, purchasedAtSecond: 1200, transferAtSecond: null, transfer: "enemy", confidence: "medium", evidence: ["Offline sample"], limitation: "Transfer time is not available in this sample." }];

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createLaneCollector } from "../scripts/replay-parser/lane-events.mjs";
 
 describe("raw replay Lane extractor", () => {
-  it("resolves buyer and ward attacker by hero identity after observing the minute-12 intervals", () => {
+  it("uses the maintained v2 minute-10 API extraction contract through the compatibility entry point", () => {
     const collector = createLaneCollector();
     const slots = [0, 1, 2, 3, 4, 128, 129, 130, 131, 132];
     for (let i = 0; i < 10; i++) collector.accept({ type: "player_slot", key: i, value: slots[i] });
@@ -14,15 +14,16 @@ describe("raw replay Lane extractor", () => {
     collector.accept({ type: "DOTA_COMBATLOG_DEATH", time: 104, targethero: true,
       targetname: "npc_dota_hero_test6", attackername: "npc_dota_hero_test0" });
     collector.accept({ type: "interval", slot: 1, time: 105, assists: 1 });
-    for (let i = 0; i < 10; i++) collector.accept({ type: "interval", slot: i, time: 720,
+    for (let i = 0; i < 10; i++) collector.accept({ type: "interval", slot: i, time: 600,
       hero_id: i === 1 ? 37 : i + 100, unit: i === 1 ? "CDOTA_Unit_Hero_Warlock" : `CDOTA_Unit_Hero_Test${i}`,
       kills: 1, deaths: 0, assists: i === 1 ? 6 : 0, networth: 2000, lh: 5, denies: 2 });
     const output = collector.finish();
+    expect(output).toMatchObject({ version: 2, snapshotAt: 600, coordinateSystem: "dota-grid" });
     expect(output.snapshots).toHaveLength(10);
-    expect(output.snapshots.every(row => row.time === 720)).toBe(true);
+    expect(output.snapshots.every(row => row.time === 600)).toBe(true);
     expect(output.snapshots.find(row => row.slot === 1)?.assists).toBe(6);
     expect(output.purchases[0].slot).toBe(1);
     expect(output.wards[0]).toMatchObject({ slot: 131, attackerSlot: 1 });
-    expect(output.assists).toEqual([{ slot: 1, targetSlot: 129, time: 104 }]);
+    expect(output.assists).toEqual([{ slot: 1, targetSlot: 129, time: 104, actorLocation: null, targetLocation: null }]);
   });
 });

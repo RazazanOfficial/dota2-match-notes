@@ -1,5 +1,6 @@
 import type { MatchAnalysis, MatchPlayerAnalysis } from "../types";
-import { calculatePerformanceScoreOrNull } from "./performance-score";
+import { calculatePerformanceScoreOrNull, performanceTone } from "./performance-score";
+import { recalculateLanePosition } from "./lane-efficiency";
 
 const POSITION_LABELS = ["", "Carry", "Mid", "Offlane", "Soft Support", "Hard Support"];
 
@@ -32,9 +33,17 @@ export function applyAnalysisPositionOverrides(
 ): MatchAnalysis {
   const players = analysis.players.map((entry) => {
     const position = updates[String(entry.playerSlot)];
-    if (position === undefined) return entry;
+    if (!Number.isInteger(position) || position < 1 || position > 5 || position === entry.position) return entry;
+    const laneEfficiency = entry.laneEfficiency?.version === 2 ? recalculateLanePosition(entry.laneEfficiency, position) : undefined;
+    const scoreMetrics = (entry.scoreMetrics ?? entry.benchmarks).filter(metric => metric.key !== "lane_score" && metric.key !== "lane_efficiency_pct");
+    if (laneEfficiency?.score != null) scoreMetrics.push({ key: "lane_score", label: "Lane Efficiency", value: laneEfficiency.score,
+      formattedValue: String(laneEfficiency.score), percentile: laneEfficiency.score, qualityPercentile: laneEfficiency.score,
+      tone: performanceTone(laneEfficiency.score), source: "cohort", scoreOnly: true, scoreWeight: .9 * laneEfficiency.covered / 100 });
     return {
       ...entry,
+      laneEfficiency,
+      scoreMetrics,
+      laneImpact: entry.laneImpact ? { ...entry.laneImpact, laneEfficiency: laneEfficiency?.score ?? null } : undefined,
       position,
       positionLabel: POSITION_LABELS[position],
       positionResolution: {

@@ -13,10 +13,22 @@ function remember(path: string, value: unknown, time: number) {
 export function cacheOwner() { return owner; }
 export function setCacheOwner(value: string) { if (value !== owner) { memory.clear(); savedTimes.clear(); sessionRevision++; } owner = value; }
 const keyFor = (path: string) => `${prefix}${owner}.data.${path}`;
+function compatibleAnalysis(value: unknown) {
+    const players = (value as {players?: {laneEfficiency?: {version?: number;windowSeconds?:number}}[]} | null)?.players;
+    return !players || players.every(player => player.laneEfficiency?.version === 2 && player.laneEfficiency.windowSeconds === 600);
+}
+function currentSnapshot(path: string, value: unknown) {
+    const response = value as {analysis?:unknown;page?:{match?:{analysis?:unknown}}} | null;
+    if (/^\/api\/matches\/[^/]+\/analysis(?:\?|$)/.test(path) && !compatibleAnalysis(response?.analysis)) return null;
+    if (/^\/api\/journal\/matches\/[^/]+\/page(?:\?|$)/.test(path) && response?.page?.match && !compatibleAnalysis(response.page.match.analysis)) {
+        return {...response,page:{...response.page,match:{...response.page.match,analysis:undefined}}};
+    }
+    return value;
+}
 export function cachedRead<T>(path: string): T | null {
     if (!owner) return null;
-    if (memory.has(path)) return memory.get(path) as T;
-    try { const entry = JSON.parse(localStorage.getItem(keyFor(path)) || "null"); if (entry?.version === 1) { remember(path, entry.value, entry.savedAt || 0); return entry.value as T; } } catch { /* A corrupt cache is a miss. */ }
+    if (memory.has(path)) return currentSnapshot(path,memory.get(path)) as T | null;
+    try { const entry = JSON.parse(localStorage.getItem(keyFor(path)) || "null"); if (entry?.version === 1) { const value=currentSnapshot(path,entry.value); remember(path,value,entry.savedAt || 0); return value as T; } } catch { /* A corrupt cache is a miss. */ }
     return null;
 }
 export function cachedWrite(path: string, value: unknown) {

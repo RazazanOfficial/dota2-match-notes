@@ -131,14 +131,14 @@ function eligible(meta: Array<{ heroId: number; position: number; rankBracket: s
 }
 
 async function pruneUnderSampledHeroRows(tx: ReturnType<typeof getDb>, versionId: string) {
-  const [meta, atTwelve] = [
+  const [meta, atTen] = [
     await
     tx.select({ heroId: monthlyHeroPositionMeta.heroId, position: monthlyHeroPositionMeta.position,
       rankBracket: monthlyHeroPositionMeta.rankBracket, matchCount: monthlyHeroPositionMeta.matchCount })
       .from(monthlyHeroPositionMeta).where(and(eq(monthlyHeroPositionMeta.versionId, versionId), eq(monthlyHeroPositionMeta.gameMode, 22))),
     await tx.select({ heroId: monthlyHeroPerformance.heroId, position: monthlyHeroPerformance.position,
       rankGroup: monthlyHeroPerformance.rankGroup, sampleCount: monthlyHeroPerformance.sampleCount })
-      .from(monthlyHeroPerformance).where(and(eq(monthlyHeroPerformance.versionId, versionId), eq(monthlyHeroPerformance.minute, 13))),
+      .from(monthlyHeroPerformance).where(and(eq(monthlyHeroPerformance.versionId, versionId), eq(monthlyHeroPerformance.minute, 11))),
   ];
   const byGroup = new Map<string, ReturnType<typeof eligible>>();
   for (const group of RANK_GROUPS) byGroup.set(group, eligible(meta, group));
@@ -149,7 +149,7 @@ async function pruneUnderSampledHeroRows(tx: ReturnType<typeof getDb>, versionId
     metaCounts.set(key, (metaCounts.get(key) ?? 0) + row.matchCount);
     totals.set(hero, (totals.get(hero) ?? 0) + row.matchCount);
   }
-  const performanceCounts = new Map(atTwelve.map(row => [`${row.rankGroup}:${row.heroId}:${row.position}`, row.sampleCount]));
+  const performanceCounts = new Map(atTen.map(row => [`${row.rankGroup}:${row.heroId}:${row.position}`, row.sampleCount]));
   const allRows = await tx.select({ heroId: monthlyHeroPerformance.heroId, position: monthlyHeroPerformance.position,
     rankGroup: monthlyHeroPerformance.rankGroup }).from(monthlyHeroPerformance)
     .where(eq(monthlyHeroPerformance.versionId, versionId)).groupBy(monthlyHeroPerformance.heroId,

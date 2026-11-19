@@ -13,7 +13,7 @@ import { ANALYSIS_SUMMARY_VERSION, referenceRevisionSql } from "./analysis-summa
 import { buildMatchAnalysis } from "./match-analysis";
 import type { PerformanceReferenceData } from "./performance-cohort";
 import { overlayReplayData } from "../replay/overlay";
-import { referenceMonthsForMatch, weekStartsInMonth } from "../monthly-reference/model";
+import { REFERENCE_POLICY, referenceMonthsForMatch, weekStartsInMonth } from "../monthly-reference/model";
 import { poolDivineImmortalMeta } from "../monthly-reference/selection";
 import { qualifiesHeroPosition } from "../monthly-reference/service";
 import { extractMatchDetails } from "./match-details";
@@ -42,12 +42,13 @@ async function loadPerformanceReference(heroIds: number[], matchStart: unknown, 
     .select()
     .from(monthlyReferenceVersions)
     .where(and(eq(monthlyReferenceVersions.status, "active"),
+      eq(monthlyReferenceVersions.sourcePolicy, REFERENCE_POLICY),
       inArray(monthlyReferenceVersions.referenceMonth, [preferredMonth, fallbackMonth])))
     .orderBy(desc(monthlyReferenceVersions.referenceMonth), desc(monthlyReferenceVersions.completedAt))
     .limit(1);
   if (!snapshot) return undefined;
   const referenceMonth = snapshot.referenceMonth;
-  // STRATZ time 13 is minute 12. Do not extrapolate the minute-75 limit
+  // STRATZ time 11 is minute 10. Do not extrapolate the minute-75 limit
   // to longer matches, or replace a missing hero/position with another cohort.
   const seconds = numberValue(duration);
   const summaryMinute = seconds !== null && seconds > 0 ? Math.floor(seconds / 60) : null;
@@ -70,10 +71,10 @@ async function loadPerformanceReference(heroIds: number[], matchStart: unknown, 
         inArray(monthlyHeroPositionMeta.rankBracket, ["DIVINE", "IMMORTAL"])))
       .groupBy(monthlyHeroPositionMeta.position, monthlyHeroPositionMeta.gameMode),
     db.select().from(monthlyHeroPerformance).where(and(eq(monthlyHeroPerformance.versionId, snapshot.id),
-      inArray(monthlyHeroPerformance.minute, summaryTime === null ? [13] : [...new Set([13, summaryTime])]), eq(monthlyHeroPerformance.rankGroup, "DIVINE_IMMORTAL"),
+      inArray(monthlyHeroPerformance.minute, summaryTime === null ? [11] : [...new Set([11, summaryTime])]), eq(monthlyHeroPerformance.rankGroup, "DIVINE_IMMORTAL"),
       inArray(monthlyHeroPerformance.heroId, heroIds))),
     db.select().from(monthlyPositionPerformance).where(and(eq(monthlyPositionPerformance.versionId, snapshot.id),
-      eq(monthlyPositionPerformance.minute, 13), eq(monthlyPositionPerformance.rankGroup, "DIVINE_IMMORTAL"))),
+      eq(monthlyPositionPerformance.minute, 11), eq(monthlyPositionPerformance.rankGroup, "DIVINE_IMMORTAL"))),
   ]);
   const meta = poolDivineImmortalMeta(selectedMeta, totals.map(row => ({
     position: row.position, gameMode: row.gameMode, count: Number(row.count),
@@ -109,7 +110,7 @@ async function loadPerformanceReference(heroIds: number[], matchStart: unknown, 
       })),
     } } : {}),
     lane: { month: referenceMonth, versionId: snapshot.id,
-      hero: heroLane.filter(row => row.minute === 13 && qualified(row))
+      hero: heroLane.filter(row => row.minute === 11 && qualified(row))
         .map(row => ({ heroId: row.heroId, position: row.position, sampleCount: row.sampleCount,
         cs: row.cs, dn: row.dn, kills: row.kills, deaths: row.deaths, assists: row.assists, networth: row.networth })),
       position: positionLane.map(row => ({ position: row.position, sampleCount: row.sampleCount,
