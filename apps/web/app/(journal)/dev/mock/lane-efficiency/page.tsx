@@ -7,7 +7,7 @@ const reference: LaneReference = { month: "2026-08", versionId: "MOCK-2026-08", 
     dn: 2, kills: 1, assists: 4 },
 ], position: [{ position: 5, sampleCount: 100_000, cs: 15, deaths: 1.5,
   networth: 2400, dn: 3, kills: 1.5, assists: 3.2 }] };
-const events: LaneEvents = { version: 1, snapshots: [
+const events: LaneEvents = { version: 2, snapshotAt: 600, coordinateSystem: "dota-grid", snapshots: [
   { slot: 3, heroId: 37, time: 600, lh: 10, dn: 2, kills: 1, deaths: 0, assists: 4, networth: 2200 },
 ], purchases: [
   { slot: 3, time: -89, item: "item_tango", charges: 6 },

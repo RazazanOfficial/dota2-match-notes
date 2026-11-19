@@ -171,9 +171,9 @@ export function buildMatchAnalysis(params: { rawData: unknown; replaySource?: "l
       requestedReferenceMonth:params.performanceReference?.snapshot.requestedReferenceMonth,
       events:laneEvents??undefined,gameMode,lobbyType:numeric(rawMatch.lobby_type)});
     const benchmarks=baseBenchmarks,scoreMetrics:MatchBenchmarkMetric[]=benchmarks.filter((metric)=>metric.source!=="match"),sorted=[...benchmarks].sort((a,b)=>b.qualityPercentile-a.qualityPercentile),highlightMetrics=sorted.filter((metric)=>metric.highlightEligible!==false);
-    if(laneEfficiency.score!==null)scoreMetrics.push({key:"lane_efficiency_pct",label:"Lane Efficiency",description:"امتیاز فرمول ده دقیقهٔ نخست",value:laneEfficiency.score,
+    if(laneEfficiency.score!==null)scoreMetrics.push({key:"lane_score",label:"Lane Efficiency",description:"امتیاز فرمول ده دقیقهٔ نخست",value:laneEfficiency.score,
       formattedValue:String(laneEfficiency.score),percentile:laneEfficiency.score,qualityPercentile:laneEfficiency.score,
-      tone:performanceTone(laneEfficiency.score),source:"cohort",scoreOnly:true});
+      tone:performanceTone(laneEfficiency.score),source:"cohort",scoreOnly:true,scoreWeight:.9*laneEfficiency.covered/100});
     const performanceScore=calculatePerformanceScoreOrNull(scoreMetrics,durationMinutes,position);
     const summaryReference = gameMode === 22 && numeric(rawMatch.lobby_type) === 7 && position !== null
       ? params.performanceReference?.summary?.hero.find(row => row.heroId === heroId && row.position === position) : undefined;

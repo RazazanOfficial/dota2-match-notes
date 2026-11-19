@@ -130,7 +130,7 @@ describe("PostgreSQL schema migration and real Express services", () => {
     await db.update(monthlyReferenceVersions).set({metaCursor:4,performanceCursor:127}).where(eq(monthlyReferenceVersions.id,id));
     await db.insert(monthlyHeroPositionMeta).values(["DIVINE","IMMORTAL"].flatMap(rankBracket=>[22,23].flatMap(gameMode=>[1,2,3,4,5].map(position=>({referenceMonth:"2026-09-01",versionId:id,heroId:hero,position,rankBracket,gameMode,matchCount:2500,winCount:1250,positionShare:20,metaPickRate:100,winRate:50})))));
     await db.insert(monthlyPositionPerformance).values([1,2,3,4,5].flatMap(position=>Array.from({length:75},(_,minute)=>({referenceMonth:"2026-09-01",versionId:id,position,rankGroup:"DIVINE_IMMORTAL",minute,sampleCount:100,...means}))));
-    const provider=vi.spyOn(monthlyProviders,"fetchMonthlyPerformance").mockResolvedValue([1,2,3,4,5].map(position=>({heroId:hero,position,rankGroup:"DIVINE_IMMORTAL",minute:13,sampleCount:1000,means})));
+    const provider=vi.spyOn(monthlyProviders,"fetchMonthlyPerformance").mockResolvedValue([1,2,3,4,5].map(position=>({heroId:hero,position,rankGroup:"DIVINE_IMMORTAL",minute:11,sampleCount:1000,means})));
     try {
       await expect(runMonthlyPerformanceTick()).rejects.toThrow("position/minute coverage");
       expect((await db.select().from(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.id,id)))[0]).toMatchObject({status:"building",performanceCursor:127});
@@ -170,7 +170,7 @@ describe("PostgreSQL schema migration and real Express services", () => {
       expect((await db.select().from(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.id,id)))[0].performanceCursor).toBe(0);
       expect(await db.select().from(monthlyHeroPerformance).where(eq(monthlyHeroPerformance.versionId,id))).toHaveLength(0);
       expect(await db.select().from(monthlyPositionPerformance).where(eq(monthlyPositionPerformance.versionId,id))).toHaveLength(0);
-      provider.mockResolvedValue([0,13,75].map(minute=>({heroId:102,position:1,rankGroup:"DIVINE_IMMORTAL",minute,sampleCount:1000,means:{cs:1,dn:1,kills:1,deaths:1,assists:1,networth:1,xp:1,heroDamage:1,towerDamage:1,healingAllies:1,campsStacked:1,neutrals:1,ancients:1,teamKills:1}})));
+      provider.mockResolvedValue([0,11,75].map(minute=>({heroId:102,position:1,rankGroup:"DIVINE_IMMORTAL",minute,sampleCount:1000,means:{cs:1,dn:1,kills:1,deaths:1,assists:1,networth:1,xp:1,heroDamage:1,towerDamage:1,healingAllies:1,campsStacked:1,neutrals:1,ancients:1,teamKills:1}})));
       expect(await runMonthlyPerformanceTick()).toMatchObject({status:"progress",completed:1,total:128});
       expect((await db.select().from(monthlyReferenceVersions).where(eq(monthlyReferenceVersions.id,id)))[0].performanceCursor).toBe(1);
       expect(await db.select().from(monthlyHeroPerformance).where(eq(monthlyHeroPerformance.versionId,id))).toHaveLength(3);
@@ -541,6 +541,8 @@ describe("PostgreSQL schema migration and real Express services", () => {
       positionOverrides: { "0": 5 } }).returning({ id: journalMatches.id });
     const [snapshot] = await db.insert(monthlyReferenceVersions).values({ referenceMonth: "2026-08-01",
       status: "active", sourcePolicy: REFERENCE_POLICY, completedAt: new Date() }).returning({ id: monthlyReferenceVersions.id });
+    const [legacySnapshot] = await db.insert(monthlyReferenceVersions).values({ referenceMonth: "2026-08-01",
+      status: "active", sourcePolicy: PREVIOUS_REFERENCE_POLICY, completedAt: new Date(Date.now() + 60_000) }).returning({ id: monthlyReferenceVersions.id });
     try {
       const page = () => request(app).get(`/api/journal/matches/${entry.id}/page`).set("Cookie", cookie);
       const basic = await page(); expect(basic.status).toBe(200); expect(basic.body.page.match.analysis).toBeUndefined();
@@ -555,8 +557,8 @@ describe("PostgreSQL schema migration and real Express services", () => {
       const means = { cs: 140, dn: 6, kills: 6, deaths: 3, assists: 10, networth: 18000,
         xp: 18000, heroDamage: 20000, towerDamage: 2000, healingAllies: 400, campsStacked: 0,
         neutrals: 0, ancients: 0, teamKills: 20 };
-      await db.insert(monthlyHeroPerformance).values([13,31].map(minute => ({ ...means,
-        ...(minute === 13 ? { cs: 50, networth: 5000 } : {}), referenceMonth: "2026-08-01", versionId: snapshot.id,
+      await db.insert(monthlyHeroPerformance).values([11,13,31].map(minute => ({ ...means,
+        ...(minute === 11 ? { cs: 50, networth: 5000 } : minute === 13 ? { cs: 70, networth: 7000 } : {}), referenceMonth: "2026-08-01", versionId: snapshot.id,
         heroId: 1, position: 5, rankGroup: "DIVINE_IMMORTAL", minute, sampleCount: 1200 })));
       const result = await page(), match = result.body.page.match;
       expect(result.status).toBe(200); expect(match.analysis.replaySource).toBe("local");
@@ -579,6 +581,7 @@ describe("PostgreSQL schema migration and real Express services", () => {
       await db.delete(journalMatches).where(eq(journalMatches.id, entry.id));
       await db.delete(dotaMatches).where(eq(dotaMatches.matchId, matchId));
       await removeReference(snapshot.id);
+      await removeReference(legacySnapshot.id);
     }
   }, 30_000);
   it("uses the same public error for missing accounts and incorrect passwords", async () => {

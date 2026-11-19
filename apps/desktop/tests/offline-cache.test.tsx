@@ -9,6 +9,23 @@ const session={mode:"player" as const,username:"steam_100",steamId:"765611979602
 beforeEach(()=>{localStorage.clear();clearOfflineAccount();setConnection("online");setBearer("token-a");vi.stubGlobal("crypto",webcrypto);});
 afterEach(()=>{clearOfflineAccount();setBearer(null);vi.unstubAllGlobals();vi.restoreAllMocks();});
 describe("account-bound offline snapshots",()=>{
+ it("rejects legacy Lane analyses in memory and storage without clearing other account data",()=>{
+  setCacheOwner(session.steamId);
+  const path="/api/matches/123/analysis";
+  cachedWrite("/api/sync/me",{kept:true});
+  cachedWrite(path,{analysis:{players:[{laneEfficiency:{score:75}}]}});
+  expect(cachedRead(path)).toBeNull();
+  setCacheOwner("other");setCacheOwner(session.steamId);
+  expect(cachedRead(path)).toBeNull();expect(cachedRead("/api/sync/me")).toEqual({kept:true});
+  const current={analysis:{players:[{laneEfficiency:{version:2,windowSeconds:600,score:75}}]}};
+  cachedWrite(path,current);expect(cachedRead(path)).toEqual(current);
+  const pagePath="/api/journal/matches/123/page?player=steam_100";
+  const page={page:{date:"2026-11-18",match:{id:"123",analysis:{players:[{laneEfficiency:{version:1}}]}}}};
+  cachedWrite(pagePath,page);
+  expect(cachedRead(pagePath)).toEqual({page:{date:"2026-11-18",match:{id:"123",analysis:undefined}}});
+  setCacheOwner("other");setCacheOwner(session.steamId);
+  expect(cachedRead(pagePath)).toEqual({page:{date:"2026-11-18",match:{id:"123",analysis:undefined}}});
+ });
  it("restores the profile only for the exact stored native token, without storing the token",async()=>{
   await saveOfflineSession("token-a",session);expect(localStorage.getItem("dota-notes.offline.v1.session")).not.toContain("token-a");
   expect(await restoreOfflineSession("token-a")).toEqual(session);expect(await restoreOfflineSession("token-b")).toBeNull();
