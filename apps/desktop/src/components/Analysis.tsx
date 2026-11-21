@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from "react";
-import { ArrowLeft, CalendarDays } from "lucide-react";
+import { ArrowLeft, CalendarDays, LayoutGrid, Swords, Clock3, MapPinned, NotebookPen, Images } from "lucide-react";
 import { applyAnalysisPositionOverrides } from "@/lib/dota/analysis-position-overrides";
 import type { Session } from "@/lib/types";
 import { apiRequest } from "../api";
@@ -15,6 +15,11 @@ import { ErrorNotice } from "./ErrorNotice";
 import { formatDateTime24 } from "../time";
 import { ComingSoon } from "./Workspace";
 import { QuickSummary, VictoryBanner } from "./QuickSummary";
+import { isPersian } from "../i18n";
+import { MatchMotion } from "./MatchMotion";
+import { MatchPlayerContext } from "./MatchPlayerContext";
+import { MatchOverviewExtras } from "./MatchOverviewExtras";
+import "../match-detail-workspace.css";
 const PerformanceAnalysis = lazy(() => import("./PerformanceAnalysis"));
 export function Analysis({ t, row, onBack, live = false, session }: {
     t: Messages;
@@ -39,20 +44,25 @@ export function Analysis({ t, row, onBack, live = false, session }: {
         catch (failure) { setError(failure); }
         finally { setPending(false); }
     }
-    const tabs = [{ key: "summary", label: t.summary }, { key: "analysis", label: t.fullAnalysis }, { key: "journal", label: t.journal }, { key: "images", label: t.images }];
+    const fa = isPersian(t);
+    const tabs = [{ key: "summary", label: t.summary, icon: LayoutGrid }, { key: "analysis", label: t.performance, icon: Swords }, { key: "timeline", label: fa ? "Build و Timeline" : "Builds & Timeline", icon: Clock3 }, { key: "map", label: t.mapAnalysis, icon: MapPinned }, { key: "journal", label: t.journal, icon: NotebookPen }, { key: "images", label: t.images, icon: Images }];
+    const overridePositions = (updates: Record<string, number>) => setMatch(m => m ? ({ ...m, positionOverrides: { ...m.positionOverrides, ...updates }, analysis: m.analysis ? applyAnalysisPositionOverrides(m.analysis, updates) : undefined, participants: m.participants?.map(p => ({ ...p, position: updates[String(p.playerSlot)] ?? p.position })) }) : m);
     if (!match) return <div className="screen-stack"><button className="text-button" onClick={onBack}>{t.back}</button>{!!error ? <ErrorNotice error={error} t={t}/> : <LoadingView t={t}/>}</div>;
-    return <div className="screen-stack match-detail"><div className="detail-toolbar"><button className="text-button" onClick={onBack}><ArrowLeft size={17}/>{t.back}</button></div><VictoryBanner match={match} row={row} t={t}/><div className="match-meta"><div className="panel match-identity"><span className="muted">{t.matchId}</span><CopyValue value={row.id} t={t}/><i /><CalendarDays size={15}/><span>{formatDateTime24(row.startedAt, t)}</span></div></div><nav className="detail-tabs" role="tablist" aria-label={t.details}>{tabs.map((item, i) => <button id={`detail-tab-${item.key}`} key={item.key} role="tab" tabIndex={tab === item.key ? 0 : -1} aria-selected={tab === item.key} aria-controls="detail-panel" className={tab === item.key ? "active" : ""} onClick={() => setTab(item.key)} onKeyDown={e => { let next = i; const rtl = document.documentElement.dir === "rtl"; if (e.key === "ArrowRight")
-        next += rtl ? -1 : 1;
-    else if (e.key === "ArrowLeft")
-        next += rtl ? 1 : -1;
-    else if (e.key === "Home")
-        next = 0;
-    else if (e.key === "End")
-        next = tabs.length - 1;
-    else
-        return; e.preventDefault(); const key = tabs[(next + tabs.length) % tabs.length].key; setTab(key); document.getElementById(`detail-tab-${key}`)?.focus(); }}>{item.label}</button>)}</nav><div role="tabpanel" id="detail-panel" aria-labelledby={`detail-tab-${tab}`}>
-    {tab === "summary" && <QuickSummary match={match} selected={selectedSlot} onSelect={setSelected} onAnalyze={() => setTab("analysis")} t={t}/>}
-    {tab === "analysis" && (match.analysis ? <Suspense fallback={<LoadingView t={t}/>}><PerformanceAnalysis analysis={match.analysis} selected={selectedSlot} onSelect={setSelected} t={t} onPositionOverrides={updates => setMatch(m => m ? ({ ...m, positionOverrides: { ...m.positionOverrides, ...updates }, analysis: m.analysis ? applyAnalysisPositionOverrides(m.analysis, updates) : undefined, participants: m.participants?.map(p => ({ ...p, position: updates[String(p.playerSlot)] ?? p.position })) }) : m)}/></Suspense> : <section className="panel analysis-preparation"><p>{live ? t.analysisPending : t.previewAnalysis}</p>{live && <><AnalysisProgress preparation={preparation} t={t} queue={preparation?.progress?.requestStartedAt === queuedTask?.progress.requestStartedAt ? queuedTask : null}/>{(!preparation || ["basic", "failed", "expired"].includes(preparation.replay)) && <button className="primary-button" disabled={pending || checking} onClick={() => void requestAnalysis()}>{pending || checking ? t.checking : t.analyze}</button>}</>}{!!error && <ErrorNotice error={error} title={t.analysisFailed} t={t}/>}</section>)}
-    {tab === "journal" && <ComingSoon title={t.journal} t={t}/>} {tab === "images" && <ComingSoon title={t.images} t={t}/>}
-  </div></div>;
+    return <div className="screen-stack match-detail match-workspace">
+      <MatchMotion identity={row.id} className="match-head-motion"><header className="match-workspace-header" data-reveal>
+        <div className="match-title-block"><button className="match-back" onClick={onBack} aria-label={t.back}><ArrowLeft size={19}/></button><div><small>MATCH REPORT</small><h1>{t.matchId} <CopyValue value={row.id} t={t}/></h1><p><CalendarDays size={13}/><time>{formatDateTime24(row.startedAt,t)}</time></p></div></div>
+        <VictoryBanner match={match} row={row} t={t}/>
+      </header></MatchMotion>
+      <nav className="match-page-nav" role="tablist" aria-label={t.details}>{tabs.map((item,i)=><button type="button" id={"detail-tab-"+item.key} key={item.key} role="tab" tabIndex={tab===item.key?0:-1} aria-selected={tab===item.key} aria-controls="detail-panel" className={(tab===item.key?"active ":"")+(i>=4?"utility-tab":"")} onClick={()=>setTab(item.key)} onKeyDown={e=>{
+        let next=i;const rtl=document.documentElement.dir==="rtl";
+        if(e.key==="ArrowRight")next+=rtl?-1:1;else if(e.key==="ArrowLeft")next+=rtl?1:-1;else if(e.key==="Home")next=0;else if(e.key==="End")next=tabs.length-1;else return;
+        e.preventDefault();const key=tabs[(next+tabs.length)%tabs.length].key;setTab(key);document.getElementById("detail-tab-"+key)?.focus();
+      }}><item.icon size={17}/>{item.label}</button>)}</nav>
+      <div role="tabpanel" id="detail-panel" aria-labelledby={"detail-tab-"+tab} tabIndex={0}>
+        {tab!=="summary"&&tab!=="journal"&&tab!=="images"&&<MatchPlayerContext match={match} selected={selectedSlot} onSelect={setSelected} onPositionOverrides={overridePositions} t={t}/>}
+        {tab==="summary"&&<MatchMotion identity={"overview:"+selectedSlot}><QuickSummary match={match} selected={selectedSlot} onSelect={setSelected} onAnalyze={()=>setTab("analysis")} t={t}/><MatchOverviewExtras match={match} t={t}/></MatchMotion>}
+        {["analysis","timeline","map"].includes(tab)&&(match.analysis?<Suspense fallback={<LoadingView t={t}/>}><PerformanceAnalysis analysis={match.analysis} selected={selectedSlot} onSelect={setSelected} t={t} workspaceView={tab==="analysis"?"performance":tab==="timeline"?"timeline":"map"} onPositionOverrides={overridePositions}/></Suspense>:<section className="crafted-surface analysis-preparation"><Swords size={32}/><h2>{fa?"تحلیل Replay":"Replay analysis"}</h2><p>{live?t.analysisPending:t.previewAnalysis}</p>{live&&<><AnalysisProgress preparation={preparation} t={t} queue={preparation?.progress?.requestStartedAt===queuedTask?.progress.requestStartedAt?queuedTask:null}/>{(!preparation||["basic","failed","expired"].includes(preparation.replay))&&<button className="primary-button" disabled={pending||checking} onClick={()=>void requestAnalysis()}>{pending||checking?t.checking:t.analyze}</button>}</>}{!!error&&<ErrorNotice error={error} title={t.analysisFailed} t={t}/>}</section>)}
+        {(tab==="journal"||tab==="images")&&<MatchMotion identity={tab} className="match-utility-empty"><ComingSoon title={tab==="journal"?t.journal:t.images} t={t}/></MatchMotion>}
+      </div>
+    </div>;
 }

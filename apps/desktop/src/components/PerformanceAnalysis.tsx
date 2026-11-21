@@ -14,6 +14,9 @@ import type { Messages } from "../i18n";
 import { Position, Score } from "./Workspace";
 import LaneEfficiencyWorkspace, { currentLane } from "./LaneEfficiencyWorkspace";
 import "../performance-workspace.css";
+import { MatchMotion } from "./MatchMotion";
+import { MatchBuildTimeline } from "./MatchBuildTimeline";
+import { MatchMapWorkspace } from "./MatchMapWorkspace";
 const num = (v: unknown) => v == null ? "—" : typeof v === "number" ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(v) : typeof v === "boolean" ? (v ? "Yes" : "No") : String(v);
 const label = (key: string) => ({ gold: "Net Worth", xp: "XP", lastHits: "Last Hits", heroDamage: "Hero DMG", heroHealing: "Heal", goldDelta: "NW gained", xpDelta: "XP gained", lastHitDelta: "LH gained", deniesAt10: "Denies @10", netWorthAt10: "Net Worth @10", xpAt10: "XP @10", lastHitsAt10: "Last Hits @10", killsAt10: "Kills @10", deathsAt10: "Deaths @10", resourcePurchasesAt10: "Lane resources @10", observerPlacementsAt10: "Observers @10", sentryPlacementsAt10: "Sentries @10", opponentPlayerSlot: "Opponent slot", roleGroup: "Role group", laneRole: "Lane position", laneEfficiency: "Lane Efficiency", samples: "Samples", covered: "Covered weight", subtotal: "Subtotal", bonus: "Bonus", referenceMonth: "Reference month", referenceVersion: "Reference version", preparedBeforeThreat: "Detection ready before threat", productiveSentriesEstimate: "Productive sentries (estimate)", deathCost: "Estimated death cost", emptyTravelMinutes: "Empty travel", sourceMix: "Farm source mix", averageConversionDelaySeconds: "Average fight → objective delay", heroPositionWeight: "Hero / position reference weight", benchmarkApplicability: "Benchmark applicability", snapshotFetchedAt: "Reference snapshot", rankTier: "Rank tier", effectiveSampleSize: "Effective samples", scoreWeight: "Scoring weight", scoreOnly: "Scoring only", highlightEligible: "Eligible for highlights", source: "Source", weight: "Weight", confidence: "Confidence", timelineSource: "Timeline source", benchmarkSource: "Benchmark source", metaSource: "Meta source" } as Record<string, string>)[key] || key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/_/g, " ").replace(/^./, x => x.toUpperCase());
 export function scoreFor(player: MatchPlayerAnalysis, duration: number) { return currentLane(player) ? player.performanceScore ?? calculatePerformanceScoreOrNull((player.scoreMetrics ?? player.benchmarks).filter(m => m.source !== "match"), duration, player.position) : calculatePerformanceScoreOrNull((player.scoreMetrics ?? player.benchmarks).filter(m => m.source !== "match" && m.key !== "lane_efficiency_pct" && m.key !== "lane_score"), duration, player.position); }
@@ -58,7 +61,7 @@ function Section({ title, children, status }: {
     title: string;
     children: ReactNode;
     status?: string;
-}) { return <section className="panel analysis-section"><div className="section-heading"><h2>{title}</h2>{status && <span className="data-status">{status}</span>}</div>{children}</section>; }
+}) { return <section className="panel analysis-section" data-reveal><div className="section-heading"><h2>{title}</h2>{status && <span className="data-status">{status}</span>}</div>{children}</section>; }
 function Note({ children }: {
     children?: ReactNode;
 }) { return children ? <p className="data-note">{children}</p> : null; }
@@ -69,10 +72,19 @@ function Table({ columns, rows }: {
     columns: string[];
     rows: ReactNode[][];
 }) { return <div className="table-scroll"><table className="data-table"><thead><tr>{columns.map(c => <th key={c}>{c}</th>)}</tr></thead><tbody>{rows.map((row, i) => <tr key={i}>{row.map((v, j) => <td key={j}>{v ?? "—"}</td>)}</tr>)}</tbody></table></div>; }
-export default function PerformanceAnalysis({analysis,selected,onSelect,onPositionOverrides,t}:{analysis:MatchAnalysis;selected:number;onSelect:(slot:number)=>void;onPositionOverrides:(updates:Record<string,number>)=>void;t:Messages}) {
+export default function PerformanceAnalysis({analysis,selected,onSelect,onPositionOverrides,t,workspaceView}:{analysis:MatchAnalysis;selected:number;onSelect:(slot:number)=>void;onPositionOverrides:(updates:Record<string,number>)=>void;t:Messages;workspaceView?:"performance"|"timeline"|"map"}) {
     const navRef=useRef<HTMLElement>(null);
+    const [metricView,setMetricView]=useState("lane");
     const [view,setView]=useState("overview"),player=analysis.players.find(p=>p.playerSlot===selected)||analysis.players[0],fa=isPersian(t);
     if(!player)return <Empty t={t}/>;
+    if(workspaceView) return <div className="performance-workspace embedded-performance">
+      {workspaceView==="performance"&&<><div className="workspace-scope-controls" role="group" aria-label={fa?"نوع ارزیابی":"Assessment type"}>{[["lane","Lane Efficiency"],["benchmarks",t.benchmarkSpectrum],["overview",fa?"امتیاز کلی":"Overall score"]].map(([key,caption])=><button type="button" key={key} aria-pressed={metricView===key} onClick={()=>setMetricView(key)}>{caption}</button>)}</div><MatchMotion identity={`${metricView}:${player.playerSlot}`} key={`${metricView}:${player.playerSlot}`}>
+        {metricView==="lane"&&<LaneEfficiencyWorkspace player={player} players={analysis.players} fa={fa}/>}
+        {metricView==="benchmarks"&&<BenchmarkWorkspace player={player} analysis={analysis} t={t}/>}
+        {metricView==="overview"&&<Performance player={player} analysis={analysis} t={t} onLane={()=>setMetricView("lane")}/>}</MatchMotion></>}
+      {workspaceView==="timeline"&&<><MatchBuildTimeline key={player.playerSlot} player={player} analysis={analysis} t={t}/><details className="workspace-advanced crafted-surface"><summary>{fa?"نمودارهای مقایسه، مرجع و مالکیت آیتم":"Comparison charts, references & item ownership"}</summary><Progression key={player.playerSlot} player={player} analysis={analysis} t={t}/><Ownership player={player} analysis={analysis} t={t}/></details></>}
+      {workspaceView==="map"&&<MatchMapWorkspace key={player.playerSlot} player={player} duration={analysis.durationMinutes} t={t}/>}
+    </div>;
     const hero=heroById(player.heroId);
     const tabs=[{key:"overview",label:t.performance,icon:Activity},{key:"lane",label:t.laneEfficiency,icon:Swords},{key:"benchmarks",label:t.benchmarkSpectrum,icon:BarChart3},{key:"progression",label:t.progression,icon:Clock},{key:"map",label:t.mapAnalysis,icon:MapPinned},{key:"players",label:t.allPlayers,icon:UsersRound}];
     return <div className="screen-stack performance-workspace">
@@ -113,7 +125,7 @@ function Metric({ metric: m, player, duration, t }: {
     t: Messages;
 }) {
     const total = benchmarkMetricTotal(m, player, duration);
-    return <article className={`benchmark-cell tone-${performanceTone(m.qualityPercentile)}`} data-metric-key={m.key}><header><b>{m.key === "tower_damage" ? "Tower DMG / min" : m.shortLabel || m.label}</b><Info size={13}/></header><div className="benchmark-value"><strong>{m.formattedValue}</strong>{total && <small>{formatBenchmarkMetricTotal(total)}</small>}</div><div className="progress-track"><i style={{ width: `${Math.max(0, Math.min(100, m.qualityPercentile))}%` }}/></div><footer><b>{num(m.qualityPercentile)}%</b><small>{t.quality} · {m.scoreOnly ? "Score" : "Percentile"}</small></footer><details><summary>{t.reference}</summary><Note>{m.description}</Note><Facts data={m} exclude={["key", "label", "shortLabel", "formattedValue", "description", "tone"]}/></details></article>;
+    return <article className={`benchmark-cell tone-${performanceTone(m.qualityPercentile)}`} data-metric-key={m.key} data-reveal><header><b>{m.key === "tower_damage" ? "Tower DMG / min" : m.shortLabel || m.label}</b><Info size={13}/></header><div className="benchmark-value"><strong>{m.formattedValue}</strong>{total && <small>{formatBenchmarkMetricTotal(total)}</small>}</div><div className="progress-track"><i style={{ width: `${Math.max(0, Math.min(100, m.qualityPercentile))}%` }}/></div><footer><b>{num(m.qualityPercentile)}%</b><small>{t.quality} · {m.scoreOnly ? "Score" : "Percentile"}</small></footer><details><summary>{t.reference}</summary><Note>{m.description}</Note><Facts data={m} exclude={["key", "label", "shortLabel", "formattedValue", "description", "tone"]}/></details></article>;
 }
 function Ownership({ player, analysis, t }: {
     player: MatchPlayerAnalysis;
