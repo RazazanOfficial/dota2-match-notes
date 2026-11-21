@@ -20,16 +20,20 @@ describe("Performance lane workspace", () => {
     for (const player of [next.players[0],next.players[3]]) expect(player.scoreMetrics?.find(m=>m.key==="lane_score")?.value).toBe(player.laneEfficiency?.score);
     expect(original.players[0].laneEfficiency?.parts.find(p=>p.key==="ward")?.maximum).toBe(1);
   });
-  it("shows actual eight-part calculation and keeps event details collapsed", () => {
+  it("leads with six match metrics, reveals the eight-part calculation on demand, and opens evidence nearby", () => {
     const analysis=performanceFixture(), player=analysis.players[0], lane=player.laneEfficiency!;
     render(<LaneEfficiencyWorkspace player={player} players={analysis.players} fa={false}/>);
+    expect(document.querySelectorAll(".lane-metric-card")).toHaveLength(6);
+    expect(document.querySelector("table")?.closest("details")?.open).toBe(false);
+    expect(document.querySelectorAll("details[open]")).toHaveLength(0);
+    fireEvent.click(screen.getByText("Scoring details & metric weights"));
+    expect(document.querySelector("table")?.closest("details")?.open).toBe(true);
     const table=screen.getByRole("table");
     expect(within(table).getAllByRole("row")).toHaveLength(9);
     expect(screen.getByText("Complete")).toBeTruthy();
     expect(screen.getByText("00:00 – 10:00")).toBeTruthy();
-    expect(screen.getByText(`${lane.score} / 100`)).toBeTruthy();
-    expect(document.querySelectorAll("details[open]")).toHaveLength(0);
-    const bonus=screen.getByText("Bonus").closest("summary")!;
+    expect(document.querySelector(".lane-score-medallion")?.textContent).toBe(`${lane.score}/ 100`);
+    const bonus=screen.getByRole("button",{name:/Bonus/});
     fireEvent.click(bonus);
     expect(screen.getByText("Verified Join")).toBeTruthy();
     expect(screen.queryByText("hero-position")).toBeNull();
@@ -61,7 +65,7 @@ describe("Performance lane workspace", () => {
     const initial=screen.getByRole("tab",{name:messages.en.performance});
     fireEvent.keyDown(initial,{key:"ArrowRight"});
     expect(screen.getByRole("tab",{name:messages.en.laneEfficiency}).getAttribute("aria-selected")).toBe("true");
-    expect(screen.getByRole("table")).toBeTruthy();
+    expect(document.querySelectorAll(".lane-metric-card")).toHaveLength(6);
     fireEvent.click(screen.getByRole("button",{name:messages.en.position}));fireEvent.click(within(screen.getByRole("dialog",{name:messages.en.position})).getByRole("button",{name:"Mid"}));
     expect(onPositionOverrides).toHaveBeenCalledWith({"0":2,"1":1});
   });

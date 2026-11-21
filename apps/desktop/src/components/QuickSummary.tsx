@@ -7,6 +7,7 @@ import { durationText, type HistoryMatch } from "../history";
 import type { Messages } from "../i18n";
 import { Hint } from "./Hint";
 import { ModeIcon, Position, Score } from "./Workspace";
+import { itemById, itemImage } from "@/data/items.generated";
 
 export function VictoryBanner({ match, row, t }: { match: Match; row: HistoryMatch; t: Messages }) {
     return <section className="panel match-banner" dir="ltr" aria-label={t.matchResult}>
@@ -14,7 +15,7 @@ export function VictoryBanner({ match, row, t }: { match: Match; row: HistoryMat
             <img src="/match-details/radiant.webp" alt=""/>
             <div><h1>{t.radiant}</h1>{match.radiantWin === true && <small>{t.victory}</small>}</div>
         </div>
-        <div className="final-score"><strong>{match.radiantScore ?? "—"}</strong><span><Clock size={14}/><bdi>{durationText(match.durationSeconds ?? row.duration)}</bdi><small><ModeIcon mode={row.mode} t={t}/></small></span><strong>{match.direScore ?? "—"}</strong></div>
+        <div className="final-score"><strong>{match.radiantScore ?? "—"}</strong><div><Clock size={14}/><bdi>{durationText(match.durationSeconds ?? row.duration)}</bdi><small><ModeIcon mode={row.mode} t={t}/></small></div><strong>{match.direScore ?? "—"}</strong></div>
         <div className={`team-result dire ${match.radiantWin === false ? "is-victorious" : ""}`}>
             <div><h1>{t.dire}</h1>{match.radiantWin === false && <small>{t.victory}</small>}</div>
             <img src="/match-details/dire.webp" alt=""/>
@@ -27,15 +28,17 @@ export function QuickSummary({ match, selected, onSelect, onAnalyze, t }: {
 }) {
     const inspected = match.participants?.find(player => player.playerSlot === selected);
     const player = match.analysis?.players.find(player => player.playerSlot === selected);
-    return <section className="panel matchup-panel"><div className="section-heading"><h2>{t.matchup}</h2></div>
-        <div className="team-rosters" dir="ltr">{(["radiant", "dire"] as const).map(team => <section className={`team-roster ${team}`} key={team} aria-label={team === "radiant" ? t.radiant : t.dire}>
-            <header><img src={`/match-details/${team}.webp`} alt={team === "radiant" ? t.radiant : t.dire}/></header>
+    return <section className="matchup-panel"><div className="section-heading"><h2>{t.matchup}</h2><small dir="ltr">10 PLAYERS · 2 TEAMS</small></div>
+        <div className="team-rosters" dir="ltr">{(["radiant", "dire"] as const).map(team => <section className={`team-roster ${team}`} key={team} aria-label={team === "radiant" ? t.radiant : t.dire} data-reveal>
+            <header><img src={`/match-details/${team}.webp`} alt=""/><h3>{team === "radiant" ? t.radiant : t.dire}</h3><strong>{team === "radiant" ? match.radiantScore ?? "—" : match.direScore ?? "—"}</strong></header>
+            <div className="roster-column-labels" aria-hidden="true"><small>PLAYER</small><small>K / D / A</small><small>NET WORTH</small><small>ITEMS</small></div>
             <div className="hero-roster">{match.participants?.filter(participant => participant.team === team).map(participant => {
                 const hero = heroById(participant.heroId), analysis = match.analysis?.players.find(player => player.playerSlot === participant.playerSlot);
                 return <button className={`hero-card ${participant.playerSlot === selected ? "selected" : ""}`} key={participant.playerSlot} aria-pressed={participant.playerSlot === selected} aria-label={`${t.selected}: ${participant.heroName}`} onClick={() => onSelect(participant.playerSlot)}>
-                    <img src={hero ? heroImage(hero) : ""} alt={participant.heroName}/>
-                    <div><Position value={analysis ? analysis.position : participant.position} title={false} t={t} analyzed={!!match.analysis}/><bdi>{participant.kills ?? "—"} / {participant.deaths ?? "—"} / {participant.assists ?? "—"}</bdi></div>
-                    <Score value={analysis?.performanceScore} t={t}/>
+                    <div className="roster-person"><figure><img src={hero ? heroImage(hero) : ""} alt=""/><Position value={analysis ? analysis.position : participant.position} title={false} t={t} analyzed={!!match.analysis}/></figure><div><strong>{participant.heroName}</strong><small dir="auto">{participant.personName}</small></div></div>
+                    <bdi className="roster-kda">{participant.kills ?? "—"} / {participant.deaths ?? "—"} / {participant.assists ?? "—"}</bdi>
+                    <bdi className="roster-networth">{participant.netWorth?.toLocaleString("en-US") ?? "—"}</bdi>
+                    <div className="roster-items">{Array.from({length:6},(_,index)=>{const id=participant.itemIds[index],item=id?itemById(id):null,url=id?itemImage(id):null;return <figure key={index}>{url&&<img src={url} alt={item?.name??"Item"} title={item?.name}/>}</figure>;})}</div>
                 </button>;
             })}</div>
         </section>)}</div>
@@ -54,11 +57,11 @@ function SelectedHero({ participant: p, player, t, onAnalyze }: { participant: M
         { label: "Hero DMG", keys: ["heroDamage"] }, { label: "Tower DMG", keys: ["towerDamage"] },
         { label: t.summaryHeal, keys: ["heroHealing"] }, { label: t.summaryLevel, keys: ["level"] },
     ];
-    return <section className={`selected-hero ${p.team}`} aria-label={p.heroName}>
+    return <section className={`selected-hero crafted-surface ${p.team}`} aria-label={p.heroName} data-reveal>
         <div className="selected-hero-info"><img className="selected-hero-portrait" src={hero ? heroImage(hero) : ""} alt=""/>
             <div className="selected-hero-identity"><h2>{p.heroName}</h2><p><bdi>{p.personName}</bdi><Position value={player ? player.position : p.position} t={t} analyzed={!!player}/></p></div>
             <div className="selected-hero-kda"><small>K / D / A</small><strong>{p.kills ?? "—"} / {p.deaths ?? "—"} / {p.assists ?? "—"}</strong></div>
-            <div className="selected-hero-imp"><small>IMP</small><Score value={player?.performanceScore} t={t}/></div>
+            <div className="selected-hero-imp"><small>{t.performanceScore}</small><Score value={player?.performanceScore} t={t}/></div>
             <button className="secondary-button" onClick={onAnalyze}>{t.fullAnalysis}<ArrowUpRight size={16}/></button>
         </div>
         <div className="selected-hero-body"><div className="hero-telemetry">
@@ -69,22 +72,22 @@ function SelectedHero({ participant: p, player, t, onAnalyze }: { participant: M
                 const marker = difference !== null && primary.average !== null ? Math.max(10, Math.min(90, 50 + difference / Math.max(1, primary.average) * 40)) : 50;
                 const unavailable = stat.keys.some(key => key === "goldPerMinute" || key === "level");
                 const explanation = !player ? t.analyzeForScore : unavailable ? t.summaryMetricUnavailable : referenceText;
-                return <div className="summary-stat" key={stat.label} data-summary-stat={stat.keys[0]}>
-                    <div className="summary-stat-label"><span>{stat.label}</span><Hint label={`${stat.label}: ${t.reference}`} text={explanation}><Info size={12}/></Hint></div>
-                    <div className={`summary-stat-values ${values.length > 1 ? "is-pair" : ""}`} dir="ltr">{values.map(({ key, actual, average }, index) => <span key={key}>
+                return <div className="summary-stat" key={stat.label} data-summary-stat={stat.keys[0]} data-reveal>
+                    <div className="summary-stat-label"><small>{stat.label}</small><Hint label={`${stat.label}: ${t.reference}`} text={explanation}><Info size={12}/></Hint></div>
+                    <div className={`summary-stat-values ${values.length > 1 ? "is-pair" : ""}`} dir="ltr">{values.map(({ key, actual, average }, index) => <small key={key}>
                         {index > 0 && <i className="stat-separator">/</i>}<bdi>{formatStat(actual)}</bdi>
-                        <span className={`summary-stat-delta ${actual !== null && average !== null ? actual > average ? "above" : actual < average ? "below" : "equal" : "unknown"}`}>
+                        <small className={`summary-stat-delta ${actual !== null && average !== null ? actual > average ? "above" : actual < average ? "below" : "equal" : "unknown"}`}>
                             ({actual !== null && average !== null ? formatDelta(actual - average) : "?"})
-                        </span>
-                    </span>)}</div>
+                        </small>
+                    </small>)}</div>
                     <div className="summary-average-track" aria-hidden="true" style={{ "--marker-position": `${marker}%` } as CSSProperties}>
-                        <i className="average-center"/><span className="average-hero">{hero ? <img src={heroIcon(hero)} alt=""/> : <CircleHelp size={14}/>}</span>
+                        <i className="average-center"/><small className="average-hero">{hero ? <img src={heroIcon(hero)} alt=""/> : <CircleHelp size={14}/>}</small>
                     </div>
-                    <div className="summary-stat-average"><span>{t.summaryAverage}</span><bdi dir="ltr">{values.map(value => formatStat(value.average)).join(" / ")}</bdi></div>
+                    <div className="summary-stat-average"><small>{t.summaryAverage}</small><bdi dir="ltr">{values.map(value => formatStat(value.average)).join(" / ")}</bdi></div>
                 </div>;
             })}
         </div><div className="selected-inventory"><MatchInventory participant={p}/></div></div>
-        {reference && <div className="summary-reference-note"><Info size={12}/><span>{referenceText}</span></div>}
+        {reference && <div className="summary-reference-note"><Info size={12}/><small>{referenceText}</small></div>}
     </section>;
 }
 
